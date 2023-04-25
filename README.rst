@@ -68,7 +68,14 @@ Hello World
 tp-dcc-core
 -----------------
 
-* **tp-dcc-core**: Collection of Python modules to interact with DCCs Python APIs in a DCC agnostic way.
+Collection of Python modules to interact with DCCs Python APIs in a DCC agnostic way.
+
+tp-dcc-maya
+-----------------
+
+Maya interface for tpDcc framework.
+
+Contains a lot of utilities functions and classes to work with Maya Python APIs (cmds and OpenMaya).
 
 
 Requirements
