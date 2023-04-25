@@ -1,0 +1,10 @@
+name: 'tp-dcc-houdini'
+version: '1.0.0'
+required: True
+author: 'Tomas Poveda'
+authorEmail: 'tpovedatd@gmail.com'
+description: 'Houdini package for tpDcc Tools framework'
+displayName: 'tpDcc Houdini'
+environment:
+  PYTHONPATH:
+    - '{self}'

@@ -1,0 +1,3 @@
+include tpDcc/dccs/houdini/__logging__.ini
+include versioneer.py
+include tpDcc/dccs/houdini/_version.py
