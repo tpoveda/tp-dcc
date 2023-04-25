@@ -8,12 +8,13 @@ Module that contains utilities functions to interact with environment variables.
 import os
 import sys
 import math
-import logging
+
+from tp.bootstrap import log
 
 text_type = str
 binary_type = bytes
 
-logger = logging.getLogger('tp-dcc-bootstrap')
+logger = log.bootstrapLogger
 
 
 SEPARATOR = '/'

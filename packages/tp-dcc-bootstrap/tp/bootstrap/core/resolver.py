@@ -8,15 +8,15 @@ Module that contains tpDcc tools package resolver environment implementation
 import os
 import glob
 import timeit
-import logging
 import traceback
+from importlib import reload
 from collections import OrderedDict
 
+from tp.bootstrap import log
 from tp.bootstrap.utils import fileio
 from tp.bootstrap.core import consts, exceptions, package
 
-logger = logging.getLogger('tp-dcc-bootstrap')
-
+logger = log.bootstrapLogger
 
 class Environment(object):
     def __init__(self, package_manager):
@@ -410,11 +410,4 @@ class Environment(object):
         """
 
         import tp
-        try:
-            rel = reload
-        except NameError:
-            try:
-                from importlib import reload as rel
-            except ImportError:
-                from imp import reload as rel
-        rel(tp)
+        reload(tp)

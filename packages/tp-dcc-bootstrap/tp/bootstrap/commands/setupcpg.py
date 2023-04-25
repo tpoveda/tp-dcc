@@ -7,13 +7,13 @@ Module that contains tpDcc package manager command to setup tpDcc environment
 
 import os
 import shutil
-import logging
 from datetime import datetime
 
+from tp.bootstrap import log
 from tp.bootstrap.utils import fileio
 from tp.bootstrap.core import manager, command
 
-logger = logging.getLogger('tp-dcc-bootstrap')
+logger = log.bootstrapLogger
 
 
 class Setup(command.PackageCommand):

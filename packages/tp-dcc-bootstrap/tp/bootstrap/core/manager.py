@@ -7,15 +7,14 @@ Module that contains tpDcc Tools packages manager implementation
 
 import os
 import sys
-import logging
 from distutils.util import strtobool
 
+from tp.bootstrap import log
 from tp.bootstrap.utils import fileio, env
-from tp.bootstrap.core import consts, exceptions, resolver, descriptors
+from tp.bootstrap.core import consts, resolver, descriptors
 from tp.bootstrap import commands
 
-logger = logging.getLogger('tp-dcc-bootstrap')
-
+logger = log.bootstrapLogger
 
 # global variable that stores current tpDcc package manager instance
 _TPDCC_MANAGER_CACHE = None

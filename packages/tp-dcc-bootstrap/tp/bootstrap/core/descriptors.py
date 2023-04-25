@@ -8,9 +8,9 @@ Module that contains DCC tools package manager descriptor implementations
 import os
 import stat
 import shutil
-import logging
 import tempfile
 
+from tp.bootstrap import log
 from tp.bootstrap.core import consts, exceptions
 
 try:
@@ -18,8 +18,7 @@ try:
 except ImportError:
     git = None
 
-logger = logging.getLogger('tp-dcc-bootstrap')
-
+logger = log.bootstrapLogger
 
 def get_descriptor_from_manager(name, package_manager=None):
     """

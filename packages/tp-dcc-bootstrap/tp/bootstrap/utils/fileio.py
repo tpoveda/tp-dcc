@@ -16,7 +16,9 @@ from collections import OrderedDict
 import yaml
 import yamlordereddictloader
 
-logger = logging.getLogger('tp-dcc-bootstrap')
+from tp.bootstrap import log
+
+logger = log.bootstrapLogger
 
 # update yaml to properly support the storage of OrderedDicts
 yaml.add_representer(OrderedDict, lambda self, data:  self.represent_mapping('tag:yaml.org,2002:map', data.items()))

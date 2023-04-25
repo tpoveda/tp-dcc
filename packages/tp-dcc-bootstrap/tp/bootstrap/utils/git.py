@@ -7,12 +7,13 @@ Module that contains custom GitPython wrappers and helper functions
 
 import os
 import git
-import logging
+
+from tp.bootstrap import log
 
 from tp.bootstrap.utils import process
 from tp.bootstrap.core import exceptions
 
-logger = logging.getLogger('tp-dcc-bootstrap')
+logger = log.bootstrapLogger
 
 
 def has_git():

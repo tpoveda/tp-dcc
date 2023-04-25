@@ -10,17 +10,16 @@ import re
 import sys
 import copy
 import shutil
-import logging
 from distutils import version
 
 import six
 
+from tp.bootstrap import log
 from tp.bootstrap import commands
 from tp.bootstrap.utils import fileio, env
-from tp.bootstrap.core import consts, exceptions
+from tp.bootstrap.core import consts
 
-logger = logging.getLogger('tp-dcc-bootstrap')
-
+logger = log.bootstrapLogger
 
 class Package(object):
     def __init__(self, package_path=None):

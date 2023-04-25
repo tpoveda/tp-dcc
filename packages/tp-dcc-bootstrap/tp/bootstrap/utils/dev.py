@@ -7,10 +7,10 @@ Module that bootstrap development code
 
 import os
 import sys
-import logging
 
-logger = logging.getLogger('tp-dcc-bootstrap')
+from tp.bootstrap import log
 
+logger = log.bootstrapLogger
 
 def reload_modules():
     """

@@ -5,11 +5,12 @@
 Module that contains tpDcc package command implementation
 """
 
-import logging
 import os
 import subprocess
 
-logger = logging.getLogger('tp-dcc-bootstrap')
+from tp.bootstrap import log
+
+logger = log.bootstrapLogger
 
 
 class PackageCommand(object):

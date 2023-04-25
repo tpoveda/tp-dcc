@@ -8,10 +8,12 @@ Initialization module for tp-dcc-bootstrap
 import os
 import sys
 import inspect
-import logging.config
 from distutils.util import strtobool
 
+from tp.bootstrap import log
 from tp.bootstrap.utils import env
+
+logger = log.bootstrapLogger
 
 
 def root_path():
@@ -126,33 +128,3 @@ def shutdown():
 
     current_env.resolver.shutdown()
     manager.set_current_package_manager(None)
-
-
-def create_logger():
-    """
-    Creates tool logger.
-
-    :return: tool logger
-    :rtype: logging.Logger
-    """
-
-    # logger_directory = os.path.normpath(os.path.join(os.path.expanduser('~'), 'tp', 'logs'))
-    # if not os.path.isdir(logger_directory):
-    #     os.makedirs(logger_directory)
-    #
-    # logging_config = os.path.normpath(os.path.join(os.path.dirname(__file__), '__logging__.ini'))
-    #
-    # # TODO: Using config makes other loggers not to work within Maya
-    # logging.config.fileConfig(logging_config, disable_existing_loggers=False)
-    logger = logging.getLogger('tp-dcc-bootstrap')
-    dev = bool(strtobool(os.getenv('TPDCC_DEV', 'False')))
-    # if dev:
-    #     logger.setLevel(logging.DEBUG)
-    #     for handler in logger.handlers:
-    #         handler.setLevel(logging.DEBUG)
-
-    return logger
-
-
-# force logger creation during module import
-logger = create_logger()

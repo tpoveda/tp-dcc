@@ -5,11 +5,10 @@
 Module that contains DCC tools package manager command to install packages
 """
 
-import logging
-
+from tp.bootstrap import log
 from tp.bootstrap.core import exceptions, command
 
-logger = logging.getLogger('tp-dcc-bootstrap')
+logger = log.bootstrapLogger
 
 
 class InstallPackage(command.PackageCommand):
