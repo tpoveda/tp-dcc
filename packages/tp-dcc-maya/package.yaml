@@ -1,0 +1,12 @@
+name: 'tp-dcc-maya'
+version: '1.0.0'
+required: True
+author: 'Tomas Poveda'
+authorEmail: 'tpovedatd@gmail.com'
+description: 'Maya package for tpDcc Tools framework'
+displayName: 'tpDcc Maya'
+environment:
+  PYTHONPATH:
+    - '{self}'
+commands:
+  - '{self}/tp/startup/tpmaya.py'
