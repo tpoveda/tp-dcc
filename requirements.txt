@@ -1,3 +1,9 @@
 # ===================================================================
 # tp-dcc requirements file
 # ===================================================================
+
+PyYAML
+yamlordereddictloader
+six
+GitPython
+sentry-sdk
