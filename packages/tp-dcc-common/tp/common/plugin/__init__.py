@@ -266,7 +266,8 @@ class PluginFactory(object):
                                 item.ROOT = path_to_register
                                 item.PATH = file_path
                                 item.MODULE = module_to_inspect
-                                self._plugins.append(item)
+                                self._plugins.setdefault(package_name, list())
+                                self._plugins[package_name].append(item)
                                 plugins_found.append(item)
             except Exception:
                 logger.debug('', exc_info=True)
