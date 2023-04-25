@@ -16,6 +16,25 @@ tp-dcc
 .. image:: https://img.shields.io/badge/Maya-2023-green?logo=autodesk
     :target: https://www.autodesk.com/
 
+.. image:: https://img.shields.io/badge/3dsMax-2022-orange?logo=autodesk
+    :target: https://www.autodesk.com/
+
+.. image:: https://img.shields.io/badge/3dsMax-2023-orange?logo=autodesk
+    :target: https://www.autodesk.com/
+
+.. image:: https://img.shields.io/badge/MoBu-2022-pink?logo=autodesk
+    :target: https://www.autodesk.com/
+
+.. image:: https://img.shields.io/badge/MoBu-2023-pink?logo=autodesk
+    :target: https://www.autodesk.com/
+
+.. image:: https://img.shields.io/static/v1?message=UE5&color=000000&logo=unrealengine&logoColor=white&label=""
+    :target: https://www.unreal.com/
+
+.. image:: https://img.shields.io/static/v1?message=Houdini&color=FF4713&logo=Houdini&logoColor=FFFFFF&label=""
+    :target: https://www.houdini.com/
+
+
 ============================================================
 
 
