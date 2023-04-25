@@ -43,7 +43,7 @@ class CorePreferenceInterface(preference.PreferenceInterface):
 		"""
 
 		user_preferences_path = path.clean_path(os.path.normpath(str(self._manager.root('user_preferences'))))
-		if user_preferences_path != '~/tpdcc_preferences':
+		if user_preferences_path != '~/tp-dcc/preferences':
 			return user_preferences_path
 
-		return path.clean_path(os.path.normpath(os.path.expanduser('~/tpdcc_preferences')))
+		return path.clean_path(os.path.normpath(os.path.expanduser('~/tp-dcc/preferences')))

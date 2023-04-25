@@ -369,14 +369,15 @@ class MetaRegistry(object):
 	@classmethod
 	def register_by_env(cls, env_name):
 		"""
-		Registers a set of meta classes based on the given environment variable.
+		Registers a set of metaclasses based on the given environment variable.
 
 		:param str env_name: environment variable name.
 		"""
 
 		environment_paths = os.getenv(env_name)
 		if environment_paths is None:
-			raise ValueError('No environment variable with name "{}" exists!'.format(env_name))
+			logger.info('No environment variable with name "{}" exists!'.format(env_name))
+			return
 
 		environment_paths = environment_paths.split(os.pathsep)
 

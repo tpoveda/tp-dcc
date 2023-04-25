@@ -14,7 +14,7 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 
 from tp.core import log, exceptions, dcc
 from tp.common.python import decorators, osplatform
-from tp.common.plugin import factory
+from tp.common import plugin
 
 logger = log.tpLogger
 
@@ -240,8 +240,8 @@ class BaseCommandRunner(object):
     def __init__(self):
         self._undo_stack = deque()
         self._redo_stack = deque()
-        self._manager = factory.PluginFactory(DccCommand, plugin_id='id')
-        self._manager.register_paths_from_env_var('TPDCC_COMMAND_LIB', package_name='tpDcc')
+        self._manager = plugin.PluginFactory(DccCommand, plugin_id='id')
+        self._manager.register_paths_from_env_var('TPDCC_COMMAND_LIB', package_name='tp-dcc')
 
     @property
     def undo_stack(self):
