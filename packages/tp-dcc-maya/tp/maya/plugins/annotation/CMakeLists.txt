@@ -9,13 +9,16 @@ file(GLOB_RECURSE PLUGIN_HEADERS ${PLUGIN_HEADERS_DIR}/*.h ${PLUGIN_HEADERS_DIR}
 set(MAYA_VERSIONS "2022" "2023")
 
 foreach(VERSION_FOUND IN LISTS MAYA_VERSIONS)
-
+    
     set(Maya_FIND_VERSION_EXACT 1)
 	set(Maya_FIND_VERSION ${VERSION_FOUND})
     find_package(Maya REQUIRED)
 
+    # OpenGL is required
+    find_package(OpenGL REQUIRED)
+
     # Plugin Name and folder
-    set(PLUGIN_NAME tpHelloWorld_maya${MAYA_VERSION})
+    set(PLUGIN_NAME tpAnnotation_maya${MAYA_VERSION})
     set(PLUGINS_FOLDER Plugins/Maya/${MAYA_VERSION})
 
     # Setup Plugin project
@@ -25,6 +28,9 @@ foreach(VERSION_FOUND IN LISTS MAYA_VERSIONS)
     target_include_directories(${PLUGIN_NAME} PUBLIC ${MAYA_INCLUDE_DIRS})
     target_link_directories(${PLUGIN_NAME} PRIVATE ${MAYA_LIBRARIES})
     target_link_libraries(${PLUGIN_NAME} PRIVATE ${MAYA_LIBRARIES})
+    target_include_directories(${PLUGIN_NAME} PUBLIC ${OPENGL_INCLUDE_DIRS})
+    target_link_libraries(${PLUGIN_NAME} PRIVATE ${OPENGL_LIBRARIES})
+
 
     # this is a macro defined in FindMaya that sets up our plugin with standard Maya build settings
     MAYA_SET_PLUGIN_PROPERTIES(${PLUGIN_NAME})
