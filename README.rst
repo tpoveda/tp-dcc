@@ -55,46 +55,26 @@ DCC agnostic framework that allows the creation of tools that can work under any
 Packages
 ============================================================
 
-tp-dcc-bootstrap
------------------
-
-Handles the initialization of the tpDcc framework and all their packages.
-
-tp-dcc-common
------------------
-
-Shared common libraries used by tpDcc.
-
-Following libraries are available:
-
-- **python**: Collection of Python utilities modules to work with Python and DCCs.
-- **qt**: Collection of Python utilities modules to work with PySide/PyQt and DCCs
-- **resources**: Resources used by tpDcc framework. Also contains functionality to load resources for apps.
-- **math**: Library that contains math related classes and functions for Python.
-- **plugin**: Library that contains classes to implement plugin architecture in Python.
-- **composite**: Library that contains classes to implement composite architecture in Python.
-- **naming**: Library that allows to manage nomenclature using rules and tokens.
-- **svg**: Library to handle SVG files in Python.
-- **psd**: Library that contains functions to interact with Photoshop files.
-- **unittests**: Library to manage unit tests in a DCC agnostic way.
-- **nodegraph**: Library to create node graphs in a DCC agnostic way.
-
-tp-dcc-preferences
------------------
-
-Hello World
-
-tp-dcc-core
------------------
-
-Collection of Python modules to interact with DCCs Python APIs in a DCC agnostic way.
-
-tp-dcc-maya
------------------
-
-Maya interface for tpDcc framework.
-
-Contains a lot of utilities functions and classes to work with Maya Python APIs (cmds and OpenMaya).
+* **tp-dcc-bootstrap**: Package that handles the initialization of the tp-dcc framework and all their packages.
+* **tp-dcc-common**: Shared common libraries used by tp-dcc framework. Following libraries are available:
+    - **python**: Collection of Python utilities modules to work with Python and DCCs.
+    - **qt**: Collection of Python utilities modules to work with PySide/PyQt and DCCs
+    - **resources**: Resources used by tpDcc framework. Also contains functionality to load resources for apps.
+    - **math**: Library that contains math related classes and functions for Python.
+    - **plugin**: Library that contains classes to implement plugin architecture in Python.
+    - **composite**: Library that contains classes to implement composite architecture in Python.
+    - **naming**: Library that allows to manage nomenclature using rules and tokens.
+    - **svg**: Library to handle SVG files in Python.
+    - **psd**: Library that contains functions to interact with Photoshop files.
+    - **nodegraph**: Library to create node graphs in a DCC agnostic way.
+* **tp-dcc-preferences**: Package that handles tpDcc package preferences
+* **tp-dcc-core**: Package that contains a collection of Python modules to interact with DCCs Python APIs in a DCC agnostic way.
+* **tp-dcc-standalone**: Standalone interface for tpDcc framework.
+* **tp-dcc-maya**: Maya interface for tpDcc framework. Package that contains a lot of utilities functions and classes to work with Maya Python APIs (cmds and OpenMaya).
+* **tp-dcc-unreal**: Unreal Engine interface for tpDcc framework. Package that contains a lot of utilities functions and classes to work with Unreal Python API (unreal).
+* **tp-dcc-max**: 3ds Max interface for tpDcc framework. Package that contains a lot of utilities functions and classes to work with 3ds Max Python APIs (pymxs and MaxPlus).
+* **tp-dcc-mobu**: MotionBuilder interface for tpDcc framework. Package that contains a lot of utilities functions and classes to work with MotionBuilder Python API (pyfbsdk).
+* **tp-dcc-houdini**: Houdini interface for tpDcc framework. Package that contains a lot of utilities functions and classes to work with Houdini Python API (hou).
 
 
 Requirements
