@@ -12,3 +12,4 @@ six
 GitPython
 sentry-sdk
 comtypes
+numpy
