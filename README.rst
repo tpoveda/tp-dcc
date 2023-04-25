@@ -57,6 +57,7 @@ Packages
 
 * **tp-dcc-bootstrap**: Package that handles the initialization of the tp-dcc framework and all their packages.
 * **tp-dcc-common**: Shared common libraries used by tp-dcc framework. Following libraries are available:
+
     - **python**: Collection of Python utilities modules to work with Python and DCCs.
     - **qt**: Collection of Python utilities modules to work with PySide/PyQt and DCCs
     - **resources**: Resources used by tpDcc framework. Also contains functionality to load resources for apps.
