@@ -1,0 +1,16 @@
+#  Configuration file for tp-dcc-tools-renamer
+
+# List of categories for renamer
+categories: []
+
+# List of DCC nodes that should be discarded during renaming process
+nodes_to_discard: []
+
+# List of DCC types that should be discarded during renaming process
+types_to_discard: []
+
+# List of default suffixes
+suffixes: []
+
+# List of default auto suffixes
+auto_suffixes: []
