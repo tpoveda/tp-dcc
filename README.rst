@@ -7,6 +7,9 @@ tp-dcc
 .. image:: https://img.shields.io/badge/Windows-blue?logo=windows
     :target: https://www.python.org/
 
+.. image:: https://img.shields.io/badge/code_style-pep8-blue
+    :target: https://www.python.org/dev/peps/pep-0008/
+
 ============================================================
 
 DCC agnostic framework that allows the creation of tools that can work under any DCC that supports Python. The framework contains tools that can be interesting for all people using a specific DCC: nomenclature manager, renamer, etc.
@@ -21,3 +24,36 @@ DCC agnostic framework that allows the creation of tools that can work under any
 * Complete Qt style/theme manager.
 * DCC agnostic Python based unit test framework.
 * And much more ...
+
+
+Packages
+============================================================
+
+* **tp-dcc-bootstrap**: Handles the initialization of the tpDcc framework and all their packages.
+
+Requirements
+============================================================
+
+* Make sure **Python 3.X** is installed in your machine.
+
+    .. note::
+        Scripts expect to find Python executables in their default locations:
+            * **Python 3**: C:\Python3X
+
+        You can edit **setup_venv_py.bat** if you want to use custom Python installation directory.
+
+* Make sure **virtualenv** is installed:
+
+      .. code-block::
+
+            pip install virtualenv
+
+
+* Make **Git** client is installed : https://git-scm.com/
+
+How to use
+============================================================
+
+1. Run **setup_venv_py.bat**: to create virtual environment for Python 3.
+
+2. Execute **tpdcc_main.py** in your favorite Python DCC editor to load tpDcc framework.
