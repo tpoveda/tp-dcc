@@ -1,0 +1,13 @@
+name: 'tp-dcc-preferences'
+version: '1.0.0'
+required: True
+author: 'Tomas Poveda'
+authorEmail: 'tpovedatd@gmail.com'
+description: 'Package that handles tpDcc package preferences'
+displayName: 'tpDcc Preferences'
+environment:
+  PYTHONPATH:
+    - '{self}'
+    - '{self}/preferences'
+commands:
+  - '{self}/tp/startup/preferences.py'

@@ -1,0 +1,5 @@
+settings:
+  menuName: "tpDcc Framework"
+  loadShelfAtStartup: true
+  default: "tpDccFramework"
+  isActiveAtStartup: false
