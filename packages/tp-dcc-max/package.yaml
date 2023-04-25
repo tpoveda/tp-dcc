@@ -1,0 +1,10 @@
+name: 'tp-dcc-max'
+version: '1.0.0'
+required: True
+author: 'Tomas Poveda'
+authorEmail: 'tpovedatd@gmail.com'
+description: '3ds Max package for tpDcc Tools framework'
+displayName: 'tpDcc 3ds Max'
+environment:
+  PYTHONPATH:
+    - '{self}'
