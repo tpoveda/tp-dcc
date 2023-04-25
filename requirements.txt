@@ -2,8 +2,13 @@
 # tp-dcc requirements file
 # ===================================================================
 
+git+https://github.com/matiascodesal/Qt.py-stubs.git
+sphinx
+sphinx_rtd_theme
 PyYAML
+metayaml
 yamlordereddictloader
 six
 GitPython
 sentry-sdk
+comtypes
