@@ -40,7 +40,7 @@ def startup(project=None, force_new_scene=True, dev=None):
     # register environment variables
     os.environ['TPDCC_ENV_DEV'] = 'True'
     os.environ['TPDCC_TOOLS_ROOT'] = os.environ.get(
-        'TPDCC_TOOLS_ROOT', None) or r'D:\tools\dev\tp-dcc\packages\tp-dcc-bootstrap'
+        'TPDCC_TOOLS_ROOT', None) or r'E:\tools\dev\tp-dcc\packages\tp-dcc-bootstrap'
 
     # make sure to update sys.path so tpDcc Tools package manager an dependencies are available
     root_path = os.environ['TPDCC_TOOLS_ROOT']

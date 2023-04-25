@@ -23,8 +23,6 @@ class MayaLogHandler(logging.Handler):
 
 		message = self.format(record)
 
-		print(message)
-
 		if record.levelname == 'WARNING':
 			OpenMaya.MGlobal.displayWarning(message)
 		elif record.levelname in ('ERROR', 'CRITICAL'):
