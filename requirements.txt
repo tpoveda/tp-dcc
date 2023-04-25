@@ -13,3 +13,4 @@ GitPython
 sentry-sdk
 comtypes
 numpy
+natsort
