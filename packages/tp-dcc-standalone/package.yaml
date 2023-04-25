@@ -1,0 +1,10 @@
+name: 'tp-dcc-standalone'
+version: '1.0.0'
+required: True
+author: 'Tomas Poveda'
+authorEmail: 'tpovedatd@gmail.com'
+description: 'Standalone package for tpDcc Tools framework'
+displayName: 'tpDcc Standalone'
+environment:
+  PYTHONPATH:
+    - '{self}'
