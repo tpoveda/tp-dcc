@@ -1,0 +1,12 @@
+name: 'tp-dcc-common'
+version: '1.0.0'
+required: True
+author: 'Tomas Poveda'
+authorEmail: 'tpovedatd@gmail.com'
+description: 'Common package for tpDcc Tools framework'
+displayName: 'tpDcc Common'
+environment:
+  PYTHONPATH:
+    - '{self}'
+commands:
+  - '{self}/tp/startup/common.py'

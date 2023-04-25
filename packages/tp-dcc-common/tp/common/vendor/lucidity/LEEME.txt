@@ -1,0 +1,1 @@
+Custom version with support for Python 3 (https://gitlab.com/xiancg/lucidity/tree/Python37)
