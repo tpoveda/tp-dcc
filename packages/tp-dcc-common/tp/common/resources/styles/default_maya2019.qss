@@ -1,0 +1,18 @@
+/*
+ --------------------------------------------------------------------------
+ Default Style
+ --------------------------------------------------------------------------
+*/
+
+/* For Maya 2019 (and maybe prior versions) we need to force the setting of the background_color */
+* {
+    font-family: @font_family;
+    color: @primary_text_color;
+    background-color: @background_color;
+    font-size: @default_font_size@unit;
+    selection-color: @text_color_inverse;
+    /*selection-background-color: red;*/
+}
+
+#include unreal/unreal.qss
+#include tpdcc/tpdcc.qss

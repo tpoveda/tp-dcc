@@ -1,0 +1,12 @@
+/*
+ --------------------------------------------------------------------------
+ Balloon Widget
+ --------------------------------------------------------------------------
+*/
+
+BalloonDialog
+{
+    background-color: @background_in_color;
+    border-radius: 5px;
+    /*border: 1px solid @border_color;*/
+}

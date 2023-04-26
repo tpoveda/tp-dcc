@@ -1,0 +1,56 @@
+/*
+ --------------------------------------------------------------------------
+ Calendar Base Style
+ --------------------------------------------------------------------------
+*/
+
+QToolButton#qt_calendar_prevmonth
+{
+    qproperty-icon: url(@LEFT_ICON);
+}
+
+QToolButton#qt_calendar_nextmonth
+{
+    qproperty-icon: url(@RIGHT_ICON);
+}
+
+QToolButton#qt_calendar_monthbutton
+{
+    padding-right: 20px;
+}
+
+QToolButton#qt_calendar_yearbutton
+{
+    padding-right: 20px;
+}
+
+QToolButton#qt_calendar_monthbutton::menu-indicator
+{
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    right: 0;
+    width: 10px;
+}
+
+QCalendarWidget QWidget
+{
+  alternate-background-color: @BLACK_GRAY_COLOR;
+}
+
+#qt_calendar_calendarview
+{
+    background: @BLACK_DARK_COLOR;
+}
+
+#qt_calendar_navigationbar
+{
+    background: @BLACK_DARK_COLOR;
+}
+
+QCalenderWidget > QToolButton
+{
+    icon-size: 14px, 14px;
+    width: 16px;
+    height: 16px;
+    background: @BLACK_GRAY_COLOR;
+}

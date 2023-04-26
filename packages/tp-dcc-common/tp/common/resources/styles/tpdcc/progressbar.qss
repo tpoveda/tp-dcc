@@ -1,0 +1,38 @@
+/*
+ --------------------------------------------------------------------------
+ ProgressBar Default Style
+ --------------------------------------------------------------------------
+*/
+
+BaseProgressBar {
+border: 1px solid transparent;
+border-radius: 3px;
+background: @sub_background_color;
+}
+
+BaseProgressBar::chunk
+{
+    min-height: 12px;
+    max-height: 12px;
+    border-radius: 5px;
+}
+
+BaseProgressBar[theme_status=error]::chunk
+{
+    background-color: @error_6;
+}
+
+BaseProgressBar[theme_status=success]::chunk
+{
+    background-color: @success_6;
+}
+
+BaseProgressBar[theme_status=warning]::chunk
+{
+    background-color: @warning_6;
+}
+
+BaseProgressBar[theme_status=primary]::chunk
+{
+    background-color: @accent_color;
+}

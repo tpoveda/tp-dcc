@@ -1,0 +1,139 @@
+/*
+ --------------------------------------------------------------------------
+ PushButton Base Style
+ --------------------------------------------------------------------------
+*/
+
+
+QPushButton
+{
+    background-color: @BLACK_GRAY_COLOR;
+    /*height: 20px;*/
+    padding-bottom: @ONE_PIXELpx;
+    border-radius: @ROUND_SIZEpx;
+    border: @ONE_PIXELpx solid black;
+}
+
+QPushButton:hover,
+QDialogButtonBox QPushButton:hover
+{
+    background-color: @GRAY_DAVYS_COLOR;
+}
+
+QPushButton:checked,
+QDialogButtonBox QPushButton:checked
+{
+    color: white;
+    background-color: @BLUE_DENIM_COLOR;
+}
+
+QPushButton:checked:hover,
+QDialogButtonBox QPushButton:checked:hover
+{
+    background-color: @BLUE_BRIGHT_COLOR;
+}
+
+QPushButton:disabled,
+QDialogButtonBox QPushButton:disabled
+{
+    color: @GRAY_LIGHT_COLOR;
+    background-color: @BLACK_GRAY_COLOR;
+    border-style: transparent;
+}
+
+QPushButton:flat
+{
+    background-color: transparent;
+    color: @GRAY_WHITE_COLOR;
+    border-style: transparent;
+}
+
+QPushButton:flat:hover
+{
+    color: white;
+    background-color: @BLACK_GRAY_COLOR;
+}
+
+QPushButton:flat:disabled
+{
+    color: @GRAY_DAVYS_COLOR;
+}
+
+/*OLD STYLE*/
+
+/*QPushButton*/
+/*{*/
+/*    background-color: @BUTTON_BACKGROUND_COLOR;*/
+/*    border-radius: @BUTTON_BORDER_RADIUS@UNIT;*/
+/*    border: @ONE_PIXELpx solid @BORDER_COLOR;*/
+/*    color: @BUTTON_TEXT_COLOR;*/
+/*    padding: @BUTTON_PADDINGpx;*/
+/*    font-size: @DEFAULT_FONT_SIZEpx;*/
+/*}*/
+
+/*QPushButton:checked*/
+/*{*/
+/*    background-color: @ACCENT_COLOR_9;*/
+/*}*/
+
+/*QDialogButtonBox QPushButton:hover*/
+/*{*/
+/*    color: @INACTIVE_TEXT_COLOR;*/
+/*    background-color: @DISABLED_COLOR;*/
+/*    border: 0px;*/
+/*}*/
+
+/*QPushButton:hover*/
+/*{*/
+/*    background-color: @accent_color_5;*/
+/*    border-bottom: solid @accent_color_3;*/
+/*    border-width: 0px 0px 2px 0px;*/
+/*    padding-bottom: 2*DPIpx;*/
+/*}*/
+
+/*QPushButton:hover,*/
+/*QDialogButtonBox QPushButton:hover*/
+/*{*/
+/*    background-color: @BUTTON_HOVER_COLOR;*/
+/*    color: @ACCENT_COLOR_5;*/
+/*    border: @ONE_PIXELpx solid @ACCENT_COLOR;*/
+/*    background-color: @ACCENT_COLOR_5;*/
+/*    border-bottom: solid @ACCENT_COLOR_3;*/
+/*    border-width: 0px 0px @TWO_PIXELSpx 0px;*/
+/*}*/
+
+/*QPushButton:pressed,*/
+/*QDialogButtonBox QPushButton:pressed*/
+/*{*/
+/*    border: none;*/
+/*    background-color: @BUTTON_PRESS_COLOR;*/
+/*    background-color: @ACCENT_COLOR_7;*/
+/*    padding-bottom: @ONE_PIXELpx;*/
+/*}*/
+
+/*QPushButton:checked:hover*/
+/*{*/
+/*    background-color: @BUTTON_PRESS_COLOR;*/
+/*    color: @ACCENT_COLOR_5;*/
+/*    border: @ONE_PIXELpx solid @ACCENT_COLOR;*/
+/*}*/
+
+/*QPushButton:disabled,*/
+/*QDialogButtonBox QPushButton:disabled*/
+/*{*/
+/*        color: @INACTIVE_TEXT_COLOR;*/
+/*        background-color: @DISABLED_COLOR;*/
+/*}*/
+
+/*QPushButton:pressed*/
+/*{*/
+/*    background-color: @accent_color_7;*/
+/*    border-bottom: 0px solid @accent_color_9;*/
+/*    border-width: 0px 0px 0px 0px;*/
+/*    padding-bottom: 1*DPIpx;*/
+/*}*/
+
+/*QPushButton:disabled*/
+/*{*/
+/*    background: @disable_color;*/
+/*}*/

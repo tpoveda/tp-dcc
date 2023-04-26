@@ -1,0 +1,57 @@
+/*
+ --------------------------------------------------------------------------
+ Splitter Base Style
+ --------------------------------------------------------------------------
+*/
+
+/*This completely breaks the style in some DCCs such as Maya 2018.*/
+
+/*QSplitter::handle:horizontal*/
+/*{*/
+/*    width:3px;*/
+/*    background-color: qlineargradient(*/
+/*        x1: 0, y1: 0, x2: 0, y2: 1,*/
+/*        stop: 0  @MAIN_BACKGROUND_COLOR, stop: 0.5 @BORDER_COLOR*/
+/*        stop: 0.5 @BORDER_COLOR stop: 1 @MAIN_BACKGROUND_COLOR);*/
+/*}*/
+
+/*QSplitter::handle:vertical*/
+/*{*/
+/*    height:3px;*/
+/*    background-color: qlineargradient(*/
+/*    x1: 0, y1: 0, x2: 1, y2: 0,*/
+/*    stop: 0  @MAIN_BACKGROUND_COLOR, stop: 0.5 @BORDER_COLOR*/
+/*    stop: 0.5 @BORDER_COLOR stop: 1 @MAIN_BACKGROUND_COLOR);*/
+/*}*/
+
+
+/*QSplitter::handle*/
+/*{*/
+/*    background-color: transparent;*/
+/*}*/
+
+/*QSplitter::handle:hover*/
+/*{*/
+/*    background-color: #88222222;*/
+/*}*/
+
+
+/*OLD STYLE*/
+
+/*QSplitter::handle*/
+/*{*/
+/*    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,*/
+/*                                stop: 0  @background_color, stop: 0.5 @border_color*/
+/*                                stop: 0.5 @border_color stop: 1 @background_color);*/
+/*    image: url(@splitter_icon);*/
+/*}*/
+
+/*QSplitter::handle:horizontal*/
+/*{*/
+/*    width: 2px;*/
+/*}*/
+
+/*QSplitter::handle:vertical*/
+/*{*/
+/*    height: 2px;*/
+/*}*/

@@ -1,0 +1,47 @@
+/*
+ --------------------------------------------------------------------------
+ tpDcc Style
+ --------------------------------------------------------------------------
+*/
+
+/*#include dialog.qss*/
+/*#include window.qss*/
+/*#include widget.qss*/
+/*#include label.qss*/
+/*#include buttons.qss*/
+/*#include toolbutton.qss*/
+/*#include menubutton.qss*/
+/*#include radiobutton.qss*/
+/*#include dragbutton.qss*/
+/*#include groupbox.qss*/
+/*#include menutabbutton.qss*/
+/*#include menulinebutton.qss*/
+/*#include menus.qss*/
+/*#include lineedit.qss*/
+/*#include combobox.qss*/
+/*#include slider.qss*/
+/*#include progressbar.qss*/
+/*#include switch.qss*/
+/*#include date.qss*/
+/*#include datetime.qss*/
+/*#include message.qss*/
+/*#include messagebox.qss*/
+/*#include avatar.qss*/
+/*#include badge.qss*/
+/*#include card.qss*/
+/*#include toast.qss*/
+/*#include searchfind.qss*/
+/*#include menutab.qss*/
+/*#include dragger.qss*/
+/*#include stack.qss*/
+/*#include toolset.qss*/
+/*#include snapshot.qss*/
+/*#include balloon.qss*/
+/*#include toolbar.qss*/
+/*#include statusbar.qss*/
+/*#include datalibrary.qss*/
+/*#include plugin.qss*/
+/*#include project.qss*/
+/*#include options.qss*/
+/*#include expandables.qss*/
+/*#include divider.qss*/

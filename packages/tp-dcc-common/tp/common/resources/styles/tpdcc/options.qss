@@ -1,0 +1,14 @@
+/*
+ --------------------------------------------------------------------------
+ Options Default Style
+ --------------------------------------------------------------------------
+*/
+
+/* We need this to be able to select option lists in UI*/
+OptionList {
+    margin-top: 4@unit;
+    margin-right: 4@unit;
+    margin-left: 4@unit;
+    margin-bottom: 4@unit;
+    border: 0px;
+}

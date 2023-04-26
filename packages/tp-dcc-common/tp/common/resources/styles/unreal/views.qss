@@ -1,0 +1,259 @@
+QTableView,
+QTreeView,
+QListView
+{
+    background-color: @BLACK_DARK_COLOR;
+}
+
+QTableView::item,
+QTreeView::item,
+QListView::item
+{
+    color: @GRAY_WHITE_COLOR;
+}
+
+QTableView::item::selected,
+QTreeView::item::selected,
+QListView::item::selected
+{
+    selection-color: white;
+    selection-background-color: @BLUE_BRIGHT_COLOR;
+}
+
+QTableView::item::selected:focus,
+QTreeView::item::selected:focus,
+QListView::item::selected:focus
+{
+    background-color: @BLUE_BRIGHT_COLOR;
+}
+
+QTableView::indicator:checked,
+QTreeView::indicator:checked,
+QListView::indicator:checked
+{
+    image: url(@CHECK_SVG_ICON);
+}
+
+QTableView::indicator:unchecked,
+QTreeView::indicator:unchecked,
+QListView::indicator:unchecked
+{
+    image: url(@UNCHECK_SVG_ICON);
+}
+
+QHeaderView::section
+{
+    background-color: @BLACK_JET_COLOR;
+    padding-left: 5px;
+    color: @GRAY_WHITE_COLOR;
+    border: none;
+}
+
+QHeaderView::section::horizontal
+{
+    border-left: 1px solid @BLACK_DARK_COLOR;
+}
+
+QHeaderView::section::vertical
+{
+    border-top: 1px solid @BLACK_DARK_COLOR;
+}
+
+QHeaderView::section:hover
+{
+    background-color: @BLACK_GRAY_COLOR;
+}
+
+QTreeView::branch:closed:has-children
+{
+    image: url(@RIGHT_TRIANGLE_SVG_ICON);
+}
+
+QTreeView::branch:closed:has-children:hover
+{
+    image: url(@RIGHT_TRIANGLE_WHITE_SVG_ICON);
+}
+
+QTreeView::branch:open:has-children
+{
+    image: url(@DOWN_TRIANGLE_SVG_ICON);
+}
+
+QTreeView::branch:open:has-children:hover
+{
+    image: url(@DOWN_TRIANGLE_WHITE_SVG_ICON);
+}
+
+QTableWidget QTableCornerButton::section
+{
+    background-color: @BLACK_JET_COLOR;
+}
+
+
+/*OLD STYLE*/
+
+/*QAbstractItemView::separator*/
+/*{*/
+/*    height: 0px;*/
+/*    padding: 0px 0px 0px 0px;*/
+/*    background-color: transparent;*/
+/*}*/
+
+/*QAbstractItemView::item:hover*/
+/*{*/
+/*    background-color: @accent_color_5;*/
+/*}*/
+
+/*!* style the sort indicator *!*/
+/*QHeaderView::up-arrow*/
+/*{*/
+/*    image: url(@up_icon);*/
+/*}*/
+
+/*QHeaderView::down-arrow*/
+/*{*/
+/*    image: url(@down_icon);*/
+/*}*/
+
+/*QHeaderView::section*/
+/*{*/
+/*    font: 12*DPIpx;*/
+/*    !*height: 18*DPIpx;*!*/
+/*    border: @one_pixel@unit solid @background_out_color;*/
+/*    padding: @four_pixels@unit;*/
+/*    background-color: @background_color;*/
+/*}*/
+
+/*QListWidget*/
+/*{*/
+/*    background-color: @background_in_color;*/
+/*    alternate-background-color: @background_out_color;*/
+/*}*/
+
+/*QListView::item:selected, QListView::item:selected:active*/
+/*{*/
+/*    color: @accent_color_7;*/
+/*    background-color: @background_out_color;*/
+/*    border-left:2px solid @accent_color;*/
+/*    padding-left:2px;*/
+/*}*/
+
+/*QListView::item:selected:hover, QListView::item:selected:active:hover*/
+/*{*/
+/*    color: @accent_color_2;*/
+/*    background-color: @background_in_color;*/
+/*    border-left:2px solid @accent_color;*/
+/*}*/
+
+/*QTreeView*/
+/*{*/
+/*    background-color: @background_color;*/
+/*    alternate-background-color: @background_in_color;*/
+/*    show-decoration-selected: 1;*/
+/*    font: 12*DPIpx;*/
+/*    color: @primary_text_color;*/
+/*    border: 0px;*/
+/*    outline: none;*/
+/*}*/
+
+/*QTreeView::item*/
+/*{*/
+/*    !*height: 24*DPIpx;*!*/
+/*    show-decoration-selected: 1; !* make the selection span the entire width of the view *!*/
+/*    !*padding:3*DPIpx;*!*/
+/*}*/
+
+/*QTreeView::item:focus*/
+/*{*/
+/*    border: 0px;*/
+/*    outline: none;*/
+/*}*/
+
+/*QTreeView::item:hover*/
+/*{*/
+/*    color: @text_color_inverse;*/
+/*    background-color: @accent_color_5;*/
+/*}*/
+
+/*QTreeView::item:selected*/
+/*{*/
+/*    background-color: @accent_color;*/
+/*}*/
+
+/*QTreeView::branch*/
+/*{*/
+/*    background-color: @background_color;*/
+/*}*/
+
+/*QTreeView::branch:has-children:!has-siblings:closed,*/
+/*QTreeView::branch:closed:has-children:has-siblings*/
+/*{*/
+/*    border-image: none;*/
+/*    image: url(@branch_closed_icon);*/
+/*}*/
+/*QTreeView::branch:open:has-children:!has-siblings,*/
+/*QTreeView::branch:open:has-children:has-siblings*/
+/*{*/
+/*    border-image: none;*/
+/*    image: url(@branch_open_icon);*/
+/*}*/
+
+/*QTreeView::branch:has-siblings:!adjoins-item*/
+/*{*/
+/*    border-image: url(@vline_icon) 0;*/
+/*}*/
+
+/*QTreeView::branch:has-siblings:adjoins-item*/
+/*{*/
+/*    border-image: url(@branch_more_icon) 0;*/
+/*}*/
+
+/*QTreeView::branch:!has-children:!has-siblings:adjoins-item {*/
+/*    border-image: url(@branch_end_icon) 0;*/
+/*}*/
+
+/*!*QTreeView::item:selected,*!*/
+/*!*QTreeView::item:selected:active {*!*/
+/*!*    !*color: ACCENT_FOREGROUND_COLOR;*!*!*/
+/*!*    !*background-color: ACCENT_COLOR_DARKER;*!*!*/
+/*!*    border-left:2px solid @accent_color;*!*/
+/*!*    padding-left:2px;*!*/
+/*!*}*!*/
+
+/*!*QTreeView::item:selected:hover,*!*/
+/*!*QTreeView::item:selected:active:hover*!*/
+/*!*{*!*/
+/*!*    !*color: ACCENT_FOREGROUND_COLOR;*!*!*/
+/*!*    background-color: @accent_color;*!*/
+/*!*    border-left:2px solid @accent_color;*!*/
+/*!*    padding-left:2px;*!*/
+/*!*}*!*/
+
+/*!*QTreeView::item:!selected:hover {*!*/
+/*!*    background-color: @accent_color;*!*/
+/*!*    margin-left:-3px;*!*/
+/*!*    border-left:0px;*!*/
+/*!*}*!*/
+
+
+/*ScriptOutlinerTree::branch:has-children:!has-siblings:closed,*/
+/*ScriptOutlinerTree::branch:closed:has-children:has-siblings*/
+/*{*/
+/*    border-image: none;*/
+/*    image: url(@python_closed_icon);*/
+/*}*/
+/*ScriptOutlinerTree::branch:open:has-children:!has-siblings,*/
+/*ScriptOutlinerTree::branch:open:has-children:has-siblings*/
+/*{*/
+/*    border-image: none;*/
+/*    image: url(@python_expand_icon);*/
+/*}*/
+
+/*QTableView */
+/*{*/
+/*    selection-background-color: TBL_TREE_ACTIVE_COLOR;*/
+/*    background-color: TBL_TREE_BG_COLOR;*/
+/*    alternate-background-color: TBL_TREE_ALT_COLOR;*/
+/*    gridline-color: TBL_TREE_GRID_COLOR;*/
+/*    outline: 0;*/
+/*}*/

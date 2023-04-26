@@ -1,0 +1,185 @@
+/*
+ --------------------------------------------------------------------------
+ Sizes Base Style
+ --------------------------------------------------------------------------
+*/
+
+QAbstractButton[theme_size="@tiny"],
+QAbstractSpinBox[theme_size="@tiny"],
+QComboBox[theme_size="@tiny"],
+QLineEdit[theme_size="@tiny"]
+{
+    font-size: @FONT_SIZE_SMALL@UNIT;
+    border-radius: @BORDER_RADIUS_SMALL@UNIT;
+    min-height: @TINY@UNIT;
+}
+
+QAbstractButton[theme_size="@small"],
+QAbstractSpinBox[theme_size="@small"],
+QComboBox[theme_size="@small"],
+QLineEdit[theme_size="@small"]
+{
+    font-size: @FONT_SIZE_SMALL@UNIT;
+    border-radius: @BORDER_RADIUS_SMALL@UNIT;
+    min-height: @SMALL@UNIT;
+}
+
+QAbstractButton[theme_size="@medium"],
+QAbstractSpinBox[theme_size="@medium"],
+QComboBox[theme_size="@medium"],
+QLineEdit[theme_size="@medium"]
+{
+    font-size: @FONT_SIZE_BASE@UNIT;
+    border-radius: @BORDER_RADIUS_BASE@UNIT;
+    min-height: @MEDIUM@UNIT;
+}
+
+QAbstractButton[theme_size="@large"],
+QAbstractSpinBox[theme_size="@large"],
+QComboBox[theme_size="@large"],
+QLineEdit[theme_size="@large"]
+{
+    font-size: @FONT_SIZE_LARGE@UNIT;
+    border-radius: @BORDER_RADIUS_LARGE@UNIT;
+    min-height: @LARGE@UNIT;
+}
+
+QAbstractButton[theme_size="@huge"],
+QAbstractSpinBox[theme_size="@huge"],
+QComboBox[theme_size="@huge"],
+QLineEdit[theme_size="@huge"]
+{
+    font-size: @FONT_SIZE_LARGE@UNIT;
+    border-radius: @BORDER_RADIUS_LARGE@UNIT;
+    min-height: @HUGE@UNIT;
+}
+
+QAbstractSpinBox[theme_size="@tiny"]::up-button
+{
+    width: 18px;
+    border-top-right-radius: @BORDER_RADIUS_SMALL@UNIT;
+}
+
+QAbstractSpinBox[theme_size="@tiny"]::down-button
+{
+    width: 18px;
+    border-bottom-right-radius: @BORDER_RADIUS_SMALL@UNIT;
+}
+
+QAbstractSpinBox[theme_size="@small"]::up-button
+{
+    width: 20px;
+    border-top-right-radius: @BORDER_RADIUS_SMALL@UNIT;
+}
+
+QAbstractSpinBox[theme_size="@small"]::down-button
+{
+    width: 20px;
+    border-bottom-right-radius: @BORDER_RADIUS_SMALL@UNIT;
+}
+
+QAbstractSpinBox[theme_size="@medium"]::up-button
+{
+    width: 24px;
+    border-top-right-radius: @BORDER_RADIUS_BASE@UNIT;
+}
+
+QAbstractSpinBox[theme_size="@medium"]::down-button
+{
+    width: 24px;
+    border-bottom-right-radius: @BORDER_RADIUS_BASE@UNIT;
+}
+
+QAbstractSpinBox[theme_size="@large"]::up-button
+{
+    width: 26px;
+    border-top-right-radius: @BORDER_RADIUS_LARGE@UNIT;
+}
+
+QAbstractSpinBox[theme_size="@large"]::down-button
+{
+    width: 26px;
+    border-bottom-right-radius: @BORDER_RADIUS_LARGE@UNIT;
+}
+
+QAbstractSpinBox[theme_size="@huge"]::up-button
+{
+    width: 28px;
+    border-top-right-radius: @BORDER_RADIUS_LARGE@UNIT;
+}
+
+QAbstractSpinBox[theme_size="@huge"]::down-button
+{
+    width: 28px;
+    border-bottom-right-radius: @BORDER_RADIUS_LARGE@UNIT;
+}
+
+QAbstractSpinBox[theme_size="@tiny"]::up-arrow
+{
+    image: url(@up_icon);
+    width: 6px;
+    height: 6px;
+}
+
+QAbstractSpinBox[theme_size="@tiny"]::down-arrow
+{
+    image: url(@DOWN_ICON);
+    width: 6px;
+    height: 6px;
+}
+
+QAbstractSpinBox[theme_size="@small"]::up-arrow
+{
+    image: url(@UP_ICON);
+    width: 8px;
+    height: 8px;
+}
+
+QAbstractSpinBox[theme_size="@small"]::down-arrow
+{
+    image: url(@DOWN_ICON);
+    width: 8px;
+    height: 8px;
+}
+
+QAbstractSpinBox[theme_size="@medium"]::up-arrow
+{
+    image: url(@UP_ICON);
+    width: 10px;
+    height: 10px;
+}
+
+QAbstractSpinBox[theme_size="@medium"]::down-arrow
+{
+    image: url(@DOWN_ICON);
+    width: 10px;
+    height: 10px;
+}
+
+QAbstractSpinBox[theme_size="@large"]::up-arrow
+{
+    image: url(@UP_ICON);
+    width: 12px;
+    height: 12px;
+}
+
+QAbstractSpinBox[theme_size="@large"]::down-arrow
+{
+    image: url(@DOWN_ICON);
+    width: 12px;
+    height: 12px;
+}
+
+QAbstractSpinBox[theme_size="@huge"]::up-arrow
+{
+    image: url(@UP_ICON);
+    width: 14px;
+    height: 14px;
+}
+
+QAbstractSpinBox[theme_size="@huge"]::down-arrow
+{
+    image: url(@DOWN_ICON);
+    width: 14px;
+    height: 14px;
+}

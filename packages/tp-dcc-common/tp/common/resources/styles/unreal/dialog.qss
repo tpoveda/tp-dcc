@@ -1,0 +1,22 @@
+/*
+ --------------------------------------------------------------------------
+ Dialog Base Style
+ --------------------------------------------------------------------------
+*/
+
+QDialog
+{
+    background-color: @MAIN_BACKGROUND_COLOR;
+    color: white;
+    font-family: "Roboto";
+}
+
+QDialogColor
+{
+    background-color: @MAIN_BACKGROUND_COLOR;
+}
+
+#centralwidget
+{
+    background-color: @BLACK_DARK_COLOR;
+}

@@ -1,0 +1,28 @@
+/*
+ --------------------------------------------------------------------------
+ QProgressBar Default Style
+ --------------------------------------------------------------------------
+*/
+
+QProgressBar
+{
+    border: 1@UNIT transparent @BORDER_COLOR;
+    border-radius: 3@UNIT;
+    background: @BLACK_DARK_COLOR;
+    color: @INVERSE_TEXT_COLOR;
+    height: 10px;
+}
+
+QProgressBar::chunk
+{
+    border-image: url(@PROGRESS_PATTERN_SVG_ICON) 0 0 0 0 repeat repeat;
+}
+
+/*OLD STYLE*/
+
+/*QProgressBar::chunk*/
+/*{*/
+/*    min-height: 12@UNIT;*/
+/*    max-height: 12@UNIT;*/
+/*    border-radius: 3@UNIT;*/
+/*}*/

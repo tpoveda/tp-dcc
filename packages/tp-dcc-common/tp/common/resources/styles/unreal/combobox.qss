@@ -1,0 +1,101 @@
+/*
+ --------------------------------------------------------------------------
+ ComboBox Base Style
+ --------------------------------------------------------------------------
+*/
+
+QComboBox
+{
+    color: @GRAY_WHITE_COLOR;
+    background-color: black;
+    height: 20px;
+    padding-left: 6px;
+    border-radius: @ROUND_SIZEpx;
+    border: 1px solid @BLACK_GRAY_COLOR;
+}
+
+QComboBox:hover
+{
+    border-color: @GRAY_DARK_COLOR;
+}
+
+QComboBox::drop-down
+{
+    border: none;
+    padding-right: 5px;
+}
+
+QComboBox::down-arrow
+{
+    image: url(@DOWN_ARROW_SVG_ICON);
+    width: 15px;
+}
+
+QComboBox::down-arrow:hover
+{
+    image: url(@DOWN_ARROW_WHITE_SVG_ICON);
+}
+
+/*OLD_STYLE*/
+
+/*QComboBox*/
+/*{*/
+/*    background-color: @COMBOBOX_BACKGROUND_COLOR;*/
+/*    border-radius: @WIDGET_ROUNDED_CORNERS;*/
+/*    font-size: @DEFAULT_FONT_SIZEpx;*/
+/*    padding: @TWO_PIXELSpx @THREE_PIXELSpx @TWO_PIXELSpx @FIVE_PIXELSpx;*/
+/*    min-width: 3em;*/
+/*    border: 0;*/
+/*}*/
+
+/*QComboBox QAbstractItemView*/
+/*{*/
+/*    background-color: @COMBOBOX_HOVER_BACKGROUND_COLOR;*/
+/*    selection-background-color: @TREE_ACTIVE_COLOR;*/
+/*}*/
+
+/*QComboBox:editable*/
+/*{*/
+/*}*/
+
+/*QComboBox:!editable, QComboBox::drop-down:editable*/
+/*{*/
+/*}*/
+
+/*QComboBox:on*/
+/*{*/
+/*}*/
+
+/*QComboBox:!editable:on, QComboBox::drop-down:editable:on*/
+/*{*/
+/*    background-color: @COMBOBOX_HOVER_BACKGROUND_COLOR;*/
+/*}*/
+
+/*QComboBox::drop-down*/
+/*{*/
+/*    width: @COMBOBOX_SIZEpx;*/
+/*    border: 0;*/
+/*    border-left: @COMBOBOX_LEFT_BORDERpx solid @ACCENT_COLOR_7;*/
+/*}*/
+
+/*QComboBox:hover*/
+/*{*/
+/*    background-color: @COMBOBOX_HOVER_BACKGROUND_COLOR;*/
+/*}*/
+
+/*QComboBox::down-arrow*/
+/*{*/
+/*    image: url('@COMBOBOX_ICON');*/
+/*    color: @MAIN_FOREGROUND_COLOR;*/
+/*    width: @COMBOBOX_ICON_SIZEpx;*/
+/*    height: @COMBOBOX_ICON_SIZEpx;*/
+/*}*/
+
+/*QComboBox::down-arrow:on*/
+/*{*/
+/*}*/
+
+/*QComboBox::disabled*/
+/*{*/
+/*    color: @INACTIVE_TEXT_COLOR;*/
+/*}*/

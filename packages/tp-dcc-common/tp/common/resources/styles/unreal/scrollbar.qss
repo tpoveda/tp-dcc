@@ -1,0 +1,162 @@
+/**/
+/* --------------------------------------------------------------------------*/
+/* Scrollbar Base Style*/
+/* --------------------------------------------------------------------------*/
+/**/
+
+QScrollBar
+{
+    background: @BLACK_DARK_COLOR;
+}
+
+QScrollBar:horizontal
+{
+    height: 11px;
+}
+
+QScrollBar:vertical
+{
+    width: 11px;
+}
+
+QScrollBar::add-page,
+QScrollBar::sub-page
+{
+    background: none;
+}
+
+QScrollBar::add-line,
+QScrollBar::sub-line
+{
+    border: none;
+    background: none;
+}
+
+QScrollBar:handle
+{
+    margin: 2px;
+    background: @GRAY_DAVYS_COLOR;
+    border-radius: @ROUND_SIZEpx;
+}
+
+QScrollBar:handle:hover
+{
+    background: @GRAY_LIGHT_COLOR;
+}
+
+
+/*QAbstractScrollArea*/
+/*{*/
+/*    background-color: transparent;*/
+/*    border: 1px solid @BORDER_COLOR;*/
+/*    border-radius: 4px;*/
+/*}*/
+
+/*QScrollArea*/
+/*{*/
+/*    background-color: transparent;*/
+/*    !*    border: none;*!*/
+/*}*/
+
+/*QScrollBar*/
+/*{*/
+/*    background-color: transparent;*/
+/*}*/
+
+/*QScrollBar:vertical,*/
+/*QScrollBar:horizontal*/
+/*{*/
+/*    background-color: @SCROLL_BAR_BACKGROUND_COLOR;*/
+/*    border: 1 solid transparent;*/
+/*    border-radius: 4*DPIpx;*/
+/*}*/
+
+/*QScrollBar:vertical*/
+/*{*/
+/*    width: 9*DPIpx;*/
+/*    margin: 0px 0px 32px 0px;       !*without this the scrollbar will appear transparent when using opacity effects*!*/
+/*}*/
+
+/*QScrollBar:horizontal*/
+/*{*/
+/*    height: 9*DPIpx;*/
+/*    margin: 0px 32px 0px 0px;       !*without this the scrollbar will appear transparent when using opacity effects*!*/
+/*}*/
+
+/*QScrollBar::add-page:horizontal,*/
+/*QScrollBar::sub-page:horizontal,*/
+/*QScrollBar::add-page:vertical,*/
+/*QScrollBar::sub-page:vertical {*/
+/*    border-radius: 4*DPIpx;*/
+/*    background-color: @SCROLL_BAR_BACKGROUND_COLOR;*/
+/*}*/
+
+/*QScrollBar::handle:horizontal,*/
+/*QScrollBar::handle:vertical*/
+/*{*/
+/*    border-radius: 3*DPIpx;*/
+/*    border: 0px solid transparent;*/
+/*    background-color: @SCROLL_BAR_COLOR;*/
+/*}*/
+
+/*QScrollBar::add-line:horizontal,*/
+/*QScrollBar::sub-line:horizontal*/
+/*{*/
+/*    subcontrol-origin: margin;*/
+/*    subcontrol-position: right center;*/
+/*    background: transparent;*/
+/*    width: 15*DPIpx;*/
+/*}*/
+
+/*QScrollBar::sub-line:horizontal*/
+/*{*/
+/*    right: 16*DPIpx;*/
+/*}*/
+
+/*QScrollBar::left-arrow:horizontal,*/
+/*QScrollBar::right-arrow:horizontal*/
+/*{*/
+/*    width: 9*DPIpx;*/
+/*    height: 9*DPIpx;*/
+/*    position: relative;*/
+/*    image: url(@LEFT_ICON);*/
+/*}*/
+
+/*QScrollBar::right-arrow:horizontal*/
+/*{*/
+/*    image: url(@RIGHT_ICON);*/
+/*}*/
+
+/*QScrollBar::add-line:vertical,*/
+/*QScrollBar::sub-line:vertical*/
+/*{*/
+/*    subcontrol-origin: margin;*/
+/*    subcontrol-position: center bottom;*/
+/*    background: transparent;*/
+/*    height: 15*DPIpx;*/
+/*}*/
+
+/*QScrollBar::sub-line:vertical*/
+/*{*/
+/*    bottom: 16*DPIpx;*/
+/*}*/
+
+/*QScrollBar::up-arrow:vertical,*/
+/*QScrollBar::down-arrow:vertical*/
+/*{*/
+/*    width: 9*DPIpx;*/
+/*    height: 9*DPIpx;*/
+/*    position: relative;*/
+/*    image: url(@UP_ICON)*/
+/*}*/
+
+/*QScrollBar::down-arrow:vertical*/
+/*{*/
+/*    image: url(@DOWN_ICON)*/
+/*}*/
+
+/*QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal,*/
+/*QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical*/
+/*{*/
+/*    background: none;*/
+/*}*/

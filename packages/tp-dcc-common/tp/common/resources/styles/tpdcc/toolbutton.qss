@@ -1,0 +1,80 @@
+/*
+ --------------------------------------------------------------------------
+ ToolButton Default Style
+ --------------------------------------------------------------------------
+*/
+
+BaseToolButton
+{
+    border: none;
+    padding: 0;
+    background-color: transparent;
+}
+
+BaseToolButton:hover
+{
+    color: @accent_color_5;
+}
+
+BaseToolButton:pressed
+{
+    color: @accent_color_7;
+}
+
+BaseToolButton:checked
+{
+    background-color: @accent_color_9;
+}
+
+BaseToolButton:disabled
+{
+    color: @disable_color;
+    background-color: @sub_background_color;
+    /*border: 2px dashed @disable_color;*/
+}
+
+BaseToolButton[theme_size="@tiny"]
+{
+    qproperty-iconSize: @tiny_icon@unit @tiny_icon@unit;
+}
+
+BaseToolButton[theme_size="@small"]
+{
+    qproperty-iconSize: @small_icon@unit @small_icon@unit;
+}
+
+BaseToolButton[theme_size="@medium"]
+{
+    qproperty-iconSize: @medium_icon@unit @medium_icon@unit;
+}
+
+BaseToolButton[theme_size="@large"]
+{
+    qproperty-iconSize: @large_icon@unit @large_icon@unit;
+}
+
+BaseToolButton[theme_size="@huge"]
+{
+    qproperty-iconSize: @huge_icon@unit @huge_icon@unit;
+}
+
+BaseToolButton[combine=horizontal]
+{
+    border-radius: 0;
+}
+
+BaseToolButton[combine=vertical]
+{
+    border-radius: 0;
+}
+
+BaseToolButton::menu-indicator
+{
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    right: 5px;
+    bottom: 5px;
+    height: 10px;
+    width: 10px;
+    image: url(@down_icon);
+}

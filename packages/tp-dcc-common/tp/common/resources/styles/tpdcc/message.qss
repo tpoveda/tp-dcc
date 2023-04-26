@@ -1,0 +1,79 @@
+/*
+ --------------------------------------------------------------------------
+ Message Default Style
+ --------------------------------------------------------------------------
+*/
+
+PopupMessage
+{
+    padding: 2px;
+}
+
+PopupMessage QFrame
+{
+    border: 0px;
+    border-radius: 15px;
+    border: 1px solid @border_color;
+    background-color: @sub_background_color;
+}
+
+PopupMessage QFrame *
+{
+    border-radius: 0px;
+    border: 0px;
+}
+
+BaseMessage
+{
+    border: 1px solid @border_color;
+    border-radius: 4px;
+}
+
+BaseMessage[theme_type=info]
+{
+    border-color: @info_3;
+    background-color: @info_1;
+}
+
+BaseMessage[theme_type=success]
+{
+    border-color: @success_3;
+    background-color: @success_1;
+}
+
+BaseMessage[theme_type=warning]
+{
+    border-color: @warning_3;
+    background-color: @warning_1;
+}
+
+BaseMessage[theme_type=error]
+{
+    border-color: @error_3;
+    background-color: @error_1;
+}
+
+BaseMessage[theme_size="@tiny"]
+{
+    max-height: @tiny@unit;
+}
+
+BaseMessage[theme_size="@small"]
+{
+    max-height: @small@unit;
+}
+
+BaseMessage[theme_size="@medium"]
+{
+    max-height: @medium@unit;
+}
+
+BaseMessage[theme_size="@large"]
+{
+    max-height: @large@unit;
+}
+
+BaseMessage[theme_size="@huge"]
+{
+    max-height: @huge@unit;
+}

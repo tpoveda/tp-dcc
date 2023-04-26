@@ -1,0 +1,34 @@
+/*
+ --------------------------------------------------------------------------
+ Badge Default Style
+ --------------------------------------------------------------------------
+*/
+
+Badge
+{
+    margin: 0;
+}
+
+Badge > QPushButton
+{
+    font-size:10px;
+    min-height:16px;
+    max-height:16px;
+    min-width:16px;
+    border-radius: 8px;
+    background-color: red;
+    border: none;
+    color: white;
+    font-weight:bold;
+    margin: 0;
+}
+
+Badge[dot=true] > QPushButton
+{
+    min-height:8px;
+    max-height:8px;
+    min-width:8px;
+    max-width:8px;
+    border-radius: 4px;
+    padding: 0 0;
+}

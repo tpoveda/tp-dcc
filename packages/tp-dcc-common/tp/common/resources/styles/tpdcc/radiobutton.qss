@@ -1,0 +1,51 @@
+/*
+ --------------------------------------------------------------------------
+ RadioButton Default Style
+ --------------------------------------------------------------------------
+*/
+
+BaseRadioButton
+{
+    spacing: 4px;
+}
+
+BaseRadioButton:disabled
+{
+    color: @disable_color;
+}
+
+BaseRadioButton::indicator
+{
+    width: 14px;
+    height: 14px;
+    border-radius: 8px;
+    border: 1px solid @border_color;
+    background-color: @background_in_color;
+}
+
+BaseRadioButton::indicator:disabled
+{
+    border: 1px solid @border_color;
+    background-color: @background_selected_color;
+}
+
+BaseRadioButton::indicator:hover
+{
+    border: 1px solid @accent_color_5;
+}
+
+BaseRadioButton::indicator:checked
+{
+    background-color: @accent_color;
+    image: url(@radio_checked_icon);
+}
+
+BaseRadioButton::indicator:checked:disabled
+{
+    background-color: @disable_color;
+}
+
+BaseRadioButton::indicator:unchecked
+{
+    image: url(@radio_unchecked_icon);
+}

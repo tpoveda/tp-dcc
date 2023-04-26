@@ -1,0 +1,178 @@
+/*
+ --------------------------------------------------------------------------
+ Tabs Base Style
+ --------------------------------------------------------------------------
+*/
+
+
+QTabWidget
+{
+    border: none;
+}
+
+QTabWidget:pane
+{
+    border: none;
+}
+
+QTabBar
+{
+    background-color: @BLACK_DARK_COLOR;
+}
+
+QTabBar::tab
+{
+    background-color: transparent;
+    padding: 5px;
+    border-top-left-radius: @ROUND_SIZEpx;
+    border-top-right-radius: @ROUND_SIZEpx;
+}
+
+QTabBar::tab:vertical:right
+{
+    border-top-right-radius: @ROUND_SIZEpx;
+    border-bottom-right-radius: @ROUND_SIZEpx;
+}
+
+QTabBar::tab:vertical:left
+{
+    border-top-left-radius: @ROUND_SIZEpx;
+    border-bottom-left-radius: @ROUND_SIZEpx;
+}
+
+QTabBar::tab:bottom,
+QTabBar::tab:top
+{
+    min-width: 60px;
+}
+
+QTabBar::tab:left,
+QTabBar::tab:right
+{
+    min-height: 60px;
+}
+
+QTabBar::tab:hover
+{
+    background-color: @BLACK_EERIE_COLOR;
+}
+
+QTabBar::tab:selected
+{
+    background-color: @BLACK_EERIE_COLOR;
+}
+
+QTabBar::indicator
+{
+    width: 5px;
+    height: 5px;
+}
+
+QTabBar::close-button
+{
+    image: url(@CROSS_SVG_ICON);
+}
+
+QTabBar::close-button:hover
+{
+    image: url(@CROSS_WHITE_SVG_ICON);
+}
+
+QTabBar::close-button:!selected
+{
+    image: none;
+}
+
+
+/*OLD STYLE*/
+
+/*QTabWidget::pane*/
+/*{*/
+/*    background-color: @sub_background_color;*/
+/*    border-top: 1px solid @background_out_color;*/
+/*}*/
+
+/*QTabWidget::pane*/
+/*{*/
+/*    background-color: @TAB_WIDGET_PANE_BACKGROUND_COLOR;*/
+/*    border: 1px solid @TAB_WIDGET_PANE_BACKGROUND_COLOR;*/
+/*    border-top-left-radius: @TWO_PIXELSpx;*/
+/*    border-top-right-radius: @TWO_PIXELSpx;*/
+/*    border-bottom-left-radius: @THREE_PIXELSpx;*/
+/*    border-bottom-right-radius: @THREE_PIXELSpx;*/
+/*}*/
+
+/*!* Important to allow show items located under the tab widget frame, for example with custom closable tab widgets *!*/
+/*!*NOTE: This makes other added widgets to lose its style defined background color. Not nice.*!*/
+/*QTabWidget QFrame*/
+/*{*/
+/*    background-color: transparent;*/
+/*}*/
+
+/*QTabBar, QTabBar::tab*/
+/*{*/
+/*    border: 0px;*/
+/*    background-color: @MAIN_BACKGROUND_COLOR;*/
+/*}*/
+
+/*QTabBar::tab*/
+/*{*/
+/*    border-top: @ONE_PIXELpx solid @BACKGROUND_IN_COLOR;*/
+/*    border: none;*/
+/*    border-bottom-style: none;*/
+/*    padding-left: 10*DPIpx;*/
+/*    padding-right: 10*DPIpx;*/
+/*    padding-top: @THREE_PIXELSpx;*/
+/*    padding-bottom: @TWO_PIXELSpx;*/
+/*    border-top-left-radius: @THREE_PIXELSpx;*/
+/*    border-top-right-radius: @THREE_PIXELSpx;*/
+/*    margin-right: -@ONE_PIXELpx;*/
+/*    margin-bottom: -@ONE_PIXELpx;*/
+/*}*/
+
+/*QTabBar::tab:selected*/
+/*{*/
+/*    border-top: @ONE_PIXELpx solid @ACCENT_COLOR;*/
+/*    color: white;*/
+/*    background-color: @TAB_BAR_TAB_SELECTED_BACKGROUND_COLOR;*/
+/*    padding-bottom: @FOUR_PIXELSpx;*/
+/*}*/
+
+/*QTabBar::tab:!selected*/
+/*{*/
+/*    color: @INVERSE_TEXT_COLOR;*/
+/*    background-color: @TAB_BAR_TAB_NOT_SELECTED_BACKGROUND_COLOR;*/
+/*    border-bottom: @ONE_PIXELpx solid @BORDER_COLOR;*/
+/*    border-bottom-style: solid;*/
+/*    margin-top: @FOUR_PIXELSpx;*/
+/*}*/
+
+/*QTabBar::tab:disabled*/
+/*{*/
+/*    border-top: @ONE_PIXELpx solid @BACKGROUND_IN_COLOR;*/
+/*    border: none;*/
+/*    border-bottom-style: none;*/
+/*    background-color: @DISABLED_COLOR;*/
+/*    padding-left: 10*DPIpx;*/
+/*    padding-right: 10*DPIpx;*/
+/*    padding-top: @THREE_PIXELSpx;*/
+/*    padding-bottom: @ONE_PIXELpx;*/
+/*    border-top-left-radius: @THREE_PIXELSpx;*/
+/*    border-top-right-radius: @THREE_PIXELSpx;*/
+/*    margin-right: -@ONE_PIXELpx;*/
+/*    margin-bottom: -@ONE_PIXELpx;*/
+/*    margin-top: 8*DPIpx;*/
+/*}*/
+
+/*QTabBar::tab:last*/
+/*{*/
+/*    margin-right: 0px;  *//*the last selected tab has nothing to overlap with on the right*/
+/*}*/
+
+/*QTabBar::tab:!selected:hover*/
+/*{*/
+/*    border-top: @ONE_PIXELpx solid @ACCENT_COLOR_4;*/
+/*    border-bottom: @TWO_PIXELSpx solid @MAIN_BACKGROUND_COLOR;*/
+/*    padding-bottom: @FOUR_PIXELSpx;*/
+/*    background-color: @TAB_BAR_TAB_SELECTED_BACKGROUND_COLOR;*/
+/*}*/

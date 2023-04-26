@@ -1,0 +1,159 @@
+/*
+ --------------------------------------------------------------------------
+ Menu Base Style
+ --------------------------------------------------------------------------
+*/
+
+
+QMenu
+{
+    padding-top: 3px;
+    background-color: @BLACK_JET_COLOR;
+}
+
+QMenu::item
+{
+    padding: 5px 10px 5px 10px;
+    min-width: 180px;
+}
+
+QMenu:selected
+{
+    background-color: @BLUE_DENIM_COLOR;
+}
+
+QMenuBar
+{
+    background-color: @BLACK_DARK_COLOR;
+    color: @GRAY_WHITE_COLOR;
+}
+
+QMenuBar::item
+{
+    padding: 5px 12px 5px 12px;
+}
+
+QMenuBar::selected
+{
+    background-color: @GRAY_DAVYS_COLOR;
+    color: white;
+}
+
+QMenuBar::pressed
+{
+    background-color: @BLUE_DENIM_COLOR;
+}
+
+/*OLD STYLE*/
+
+/*QMenu::item:selected*/
+/*{*/
+/*    background-color: @accent_color;*/
+/*}*/
+
+/*QMenu*/
+/*{*/
+/*    background-color: @background_out_color;*/
+/*}*/
+
+/*QMenu*/
+/*{*/
+/*    color: @MAIN_FOREGROUND_COLOR;*/
+/*    border: @ONE_PIXEL@UNIT solid @BORDER_COLOR;*/
+/*    background-color: @BACKGROUND_COLOR;*/
+/*    border-radius: @THREE_PIXELS@UNIT;*/
+/*}*/
+
+/*QMenu::item*/
+/*{*/
+/*    color: @INVERSE_TEXT_COLOR;*/
+/*}*/
+
+/*QMenu::item:selected*/
+/*{*/
+/*    background-color: @ACCENT_COLOR;*/
+/*}*/
+
+/*QMenu::item:checked*/
+/*{*/
+/*    color: @ACCENT_COLOR_7;*/
+/*}*/
+
+/*QMenu::item:disabled*/
+/*{*/
+/*    background-color: @DISABLED_COLOR;*/
+/*    color: @INACTIVE_TEXT_COLOR;*/
+/*}*/
+
+
+/*QMenu::indicator:checked*/
+/*{*/
+/*    image: url(@CHECKBOX_CHECKED_ICON);*/
+/*}*/
+
+/*QMenu::indicator:unchecked*/
+/*{*/
+/*    image: url(@CHECKBOX_UNCHECKED_ICON);*/
+/*}*/
+
+/*QMenu::separator*/
+/*{*/
+/*    height: @ONE_PIXELpx;*/
+/*    background-color: @INVERSE_TEXT_COLOR;*/
+/*}*/
+
+/*QMenu:disabled*/
+/*{*/
+/*    background-color: @DISABLED_COLOR;*/
+/*    color: @INACTIVE_TEXT_COLOR;*/
+/*}*/
+
+/*QMenuBar*/
+/*{*/
+/*    background-color: @sub_background_color;*/
+/*    border-bottom: @one_pixel@unit solid @border_color;*/
+/*}*/
+
+/*QMenuBar::item*/
+/*{*/
+/*    background-color: @background_in_color;*/
+/*}*/
+
+/*QMenuBar::item:selected*/
+/*{*/
+/*    background-color: @accent_color;*/
+/*}*/
+
+/*QMenuBar*/
+/*{*/
+/*    background-color: red;*/
+/*    background-color: @MAIN_BACKGROUND_COLOR;*/
+/*    background-color: @MENUBAR_BACKGROUND_COLOR;*/
+/*    color: @MAIN_FOREGROUND_COLOR;*/
+/*    border-bottom: @ONE_PIXELpx solid @BORDER_COLOR;*/
+/*}*/
+
+/*QMenuBar::item*/
+/*{*/
+/*    color: @INVERSE_TEXT_COLOR;*/
+/*    background-color: transparent;*/
+/*}*/
+
+/*QMenuBar::item:selected*/
+/*{*/
+/*    background-color: @BACKGROUND_IN_COLOR;*/
+/*    color: white;*/
+/*}*/
+
+/*QMenuBar::item:pressed*/
+/*{*/
+/*    background-color: #3daee9;*/
+/*    background-color: @ACCENT_COLOR;*/
+/*    color: @MAIN_FOREGROUND_COLOR;*/
+/*    color: @PRIMARY_TEXT_COLOR;*/
+/*}*/
+
+/*QMenuBar::item:disabled*/
+/*{*/
+/*    color: @INACTIVE_TEXT_COLOR;*/
+/*}*/

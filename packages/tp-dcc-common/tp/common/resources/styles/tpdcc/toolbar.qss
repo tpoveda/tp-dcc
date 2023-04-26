@@ -1,0 +1,17 @@
+/*
+ --------------------------------------------------------------------------
+ ToolBar Base Style
+ --------------------------------------------------------------------------
+*/
+
+ToolBar
+{
+    background-color: @background_in_color;
+}
+
+ToolBar[expanded='false']
+{
+   border-top: 2px solid rgba(5, 5, 5, 50);
+   border-bottom: 2px solid rgba(5, 5, 5, 50);
+    background: rgba(25, 25, 25, 50);
+}

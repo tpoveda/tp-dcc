@@ -1,0 +1,17 @@
+/*
+ --------------------------------------------------------------------------
+ Divider Base Style
+ --------------------------------------------------------------------------
+*/
+
+Divider QFrame
+{
+    background-color: @sub_background_color;
+    /*border-radius: @window_rounded_corners@unit;*/
+    /*border: @one_pixel@unit solid @border_color;*/
+}
+
+QFrame#dividerSeparator
+{
+    background-color: @background_color;
+}

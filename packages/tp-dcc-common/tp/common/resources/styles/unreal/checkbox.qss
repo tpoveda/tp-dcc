@@ -1,0 +1,61 @@
+/*
+ --------------------------------------------------------------------------
+ Checbox Base Style
+ --------------------------------------------------------------------------
+*/
+
+QCheckBox
+{
+    background-color: transparent;
+    color: @INVERSE_TEXT_COLOR;
+    height: 20px;
+}
+
+QCheckBox::indicator
+{
+    width: @CHECKBOX_SIZE;
+    height: @CHECKBOX_SIZE;
+    border-radius: @ROUND_SIZEpx;
+    border: 1px solid @BLACK_GRAY_COLOR;
+}
+
+QCheckBox::indicator:hover
+{
+    border-color: @GRAY_DARK_COLOR;
+}
+
+QCheckBox::indicator:checked
+{
+    image: url(@CHECK_SVG_ICON);
+}
+
+QCheckBox::indicator:unchecked
+{
+    image: url(@UNCHECK_SVG_ICON);
+}
+
+
+/*OLD STYLE*/
+
+/*QCheckBox::indicator:checked*/
+/*{*/
+/*    background: @background_out_color;*/
+/*    image: url(@CHECK_SVG_ICON);*/
+/*}*/
+
+/*QCheckBox::indicator:unchecked*/
+/*{*/
+/*    background: @background_out_color;*/
+/*    image: url(@uncheck_icon);*/
+/*}*/
+
+/*QCheckBox::indicator:disabled*/
+/*{*/
+/*    background: @disable_color;*/
+/*    image: url(@uncheck_icon);*/
+/*}*/
+
+/*QCheckBox:disabled*/
+/*{*/
+/*    color:@disable_color;*/
+/*}*/

@@ -1,0 +1,17 @@
+/*
+ --------------------------------------------------------------------------
+ QWidget Style
+ --------------------------------------------------------------------------
+*/
+
+QWidget
+{
+    background-color: @BLACK_EERIE_COLOR;
+    color: white;
+    font-family: "Roboto";
+}
+
+/*QWidget:disabled*/
+/*{*/
+/*    background-color: @DISABLED_COLOR*/
+/*}*/

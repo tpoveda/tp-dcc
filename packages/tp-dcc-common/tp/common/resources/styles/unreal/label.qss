@@ -1,0 +1,16 @@
+/*
+ --------------------------------------------------------------------------
+ Label Base Style
+ --------------------------------------------------------------------------
+*/
+
+QLabel
+{
+    color: @GRAY_WHITE_COLOR;
+    background-color: transparent;
+}
+
+/*QLabel:disabled*/
+/*{*/
+/*    color: @INACTIVE_TEXT_COLOR;*/
+/*}*/

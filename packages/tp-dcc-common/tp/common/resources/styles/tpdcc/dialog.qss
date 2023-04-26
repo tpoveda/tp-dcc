@@ -1,0 +1,14 @@
+/*
+ --------------------------------------------------------------------------
+ Dialog Default Style
+ --------------------------------------------------------------------------
+*/
+
+DialogContents
+{
+    background-color: @background_color;
+    border-top-left-radius: 0@unit;
+    border-top-right-radius: 0@unit;
+    border-bottom-left-radius: @window_rounded_corners@unit;
+    border-bottom-right-radius: @window_rounded_corners@unit;
+}

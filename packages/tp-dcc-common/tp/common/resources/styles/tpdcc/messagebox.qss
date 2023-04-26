@@ -1,0 +1,18 @@
+/*
+ --------------------------------------------------------------------------
+ Message Box Default Style
+ --------------------------------------------------------------------------
+*/
+
+MessageBox QFrame#messageBoxHeaderFrame
+{
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+
+MessageBox QFrame#messageBoxBody
+{
+    background-color: @background_color;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}

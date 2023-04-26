@@ -1,0 +1,68 @@
+/*
+ --------------------------------------------------------------------------
+ Switch Default Style
+ --------------------------------------------------------------------------
+*/
+
+SwitchWidget
+{
+    spacing: -20px;
+}
+
+SwitchWidget::indicator{
+    subcontrol-origin: border;
+    subcontrol-position: center left;
+    image: url(@radio_checked_icon);
+}
+
+SwitchWidget[theme_size="@tiny"]::indicator
+{
+    width: 18@unit;
+    height: 10@unit;
+    border-radius: 5@unit;
+}
+
+SwitchWidget[theme_size="@small"]::indicator
+{
+    width: 28@unit;
+    height: 14@unit;
+    border-radius: 7@unit;
+}
+
+SwitchWidget[theme_size="@medium"]::indicator
+{
+    width: 38@unit;
+    height: 19@unit;
+    border-radius: 9@unit;
+}
+
+SwitchWidget[theme_size="@large"]::indicator
+{
+    width: 48@unit;
+    height: 24@unit;
+    border-radius: 12@unit;
+}
+
+SwitchWidget[theme_size="@huge"]::indicator
+{
+    width: 56@unit;
+    height: 30@unit;
+    border-radius: 15@unit;
+}
+
+SwitchWidget::indicator:checked
+{
+    image-position: center right;
+    background-color: @accent_color;
+}
+
+SwitchWidget::indicator:unchecked
+{
+    image-position: center left;
+    background-color: @background_selected_color;
+}
+
+SwitchWidget::indicator:disabled
+{
+    background-color: @disable_color;
+}

@@ -1,0 +1,19 @@
+/*
+ --------------------------------------------------------------------------
+ Project Default Style
+ --------------------------------------------------------------------------
+*/
+
+Project QLabel#projectLabel
+{
+    background-color: @background_out_color;
+    border-bottom-left-radius: @three_pixels@unit;
+    border-bottom-right-radius: @three_pixels@unit;
+}
+
+Template QLabel#templateLabel
+{
+    background-color: @background_out_color;
+    border-bottom-left-radius: @three_pixels@unit;
+    border-bottom-right-radius: @three_pixels@unit;
+}

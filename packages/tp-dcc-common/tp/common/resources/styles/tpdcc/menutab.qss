@@ -1,0 +1,19 @@
+/*
+ --------------------------------------------------------------------------
+ MenuTab Default Style
+ --------------------------------------------------------------------------
+*/
+
+MenuTabWidget::pane
+{
+    /* The tab widget frame */
+    border: 1px solid @border_color;
+    border-radius: 3px;
+    top: -1px;
+    background-color: @background_color;
+}
+
+MenuTabWidget::tab-bar
+{
+    padding: 5px;
+}

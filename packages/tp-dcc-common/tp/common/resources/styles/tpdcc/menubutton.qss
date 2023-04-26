@@ -1,0 +1,77 @@
+/*
+ --------------------------------------------------------------------------
+ MenuButton Default Style
+ --------------------------------------------------------------------------
+*/
+
+BaseMenuButton
+{
+    border: none;
+    padding: 0;
+    background-color: transparent;
+}
+
+BaseMenuButton:hover
+{
+    color: @accent_color_5;
+}
+
+BaseMenuButton:pressed
+{
+    color: @accent_color_7;
+}
+
+BaseMenuButton:checked
+{
+    background-color: @accent_color_9;
+}
+
+BaseMenuButton:disabled
+{
+    background-color: @disable_color;
+}
+
+BaseMenuButton[theme_size="@tiny"]
+{
+    qproperty-iconSize: @tiny_icon@unit @tiny_icon@unit;
+}
+
+BaseMenuButton[theme_size="@small"]
+{
+    qproperty-iconSize: @small_icon@unit @small_icon@unit;
+}
+
+BaseMenuButton[theme_size="@medium"]
+{
+    qproperty-iconSize: @medium_icon@unit @medium_icon@unit;
+}
+
+BaseMenuButton[theme_size="@large"]
+{
+    qproperty-iconSize: @large_icon@unit @large_icon@unit;
+}
+
+BaseMenuButton[theme_size="@huge"]
+{
+    qproperty-iconSize: @huge_icon@unit @huge_icon@unit;
+}
+
+BaseMenuButton[combine=horizontal]
+{
+    border-radius: 0;
+}
+
+BaseMenuButton[combine=vertical]
+{
+    border-radius: 0;
+}
+
+BaseMenuButton::menu-indicator {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    right: 5px;
+    bottom: 5px;
+    height: 10px;
+    width: 10px;
+    image: url(@down_icon);
+}

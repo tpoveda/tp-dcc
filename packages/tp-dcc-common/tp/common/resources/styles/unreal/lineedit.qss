@@ -1,0 +1,69 @@
+/*
+ --------------------------------------------------------------------------
+ LineEdit Base Style
+ --------------------------------------------------------------------------
+*/
+
+
+QLineEdit
+{
+    color: @GRAY_WHITE_COLOR;
+    background-color: black;
+    height: 20px;
+    padding-left: 6px;
+    border-radius: @ROUND_SIZEpx;
+    border: 1px solid @BLACK_GRAY_COLOR;
+}
+
+QLineEdit:hover
+{
+    border-color: @GRAY_DARK_COLOR;
+}
+
+QLineEdit:focus
+{
+    border-color: @BLUE_DENIM_COLOR;
+}
+
+QLineEdit:disabled
+{
+    color: @INACTIVE_TEXT_COLOR;
+}
+
+QTextEdit:disabled#textEditForced,
+QLineEdit:disabled#lineEditForced
+{
+    color: @INACTIVE_TEXT_COLOR;
+}
+
+/*OLD_STYLE*/
+
+/*QLineEdit*/
+/*{*/
+/*    background-color: @TEXT_BOX_BACKGROUND_COLOR;*/
+/*    color: @TEXT_BOX_FOREGROUND_COLOR;*/
+/*    padding: @TWO_PIXELSpx;*/
+/*}*/
+
+/*QLineEdit*/
+/*{*/
+/*    background-color: @background_in_color;*/
+/*    color: @primary_text_color;*/
+/*    padding: @one_pixel@unit;*/
+/*    border-radius: @three_pixels@unit;*/
+/*    border-bottom: 0px solid rgba(255, 255, 255, 50);*/
+/*    selection-color: @accent_color_4;*/
+/*    selection-background-color: @mask_color;*/
+/*}*/
+
+/*QLineEdit:focus*/
+/*{*/
+/*	border: 0px;*/
+/*	border-bottom: @one_pixel@unit solid @accent_color;*/
+/*    background-color: @mask_color;*/
+/*}*/
+
+/*QLineEdit:disabled*/
+/*{*/
+/*    color: @disable_color;*/
+/*}*/

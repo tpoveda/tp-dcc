@@ -1,0 +1,33 @@
+/*
+ --------------------------------------------------------------------------
+ Base Style
+ --------------------------------------------------------------------------
+*/
+
+
+#include widget.qss
+#include frame.qss
+#include sizes.qss
+#include dialog.qss
+#include window.qss
+#include tooltip.qss
+#include scrollbar.qss
+#include label.qss
+#include checkbox.qss
+#include pushbutton.qss
+#include radiobutton.qss
+#include lineedit.qss
+#include splitter.qss
+#include groupbox.qss
+#include spinbox.qss
+#include combobox.qss
+#include menu.qss
+#include tab.qss
+#include dockwidget.qss
+#include views.qss
+#include scrollbar.qss
+#include progressbar.qss
+#include slider.qss
+#include toolbox.qss
+#include messagebox.qss
+#include calendar.qss

@@ -1,0 +1,61 @@
+/*
+ --------------------------------------------------------------------------
+ Data Library Base Style
+ --------------------------------------------------------------------------
+*/
+
+DataSearcherWidget
+{
+    background-color: @sub_background_color;
+}
+
+DataSearcherWidget
+{
+    /*border: 1px solid @border_color;*/
+    border-radius: 13px;
+    background-color: @sub_background_color;
+}
+
+DataSearcherWidget:focus
+{
+    border: 1px solid @accent_color;
+    background-color: @background_in_color;
+}
+
+DataSearcherWidget QPushButton#searchButton,
+DataSearcherWidget QPushButton#clearButton
+{
+    border: 0px;
+}
+
+DataSearcherWidget:disabled
+{
+    background-color: @background_out_color;
+}
+
+ImageSequenceWidget
+{
+	color: @text_color_inverse;
+	spacing:4*DPIpx;
+    outline: none;
+    border-radius: @five_pixels@unit;
+    background-color: @sub_background_color;
+}
+
+ImageSequenceWidget:hover
+{
+    border: 1px solid @accent_color;
+    background-color: @background_out_color;
+}
+
+ImageSequenceWidget QToolBar
+{
+    border: 0px solid black;
+    border-radius:2px;
+    background-color: rgba(0, 0, 0, 100);
+}
+
+ImageSequenceWidget QToolButton:hover
+{
+    background-color: @accent_color;
+}

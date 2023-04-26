@@ -1,0 +1,28 @@
+/*
+ --------------------------------------------------------------------------
+ MenuLineButton Default Style
+ --------------------------------------------------------------------------
+*/
+
+MenuLineButton
+{
+    padding: 5px 0px;
+    border-color: transparent;
+}
+
+MenuLineButton:hover
+{
+    border-radius: 0;
+    color: @accent_color_5;
+    border: none;
+}
+
+MenuLineButton:checked
+{
+    border-radius: 0;
+    color: @accent_color;
+    background-color: @accent_color_10;
+    border-style: solid;
+    border-color: @accent_color;
+    border-width: 0 0 2px 0;
+}

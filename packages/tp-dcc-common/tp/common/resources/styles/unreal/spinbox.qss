@@ -1,0 +1,114 @@
+/*
+ --------------------------------------------------------------------------
+ SpinBox Base Style
+ --------------------------------------------------------------------------
+*/
+
+QSpinBox,
+QDoubleSpinBox
+{
+    color: @GRAY_WHITE_COLOR;
+    background-color: black;
+    height: 20px;
+    padding-left: 6px;
+    border-radius: @ROUND_SIZEpx;
+    border: 1px solid @BLACK_GRAY_COLOR;
+}
+
+QSpinBox::up-button,
+QDoubleSpinBox::up-button
+{
+    image: url(@UP_ARROW_SVG_ICON);
+    subcontrol-position: top right;
+    padding: 2px 2px 0px 0px;
+    width: 15px;
+}
+
+QSpinBox::up-button:hover,
+QDoubleSpinBox::up-button:hover
+{
+    image: url(@UP_ARROW_WHITE_SVG_ICON);
+}
+
+QSpinBox::down-button,
+QDoubleSpinBox::down-button
+{
+    image: url(@DOWN_ARROW_SVG_ICON);
+    subcontrol-position: bottom right;
+    padding: 0px 2px 2px 0px;
+    width: 15px;
+}
+
+QSpinBox::down-button:hover,
+QDoubleSpinBox::down-button:hover
+{
+    image: url(@DOWN_ARROW_WHITE_SVG_ICON);
+}
+
+/*OLD_STYLE*/
+
+/*QAbstractSpinBox*/
+/*{*/
+/*    spacing: @FOUR_PIXELSpx;*/
+/*    border: @ONE_PIXELpx solid @BORDER_COLOR;*/
+/*    color: @MAIN_FOREGROUND_COLOR;*/
+/*    background-color:@SECONDARY_BACKGROUND_COLOR;*/
+/*    selection-background-color: @ACCENT_COLOR;*/
+/*    padding: 0 @FOUR_PIXELSpx;*/
+/*}*/
+
+/*QAbstractSpinBox:focus*/
+/*{*/
+/*    border: @ONE_PIXELpx solid @ACCENT_COLOR;*/
+/*}*/
+
+/*QAbstractSpinBox::up-button*/
+/*{*/
+/*    subcontrol-origin: border;*/
+/*    subcontrol-position: top right;*/
+/*    margin-top: @ONE_PIXELpx;*/
+/*    margin-right: @ONE_PIXELpx;*/
+/*    border-left: @ONE_PIXELpx solid @BORDER_COLOR;*/
+/*    border-bottom: @ONE_PIXELpx solid @BORDER_COLOR;*/
+/*    background: @BACKGROUND_OUT_COLOR;*/
+/*    *//*image: url(@up_icon);*/
+/*}*/
+
+/*QAbstractSpinBox::down-button*/
+/*{*/
+/*    subcontrol-origin: border;*/
+/*    subcontrol-position: bottom right;*/
+/*    margin-bottom: @ONE_PIXELpx;*/
+/*    margin-right: @ONE_PIXELpx;*/
+/*    border-left: @ONE_PIXELpx solid @BORDER_COLOR;*/
+/*    border-top: @ONE_PIXELpx solid @BORDER_COLOR;*/
+/*    background: @BACKGROUND_OUT_COLOR;*/
+/*}*/
+
+/*QAbstractSpinBox::up-button:hover,*/
+/*QAbstractSpinBox::down-button:hover*/
+/*{*/
+/*    border-left: @ONE_PIXELpx solid @ACCENT_COLOR;*/
+/*}*/
+
+/*QAbstractSpinBox::up-arrow*/
+/*{*/
+/*    image: url(@UP_ARROW_ICON);*/
+/*    width: 12*DPIpx;*/
+/*    height: 12*DPIpx;*/
+/*}*/
+
+/*QAbstractSpinBox::down-arrow*/
+/*{*/
+/*    image: url(@DOWN_ARROW_ICON);*/
+/*    width: 12*DPIpx;*/
+/*    height: 12*DPIpx;*/
+/*}*/
+
+/*QAbstractSpinBox::up-arrow:disabled,*/
+/*QAbstractSpinBox::up-arrow:off,*/
+/*QAbstractSpinBox::down-arrow:disabled*/
+/*QAbstractSpinBox::down-arrow:off*/
+/*{*/
+/*    background-color: @DISABLED_COLOR;*/
+/*}*/

@@ -1,0 +1,14 @@
+QToolBox::tab
+{
+    background-color: @BLACK_JET_COLOR;
+    font-weight: bold;
+    color: @GRAY_WHITE_COLOR;
+    border-radius: @ROUND_SIZEpx;
+    image: url(@RIGHT_TRIANGLE_SVG_ICON);
+    image-position: left;
+}
+
+QToolBox::tab:selected
+{
+    image: url(@DOWN_TRIANGLE_SVG_ICON);
+}

@@ -1,0 +1,24 @@
+/*
+ --------------------------------------------------------------------------
+ QMainWindow Base Style
+ --------------------------------------------------------------------------
+*/
+
+QMainWindow
+{
+    background-color: @BLACK_DARK_COLOR;
+    color: white;
+    font-family: "Roboto";
+}
+
+QMainWindow::separator
+{
+    background-color: @BORDER_COLOR;
+    width: @THREE_PIXELSpx;
+    border: none;
+}
+
+#centralwidget
+{
+    background-color: @BLACK_DARK_COLOR;
+}

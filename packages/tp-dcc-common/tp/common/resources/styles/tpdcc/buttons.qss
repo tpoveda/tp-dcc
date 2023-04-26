@@ -1,0 +1,170 @@
+/*
+ --------------------------------------------------------------------------
+ Button Default Style
+ --------------------------------------------------------------------------
+*/
+
+BaseButton
+{
+    font-weight: 400;
+    border-radius: 5%;
+    padding: 1% 10%;
+}
+
+BaseButton[theme_type=default]
+{
+    background-color: @background_out_color;
+    border: 1px solid @border_color;
+}
+
+BaseButton[theme_type=default]:hover{
+    border-color: @accent_color_5;
+}
+
+BaseButton[theme_type=default]:pressed{
+    border-color: @accent_color_7;
+}
+
+BaseButton[theme_type=primary]
+{
+    border: none;
+    color: @text_color_inverse;
+    background-color: @accent_color;
+}
+
+BaseButton[theme_type=primary]:hover{
+    background-color: @accent_color_5;
+}
+
+BaseButton[theme_type=primary]:pressed{
+    background-color: @accent_color_7;
+}
+
+BaseButton[theme_type=success]
+{
+    border: none;
+    color: @text_color_inverse;
+    background-color: @success_6;
+}
+
+BaseButton[theme_type=success]:hover{
+    background-color: @success_5;
+}
+
+BaseButton[theme_type=success]:pressed{
+    background-color: @success_7;
+}
+
+BaseButton[theme_type=warning]
+{
+    border: none;
+    color: @text_color_inverse;
+    background-color: @warning_6;
+}
+
+BaseButton[theme_type=warning]:hover{
+    background-color: @warning_5;
+}
+
+BaseButton[theme_type=warning]:pressed{
+    background-color: @warning_7;
+}
+
+BaseButton[theme_type=danger]
+{
+    border: none;
+    color: @text_color_inverse;
+    background-color: @error_6;
+}
+
+BaseButton[theme_type=danger]:hover
+{
+    background-color: @error_5;
+}
+
+BaseButton[theme_type=danger]:pressed
+{
+    background-color: @error_7;
+}
+
+BaseButton[theme_size="@tiny"]
+{
+    qproperty-iconSize: @tiny_icon@unit @tiny_icon@unit;
+}
+
+BaseButton[theme_size="@small"]
+{
+    qproperty-iconSize: @small_icon@unit @small_icon@unit;
+}
+
+BaseButton[theme_size="@medium"]
+{
+    qproperty-iconSize: @medium_icon@unit @medium_icon@unit;
+}
+
+BaseButton[theme_size="@large"]
+{
+    qproperty-iconSize: @large_icon@unit @large_icon@unit;
+}
+
+BaseButton[theme_size="@huge"]
+{
+    qproperty-iconSize: @huge_icon@unit @huge_icon@unit;
+}
+
+BaseButton[combine=horizontal][position=left]{
+    margin-left: 1px;
+    border-left: none;
+    border-bottom-right-radius: 0;
+    border-top-right-radius: 0;
+}
+
+BaseButton[combine=horizontal][position=right]
+{
+    border-right: none;
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 0;
+}
+
+BaseButton[combine=horizontal][position=center]
+{
+    /*border: none;*/
+    border-radius: 0;
+}
+BaseButton[combine=vertical][position=top]
+{
+    border-top: none;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+BaseButton[combine=vertical][position=bottom]
+{
+    border-bottom: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+BaseButton::menu-indicator
+{
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    right: 5px;
+    bottom: 5px;
+    height: 10px;
+    width: 10px;
+    image: url(@down_icon);
+}
+
+BaseButton:checked
+{
+    background-color: @accent_color;
+}
+
+BaseButton:disabled
+{
+    color: @disable_color;
+    /*border: 2px dashed @disable_color;*/
+    /*padding: none;*/      /* This makes the button to fill all available spice. It's not nice */
+    background-color: @sub_background_color;
+}

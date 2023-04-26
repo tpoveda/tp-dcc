@@ -1,0 +1,38 @@
+/*
+ --------------------------------------------------------------------------
+ QDockWidget Base Style
+ --------------------------------------------------------------------------
+*/
+
+QDockWidget
+{
+    background-color: @BLACK_JET_COLOR;
+    font-weight: bold;
+    color: @GRAY_WHITE_COLOR;
+    border-radius: @ROUND_SIZEpx;
+    titlebar-close-icon: url(@CROSS_SVG_ICON);
+    titlebar-normal-icon: url();
+}
+
+QDockWidget::close-button
+{
+    image: url(@CROSS_SVG_ICON);
+    background: none;
+    border: none;
+    icon-size: 5px;
+}
+
+QDockWidget::close-button:hover
+{
+    image: url(@CROSS_WHITE_SVG_ICON);
+}
+
+/*OLD_STYLE*/
+
+/*QDockWidget*/
+/*{*/
+/*    background-color: @MAIN_BACKGROUND_COLOR;*/
+/*    color: @INVERSE_TEXT_COLOR;*/
+/*    border: @ONE_PIXELpx solid @BORDER_COLOR;*/
+/*    border-radius: @THREE_PIXELSpx;*/
+/*}*/

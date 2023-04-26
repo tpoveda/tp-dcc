@@ -1,0 +1,35 @@
+/*
+ --------------------------------------------------------------------------
+ Avatar Default Style
+ --------------------------------------------------------------------------
+*/
+
+Avatar
+{
+    background-color: transparent;
+}
+
+Avatar[theme_size="@tiny"]
+{
+    max-height: @tiny@unit;
+}
+
+Avatar[theme_size="@small"]
+{
+    max-height: @small@unit;
+}
+
+Avatar[theme_size="@medium"]
+{
+    max-height: @medium@unit;
+}
+
+Avatar[theme_size="@large"]
+{
+    max-height: @large@unit;
+}
+
+Avatar[theme_size="@huge"]
+{
+    max-height: @huge@unit;
+}

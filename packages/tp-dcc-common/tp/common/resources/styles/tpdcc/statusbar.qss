@@ -1,0 +1,36 @@
+/*
+ --------------------------------------------------------------------------
+ Status Widget Style
+ --------------------------------------------------------------------------
+*/
+
+StatusWidget[status='']
+{
+    color: rgb(240, 240, 240);
+    background-color: @background_in_color;
+}
+
+StatusWidget[status='info']
+{
+    background-color: rgba(25, 145, 255, 100);
+}
+
+StatusWidget[status='ok']
+{
+    color: rgb(240, 240, 240);
+    background-color: rgba(55, 130, 20, 100);
+}
+
+StatusWidget[status='warning']
+{
+    color: rgb(240, 240, 240);
+    background-color: rgba(240, 170, 0, 100);
+}
+
+StatusWidget[status='error']
+{
+    color: rgb(240, 240, 240);
+    background-color: rgba(220, 40, 40, 100);
+    selection-color: rgb(220, 40, 40);
+    selection-background-color: rgb(240, 240, 240);
+}

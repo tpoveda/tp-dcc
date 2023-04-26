@@ -1,0 +1,28 @@
+/*
+ --------------------------------------------------------------------------
+ TextEdit Base Style
+ --------------------------------------------------------------------------
+*/
+
+
+/*QTextEdit*/
+/*{*/
+/*    background-color: @background_in_color;*/
+/*    color: @primary_text_color;*/
+/*    padding: @one_pixel@unit;*/
+/*    border: 1px solid @border_color;*/
+/*    border-radius: @three_pixels@unit;*/
+/*    selection-color: @accent_color_4;*/
+/*    selection-background-color: @background_in_color;*/
+/*}*/
+
+/*QTextEdit:focus*/
+/*{*/
+/*	border: 1px solid @accent_color;*/
+/*    background-color: @sub_background_color;*/
+/*}*/
+
+/*QTextEdit:disabled*/
+/*{*/
+/*    color: @disable_color;*/
+/*}*/

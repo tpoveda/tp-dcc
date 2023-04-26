@@ -1,0 +1,66 @@
+/*
+ --------------------------------------------------------------------------
+ Toolset Default Style
+ --------------------------------------------------------------------------
+*/
+
+ToolsetsTreeWidget
+{
+    padding: 0px;
+    margin: 0px;
+    border: 0px solid transparent;
+    background-color: transparent;
+}
+
+ToolsetsTreeWidget::item
+{
+    padding: 0px;
+    margin: 0px;
+    background-color: @toolset_border_deselect;
+    border: 0px solid transparent;
+}
+
+ToolsetsTreeWidget::item:selected
+{
+    padding: 0px;
+    margin: 0px;
+}
+
+ToolsetsTreeWidget::item:!selected:hover
+{
+    padding: 0px;
+    margin: 0px;
+    background-color: @tooolset_border_hover;
+}
+
+ToolsetFrame
+{
+    background-color: transparent;
+}
+
+ToolsetFrame QFrame
+{
+    background-color: transparent;
+}
+
+ToolsetWidget
+{
+    background-color: @window_dragger_color;
+    border: @one_pixel@unit solid @window_dragger_color;
+    border-bottom-left-radius: @window_rounded_corners@unit;
+    border-bottom-right-radius: @window_rounded_corners@unit;
+}
+
+StackTitleFrame
+{
+    background-color: @background_in_color;
+    border-bottom: @one_pixel@unit solid @border_color;
+
+}
+
+SlidingOpacityStackedWidget#toolsetStackedWidget
+{
+    background-color: @background-color;
+    border-bottom-left-radius: @window_rounded_corners@unit;
+    border-bottom-right-radius: @window_rounded_corners@unit;
+}

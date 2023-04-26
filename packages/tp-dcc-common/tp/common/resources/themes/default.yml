@@ -1,0 +1,116 @@
+# Default theme (MAYA)
+
+name: Default
+style: default
+accent_color: "#1890FF"
+#accent_color: [80, 80, 80, 255]
+
+overrides:
+  # Default pixels
+  one_pixel: "^1"
+  two_pixels: "^2"
+  three_pixels: "^3"
+  four_pixels: "^4"
+  five_pixels: "^5"
+
+  # Font family
+#  default_font_size: "^11"
+
+  # Main colors
+#  background_color: "#414141"
+#  foreground_color: "C5C5C5"
+  #SECONDARY_BACKGROUND_COLOR: "1B1B1B"
+  #SECONDARY_FOREGROUND_COLOR: "414141"
+  #PRIMARY_COLOR: "3D647E"
+  #DISABLED_COLOR: "454545"
+  hover_background_color: "#5C5C5C"
+  #PRIMARY_TEXT_COLOR:  "#D9D9D9"
+
+  ## Other
+  #WIDGET_ROUNDED_CORNERS: "^2"
+  #
+  ## Icons
+  #ICON_PRIMARY_COLOR: "C5C5C5"
+  #ICON_HOVER_COLOR: "FDFDFD"
+
+  # Buttons
+  button_hover_color: "6F6F6F"
+  button_press_color: "1B1B1B"
+
+  ## Checkboxes
+  #CHECKBOX_SIZE: "^12"
+  #CHECKBOX_BACKGROUND_COLOR: "292929"
+  #RESOURCE_CHECKBOX_CHECKED_ICON: "check_box_checked.png"
+  #RESOURCE_CHECKBOX_UNCHECKED_ICON: "check_box_empty.png"
+  #
+  ## Radio Buttons
+  #RADIO_SIZE: "^14"
+  #RADIO_UNCHECKED_RADIUS: "^7"
+  #RADIO_UNCHECKED_SIZE: "^10"
+  #RESOURCE_RADIO_CHECKED_ICON: "radio_button_checked.png"
+  #RESOURCE_RADIO_UNCHECKED_ICON: "radio_button_unchecked.png"
+  #
+  ## ComboBox
+  #COMBO_COLOR: "5C5C5C"
+  #COMBO_HOVER_COLOR: "5C5C5C"
+  #COMBO_ICON: "icon:sortDown"
+  #COMBO_ICON_SIZE: "^12"
+  #COMBO_LEFT_BORDER: "^2"
+  #COMBO_SIZE: "^15"
+  #RESOURCE_COMBO_ICON: "drop_arrow.png"
+  #
+  ## Line Edits
+  #TEXT_BACKGROUND_COLOR: "292929"
+  #TEXT_FOREGROUND_COLOR: "C5C5C5"
+  #TEXT_INACTIVE_COLOR: "7F7F7F"
+  #TEXT_SELECTION_COLOR: "EBEBEB"
+  #TEXT_SELECTION_COLOR: "EBEBEB"
+  #
+  ## Trees
+  #TBL_TREE_ACTIVE_COLOR: "5285A6"
+  #TBL_TREE_ACT_TEXT_COLOR: "FDFDFD"
+  #TBL_TREE_ALT_COLOR: "252525"
+  #TBL_TREE_BG_COLOR: "252525"
+  #TBL_TREE_GRID_COLOR: "3C3C3C"
+  #TBL_TREE_HEADER_COLOR: "5C5C5C"
+  #TBL_TREE_HOVER_COLOR: "3D647E"
+  #
+  ## Scroll Bars
+  #SCROLL_BAR_BG: "252525"
+  #SCROLL_BAR_COLOR: "5A5A5A"
+  #
+  ## Slider
+  #SLIDER_BG_COLOR: "292929"
+  #SLIDER_BG_COLOR_DISABLED: "434343"
+  #SLIDER_BORDER_RADIUS: "^2"
+  #SLIDER_DISABLED: "535353"
+  #SLIDER_GROOVE_BORDER_RADIUS: "^4"
+  #SLIDER_HANDLE_BORDER_RADIUS: "^6"
+  #SLIDER_HANDLE_MARGIN: "^-5"
+  #SLIDER_HANDLE_SIZE: "^12"
+  #SLIDER_INACTIVE: "C5C5C5"
+  #SLIDER_SIZE: "^2"
+  #
+  ## Tooltip
+  #TOOLTIP_BG: "FFFFDC"
+  #TOOLTIP_BORDER_COLOR: "000000"
+  #TOOLTIP_BORDER_SIZE: "^1"
+  #TOOLTIP_FONT_COLOR: "000000"
+
+  # Window Dragger
+  #  window_dragger_rounded_corners: "^5"
+  #  window_dragger_font_size: "^14"
+
+  # Window
+#  window_contents: "414141"
+#  window_rounded_corners: "^4"
+
+  # Stack
+  #STACK_BORDER_WIDTH: "^1"
+  stack_item_background_color: "#222222"
+  #STACK_ITEM_HEADER_FOREGROUND: "C6C6C6"
+  #STACK_TITLE_DISABLED: "8C8C8C"
+
+  # Toolset
+  toolset_border_deselect: "#2F2F2F"
+  tooolset_border_hover: "#3D637D"

@@ -1,0 +1,87 @@
+/*
+ --------------------------------------------------------------------------
+ Label Default Style
+ --------------------------------------------------------------------------
+*/
+
+BaseLabel
+{
+    /*padding: 2px;*/
+    background-color: transparent;
+    /*font-size: @font_size_base@unit;*/
+    color: @primary_text_color;
+    /*font-weight: 400;*/
+}
+
+BaseLabel[theme_level="1"]
+{
+    font-size: @h1_size@unit;
+    font-weight: 500;
+    color: @title_color;
+}
+BaseLabel[theme_level="2"]
+{
+    font-size: @h2_size@unit;
+    font-weight: 500;
+    color: @title_color;
+}
+BaseLabel[theme_level="3"]
+{
+    font-size: @h3_size@unit;
+    font-weight: 500;
+    color: @title_color;
+}
+BaseLabel[theme_level="4"]
+{
+    font-size: @h4_size@unit;
+    font-weight: 500;
+    color: @title_color;
+}
+
+BaseLabel[theme_underline=true]
+{
+    text-decoration: underline;
+}
+
+BaseLabel[theme_delete=true]
+{
+    text-decoration: line-through;
+}
+
+BaseLabel[theme_strong=true]
+{
+    font-weight: bold;
+}
+
+BaseLabel[theme_code=true]
+{
+    background-color: @background_out_color;
+    border: 1px solid @border_color;
+}
+
+BaseLabel[theme_mark=true]
+{
+    background-color: @warning_1;
+}
+
+BaseLabel[theme_type=danger]
+{
+    color: @error_6;
+}
+
+BaseLabel[theme_type=warning]
+{
+    color: @warning_6;
+}
+
+BaseLabel[theme_type=secondary]
+{
+    color: @secondary_text_color;
+}
+
+BaseLabel:disabled
+{
+    color:@disable_color;
+    /*border: 2px dashed @disable_color;*/
+    /*background-color: @background_in_color;*/
+}

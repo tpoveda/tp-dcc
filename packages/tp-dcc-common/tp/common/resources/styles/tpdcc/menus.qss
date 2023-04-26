@@ -1,0 +1,107 @@
+/*
+ --------------------------------------------------------------------------
+ Menu Default Style
+ --------------------------------------------------------------------------
+*/
+
+BaseMenu
+{
+    background-color: @background_color;
+    padding: 0;
+    border-radius: 2px;
+    border: 1px solid @border_color;
+}
+
+BaseMenu[checked=true]
+{
+    color: @accent_color;
+    background-color: @background_out_color;
+}
+
+BaseMenu::item
+{
+    padding: 2px 2px;
+}
+
+BaseMenu::item
+{
+    padding: 8px auto;
+}
+
+BaseMenu::item:checked
+{
+    color: @accent_color;
+    background-color: @background_out_color;
+}
+
+BaseMenu::item:selected
+{
+    background-color: @background_out_color;
+}
+
+BaseMenu::indicator {
+    left: 6px;
+}
+
+BaseMenu::indicator:non-exclusive
+{
+    width: 13px;
+    height: 13px;
+    border-radius: 2px;
+    border: 1px solid @border_color;
+    background-color: @background_in_color;
+}
+
+BaseMenu::indicator:non-exclusive:disabled
+{
+    border: 1px solid @border_color;
+    background-color: @background_selected_color;
+}
+
+BaseMenu::indicator:non-exclusive:hover
+{
+    border: 1px solid @accent_color_5;
+    background-color: @background_in_color;
+}
+
+BaseMenu::indicator:non-exclusive:checked
+{
+    background-color: @accent_color;
+    image: url(@check_icon);
+}
+
+BaseMenu::indicator:non-exclusive:checked:disabled
+{
+    background-color: @disable_color;
+}
+
+BaseMenu::indicator:exclusive
+{
+    width: 14px;
+    height: 14px;
+    border-radius: 8px;
+    border: 1px solid @border_color;
+    background-color: @background_in_color;
+}
+
+BaseMenu::indicator:exclusive:disabled
+{
+    border: 1px solid @border_color;
+    background-color: @background_selected_color;
+}
+
+BaseMenu::indicator:exclusive:hover
+{
+    border: 1px solid @accent_color_5;
+}
+
+BaseMenu::indicator:exclusive:checked
+{
+    background-color: @accent_color;
+    image: url(@circle_icon);
+}
+
+BaseMenu::indicator:exclusive:checked:disabled
+{
+    background-color: @disable_color;
+}

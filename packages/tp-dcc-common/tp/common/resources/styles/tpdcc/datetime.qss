@@ -1,0 +1,43 @@
+/*
+ --------------------------------------------------------------------------
+ DateTime Default Style
+ --------------------------------------------------------------------------
+*/
+
+BaseDateTimeEdit::drop-down
+{
+    subcontrol-origin: border;
+    subcontrol-position: center right;
+    image: url(@calendar_icon);
+}
+
+BaseDateTimeEdit[theme_size="@tiny"]::drop-down
+{
+    width: @tiny@unit;
+    height: @tiny_icon@unit;
+}
+
+BaseDateTimeEdit[theme_size="@small"]::drop-down
+{
+    width: @small@unit;
+    height: @small_icon@unit;
+}
+
+BaseDateTimeEdit[theme_size="@medium"]::drop-down
+{
+    width: @medium@unit;
+    height: @medium_icon@unit;
+}
+
+BaseDateTimeEdit[theme_size="@large"]::drop-down
+{
+    width: @large@unit;
+    height: @large_icon@unit;
+}
+
+
+BaseDateTimeEdit[theme_size="@huge"]::drop-down
+{
+    width: @huge@unit;
+    height: @huge_icon@unit;
+}

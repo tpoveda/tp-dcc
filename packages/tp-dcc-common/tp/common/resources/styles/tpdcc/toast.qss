@@ -1,0 +1,16 @@
+/*
+ --------------------------------------------------------------------------
+ Toast Default Style
+ --------------------------------------------------------------------------
+*/
+
+BaseToast
+{
+    background-color: @toast_color;
+}
+
+BaseToast QLabel
+{
+    color: @text_color_inverse;
+    background-color: transparent;
+}

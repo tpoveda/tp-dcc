@@ -1,0 +1,23 @@
+/*
+ --------------------------------------------------------------------------
+ Dragger Default Style
+ --------------------------------------------------------------------------
+*/
+
+WindowDragger
+{
+    background-color: @window_dragger_color;
+    border-bottom: @one_pixel@unit solid @border_color;
+    border-top-left-radius: @window_dragger_rounded_corners@unit;
+    border-top-right-radius: @window_dragger_rounded_corners@unit;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+}
+
+ClippedLabel#WindowDraggerLabel
+{
+    color: @window_dragger_label_color;
+    background-color: @window_dragger_color;
+    font-weight: bold;
+    font-size: @window_dragger_font_size@unit;
+}

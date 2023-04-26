@@ -1,0 +1,25 @@
+/*
+ --------------------------------------------------------------------------
+ Card Default Style
+ --------------------------------------------------------------------------
+*/
+
+BaseCard[border=true]
+{
+    border: 1px solid @border_color;
+    border-radius: @border_radius_small@unit;
+}
+
+BaseCard[border=false]
+{
+    border: 0 solid @border_color;
+    border-radius: @border_radius_small@unit;
+    background-color: @background_in_color;
+}
+
+MetaCard
+{
+    border: 1px solid @border_color;
+    border-radius: @border_radius_small@unit;
+    background-color: @background_in_color;
+}

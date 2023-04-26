@@ -1,0 +1,56 @@
+/*
+ --------------------------------------------------------------------------
+ RadioButton Base Style
+ --------------------------------------------------------------------------
+*/
+
+QRadioButton
+{
+    color: white;
+    background-color: transparent;
+    height: 20px;
+}
+
+QRadioButton::indicator
+{
+    height: 9px;
+    width: 9px;
+}
+
+QRadioButton::indicator:checked
+{
+    image: url(@RADIO_SVG_ICON);
+}
+
+QRadioButton::indicator:unchecked
+{
+    image: url(@UNRADIO_SVG_ICON);
+}
+
+/*OLD STYLE*/
+
+/*QRadioButton*/
+/*{*/
+/*    color: @MAIN_FOREGROUND_COLOR;*/
+/*    background-color: transparent;*/
+/*}*/
+
+/*QRadioButton::indicator*/
+/*{*/
+/*    width: @RADIO_BUTTON_SIZEpx;*/
+/*    height: @RADIO_BUTTON_SIZEpx;*/
+/*}*/
+
+/*QRadioButton::indicator:unchecked*/
+/*{*/
+/*    background: @SECONDARY_BACKGROUND_COLOR;*/
+/*    width: @RADIO_BUTTON_UNCHECKED_SIZEpx;*/
+/*    height: @RADIO_BUTTON_UNCHECKED_SIZEpx;*/
+/*    border-radius: @RADIO_BUTTON_UNCHECKED_RADIUSpx;*/
+/*    border: @ONE_PIXELSpx solid @MAIN_BACKGROUND_COLOR;*/
+/*}*/
+
+/*QRadioButton:disabled*/
+/*{*/
+/*    color: @DISABLED_COLOR;*/
+/*}*/

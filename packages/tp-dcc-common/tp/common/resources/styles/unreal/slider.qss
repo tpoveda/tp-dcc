@@ -1,0 +1,53 @@
+QSlider
+{
+    border: 1px solid @BLACK_GRAY_COLOR;
+    border-radius: @ROUND_SIZEpx;
+}
+
+QSlider:horizontal
+{
+    height: 18px;
+}
+
+QSlider:vertical
+{
+    width: 18px;
+}
+
+QSlider::groove
+{
+    border: 1px solid @BLACK_DARK_COLOR;
+    background: @BLACK_DARK_COLOR;
+    border-radius: @ROUND_SIZEpx;
+}
+
+QSlider::groove:horizontal
+{
+    height: 16px;
+}
+
+QSlider::groove:vertical
+{
+    width: 16px;
+}
+
+QSlider::handle
+{
+    background: @BLACK_GRAY_COLOR;
+    border-radius: @ROUND_SIZEpx;
+}
+
+QSlider::handle:hover
+{
+    background: @GRAY_DAVYS_COLOR;
+}
+
+QSlider::handle:horizontal
+{
+    width: 30px;
+}
+
+QSlider::handle:vertical
+{
+    height: 30px;
+}

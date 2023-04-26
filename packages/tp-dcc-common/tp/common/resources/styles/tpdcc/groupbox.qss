@@ -1,0 +1,33 @@
+/*
+ --------------------------------------------------------------------------
+ GroupBox Default Style
+ --------------------------------------------------------------------------
+*/
+
+QGroupBox {
+    font-size: 14@unit;
+    /* This breaks the group box header */
+/*    border: 1px solid @border_color;*/
+/*    border-bottom-left-radius: 5@unit;*/
+/*    border-bottom-right-radius: 5@unit;*/
+/*    border-top-right-radius: 5@unit;*/
+}
+
+QGroupBox::title {
+    border: 1px solid @border_color;
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+    background-color: @accent_color;
+    color: rgb(255, 255, 255);
+}
+
+GroupBoxWidget QFrame
+{
+    background-color: @background_in_color;
+    border-bottom-right-radius: @five_pixels@unit;
+    border-bottom-left-radius: @five_pixels@unit;
+    margin-left: @two_pixels@unit;
+    margin-right: @two_pixels@unit;
+}

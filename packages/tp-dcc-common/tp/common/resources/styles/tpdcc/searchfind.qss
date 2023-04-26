@@ -1,0 +1,40 @@
+/*
+ --------------------------------------------------------------------------
+ Search/Find Default Style
+ --------------------------------------------------------------------------
+*/
+
+SearchFindWidget, SearchFindWidget QLabel
+{
+	font: 22*DPIpx;
+	height: 35px;
+    border: 0px;
+	padding: 0 2px;
+	color: @primary_text_color;
+	background-color: @accent_color;
+	/*selection-background-color: @accent_color;*/
+	/*selection-color: @accent_color;*/
+}
+
+SearchFindWidget QLineEdit
+{
+    padding-left: 22px;
+    border-radius: 10px;
+    background-color: @background_in_color;
+}
+
+SearchFindWidget QLineEdit:focus
+{
+	border: 0px;
+	border-bottom: 0px solid transparent;
+	background-color: @background_out_color;
+	/*selection-background-color: @accent_color;*/
+	/*selection-color: @accent_color;*/
+}
+
+SearchFindWidget QPushButton, SearchFindWidget QPushButton:hover
+{
+	border: 0px;
+	padding: 0 2px;
+	background-color: transparent;
+}

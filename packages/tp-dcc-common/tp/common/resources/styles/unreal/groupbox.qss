@@ -1,0 +1,64 @@
+/*
+ --------------------------------------------------------------------------
+ GroupBox Base Style
+ --------------------------------------------------------------------------
+*/
+
+QGroupBox
+{
+    background-color: @BLACK_EERIE_COLOR;
+    border-style: transparent;
+    padding-top: 10px;
+}
+
+QGroupBox::title
+{
+    padding: 0px;
+}
+
+QGroupBox::indicator
+{
+    height: 15px;
+    width: 15px;
+    border-radius: @ROUND_SIZEpx;
+    border: 1px solid @BLACK_GRAY_COLOR;
+}
+
+QGroupBox::indicator:hover
+{
+    border-color: @GRAY_DARK_COLOR;
+}
+
+QGroupBox::indicator:checked
+{
+    image: url(@CHECK_SVG_ICON);
+}
+
+
+/*OLD_STYLE*/
+
+/*QGroupBox {*/
+/*    background-color: @sub_background_color;*/
+
+/*    !* This breaks the group box header *!*/
+/*    !*border: 1px solid;*!*/
+/*    !*border-radius: 4px;*!*/
+/*}*/
+
+/*QGroupBox*/
+/*{*/
+/*    font-size: 12*DPIpx;*/
+/*    color: @INVERSE_TEXT_COLOR;*/
+/*}*/
+
+/*QGroupBox::title*/
+/*{*/
+/*    border: @ONE_PIXELpx solid @BORDER_COLOR;*/
+/*    border-bottom: none;*/
+/*    subcontrol-origin: margin;*/
+/*    subcontrol-position: top left;*/
+/*    border-top-left-radius: @TWO_PIXELSpx;*/
+/*    border-top-right-radius: @TWO_PIXELSpx;*/
+/*    background-color: @BACKGROUND_IN_COLOR;*/
+/*    color: rgb(255, 255, 255);*/
+/*}*/
