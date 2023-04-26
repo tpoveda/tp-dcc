@@ -30,7 +30,8 @@ from tp.common.qt.contexts import block_signals
 from tp.common.qt.dpi import dpi_scale, dpi_scale_divide, dpi_multiplier, margins_dpi_scale, size_by_dpi, point_by_dpi
 from tp.common.qt.base import widget, frame, BaseWidget, BaseFrame, ScrollWidget
 from tp.common.qt.widgets.layouts import (
-	vertical_layout, horizontal_layout, grid_layout, form_layout, box_layout, flow_layout
+	vertical_layout, horizontal_layout, grid_layout, form_layout, box_layout, flow_layout, graphics_linear_layout,
+	vertical_graphics_linear_layout, horizontal_graphics_linear_layout
 )
 from tp.common.qt.qtutils import get_widget_at_mouse, compat_ui_loader, clear_layout, to_qt_object
 from tp.common.qt.widgets.labels import (

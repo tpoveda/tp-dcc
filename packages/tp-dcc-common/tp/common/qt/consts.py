@@ -11,10 +11,14 @@ from Qt.QtGui import QColor
 DEFAULT_DPI = 96
 
 # SPACINGS
-SPACING = 2                             # default widgets spacing
-WINDOW_SIDE_PADDING = 6                 # overall window spacing in each side
-WINDOW_BOTTOM_PADDING = 6               # overall window padding at bottom/top
-DEFAULT_SUB_WIDGET_SPACING = 6
+SPACING = 2
+SMALL_SPACING = 4                       # small widgets spacing (spacing between each sub-widget)
+DEFAULT_SPACING = 6                     # default widgets spacing (spacing between each sub-widget)
+LARGE_SPACING = 10                      # large spacing of each widget (spacing between each sub-widget)
+SUPER_LARGE_SPACING = 15                # very large spacing of each widget (spacing between each sub-widget)
+SUPER_LARGE_SPACING_2 = 20              # very large spacing of each widget (spacing between each sub-widget)
+SUPER_EXTRA_LARGE_SPACING = 30          # extra large spacing of each widget (spacing between each sub-widget)
+
 BUTTON_WIDTH_ICON_MEDIUM = 30
 
 # COLORS
