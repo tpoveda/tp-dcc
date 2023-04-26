@@ -6,6 +6,7 @@ Module that contains utility functions decorators
 """
 
 import os
+import abc
 import time
 import inspect
 import traceback
@@ -13,7 +14,7 @@ import threading
 from functools import wraps, update_wrapper
 
 from tp.core import log
-from tp.common.python import helpers, debug
+from tp.common.python import debug
 
 logger = log.tpLogger
 
@@ -36,9 +37,19 @@ def abstractmethod(fn):
     return wrapper
 
 
+def abstractproperty(func):
+    """
+    Abstract property decorated function.
+
+    :param callable func: decorated function.
+    """
+
+    return property(abc.abstractmethod(func))
+
+
 def accepts(*types, **kw):
     """
-    Function decorator that checks if decorated function arguments are of the expected types
+    Function decorator that checks if decorated function arguments are of the expected types.
     :param types: Expected types of the inputs to the decorated function. Must specify a type for each parameter
     :param kw: (optional) Specification of 'debug' level ( 0 | 1 | 2 )
     """
@@ -174,7 +185,7 @@ def timestamp(f):
     def wrapper(*args, **kwargs):
         start_time = time.time()
         res = f(*args, **kwargs)
-        function_name = f.func_name if helpers.is_python2() else f.__name__
+        function_name = f.__name__
         logger.info('<{}> Elapsed time : {}'.format(function_name, time.time() - start_time))
         return res
     return wrapper
@@ -182,7 +193,8 @@ def timestamp(f):
 
 def try_pass(fn):
     """
-    Function decorator that tries a function and if it fails pass
+    Function decorator that tries a function and if it fails pass.
+
     :param fn: function
     """
 
@@ -196,21 +208,19 @@ def try_pass(fn):
     return wrapper
 
 
-if helpers.is_python2():
-    def empty_decorator(*args, **kwargs):
-        def fn_decorator(fn):
-            def wrapper(*args, **kwargs):
-                r = fn(*args, **kwargs)
-                return r
-            return wrapper
-        return fn_decorator
-else:
-    def empty_decorator(fn):
-        @wraps(fn)
-        def wrapper(*args, **kwargs):
-            r = fn(*args, **kwargs)
-            return r
-        return wrapper
+def empty_decorator(fn):
+    """
+    Empty decorator implementation.
+
+    :param callable fn: decorated function.
+    :return: function result.
+    :rtype: any
+    """
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        return fn(*args, **kwargs)
+    return wrapper
 
 
 def repeater(interval, limit=-1):

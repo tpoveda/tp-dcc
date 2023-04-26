@@ -14,24 +14,47 @@ from tp.common.python import yamlordereddictloader
 logger = log.tpLogger
 
 
+def validate_yaml(dictionary):
+    """
+    Validates whether the given dictionary can be dumped into a YAML file.
+
+    :param dict dictionary: dictionary to store.
+    :return: True if the dictionary is valid; False otherwise.
+    :rtype: bool
+    """
+
+    try:
+        yaml.dump(dictionary)
+        return True
+    except Exception:
+        return False
+
+
 def write_to_file(data, filename, **kwargs):
-
     """
-    Writes data to JSON file
-    """
+    Writes data to YAML file.
 
-    # if '.yml' not in filename:
-    #     filename += '.yml'
+    :param dict, data: data to store into YAML file.
+    :param str filename: name of the YAML file we want to store data into.
+    :param dict, kwargs:
+    :return: file name of the stored file.
+    :rtype: str
+    """
 
     indent = kwargs.pop('indent', 2)
-    safe = kwargs.pop('safe', False)
+    dumper = kwargs.pop('Dumper', None)
+    kwargs['default_flow_style'] = kwargs.pop('default_flow_style', False)
+    kwargs['width'] = kwargs.pop('width', 200)
 
     try:
         with open(filename, 'w') as yaml_file:
-            if safe:
-                yaml.safe_dump(data, yaml_file, indent=indent, **kwargs)
+            if not dumper:
+                try:
+                    yaml.safe_dump(data, yaml_file, indent=indent, **kwargs)
+                except yaml.representer.RepresenterError:
+                    yaml.dump(data, yaml_file, indent=indent, **kwargs)
             else:
-                yaml.dump(data, yaml_file, indent=indent, **kwargs)
+                yaml.dump(data, yaml_file, indent=indent, Dumper=dumper, **kwargs)
     except IOError:
         logger.error('Data not saved to file {}'.format(filename))
         return None
@@ -42,9 +65,13 @@ def write_to_file(data, filename, **kwargs):
 
 
 def read_file(filename, maintain_order=False):
-
     """
-    Get data from JSON file
+    Returns data from YAML file.
+
+    :param str filename: name of YAML file we want to read data from.
+    :param bool maintain_order: whether to maintain the order of the returned dictionary or not.
+    :return: data read from YAML file as dictionary.
+    :return: dict
     """
 
     if os.stat(filename).st_size == 0:
@@ -56,8 +83,8 @@ def read_file(filename, maintain_order=False):
                     data = yaml.load(yaml_file, Loader=yamlordereddictloader.Loader)
                 else:
                     data = yaml.safe_load(yaml_file)
-        except Exception as err:
-            logger.warning('Could not read {0}'.format(filename))
-            raise err
+        except Exception as exc:
+            logger.warning('Could not read {} : {}'.format(filename, exc))
+            return None
 
     return data

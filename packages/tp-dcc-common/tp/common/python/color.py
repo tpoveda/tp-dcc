@@ -351,7 +351,7 @@ def hue_shift(color_to_shift, shift_amount):
 
 def string_is_hex(color_str):
     """
-    Returns whether or not given string is a valid hexadecimal string
+    Returns whether given string is a valid hexadecimal string
     :param color_str: str
     :return: bool
     """
@@ -425,13 +425,15 @@ def convert_kelvin_to_rgb(color_temperature):
     return red, green, blue
 
 
-class RGBRotate(object):
+class RGBRotate:
     """
     Hue Rotation, using the matrix rotation method.
     https://stackoverflow.com/questions/8507885/shift-hue-of-an-rgb-color
     """
 
     def __init__(self):
+        super().__init__()
+
         self.matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
     def set_hue_rotation(self, degrees):

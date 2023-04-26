@@ -6,7 +6,7 @@ Utility methods related to sort algorithms
 """
 
 
-class QuickNumbersListSort(object):
+class QuickNumbersListSort:
     """
     Fast method to sort lists of numbers
     """

@@ -1198,7 +1198,8 @@ def merge_dicts(dict_a, dict_b, path=None):
 def compare_and_update_dicts(source_dict, target_dict):
     """
     Compares two dictionaries and updates target dict with entries that where located in source_dict but not in
-    the target dict
+    the target dictionary.
+
     :param source_dict: dict, source dictionary with original entries
     :param target_dict: dict, target dictionary that will get the new changes from source
     :return:
@@ -1219,9 +1220,28 @@ def compare_and_update_dicts(source_dict, target_dict):
     return target_dict, msg_log
 
 
+def get_dict_slice(starting_dict, index, default_value=None):
+    """
+    For each value list in a dictionary return the index value with the corresponding key.
+
+    :param dict starting_dict: A dictionary of keys with list values.
+    :param int index: The slice value to return from each list.
+    :param Any default_value: If the length of the value isn't long enough, return a default value.
+    :return: modified dictionary of sliced values.
+    :rtype: dict
+    """
+
+    result = dict()
+    for key, values in starting_dict.items():
+        result[key] = values[index] if len(values) >= index+ 1 else default_value
+
+    return result
+
+
 def duplicates_in_list(seq):
     """
-    Returns all duplicates items in given list or tuple
+    Returns all duplicates items in given list or tuple.
+
     :param seq: list or tuple
     :return: list
     """

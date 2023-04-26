@@ -7,6 +7,7 @@ Utility methods related to string paths
 
 import os
 import stat
+import time
 import string
 import shutil
 import tempfile
@@ -28,27 +29,6 @@ WEB_PREFIX = 'https://'
 NATIVE_SEPARATOR = (SEPARATOR, BAD_SEPARATOR)[os.name == 'nt']
 
 logger = log.tpLogger
-
-
-class FindUniquePath(name.FindUniqueString, object):
-    def __init__(self, directory):
-        if not directory:
-            directory = folder.get_current_working_directory()
-
-        self.parent_path = self._get_parent_path(directory)
-        basename = get_basename(directory=directory)
-
-        super(FindUniquePath, self).__init__(basename)
-
-    def _get_scope_list(self):
-        return folder.get_files_and_folders(directory=self.parent_path)
-
-    def _search(self):
-        name = super(FindUniquePath, self)._search()
-        return join_path(self.parent_path, name)
-
-    def _get_parent_path(self, directory):
-        return dirname(directory)
 
 
 @contextlib.contextmanager
@@ -79,15 +59,7 @@ def normalize_path(path):
     :return: str, normalized path
     """
 
-    path = path.replace(BAD_SEPARATOR, SEPARATOR).replace(PATH_SEPARATOR, SEPARATOR)
-
-    if helpers.is_python2():
-        try:
-            path = unicode(path.replace(r'\\', r'\\\\'), "unicode_escape").encode('utf-8')
-        except TypeError:
-            path = path.replace(r'\\', r'\\\\').encode('utf-8')
-
-    return path.rstrip('/')
+    return path.replace(BAD_SEPARATOR, SEPARATOR).replace(PATH_SEPARATOR, SEPARATOR).rstrip('/')
 
 
 def normalize_paths(paths):
@@ -102,9 +74,11 @@ def normalize_paths(paths):
 
 def clean_path(path):
     """
-    Cleans a path. Useful to resolve problems with slashes
-    :param path: str
-    :return: str, clean path
+    Cleans a path. Useful to resolve problems with slashes.
+
+    :param str path: path to clean.
+    :return: cleaned path.
+    :rtype: str
     """
 
     if not path:
@@ -128,6 +102,26 @@ def clean_path(path):
         path = path.replace(PATH_SEPARATOR, SEPARATOR)
 
     return path
+
+
+def touhc_path(path, remove=False):
+    """
+    Makes ssure given file or directory is valid to use. This will mark files as writable, and validate
+    the directory exists to write to if the file does not exist.
+
+    :param str path: absolute path to given file or directory.
+    :param bool remove: whether file should be removed if it exists.
+    """
+
+    directory_path = os.path.dirname(path)
+    if os.path.exists(directory_path):
+        if os.path.isfile(path):
+            os.chmod(path, stat.S_IWRITE)
+            if remove:
+                os.remove(path)
+                time.sleep(.002)
+    else:
+        os.makedirs(directory_path)
 
 
 def real_path(path):
@@ -696,3 +690,24 @@ def get_user_data_dir(appname=None, appauthor=None, version=None, roaming=False)
         path = os.path.join(path, version)
 
     return path
+
+
+class FindUniquePath(name.FindUniqueString, object):
+    def __init__(self, directory):
+        if not directory:
+            directory = folder.get_current_working_directory()
+
+        self.parent_path = self._get_parent_path(directory)
+        basename = get_basename(directory=directory)
+
+        super(FindUniquePath, self).__init__(basename)
+
+    def _get_scope_list(self):
+        return folder.get_files_and_folders(directory=self.parent_path)
+
+    def _search(self):
+        name = super(FindUniquePath, self)._search()
+        return join_path(self.parent_path, name)
+
+    def _get_parent_path(self, directory):
+        return dirname(directory)

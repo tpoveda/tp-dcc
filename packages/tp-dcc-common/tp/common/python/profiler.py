@@ -17,13 +17,6 @@ from tp.core import log
 
 logger = log.tpLogger
 
-if sys.version_info[0] > 3:
-    def _get_func_name(func):
-        return func.func_name
-else:
-    def _get_func_name(func):
-        return func.__name__
-
 
 def profile_function(sort_key='time', rows=30):
     def _(fn):
@@ -43,7 +36,7 @@ def fn_timer(fn):
         result = fn(*args, **kwargs)
         t1 = timeit.default_timer()
         logger.debug('Total time running {}: {} seconds'.format(
-            '.'.join((fn.__module__, _get_func_name(fn))), str(t1 - t0)))
+            '.'.join((fn.__module__, fn.__name__)), str(t1 - t0)))
         return result
 
     return function_timer

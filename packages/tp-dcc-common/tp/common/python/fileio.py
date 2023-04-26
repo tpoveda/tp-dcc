@@ -24,582 +24,6 @@ from tp.common.python import helpers
 logger = log.tpLogger
 
 
-class FileManager(object):
-    """
-    Base class to deal with file writing and reading
-    """
-
-    def __init__(self, file_path, skip_warning=False):
-        """
-        :param file_path: str, path to the file to work with
-        :param skip_warning: bool, Whether to print warnings or not
-        """
-
-        self.file_path = file_path
-        self.open_file = None
-
-        if not skip_warning:
-            self.check_path(warning_text='Path {} is invalid!'.format(file_path))
-
-    def get_open_file(self):
-        """
-        Returns managed file and opens it
-        :return:  str
-        """
-
-        return self.open_file()
-
-    def read_file(self):
-        """
-        Opens managed file to read
-        """
-
-        self.check_file(warning_text='File {} is invalid!'.format(self.file_path))
-        self.open_file = open(self.file_path, 'r')
-
-    def write_file(self):
-        """
-        Opens managed file to write data into (removing any previous data)
-        """
-
-        # self.check_file(warning_text='File {} is invalid!'.format(self.file_path))
-        self.open_file = open(self.file_path, 'w')
-
-    def append_file(self):
-        """
-        Opens managed file to append data to the current file data
-        """
-
-        self.check_file(warning_text='File {} is invalid!'.format(self.file_path))
-        self.open_file = open(self.file_path, 'a')
-
-    def close_file(self):
-        """
-        Close managed file
-        """
-
-        if self.open_file:
-            self.open_file.close()
-
-    def check_folder(self, warning_text=None):
-        """
-        Check if a folder is an invalid one and raise error if necessary
-        :param warning_text: str
-        :return: bool
-        """
-
-        from tp.common.python import path
-
-        if not path.is_dir(self.file_path):
-            if warning_text is not None:
-                raise NameError(str(warning_text))
-            return False
-
-        return True
-
-    def check_path(self, warning_text=None):
-        """
-        Check if a path to a file is invalid and raise error if necessary
-        :param warning_text: str
-        :return: bool
-        """
-
-        from tp.common.python import path
-
-        dir_name = path.dirname(self.file_path)
-
-        if not path.is_dir(dir_name):
-            if warning_text is not None:
-                raise UserWarning(str(warning_text))
-            return False
-
-        return True
-
-    def check_file(self, warning_text=None):
-        """
-        Check if a file is an invalid one and raise error if necessary
-        :param warning_text: str
-        :return: bool
-        """
-
-        from tp.common.python import path
-
-        if not path.is_file(self.file_path):
-            if warning_text is not None:
-                raise UserWarning(str(warning_text))
-            return False
-
-        return True
-
-
-class FileReader(FileManager, object):
-    """
-    Class to deal with file read operations
-    """
-
-    def __init__(self, file_path):
-        super(FileReader, self).__init__(file_path=file_path)
-
-    def read(self):
-        """
-        Read managed file
-        :return: list<str>, list of file lines
-        """
-
-        self.read_file()
-        lines = self._get_lines()
-        self.close_file()
-
-        return lines
-
-    def _get_lines(self):
-        try:
-            lines = self.open_file.read()
-        except Exception:
-            return []
-
-        return get_text_lines(lines)
-
-
-class FileWriter(FileManager, object):
-    """
-    Class to deal with file write operations
-    """
-
-    def __init__(self, file_path):
-        super(FileWriter, self).__init__(file_path=file_path)
-
-        from tp.common.python import osplatform
-
-        osplatform.get_permission(file_path)
-        self.append = False
-
-    def write_file(self):
-        """
-        Overrides write file. This function creates the file if it does not exists
-        If append is True, then append any lines to the file instead or replacing
-        """
-
-        if self.append:
-            self.append_file()
-        else:
-            super(FileWriter, self).write_file()
-
-    def set_append(self, append):
-        """
-        If True, next write operations will append new lines to end of documents otherwise the text
-        content will be replaced entirely
-        :param append: bool
-        """
-
-        self.append = append
-
-    def write_line(self, line):
-        """
-        Writes a single line to the file and closes managed file after write operation
-        :param line: str, line to add to the file
-        """
-
-        self.write_file()
-        try:
-            self.open_file.write('%s\n' % line)
-        except Exception:
-            pass
-        self.close_file()
-
-    def write_json(self, dict_data):
-        """
-        Writes given JSON data (dict) into file
-        :param dict_data: dict
-        """
-
-        self.write_file()
-        try:
-            if helpers.is_python2():
-                json.dump(dict_data, self.open_file, indent=4, sort_keys=False)
-            else:
-                json.dump(dict(dict_data), self.open_file, indent=4, sort_keys=False)
-        except Exception as exc:
-            logger.exception('Impossible to save JSON file: "{}"'.format(exc))
-        self.close_file()
-
-    def write(self, lines, last_line_empty=True):
-        """
-        Write the given list of lines to the managed file
-        :param lines: list<str>, list of lines to write to the managed file
-        :param last_line_empty: bool, whether to add a line after the last line
-        """
-
-        self.write_file()
-
-        try:
-            inc = 0
-            for line in lines:
-                if inc == len(lines) - 1 and not last_line_empty:
-                    self.open_file.write(str('%s' % line))
-                    break
-                self.open_file.write(str('%s\n' % line))
-                inc += 1
-        except Exception:
-            print('Could not write to file {}'.format(self.file_path))
-
-        self.close_file()
-
-
-class FileVersion(object):
-    """
-    Utility class to version files or folders
-    """
-
-    def __init__(self, file_path):
-
-        from tp.common.python import path
-
-        self.file_path = file_path
-        if file_path:
-            self.filename = path.get_basename(directory=self.file_path)
-            self._path = path.dirname(file_path)
-            self._version_folder_name = '__version__'
-            self._version_name = 'version'
-            self._version_folder = None
-            self.comment_file = None
-            self.updated_old = False
-
-    def get_version_name(self):
-        return self._version_name
-
-    def set_version_name(self, version_name):
-        self._version_name = version_name
-
-    def get_version_folder_name(self):
-        return self._version_folder_name
-
-    def set_version_folder_name(self, version_folder_name):
-        self._version_folder_name = version_folder_name
-
-    def get_version_folder(self):
-        return self._version_folder
-
-    def set_version_folder(self, version_folder):
-        self._version_folder = version_folder
-
-    version_name = property(get_version_name, set_version_name)
-    version_folder_name = property(get_version_folder_name, set_version_folder_name)
-    version_folder = property(get_version_folder, set_version_folder)
-
-    def has_versions(self):
-        """
-        Returns whether the version file already has versions folder created or not
-        :return: bool
-        """
-
-        from tp.common.python import path
-
-        version_folder = self._get_version_folder()
-        if path.is_dir(version_folder):
-            return True
-
-    def get_latest_version(self):
-        """
-        Returns the file path to the latest version
-        :return: str
-        """
-
-        from tp.common.python import path
-
-        versions = self.get_versions()
-        latest_version = versions[-1]
-
-        return path.join_path(self.file_path, '{0}/{1}'.format(self.version_folder_name, latest_version))
-
-    def get_versions(self, return_version_numbers_also=False):
-        """
-        Get file paths of all version
-        :param return_version_numbers_also: Whether the number of the versions should be returned also
-        :return: list
-        """
-
-        from tp.common.python import folder, sort
-
-        version_folder = self._get_version_folder()
-        files = folder.get_files_and_folders(directory=version_folder)
-        if not files:
-            return None
-
-        number_list = list()
-        pass_files = list()
-
-        for file_path in files:
-            if not file_path.startswith(self.version_name):
-                continue
-            split_name = file_path.split('.')
-            if not len(split_name) == 2:
-                continue
-
-            number = int(split_name[1])
-            number_list.append(number)
-            pass_files.append(file_path)
-
-        if not pass_files:
-            return
-
-        quick_sort = sort.QuickNumbersListSort(list_of_numbers=number_list)
-        quick_sort.set_follower_list(pass_files)
-        pass_files = quick_sort.run()
-
-        pass_dict = dict()
-        for i in range(len(number_list)):
-            pass_dict[pass_files[0][i]] = pass_files[1][i]
-
-        if not return_version_numbers_also:
-            return pass_dict
-        else:
-            return pass_dict, pass_files[0]
-
-    def get_version_numbers(self):
-        """
-        Return file version numbers of all versions
-        :return: list<int>, list of version numbers
-        """
-
-        from tp.common.python import folder
-
-        version_folder = self._get_version_folder()
-        files = folder.get_files_and_folders(directory=version_folder)
-        if not files:
-            return
-
-        number_list = list()
-        for file_path in files:
-            if not file_path.startswith(self.version_name):
-                continue
-            split_name = file_path.split('.')
-            if not len(split_name) == 2:
-                continue
-            num = int(split_name[1])
-            number_list.append(num)
-
-        return number_list
-
-    def save_comment(self, comment=None, version_file=None):
-        """
-        Saves a comment to the version file
-        :param comment: str, commend to add to the version file
-        :param version_file: str, version file
-        """
-
-        version = version_file.split('.')
-        if version:
-            version = version[-1]
-
-        user = getpass.getuser()
-
-        if not comment:
-            comment = '-'
-        comment.replace('"', '\"')
-
-        comment_file = FileWriter(file_path=self.comment_file)
-        comment_file.set_append(True)
-        comment_file.write(['version = {0}; comment = "{1}"; user = "{2}"'.format(version, comment, user)])
-        comment_file.close_file()
-
-    def save(self, comment=None):
-        """
-        Saves a new version file
-        :param comment: str
-        :return: str, new version file name
-        """
-
-        from tp.common.python import folder, path
-
-        if not comment:
-            comment = '-'
-        comment = comment.replace('\n', '   ').replace('\r', '   ')
-
-        self._create_version_folder()
-        self._create_comment_file()
-
-        unique_file_name = self._increment_version_file_name()
-
-        if path.is_dir(self.file_path):
-            folder.copy_folder(directory=self.file_path, directory_destination=unique_file_name)
-        elif path.is_file(self.file_path):
-            copy_file(file_path=self.file_path, file_path_destination=unique_file_name)
-
-        self.save_comment(comment=comment, version_file=unique_file_name)
-
-        return unique_file_name
-
-    def get_version_data(self, version_number):
-        """
-        Returns the version data (comment and user) of the given version number
-        :param version_number: int, version number
-        :return: list<str, str>, tuple with comment and user of the given version
-        """
-
-        from tp.common.python import path
-
-        file_path = self._get_comment_path()
-        if not file_path:
-            return None, None
-
-        if path.is_file(file_path):
-            read = FileReader(file_path=file_path)
-            lines = read.read()
-
-            version = None
-            comment = None
-            user = None
-
-            for line in lines:
-                start_index = line.find('"')
-                if start_index > -1:
-                    end_index = line.find(';')
-                    sub_part = line[start_index + 1:end_index]
-                    sub_part = sub_part.replace('"', '\\"')
-                    line = line[:start_index + 1] + sub_part + line[end_index:]
-
-                try:
-                    exec(line)
-                except Exception:
-                    pass
-
-                if version == version_number:
-                    return comment, user
-
-        return None, None
-
-    def get_all_versions_data(self):
-        """
-        Returns all the version data (comment, user, file_size, modified and version_file) of all the versions
-        :return: list<str, str, str, str, str, str>, tuple version, comment, user, file_size, modified, file_version
-        """
-
-        from tp.common.python import path
-
-        versions = self.get_versions(return_version_numbers_also=True)
-        if not versions:
-            return
-        else:
-            version_paths = versions[0]
-            version_numbers = versions[1]
-
-        file_path = self._get_comment_path()
-        if not file_path:
-            return []
-
-        datas = list()
-        if path.is_file(file_path):
-            read = FileReader(file_path)
-            lines = read.read()
-            for line in lines:
-                line_info_dict = dict()
-                version = None
-                comment = None
-                user = None
-                file_size = None
-                modified = None
-
-                split_line = line.split(';')
-                for sub_line in split_line:
-                    assigment = sub_line.split('=')
-                    if assigment and assigment[0]:
-                        name = assigment[0].strip()
-                        value = assigment[1].strip()
-                        line_info_dict[name] = value
-
-                # Version
-                if 'version' not in line_info_dict:
-                    continue
-                version = int(line_info_dict['version'])
-                if version not in version_numbers:
-                    continue
-
-                # Comment
-                if 'comment' in line_info_dict:
-                    comment = line_info_dict['comment']
-                    comment = comment[1:-1]
-
-                # User
-                if 'user' in line_info_dict:
-                    user = line_info_dict['user']
-                    user = user[1:-1]
-
-                # Version File
-                version_file = version_paths[(version)]
-                version_file = path.join_path(self.file_path, '{0}/{1}'.format(self.version_folder_name, version_file))
-
-                # File Size
-                file_size = get_file_size(file_path=version_file)
-
-                # Modified
-                modified = get_last_modified_date(file_path=version_file)
-
-                datas.append([version, comment, user, file_size, modified, version_file])
-
-        return datas
-
-    def get_version_path(self, version_number):
-        """
-        Returns the path to the given version number
-        :param version_number: int, version number
-        :return: str, path to the version
-        """
-
-        return self._get_version_path(version_number=version_number)
-
-    def get_version_comment(self, version_number):
-        """
-        Returns the comment of the given version number
-        :param version_number: int, version number
-        :return:  str, version_number comment
-        """
-
-        comment, user = self.get_version_data(version_number)
-        return comment
-
-    def _get_version_folder(self):
-        from tp.common.python import path
-
-        if path.is_file(self.file_path):
-            dir_name = path.dirname(self.file_path)
-            version_path = path.join_path(dir_name, self._version_folder_name)
-        else:
-            version_path = path.join_path(self.file_path, self._version_folder_name)
-
-        return version_path
-
-    def _get_version_path(self, version_number):
-        from tp.common.python import path
-        return path.join_path(self._get_version_folder(), self._version_name + '.' + str(version_number))
-
-    def _get_version_number(self, file_path):
-        from tp.common.python import name
-        version_number = name.get_last_number(input_string=file_path)
-        return version_number
-
-    def _get_comment_path(self):
-        from tp.common.python import path
-        version_folder = self._get_version_folder()
-        file_path = None
-        if version_folder:
-            file_path = path.join_path(version_folder, 'comments.txt')
-
-        return file_path
-
-    def _create_version_folder(self):
-        from tp.common.python import folder
-        self._version_folder = folder.create_folder(name=self._version_folder_name, directory=self._path)
-
-    def _create_comment_file(self):
-        self.comment_file = create_file(filename='comments.txt', directory=self._version_folder)
-
-    def _increment_version_file_name(self):
-        from tp.common.python import path
-        version_path = path.join_path(self._version_folder, self._version_name + '.1')
-        return path.unique_path_name(directory=version_path)
-
-
 def open_browser(file_path):
     """
     Open the file browser to the path specified
@@ -1081,8 +505,8 @@ def is_same_text_content(file1, file2):
 def get_files(root_directory, filter_text=''):
     """
     Returns files found in the given directory
-    :param root_directory: str
-    :param filter_text: str
+    :param str root_directory: root directory to get files from.
+    :param str filter_text: filter text.
     :return: list(str)
     """
 
@@ -1101,9 +525,11 @@ def get_files(root_directory, filter_text=''):
 
 def file_has_info(file_path):
     """
-    Check if the given file size is bigger than 1.0 byte
-    :param file_path: str, ful file path of the file to check
-    :return: bool
+    Check if the given file size is bigger than 1.0 byte.
+
+    :param str file_path: absolute file path of the file to check
+    :return: True if file has info; False otherwise.
+    :rtype: bool
     """
 
     file_stats = os.stat(file_path)
@@ -1115,9 +541,11 @@ def file_has_info(file_path):
 
 def get_lock_name(file_path):
     """
-    Returns lock file of the given file
-    :param file_path: str
-    :return: str
+    Returns lock file of the given file.
+
+    :param str file_path: file path.
+    :return: lock name.
+    :rtype: str
     """
 
     return '{}.lock'.format(file_path)
@@ -1125,7 +553,7 @@ def get_lock_name(file_path):
 
 def is_locked(file_path):
     """
-    Returns whether or not given file is locked
+    Returns whether given file is locked
     :param file_path: str
     :return: bool
     """
@@ -1135,9 +563,11 @@ def is_locked(file_path):
 
 def lock(file_path):
     """
-    Creates lock file of the given file
-    :param file_path: str
-    :return: str
+    Creates lock file of the given file.
+
+    :param str file_path: file path to lock.
+    :return: locked file.
+    :rtype: str
     """
 
     lock_file = get_lock_name(file_path)
@@ -1148,9 +578,11 @@ def lock(file_path):
 
 def remove_lock(file_path):
     """
-    Removes lock file of the given file
-    :param file_path: str
-    :return: bool
+    Removes lock file of the given file.
+
+    :param str file_path: file path to unlock.
+    :return: True if file path was unlocked successfully; False otherwise.
+    :rtype: bool
     """
 
     lock_file = get_lock_name(file_path)
@@ -1185,3 +617,579 @@ def get_latest_file(file_paths, only_return_one_match=True):
         return times[mtime][0]
     else:
         return times[mtime]
+
+
+class FileManager:
+    """
+    Base class to deal with file writing and reading
+    """
+
+    def __init__(self, file_path, skip_warning=False):
+        """
+        :param file_path: str, path to the file to work with
+        :param skip_warning: bool, Whether to print warnings or not
+        """
+
+        self.file_path = file_path
+        self.open_file = None
+
+        if not skip_warning:
+            self.check_path(warning_text='Path {} is invalid!'.format(file_path))
+
+    def get_open_file(self):
+        """
+        Returns managed file and opens it
+        :return:  str
+        """
+
+        return self.open_file()
+
+    def read_file(self):
+        """
+        Opens managed file to read
+        """
+
+        self.check_file(warning_text='File {} is invalid!'.format(self.file_path))
+        self.open_file = open(self.file_path, 'r')
+
+    def write_file(self):
+        """
+        Opens managed file to write data into (removing any previous data)
+        """
+
+        # self.check_file(warning_text='File {} is invalid!'.format(self.file_path))
+        self.open_file = open(self.file_path, 'w')
+
+    def append_file(self):
+        """
+        Opens managed file to append data to the current file data
+        """
+
+        self.check_file(warning_text='File {} is invalid!'.format(self.file_path))
+        self.open_file = open(self.file_path, 'a')
+
+    def close_file(self):
+        """
+        Close managed file
+        """
+
+        if self.open_file:
+            self.open_file.close()
+
+    def check_folder(self, warning_text=None):
+        """
+        Check if a folder is an invalid one and raise error if necessary
+        :param warning_text: str
+        :return: bool
+        """
+
+        from tp.common.python import path
+
+        if not path.is_dir(self.file_path):
+            if warning_text is not None:
+                raise NameError(str(warning_text))
+            return False
+
+        return True
+
+    def check_path(self, warning_text=None):
+        """
+        Check if a path to a file is invalid and raise error if necessary
+        :param warning_text: str
+        :return: bool
+        """
+
+        from tp.common.python import path
+
+        dir_name = path.dirname(self.file_path)
+
+        if not path.is_dir(dir_name):
+            if warning_text is not None:
+                raise UserWarning(str(warning_text))
+            return False
+
+        return True
+
+    def check_file(self, warning_text=None):
+        """
+        Check if a file is an invalid one and raise error if necessary
+        :param warning_text: str
+        :return: bool
+        """
+
+        from tp.common.python import path
+
+        if not path.is_file(self.file_path):
+            if warning_text is not None:
+                raise UserWarning(str(warning_text))
+            return False
+
+        return True
+
+
+class FileReader(FileManager):
+    """
+    Class to deal with file read operations
+    """
+
+    def __init__(self, file_path):
+        super(FileReader, self).__init__(file_path=file_path)
+
+    def read(self):
+        """
+        Read managed file
+        :return: list<str>, list of file lines
+        """
+
+        self.read_file()
+        lines = self._get_lines()
+        self.close_file()
+
+        return lines
+
+    def _get_lines(self):
+        try:
+            lines = self.open_file.read()
+        except Exception:
+            return []
+
+        return get_text_lines(lines)
+
+
+class FileWriter(FileManager):
+    """
+    Class to deal with file write operations
+    """
+
+    def __init__(self, file_path):
+        super(FileWriter, self).__init__(file_path=file_path)
+
+        from tp.common.python import osplatform
+
+        osplatform.get_permission(file_path)
+        self.append = False
+
+    def write_file(self):
+        """
+        Overrides write file. This function creates the file if it does not exists
+        If append is True, then append any lines to the file instead or replacing
+        """
+
+        if self.append:
+            self.append_file()
+        else:
+            super(FileWriter, self).write_file()
+
+    def set_append(self, append):
+        """
+        If True, next write operations will append new lines to end of documents otherwise the text
+        content will be replaced entirely
+        :param append: bool
+        """
+
+        self.append = append
+
+    def write_line(self, line):
+        """
+        Writes a single line to the file and closes managed file after write operation
+        :param line: str, line to add to the file
+        """
+
+        self.write_file()
+        try:
+            self.open_file.write('%s\n' % line)
+        except Exception:
+            pass
+        self.close_file()
+
+    def write_json(self, dict_data):
+        """
+        Writes given JSON data (dict) into file
+        :param dict_data: dict
+        """
+
+        self.write_file()
+        try:
+            if helpers.is_python2():
+                json.dump(dict_data, self.open_file, indent=4, sort_keys=False)
+            else:
+                json.dump(dict(dict_data), self.open_file, indent=4, sort_keys=False)
+        except Exception as exc:
+            logger.exception('Impossible to save JSON file: "{}"'.format(exc))
+        self.close_file()
+
+    def write(self, lines, last_line_empty=True):
+        """
+        Write the given list of lines to the managed file
+        :param lines: list<str>, list of lines to write to the managed file
+        :param last_line_empty: bool, whether to add a line after the last line
+        """
+
+        self.write_file()
+
+        try:
+            inc = 0
+            for line in lines:
+                if inc == len(lines) - 1 and not last_line_empty:
+                    self.open_file.write(str('%s' % line))
+                    break
+                self.open_file.write(str('%s\n' % line))
+                inc += 1
+        except Exception:
+            print('Could not write to file {}'.format(self.file_path))
+
+        self.close_file()
+
+
+class FileVersion:
+    """
+    Utility class to version files or folders
+    """
+
+    def __init__(self, file_path):
+
+        from tp.common.python import path
+
+        self.file_path = file_path
+        if file_path:
+            self.filename = path.get_basename(directory=self.file_path)
+            self._path = path.dirname(file_path)
+            self._version_folder_name = '__version__'
+            self._version_name = 'version'
+            self._version_folder = None
+            self.comment_file = None
+            self.updated_old = False
+
+    def get_version_name(self):
+        return self._version_name
+
+    def set_version_name(self, version_name):
+        self._version_name = version_name
+
+    def get_version_folder_name(self):
+        return self._version_folder_name
+
+    def set_version_folder_name(self, version_folder_name):
+        self._version_folder_name = version_folder_name
+
+    def get_version_folder(self):
+        return self._version_folder
+
+    def set_version_folder(self, version_folder):
+        self._version_folder = version_folder
+
+    version_name = property(get_version_name, set_version_name)
+    version_folder_name = property(get_version_folder_name, set_version_folder_name)
+    version_folder = property(get_version_folder, set_version_folder)
+
+    def has_versions(self):
+        """
+        Returns whether the version file already has versions folder created or not
+        :return: bool
+        """
+
+        from tp.common.python import path
+
+        version_folder = self._get_version_folder()
+        if path.is_dir(version_folder):
+            return True
+
+    def get_latest_version(self):
+        """
+        Returns the file path to the latest version
+        :return: str
+        """
+
+        from tp.common.python import path
+
+        versions = self.get_versions()
+        latest_version = versions[-1]
+
+        return path.join_path(self.file_path, '{0}/{1}'.format(self.version_folder_name, latest_version))
+
+    def get_versions(self, return_version_numbers_also=False):
+        """
+        Get file paths of all version
+        :param return_version_numbers_also: Whether the number of the versions should be returned also
+        :return: list
+        """
+
+        from tp.common.python import folder, sort
+
+        version_folder = self._get_version_folder()
+        files = folder.get_files_and_folders(directory=version_folder)
+        if not files:
+            return None
+
+        number_list = list()
+        pass_files = list()
+
+        for file_path in files:
+            if not file_path.startswith(self.version_name):
+                continue
+            split_name = file_path.split('.')
+            if not len(split_name) == 2:
+                continue
+
+            number = int(split_name[1])
+            number_list.append(number)
+            pass_files.append(file_path)
+
+        if not pass_files:
+            return
+
+        quick_sort = sort.QuickNumbersListSort(list_of_numbers=number_list)
+        quick_sort.set_follower_list(pass_files)
+        pass_files = quick_sort.run()
+
+        pass_dict = dict()
+        for i in range(len(number_list)):
+            pass_dict[pass_files[0][i]] = pass_files[1][i]
+
+        if not return_version_numbers_also:
+            return pass_dict
+        else:
+            return pass_dict, pass_files[0]
+
+    def get_version_numbers(self):
+        """
+        Return file version numbers of all versions
+        :return: list<int>, list of version numbers
+        """
+
+        from tp.common.python import folder
+
+        version_folder = self._get_version_folder()
+        files = folder.get_files_and_folders(directory=version_folder)
+        if not files:
+            return
+
+        number_list = list()
+        for file_path in files:
+            if not file_path.startswith(self.version_name):
+                continue
+            split_name = file_path.split('.')
+            if not len(split_name) == 2:
+                continue
+            num = int(split_name[1])
+            number_list.append(num)
+
+        return number_list
+
+    def save_comment(self, comment=None, version_file=None):
+        """
+        Saves a comment to the version file
+        :param comment: str, commend to add to the version file
+        :param version_file: str, version file
+        """
+
+        version = version_file.split('.')
+        if version:
+            version = version[-1]
+
+        user = getpass.getuser()
+
+        if not comment:
+            comment = '-'
+        comment.replace('"', '\"')
+
+        comment_file = FileWriter(file_path=self.comment_file)
+        comment_file.set_append(True)
+        comment_file.write(['version = {0}; comment = "{1}"; user = "{2}"'.format(version, comment, user)])
+        comment_file.close_file()
+
+    def save(self, comment=None):
+        """
+        Saves a new version file
+        :param comment: str
+        :return: str, new version file name
+        """
+
+        from tp.common.python import folder, path
+
+        if not comment:
+            comment = '-'
+        comment = comment.replace('\n', '   ').replace('\r', '   ')
+
+        self._create_version_folder()
+        self._create_comment_file()
+
+        unique_file_name = self._increment_version_file_name()
+
+        if path.is_dir(self.file_path):
+            folder.copy_folder(directory=self.file_path, directory_destination=unique_file_name)
+        elif path.is_file(self.file_path):
+            copy_file(file_path=self.file_path, file_path_destination=unique_file_name)
+
+        self.save_comment(comment=comment, version_file=unique_file_name)
+
+        return unique_file_name
+
+    def get_version_data(self, version_number):
+        """
+        Returns the version data (comment and user) of the given version number
+        :param version_number: int, version number
+        :return: list<str, str>, tuple with comment and user of the given version
+        """
+
+        from tp.common.python import path
+
+        file_path = self._get_comment_path()
+        if not file_path:
+            return None, None
+
+        if path.is_file(file_path):
+            read = FileReader(file_path=file_path)
+            lines = read.read()
+
+            version = None
+            comment = None
+            user = None
+
+            for line in lines:
+                start_index = line.find('"')
+                if start_index > -1:
+                    end_index = line.find(';')
+                    sub_part = line[start_index + 1:end_index]
+                    sub_part = sub_part.replace('"', '\\"')
+                    line = line[:start_index + 1] + sub_part + line[end_index:]
+
+                try:
+                    exec(line)
+                except Exception:
+                    pass
+
+                if version == version_number:
+                    return comment, user
+
+        return None, None
+
+    def get_all_versions_data(self):
+        """
+        Returns all the version data (comment, user, file_size, modified and version_file) of all the versions
+        :return: list<str, str, str, str, str, str>, tuple version, comment, user, file_size, modified, file_version
+        """
+
+        from tp.common.python import path
+
+        versions = self.get_versions(return_version_numbers_also=True)
+        if not versions:
+            return
+        else:
+            version_paths = versions[0]
+            version_numbers = versions[1]
+
+        file_path = self._get_comment_path()
+        if not file_path:
+            return []
+
+        datas = list()
+        if path.is_file(file_path):
+            read = FileReader(file_path)
+            lines = read.read()
+            for line in lines:
+                line_info_dict = dict()
+                version = None
+                comment = None
+                user = None
+                file_size = None
+                modified = None
+
+                split_line = line.split(';')
+                for sub_line in split_line:
+                    assigment = sub_line.split('=')
+                    if assigment and assigment[0]:
+                        name = assigment[0].strip()
+                        value = assigment[1].strip()
+                        line_info_dict[name] = value
+
+                # Version
+                if 'version' not in line_info_dict:
+                    continue
+                version = int(line_info_dict['version'])
+                if version not in version_numbers:
+                    continue
+
+                # Comment
+                if 'comment' in line_info_dict:
+                    comment = line_info_dict['comment']
+                    comment = comment[1:-1]
+
+                # User
+                if 'user' in line_info_dict:
+                    user = line_info_dict['user']
+                    user = user[1:-1]
+
+                # Version File
+                version_file = version_paths[(version)]
+                version_file = path.join_path(self.file_path, '{0}/{1}'.format(self.version_folder_name, version_file))
+
+                # File Size
+                file_size = get_file_size(file_path=version_file)
+
+                # Modified
+                modified = get_last_modified_date(file_path=version_file)
+
+                datas.append([version, comment, user, file_size, modified, version_file])
+
+        return datas
+
+    def get_version_path(self, version_number):
+        """
+        Returns the path to the given version number
+        :param version_number: int, version number
+        :return: str, path to the version
+        """
+
+        return self._get_version_path(version_number=version_number)
+
+    def get_version_comment(self, version_number):
+        """
+        Returns the comment of the given version number
+        :param version_number: int, version number
+        :return:  str, version_number comment
+        """
+
+        comment, user = self.get_version_data(version_number)
+        return comment
+
+    def _get_version_folder(self):
+        from tp.common.python import path
+
+        if path.is_file(self.file_path):
+            dir_name = path.dirname(self.file_path)
+            version_path = path.join_path(dir_name, self._version_folder_name)
+        else:
+            version_path = path.join_path(self.file_path, self._version_folder_name)
+
+        return version_path
+
+    def _get_version_path(self, version_number):
+        from tp.common.python import path
+        return path.join_path(self._get_version_folder(), self._version_name + '.' + str(version_number))
+
+    def _get_version_number(self, file_path):
+        from tp.common.python import name
+        version_number = name.get_last_number(input_string=file_path)
+        return version_number
+
+    def _get_comment_path(self):
+        from tp.common.python import path
+        version_folder = self._get_version_folder()
+        file_path = None
+        if version_folder:
+            file_path = path.join_path(version_folder, 'comments.txt')
+
+        return file_path
+
+    def _create_version_folder(self):
+        from tp.common.python import folder
+        self._version_folder = folder.create_folder(name=self._version_folder_name, directory=self._path)
+
+    def _create_comment_file(self):
+        self.comment_file = create_file(filename='comments.txt', directory=self._version_folder)
+
+    def _increment_version_file_name(self):
+        from tp.common.python import path
+        version_path = path.join_path(self._version_folder, self._version_name + '.1')
+        return path.unique_path_name(directory=version_path)
