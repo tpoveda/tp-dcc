@@ -25,7 +25,7 @@ def startup(package_manager):
 	"""
 
 	root_file_path = path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-	package = manager.get_package_from_path(root_file_path)
+	package = manager.package_from_path(root_file_path)
 	if not package:
 		raise bootstrap_exceptions.MissingPackage(package)
 
@@ -42,7 +42,7 @@ def shutdown(package_manager):
 	"""
 
 	root_file_path = path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-	package = manager.get_package_from_path(root_file_path)
+	package = manager.package_from_path(root_file_path)
 	if not package:
 		raise bootstrap_exceptions.MissingPackage(package)
 

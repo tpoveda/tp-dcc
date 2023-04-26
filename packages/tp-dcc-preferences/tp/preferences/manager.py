@@ -290,8 +290,8 @@ class PreferencesManager(object):
 		:rtype: str
 		"""
 
-		package_manager = api.get_current_package_manager()
-		package = package_manager.resolver.get_package_by_name(package_name)
+		package_manager = api.current_package_manager()
+		package = package_manager.resolver.package_by_name(package_name)
 		if not package:
 			msg = 'Requested package "{}" does not exist within the current environment'.format(package_name)
 			logger.error(msg)
@@ -586,7 +586,7 @@ class PreferencesManager(object):
 		:rtype: generator(str)
 		"""
 
-		package_manager = api.get_current_package_manager()
+		package_manager = api.current_package_manager()
 		for pkg in package_manager.resolver.cache.values():
 			if package is not None and pkg != package:
 				continue
