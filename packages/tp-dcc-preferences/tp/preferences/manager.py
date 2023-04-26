@@ -161,7 +161,7 @@ class PreferencesManager(object):
 		"""
 		Returns tpDcc preferences path.
 
-		:return: preferences absolute path. eg. ~/tp-dcc/preferences
+		:return: preferences absolute path. eg. ~/tp/dcc/preferences
 		:rtype: str
 		"""
 
@@ -172,7 +172,7 @@ class PreferencesManager(object):
 		"""
 		Returns preferences path.
 
-		:return: preferences absolute path. eg. ~/tp-dcc/preferences/prefs
+		:return: preferences absolute path. eg. ~/tp/dcc/preferences/prefs
 		:rtype: str
 		"""
 
@@ -183,7 +183,7 @@ class PreferencesManager(object):
 		"""
 		Returns path where tpDcc related assets are located.
 
-		:return: assets absolute path. eg. ~/tp-dcc/preferences/assets
+		:return: assets absolute path. eg. ~/tp/dcc/preferences/assets
 		:rtype: str
 		"""
 
@@ -611,7 +611,7 @@ class PreferencesManager(object):
 
 	def _resolve_interfaces(self, package=None):
 		"""
-		Internal function that resolves all the preference interfaces found in the tp-dcc/preferences folder within each
+		Internal function that resolves all the preference interfaces found in the tp/dcc/preferences folder within each
 		one of the available root package directories.
 		"""
 

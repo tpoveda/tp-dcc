@@ -140,7 +140,7 @@ def create_loggers():
 	# import here because this was causing problems during MotionBuilder startup while loading CPG tools.
 	import logging.config
 
-	logger_directory = os.path.normpath(os.path.join(os.path.expanduser('~'), 'tp-dcc', 'logs'))
+	logger_directory = os.path.normpath(os.path.join(os.path.expanduser('~'), 'tp', 'dcc', 'logs'))
 	if not os.path.isdir(logger_directory):
 		os.makedirs(logger_directory)
 

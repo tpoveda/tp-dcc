@@ -1,4 +1,10 @@
+import os
+import sys
+
+from Qt.QtWidgets import QApplication
+
 from tp.core import log
+from tp.core.managers import resources
 from tp.common.nodegraph.core import register
 
 logger = log.tpLogger
@@ -13,6 +19,11 @@ def startup(package_manager):
 	"""
 
 	logger.info('Loading tpDcc Common package...')
+
+	# Make sure QApplication instance exists before registering resources
+	app = QApplication.instance() or QApplication(sys.argv)
+	resources_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'common', 'resources')
+	resources.register_resource(resources_path, key='tp-dcc-common')
 
 	register.load_registers()
 

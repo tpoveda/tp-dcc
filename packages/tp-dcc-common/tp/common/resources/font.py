@@ -67,14 +67,13 @@ class FontDatabase(QFontDatabase):
 			font_files = folder.get_files(font_folder_path, full_path=True, recursive=True)
 			for font_file in font_files:
 				logger.debug('Registering custom font: {} | {}'.format(path.get_basename(font_file), font_file))
-				self.addApplicationFont(font_file)
-				# index = self.addApplicationFont(font_file)
-				# if index < 0:
-				# 	logger.warning('Failed to add required font to the framework')
-				# 	continue
-				# family = self.applicationFontFamilies(index)
-				# if not family:
-				# 	logger.warning('Failed to add required font to the framework')
+				index = self.addApplicationFont(font_file)
+				if index < 0:
+					logger.warning('Failed to add required font to the framework')
+					continue
+				family = self.applicationFontFamilies(index)
+				if not family:
+					logger.warning('Failed to add required font to the framework')
 
 	def get_primary_font(self, font_size, family='Roboto', style='Bold'):
 		"""
