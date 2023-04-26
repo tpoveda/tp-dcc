@@ -104,4 +104,4 @@ How to use
 
 1. Run **setup_venv_py.bat**: to create virtual environment for Python 3.
 
-2. Execute **tpdcc_main.py** in your favorite Python DCC editor to load tpDcc framework.
+2. Execute **tp_dcc_main.py** in your favorite Python DCC editor to load tp-dcc framework.
