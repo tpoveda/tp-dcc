@@ -7,11 +7,18 @@ Module that contains tpDcc Tools packages manager implementation
 
 import os
 import sys
+import json
+import ctypes
 from distutils.util import strtobool
+try:
+    # only accessible on windows
+    from ctypes.wintypes import MAX_PATH
+except (ImportError, ValueError):
+    MAX_PATH = 260
 
-from tp.bootstrap import log
+from tp.bootstrap import log, consts
 from tp.bootstrap.utils import fileio, env
-from tp.bootstrap.core import consts, resolver, descriptors
+from tp.bootstrap.core import resolver, descriptors
 from tp.bootstrap import commands
 
 logger = log.bootstrapLogger
@@ -20,7 +27,7 @@ logger = log.bootstrapLogger
 _TPDCC_MANAGER_CACHE = None
 
 
-def get_package_manager_from_path(path, dev=False):
+def package_manager_from_path(path, dev=False):
     """
     Returns the tpDcc package manager for the given root path.
 
@@ -37,7 +44,7 @@ def get_package_manager_from_path(path, dev=False):
     return tp_dcc_instance
 
 
-def get_current_package_manager():
+def current_package_manager():
     """
     Returns current global cached tpDcc Tools package manager instance.
 
@@ -53,7 +60,7 @@ def set_current_package_manager(package_manager):
     """
     Sets the tpDcc tools global package manager instance.
 
-    :param tpDccPackagesManager package_manager: global tpDcc  tools packages manager instance to set.
+    :param tpDccPackagesManager or None package_manager: global tpDcc  tools packages manager instance to set.
     """
 
     global _TPDCC_MANAGER_CACHE
@@ -70,7 +77,7 @@ def resolve_tp_dcc_packages_manager_from_path(path, dev=False):
     :rtype: list(str)
     """
 
-    logger.debug(f'Resolving tpDcc tools from given path: "{path}", dev: {dev}')
+    logger.debug(f'Resolving tp-dcc-tools paths from given path: "{path}", dev: {dev}')
 
     output_paths = dict()
 
@@ -97,12 +104,12 @@ def resolve_tp_dcc_packages_manager_from_path(path, dev=False):
     ))
 
     env.add_to_env(consts.TPDCC_COMMAND_LIBRARY_ENV, [
-        os.path.join(path, 'tpDcc', 'bootstrap', 'commands')])
+        os.path.join(path, 'tp', 'bootstrap', 'commands')])
 
     return output_paths
 
 
-def get_package_from_path(file_path, max_iterations=20):
+def package_from_path(file_path, max_iterations=20):
     """
     Returns the current package of the given class.
 
@@ -117,14 +124,14 @@ def get_package_from_path(file_path, max_iterations=20):
         if not os.path.exists(os.path.join(search, consts.PACKAGE_NAME)):
             search = os.path.dirname(search)
         else:
-            pkg = get_current_package_manager().resolver.get_package_from_path(
+            pkg = current_package_manager().resolver.package_from_path(
                 os.path.join(search, consts.PACKAGE_NAME))
             return pkg
 
     return None
 
 
-def get_package_from_class(class_type, max_iterations=20):
+def package_from_class(class_type, max_iterations=20):
     """
     Returns the current package of the given class.
 
@@ -135,16 +142,16 @@ def get_package_from_class(class_type, max_iterations=20):
     """
 
     class_file = sys.modules[class_type.__module__].__file__
-    return get_package_from_path(class_file, max_iterations=max_iterations)
+    return package_from_path(class_file, max_iterations=max_iterations)
 
 
-class tpDccPackagesManager(object):
+class tpDccPackagesManager:
     """
-    Class that acts as the main entry points to work with tpDcc tools framework packages
+    Class that acts as the main entry points to work with tp-dcc-tools framework packages.
     """
 
     def __init__(self, root_path, dev=False):
-        super(tpDccPackagesManager, self).__init__()
+        super().__init__()
 
         if not os.path.exists(root_path):
             raise FileNotFoundError(root_path)
@@ -152,8 +159,8 @@ class tpDccPackagesManager(object):
         self._dev = dev or bool(strtobool(os.getenv('TPDCC_ENV_DEV', 'False')))
 
         tp_dcc_paths = resolve_tp_dcc_packages_manager_from_path(root_path, dev=self._dev)
-        logger.debug(f'Initializing tpDcc Tools Framework from path: {root_path}')
-        logger.debug('tpDcc Packages Manager paths:')
+        logger.debug(f'Initializing tp-dcc-tools framework from path: {root_path}')
+        logger.debug('tp-dcc-tools framework Packages Manager paths:')
         for k, v in tp_dcc_paths.items():
             logger.debug(f'\t{k}: {v}')
 
@@ -162,10 +169,6 @@ class tpDccPackagesManager(object):
         self._packages_path = os.getenv(consts.PACKAGES_FOLDER_PATH, None) or tp_dcc_paths['packages']
         self._resolver = resolver.Environment(self)
         self._command_lib_cache = commands.find_commands()
-
-    # =================================================================================================================
-    # PROPERTIES
-    # =================================================================================================================
 
     @property
     def root_path(self):
@@ -230,10 +233,6 @@ class tpDccPackagesManager(object):
 
         return self._command_lib_cache
 
-    # =================================================================================================================
-    # BASE
-    # =================================================================================================================
-
     def is_dev(self):
         """
         Returns whether packages manner is running in development mode.
@@ -243,7 +242,7 @@ class tpDccPackagesManager(object):
 
         return self._dev
 
-    def get_core_version(self):
+    def core_version(self):
         """
         Returns core package version string
         :return: core version
@@ -255,7 +254,7 @@ class tpDccPackagesManager(object):
 
         return package_info['version']
 
-    def get_build_package_path(self):
+    def build_package_path(self):
         """
         Returns the absolute path to the package.yml which is the build package.
 
@@ -265,7 +264,7 @@ class tpDccPackagesManager(object):
 
         return os.path.join(self._root_path, consts.PACKAGE_NAME)
 
-    def get_build_version(self):
+    def build_version(self):
         """
         Returns tpDcc Tools build version string.
 
@@ -273,13 +272,13 @@ class tpDccPackagesManager(object):
         :rtype: str
         """
 
-        package = self.get_build_package_path()
+        package = self.build_package_path()
         if not os.path.exists(package):
             return 'DEV'
         build_package = fileio.load_yaml(package)
         return build_package.get('version', 'DEV')
 
-    def get_descriptor_from_package_name(self, name):
+    def descriptor_from_package_name(self, name):
         """
         Returns the matching descriptor instance for the package name.
 
@@ -288,9 +287,9 @@ class tpDccPackagesManager(object):
         :rtype: Descriptor or None
         """
 
-        return descriptors.get_descriptor_from_manager(name, package_manager=self)
+        return descriptors.descriptor_from_manager(name, package_manager=self)
 
-    def get_descriptor_from_dict(self, descriptor_dict):
+    def descriptor_from_dict(self, descriptor_dict):
         """
         Returns descriptor from given dictionary.
 
@@ -299,9 +298,9 @@ class tpDccPackagesManager(object):
         :rtype: Descriptor
         """
 
-        return descriptors.get_descriptor_from_dict(self, descriptor_dict)
+        return descriptors.descriptor_from_dict(self, descriptor_dict)
 
-    def get_descriptor_from_path(self, path, descriptor_dict):
+    def descriptor_from_path(self, path, descriptor_dict):
         """
         Returns descriptor from given path.
 
@@ -311,9 +310,9 @@ class tpDccPackagesManager(object):
         :rtype: Descriptor
         """
 
-        return descriptors.get_descriptor_from_path(self, path, descriptor_dict)
+        return descriptors.descriptor_from_path(self, path, descriptor_dict)
 
-    def get_preference_roots_path(self):
+    def preference_roots_path(self):
         """
         Returns the preferences roots config file path in the install root/config/env folder.
 
@@ -322,6 +321,45 @@ class tpDccPackagesManager(object):
         """
 
         return os.path.join(self._config_path, 'env', 'preference_roots.config')
+
+    def preference_roots_config(self):
+        """
+        Loads and returns the preference_roots file contents as a dict.
+
+        :return: preference root configs content.
+        :rtype: dict
+        """
+
+        with open(self.preference_roots_path(), 'r') as f:
+            data = json.load(f)
+
+        return data
+
+    def cache_folder_path(self):
+        """
+        Retunrs the current tp-dcc-tools framework cache folder.
+
+        :return: absolute path to cache folder.
+        :rtype: str
+        ..info:: The cache folder is used to store temporary data like pip installed libraries, logs, temp files, etc.
+        """
+
+        cache_env = os.getenv(consts.TPDCC_CACHE_FOLDER_PATH_ENV)
+        if cache_env is None:
+            return self._solve_root_path(os.path.join(self.preference_roots_config()['user_preferences'], 'cache'))
+        return os.path.expandvars(os.path.expanduser(cache_env))
+
+    def site_packages_path(self):
+        """
+        Returns the site packages folder path where tp-dcc-tools framework install pip packages when nedded.
+
+        :return: absolute path to site-packages folder.
+        :rtype: str
+        """
+
+        cache_folder = self.cache_folder_path()
+        python_version = '.'.join(map(str, sys.version_info[:3]))
+        return os.path.abspath(os.path.join(cache_folder, 'site-pacakges', python_version))
 
     def run_command(self, command_name, arguments):
         """
@@ -347,3 +385,55 @@ class tpDccPackagesManager(object):
         args.func(args)
 
         return True
+
+    def reload(self):
+        """
+        Reloads all tp-dcc-tools framework packages, libraries and environment variables.
+
+        :return: new tp-dcc-tools framework package manager instance.
+        :rtype: tpDccPackagesManager
+        """
+
+        root = self._root_path
+        self.shutdown()
+        package_manager = package_manager_from_path(root)
+        package_manager.resolver.resolve_from_path(package_manager.resolver.environment_path())
+
+        return package_manager
+
+    def shutdown(self):
+        """
+        Shutdown function.
+
+        :param bool reload_modules: whether to reload tp-dcc-tools framework modules.
+        """
+
+        self.resolver.shutdown()
+
+        # Clears out sys.modules of all tp modules currently in memory
+        from tp.bootstrap.utils import flush
+        flush.reload_modules()
+        set_current_package_manager(None)
+
+        dev = os.environ.get('TPDCC_ENV_DEV', False)
+        if dev:
+            logger.debug('Reloading tp namespace...')
+            flush.reload_tp_namespace()
+
+    def _solve_root_path(self, root_path):
+        """
+        Internal function that patches given root path. Python now prioritizes USERPROFILE over HOME, which makes DCC
+        that supports Python 2 sets the USERPOFILE to ~/Documents but the ones using Python 3 sets to ~/.
+
+        :param str root_path: absolute path.
+        :return: patched path.
+        """
+
+        if env.is_windows():
+            parts = os.path.normpath(root_path).split(os.path.sep)
+            dll = ctypes.windll.shell32
+            buf = ctypes.create_unicode_buffer(MAX_PATH)
+            if dll.SHGetSpecialFolderPathW(None, buf, 0x0005, False):
+                return os.path.join(buf.value, *parts[1:])
+
+        return os.path.expanduser(root_path)

@@ -11,6 +11,9 @@ TPDCC_PACKAGE_OVERRIDE_VERSION_PATH = 'TPDCC_PACKAGE_OVERRIDE_VERSION_PATH'
 TPDCC_PACKAGE_VERSION_FILE = 'TPDCC_PACKAGE_VERSION_FILE'
 TPDCC_PACKAGE_OVERRIDE_VERSION_FILE = 'TPDCC_PACKAGE_OVERRIDE_VERSION_FILE'
 
+# manager environment variables
+TPDCC_CACHE_FOLDER_PATH_ENV = 'TPDCC_CACHE_FOLDER_PATH'
+
 # configuration folder name
 CONFIG_FOLDER_NAME = 'config'
 
@@ -23,6 +26,9 @@ TPDCC_COMMAND_LIBRARY_ENV = 'TPDCC_COMMANDS_PATH'
 
 # package file name
 PACKAGE_NAME = 'package.yaml'
+
+# Package manager commander runner
+PACKAGE_MANAGER_ROOT_NAME = 'tp-dcc-tools Package Manager Command Runner'
 
 # file names to exclude when installing/copying packages
 FILE_FILTER_EXCLUDE = (

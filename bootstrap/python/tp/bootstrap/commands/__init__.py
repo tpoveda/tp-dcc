@@ -19,7 +19,7 @@ if sys.version_info[0] == 2:
 else:
     import importlib
 
-from tp.bootstrap.core import consts
+from tp.bootstrap import consts
 from tp.bootstrap.core import command
 
 logger = logging.getLogger('tp-dcc-bootstrap')
@@ -87,9 +87,21 @@ def find_commands():
 
 
 def create_root_parser():
-    help_reader = 'Welcome to tpDcc Tools Framework'
+    """
+    Creates root argument parser for tp-dcc-tools.
+
+    :return: tuple containing the parser and sub parsers.
+    :rtype: tuple[Parser, list[Parser]]
+    """
+
+    help_reader = """
+Welcome to tp-dcc-tools Framework
+
+This command allows to modify tp-dcc-tools configuration from a shell.
+To see the supported arguments for each tp-dcc-tools command run tpdcc_cmd [command] --help
+    """
     arg_parser = Parser(
-        prog='tpDcc Tools Package Manager Command Runner', description=help_reader,
+        prog=consts.PACKAGE_MANAGER_ROOT_NAME, description=help_reader,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     sub_parser = arg_parser.add_subparsers()
 
@@ -102,17 +114,18 @@ def run_command(package_manager, arguments):
 
     :param tpDccPackagesManager package_manager: tpDcc package manager instance
     :param list(str) arguments: list of command arguments
-    :return: True if the command execution was successfull; False otherwise.
+    :return: True if the command execution was successful; False otherwise.
     :rtype: bool
     """
 
     arg_parser, sub_parter = create_root_parser()
-    for name, class_obj in package_manager.commands.items():
+    for _, class_obj in package_manager.commands.items():
         instance = class_obj(package_manager=package_manager)
         instance.process_arguments(sub_parter)
     if not arguments:
         arg_parser.print_help()
         return False
+
     grouped_arguments = [[]]
     for arg in arguments:
         if arg == '--':
@@ -124,14 +137,15 @@ def run_command(package_manager, arguments):
     except TypeError:
         arg_parser.error(f'Invalid command name: {grouped_arguments[0][0]}')
         return False
-    extra_arguments = []
+
+    extra_arguments = list()
     if len(grouped_arguments) > 1:
         extra_arguments = grouped_arguments[-1]
 
     try:
         func = args.func
     except AttributeError:
-        arg_parser.error('too few arguments')
+        arg_parser.error('Too few arguments')
     else:
         return func(args, extra_arguments=extra_arguments)
 

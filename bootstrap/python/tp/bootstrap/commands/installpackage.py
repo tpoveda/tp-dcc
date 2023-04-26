@@ -49,7 +49,7 @@ class InstallPackage(command.PackageCommand):
         else:
             descriptor_dict = dict(path=path)
         logger.debug(f'Running install command: {path}')
-        descriptor_found = self.manager.get_descriptor_from_path(path, descriptor_dict)
+        descriptor_found = self.manager.descriptor_from_path(path, descriptor_dict)
         try:
             descriptor_found.resolve()
         except ValueError:

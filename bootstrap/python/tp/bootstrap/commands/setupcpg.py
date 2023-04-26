@@ -76,7 +76,7 @@ class Setup(command.PackageCommand):
         pkg_folder = os.path.join(install_folder, 'packages')
         logger.debug(f'Creating packages folder: {pkg_folder}')
         fileio.ensure_folder_exists(pkg_folder)
-        installed_manager = manager.get_package_manager_from_path(self.options.destination)
+        installed_manager = manager.package_manager_from_path(self.options.destination)
         installed_manager.resolver.create_environment_file()
         self._update_preferences(installed_manager)
 

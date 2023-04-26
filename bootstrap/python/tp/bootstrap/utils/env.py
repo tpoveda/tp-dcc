@@ -8,6 +8,7 @@ Module that contains utilities functions to interact with environment variables.
 import os
 import sys
 import math
+import platform
 
 from tp.bootstrap import log
 
@@ -94,6 +95,67 @@ def is_in_maya(executable=None):
     executable = (executable or sys.executable).lower()
     ends_with_key = ("maya", "maya.exe", "maya.bin")
     return os.path.basename(executable).endswith(ends_with_key)
+
+
+def is_mac():
+    """
+    Returns whether current system is macOS.
+
+    :return: True if system is macOS; False otherwise.
+    :rtype: bool
+    """
+
+    plat = platform.system().lower()
+    return plat.startswith(('mac', 'os', 'darwin'))
+
+
+def is_windows():
+    """
+    Returns whether current system is Windows.
+
+    :return: True if system is Windows; False otherwise.
+    :rtype: bool
+    """
+
+    return platform.system().lower().startswith('win')
+
+
+def is_linux():
+    """
+    Returns whether current system is Linux.
+
+    :return: True if system is Linux; False otherwise.
+    :rtype: bool
+    """
+
+    return platform.system().lower().startswith('lin')
+
+
+def is_unix_based():
+    """
+    Returns whether current operating system is Unix based.
+
+    :return: True if current operating system is Unix based; False otherwise.
+    :rtype: bool
+    """
+
+    return is_mac() or is_linux()
+
+
+def current_os():
+    """
+    Returns current operating system.
+
+    :return: operating system as a string.
+    :rtype: str
+    """
+
+    if is_windows():
+        return 'Windows'
+    elif is_mac():
+        return 'Mac'
+    elif is_linux():
+        return 'Linux'
 
 
 def is_mayapy(executable=None):

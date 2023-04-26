@@ -10,8 +10,8 @@ import stat
 import shutil
 import tempfile
 
-from tp.bootstrap import log
-from tp.bootstrap.core import consts, exceptions
+from tp.bootstrap import log, consts
+from tp.bootstrap.core import exceptions
 
 try:
     from tp.bootstrap.utils import git
@@ -20,7 +20,8 @@ except ImportError:
 
 logger = log.bootstrapLogger
 
-def get_descriptor_from_manager(name, package_manager=None):
+
+def descriptor_from_manager(name, package_manager=None):
     """
     Returns the descriptor from the existing cached package manager environment instance.
 
@@ -33,13 +34,13 @@ def get_descriptor_from_manager(name, package_manager=None):
     # import here to avoid cyclic imports
     from tp.bootstrap.core import manager
 
-    package_manager = package_manager or manager.get_current_package_manager()
+    package_manager = package_manager or manager.current_package_manager()
     for descriptor_name, descriptor_dict in package_manager.resolver.load_environment_file().items():
         if descriptor_name == name:
-            return get_descriptor_from_dict(package_manager, descriptor_dict)
+            return descriptor_from_dict(package_manager, descriptor_dict)
 
 
-def get_descriptor_from_path(package_manager, location, descriptor_info):
+def descriptor_from_path(package_manager, location, descriptor_info):
     """
     Returns the matching descriptor object fro the given path.
 
@@ -56,7 +57,7 @@ def get_descriptor_from_path(package_manager, location, descriptor_info):
         descriptor_info.update({'type': 'git'})
         return GitDescriptor(package_manager, descriptor_info)
     elif os.path.exists(location):
-        package_found = package_manager.resolver.get_package_from_path(location)
+        package_found = package_manager.resolver.package_from_path(location)
         if not package_found:
             raise exceptions.InvalidPackagePathError(location)
         descriptor_info.update(
@@ -65,7 +66,7 @@ def get_descriptor_from_path(package_manager, location, descriptor_info):
     raise NotImplementedError(f'Descriptor not supported: {location}')
 
 
-def get_descriptor_from_dict(package_manager, descriptor_info):
+def descriptor_from_dict(package_manager, descriptor_info):
     """
     Returns the descriptor object from the given dictionary.
 
@@ -87,7 +88,7 @@ def get_descriptor_from_dict(package_manager, descriptor_info):
     raise NotImplementedError(f'Descriptor not supported: {descriptor_info}')
 
 
-class Descriptor(object):
+class Descriptor:
 
     GIT = 'git'
     LOCAL_PATH = 'path'
@@ -96,6 +97,8 @@ class Descriptor(object):
     REQUIRED_KEYS = set()
 
     def __init__(self, package_manager, descriptor_dict):
+        super().__init__()
+
         self._manager = package_manager
         self._descriptor_dict = descriptor_dict
         self._type = descriptor_dict.get('type', None)
@@ -209,7 +212,7 @@ class tpDccDescriptor(Descriptor):
 
     def resolve(self, *args, **kwargs):
         logger.debug(f'Resolving tpdcctools descriptor: {self.name} - {self.version}')
-        existing_package = self._manager.resolver.get_package_for_descriptor(self)
+        existing_package = self._manager.resolver.package_for_descriptor(self)
         if not existing_package:
             raise exceptions.MissingPackageVersionError(f'Missing package: {self.name}')
         self.package = existing_package
@@ -242,7 +245,7 @@ class PathDescriptor(Descriptor):
         self._path = value
 
     def resolve(self):
-        package = self.manager.resolver.get_package_from_path(self.path)
+        package = self.manager.resolver.package_from_path(self.path)
         if not package:
             logger.warning(f'The specified package does not exist, please check your configuration: {self.path}')
             return False
@@ -270,7 +273,7 @@ class PathDescriptor(Descriptor):
             del self._descriptor_dict['path']
             self._descriptor_dict.update({'type': 'tpdcctools', 'version': str(self.package.version)})
         else:
-            installed_pkg = self.manager.resolver.get_package_from_path(package_directory)
+            installed_pkg = self.manager.resolver.package_from_path(package_directory)
         self.manager.resolver.cache[str(installed_pkg)] = installed_pkg
         self.manager.resolver.update_environment_descriptor_from_dict(self._descriptor_dict)
 
@@ -307,7 +310,7 @@ class GitDescriptor(Descriptor):
         if not self.path.endswith('.git'):
             raise SyntaxError('Supplied git path does not ends with ".git"')
         if all(i is not None for i in (self.version, self.name)):
-            package_found = self._manager.resolver.get_package_for_descriptor(self)
+            package_found = self._manager.resolver.package_for_descriptor(self)
             if package_found is not None:
                 self.package = package_found
                 logger.warning(f'Package already exists: {self.name} - {self.version}')
@@ -336,7 +339,7 @@ class GitDescriptor(Descriptor):
         except Exception:
             shutil.rmtree(local_folder, onerror=self._handle_delete_error)
             raise
-        package_found = self._manager.resolver.get_package_from_path(repo.repo_path)
+        package_found = self._manager.resolver.package_from_path(repo.repo_path)
         if package_found is None:
             shutil.rmtree(local_folder, onerror=self._handle_delete_error)
             raise

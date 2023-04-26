@@ -6,28 +6,43 @@ Module that contains tpDcc tools package resolver environment implementation
 """
 
 import os
+import sys
 import glob
 import timeit
 import traceback
 from importlib import reload
-from collections import OrderedDict
 
-from tp.bootstrap import log
+from tp.bootstrap import log, consts
 from tp.bootstrap.utils import fileio
-from tp.bootstrap.core import consts, exceptions, package
+from tp.bootstrap.core import exceptions, package
 
 logger = log.bootstrapLogger
 
-class Environment(object):
+
+class Environment:
+    """
+    Class that represents tp-dcc-tools framework environment.
+    """
+
     def __init__(self, package_manager):
+        super().__init__()
+
         self._manager = package_manager
-        self._cache = OrderedDict()
+        self._cache = dict()
 
     @property
     def cache(self):
         return self._cache
 
     def resolve_from_path(self, path, override=True, **kwargs):
+        """
+        Resolves environment based on given path.
+
+        :param str path: root path to resolve environment from.
+        :param bool override: whether to resolve environment from override file.
+        :param kwargs:
+        :return:
+        """
 
         logger.debug(f'Reading environment configuration file: {path}')
         try:
@@ -36,8 +51,8 @@ class Environment(object):
             logger.error(f'Request YAML path has incorrect syntax: {path}', exc_info=True)
             raise
         if override:
-            override_path = self.get_override_environment_path()
-            override_data = OrderedDict()
+            override_path = self.override_environment_path()
+            override_data = dict()
             if override_path and os.path.isfile(override_path):
                 logger.debug(f'Reading environment override configuration file: {path}')
                 env_override_data = fileio.load_yaml(override_path) or dict()
@@ -50,7 +65,16 @@ class Environment(object):
 
         return self.resolve(requests, **kwargs)
 
-    def resolve(self, request_data, apply=True):
+    def resolve(self, request_data, apply=True, run_command_scripts=True):
+        """
+        Resolves environment from given data.
+
+        :param dict request_data: environment package data to resolve.
+        :param bool apply: whether to initialize environment packages.
+        :param bool run_command_scripts: whether to run package commmand scripts.
+        :return: set of resolved packages.
+        :rtype: set
+        """
 
         resolved = set()
 
@@ -58,45 +82,56 @@ class Environment(object):
             logger.warning('No packages to resolve')
             return resolved
 
-        logger.info('Resolving requested packages:')
+        logger.debug('Resolving requested packages:')
         for k, v in request_data.items():
-            logger.info(f'\t{k}: {v}')
+            logger.debug(f'\t{k}: {v}')
 
+        # Retrieve all package instances without applying to current environment
         for package_name, raw_descriptor in request_data.items():
             raw_descriptor['name'] = package_name
-            pkg_descriptor = self._manager.get_descriptor_from_dict(raw_descriptor)
+            pkg_descriptor = self._manager.descriptor_from_dict(raw_descriptor)
             logger.debug(f'Descriptor for package {package_name} found: {pkg_descriptor}')
             if not pkg_descriptor.enabled:
                 logger.info(f'Package {package_name} is not enabled!')
                 continue
             if pkg_descriptor.type != pkg_descriptor.LOCAL_PATH:
                 existing_pkg = self._cache.get(
-                    package.Package.get_name_from_package_name_and_version(package_name, pkg_descriptor.version))
+                    package.Package.name_from_package_name_and_version(package_name, pkg_descriptor.version))
                 if existing_pkg:
-                    if not existing_pkg.resolved:
-                        existing_pkg.resolve(apply_environment=apply)
                     resolved.add(existing_pkg)
                     continue
                 valid = pkg_descriptor.resolve()
                 if valid:
-                    pkg_descriptor.package.resolve(apply_environment=apply)
-                    self._cache[str(pkg_descriptor.package)] = pkg_descriptor.package
                     resolved.add(pkg_descriptor.package)
+
+        # Apply packages to current environment
+        for pkg in resolved:
+            if str(pkg) in self._cache:
+                continue
+            pkg.resolve(apply_environment=apply)
+            self._cache[str(pkg)] = pkg
 
         self._reload_tp_namespace_package()
 
-        if apply:
-            start_time = timeit.default_timer()
-            visited = set()
-            for pkg_name, pkg in self._cache.items():
-                dependencies = pkg.requirements
-                for dependency in dependencies:
-                    dependent_pkg = self.get_package_by_name(dependency)
-                    if dependent_pkg and str(dependent_pkg) not in visited:
-                        dependent_pkg.run_startup()
-                        visited.add(str(dependent_pkg))
+        if not apply:
+            return resolved
 
-                if str(pkg) not in visited:
+        site_packages_folder = self._manager.site_packages_path()
+        if site_packages_folder and os.path.isdir(site_packages_folder) and site_packages_folder not in sys.path:
+            sys.path.append(site_packages_folder)
+
+        start_time = timeit.default_timer()
+        visited = set()
+        for pkg_name, pkg in self._cache.items():
+            dependencies = pkg.requirements
+            for dependency in dependencies:
+                dependent_pkg = self.package_by_name(dependency)
+                if dependent_pkg and str(dependent_pkg) not in visited:
+                    if run_command_scripts:
+                        dependent_pkg.run_startup()
+                    visited.add(str(dependent_pkg))
+            if str(pkg) not in visited:
+                if run_command_scripts:
                     try:
                         pkg.run_startup()
                     except exceptions.ProjectNotDefinedError:
@@ -107,11 +142,11 @@ class Environment(object):
                             raise
                         logger.error(f'Exception while loading package: {str(pkg_name)} | {traceback.format_exc()}')
                     visited.add(str(pkg))
-            logger.info('Packages loaded in {0:.2f}s'.format(timeit.default_timer() - start_time))
+        logger.info('Packages loaded in {0:.2f}s'.format(timeit.default_timer() - start_time))
 
         return resolved
 
-    def get_environment_path(self):
+    def environment_path(self):
         """
         Returns the environment config path on disk.
 
@@ -119,13 +154,13 @@ class Environment(object):
         :rtype: str
         """
 
-        config_path = self._get_environment_path()
+        config_path = self._environment_path()
         if os.path.isfile(config_path):
             return config_path
         raise exceptions.MissingEnvironmentPathError(
             f'Environment config file does not exists at location: {config_path}')
 
-    def get_override_environment_path(self):
+    def override_environment_path(self):
         """
         Returns the environment override config path on disk.
 
@@ -133,7 +168,7 @@ class Environment(object):
         :rtype: sr
         """
 
-        return self._get_override_environment_path()
+        return self._override_environment_path()
 
     def load_environment_file(self):
         """
@@ -143,14 +178,14 @@ class Environment(object):
         :rtype: dict
         """
 
-        env_path = self.get_environment_path()
+        env_path = self.environment_path()
         logger.debug(f'Loading environment: {env_path}')
         env_data = fileio.load_yaml(env_path)
         for n, info in env_data.items():
             info['name'] = n
 
-        override_data = OrderedDict()
-        override_env_path = self.get_override_environment_path()
+        override_data = dict()
+        override_env_path = self.override_environment_path()
         if override_env_path:
             logger.debug(f'Loading override environment: {env_path}')
             env_override_data = fileio.load_yaml(override_env_path) or dict()
@@ -182,7 +217,7 @@ class Environment(object):
             self._cache[str(pkg)] = pkg
             return pkg
 
-    def get_package_by_name(self, package_name):
+    def package_by_name(self, package_name):
         """
         Returns the package with given name from the cache.
 
@@ -191,13 +226,13 @@ class Environment(object):
         :rtype: Package or None
         """
 
-        for pkg_str, pkg in self._cache.items():
+        for _, pkg in self._cache.items():
             if pkg.name == package_name:
                 return pkg
 
         return None
 
-    def get_package_from_path(self, path):
+    def package_from_path(self, path):
         """
         Returns a package instance from the given path.
 
@@ -213,7 +248,7 @@ class Environment(object):
         package_yaml = os.path.join(path, consts.PACKAGE_NAME)
         return package.Package(package_yaml)
 
-    def get_package_for_descriptor(self, descriptor):
+    def package_for_descriptor(self, descriptor):
         """
         Returns a package manager instance from the given descriptor.
 
@@ -222,14 +257,10 @@ class Environment(object):
         :rtype: tpDccPackagesManager
         """
 
-        logger.debug(f'Getting package from descriptor: {descriptor}')
         if descriptor.is_descriptor_of_type(descriptor.LOCAL_PATH):
-            descriptor_path = os.path.join(descriptor.path, consts.PACKAGE_NAME)
-            logger.debug(f'Descriptor is a local path type. Descriptor path: {descriptor_path}')
-            paths = [descriptor_path]
+            paths = [os.path.join(descriptor.path, consts.PACKAGE_NAME)]
         else:
             paths = self._search_for_package(descriptor.name, descriptor.version)
-
         if paths:
             pkg = package.Package(paths[0])
             return self._cache.get(str(pkg), pkg)
@@ -256,7 +287,7 @@ class Environment(object):
 
     def update_environment_descriptor_from_dict(self, descriptor):
         """
-        Updates the currently load environment with the provided descriptor dictionary.
+        Updates the currently loaded environment with the provided descriptor dictionary.
 
         :param dict descriptor: the descriptor dictionary in the same format as the environment data.
         """
@@ -265,7 +296,7 @@ class Environment(object):
         name = descriptor['name']
         del desc['name']
         desc = {name: desc}
-        env_path = self._get_environment_path()
+        env_path = self._environment_path()
         try:
             env_data = self.load_environment_file()
             env_data.update(desc)
@@ -294,7 +325,7 @@ class Environment(object):
         except KeyError:
             logger.error(f'Descriptor: {descriptor.name} does not exist in current environment')
             raise
-        fileio.save_yaml(env_data, self._get_environment_path(), indent=4)
+        fileio.save_yaml(env_data, self._environment_path(), indent=4)
 
         return True
 
@@ -310,27 +341,20 @@ class Environment(object):
             logger.debug(f'\t{k}: {v}')
 
         for package_name, pkg in self._cache.items():
-            logger.debug(f'Shutting down package: {package_name} | {pkg}')
             dependencies = pkg.requirements
-            logger.debug(f'Found ({len(dependencies)}) {package_name} package dependencies to shutdown: {dependencies}')
             for dependency in dependencies:
-                dependency_pkg = self.get_package_by_name(dependency)
+                dependency_pkg = self.package_by_name(dependency)
                 if dependency_pkg and str(dependency_pkg) not in visited:
                     dependency.shutdown()
                     visited.add(str(dependency_pkg))
             if str(pkg) not in visited:
                 try:
                     pkg.shutdown()
-                    logger.debug(f'Package {package_name} shutdown completed successfully!')
                 except Exception:
                     logger.error(f'Exception while unloading package: {package_name}', exc_info=True)
                 visited.add(str(pkg))
 
-    # =================================================================================================================
-    # INTERNAL
-    # =================================================================================================================
-
-    def _get_environment_path(self):
+    def _environment_path(self):
         """
         Internal function that handles the discovery of the environment path for tpDcc configuration.
 
@@ -338,18 +362,17 @@ class Environment(object):
         :rtype: str
         """
 
-        defined_path = os.getenv(consts.TPDCC_PACKAGE_VERSION_PATH, '')
+        defined_path = os.path.expandvars(os.path.expanduser(os.getenv(consts.TPDCC_PACKAGE_VERSION_PATH, '')))
         config_file = os.getenv(consts.TPDCC_PACKAGE_VERSION_FILE, 'package_version.config')
-        if not os.path.isfile(defined_path):
-            return os.path.join(self._manager.config_path, 'env', config_file)
-        env_path = defined_path
-        env_path = os.path.expandvars(os.path.expanduser(env_path))
-        if os.path.exists(env_path):
-            return env_path
+        default_path = os.path.join(self._manager.config_path, 'env', config_file)
+        if os.path.isfile(defined_path):
+            logger.debug(f'Loading pacakge environment configuration from: {defined_path}')
+            return defined_path
 
-        return os.path.join(self._manager.config_path, 'env', config_file)
+        logger.debug(f'Loading pacakge environment configuration from: {default_path}')
+        return default_path
 
-    def _get_override_environment_path(self):
+    def _override_environment_path(self):
         """
         Internal function that handles the discovery of the override environment path for tpDcc configuration.
 
@@ -393,12 +416,12 @@ class Environment(object):
             logger.debug(f'Looking for packages within path: {search_path}')
             package_paths = glob.glob(search_path)
             if not package_paths:
-                logger.info(f'No package found, trying to find package "{package_name}" in development environment...')
+                logger.debug(f'No package found, trying to find package "{package_name}" in development environment...')
                 search_path = os.path.join(self._manager.packages_path, package_name, consts.PACKAGE_NAME)
                 logger.debug(f'Looking for packages within path: {search_path}')
                 package_paths = glob.glob(search_path)
                 if package_paths:
-                    logger.info(f'Package "{package_name}" found within development environment: "{search_path}"')
+                    logger.debug(f'Package "{package_name}" found within development environment: "{search_path}"')
 
         logger.debug(f'Found descriptor ({package_name} | {package_version}) paths: {package_paths}')
 

@@ -13,6 +13,7 @@ from distutils.util import strtobool
 main = __import__('__main__')
 
 LOGGER_NAME = 'tp-dcc'
+RIG_LOGGER_NAME = 'tp-rigtoolkit'
 BOOTSTRAP_LOGGER_NAME = 'tp-dcc-bootstrap'
 
 
@@ -93,18 +94,28 @@ def add_metaclass(metaclass):
 	return wrapper
 
 
+class DccLogHandler(logging.Handler):
+	def emit(self, record):
+		pass
+
+
 class _MetaLogHandler(type):
 	def __call__(cls, *args, **kwargs):
 		as_class = kwargs.pop('as_class', False)
 
-		if 'cmds' in main.__dict__:
-			from tp.bootstrap.dccs.maya import log
-			if as_class:
-				return log.MayaLogHandler
-			else:
-				return type.__call__(log.MayaLogHandler, *args, **kwargs)
+		if as_class:
+			return DccLogHandler
 		else:
-			return None
+			return type.__call__(DccLogHandler, *args, **kwargs)
+
+		# if 'cmds' in main.__dict__:
+		# 	from tp.bootstrap.dccs.maya import log
+		# 	if as_class:
+		# 		return log.MayaLogHandler
+		# 	else:
+		# 		return type.__call__(log.MayaLogHandler, *args, **kwargs)
+		# else:
+		# 	return None
 
 
 @add_metaclass(_MetaLogHandler)
@@ -140,15 +151,23 @@ def create_loggers():
 	# import here because this was causing problems during MotionBuilder startup while loading CPG tools.
 	import logging.config
 
-	logger_directory = os.path.normpath(os.path.join(os.path.expanduser('~'), 'tp', 'dcc', 'logs'))
-	if not os.path.isdir(logger_directory):
-		os.makedirs(logger_directory)
+	logger_directories = [
+		os.path.normpath(os.path.join(os.path.expanduser('~'), 'tp', 'dcc', 'logs')),
+		os.path.normpath(os.path.join(os.path.expanduser('~'), 'tp', 'rigtoolkit', 'logs'))
+	]
+	for logger_directory in logger_directories:
+		if not os.path.isdir(logger_directory):
+			os.makedirs(logger_directory)
 
 	root_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 	logging_config = os.path.normpath(os.path.join(root_path, '__logging__.ini'))
 
 	logging.config.fileConfig(logging_config, disable_existing_loggers=True)
-	loggers = (logging.getLogger(BOOTSTRAP_LOGGER_NAME), logging.getLogger(LOGGER_NAME))
+	loggers = (
+		logging.getLogger(BOOTSTRAP_LOGGER_NAME),
+		logging.getLogger(LOGGER_NAME),
+		logging.getLogger(RIG_LOGGER_NAME)
+	)
 	for logger in loggers:
 		dcc_handler = LogHandler()
 		if dcc_handler:
@@ -164,4 +183,4 @@ def create_loggers():
 	return loggers
 
 
-tpLogger, bootstrapLogger = create_loggers()
+bootstrapLogger, tpLogger, rigLogger = create_loggers()
