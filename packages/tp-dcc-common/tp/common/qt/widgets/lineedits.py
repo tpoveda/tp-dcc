@@ -11,7 +11,7 @@ from Qt.QtCore import Qt, Signal, QObject, Property, QTimer
 from Qt.QtWidgets import QApplication, QLineEdit, QTextEdit, QTextBrowser
 from Qt.QtGui import QDoubleValidator, QIntValidator
 
-from tp.common.resources import theme
+# from tp.common.resources import theme
 from tp.common.qt import contexts as qt_contexts
 from tp.common.qt.widgets import layouts, buttons, browser
 
@@ -49,7 +49,7 @@ def text_browser(parent=None):
     return new_text_browser
 
 
-@theme.mixin
+# @theme.mixin
 class BaseLineEdit(QLineEdit, object):
     """
      Basic line edit

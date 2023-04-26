@@ -10,7 +10,7 @@ from Qt.QtCore import Qt, Signal, QPoint
 from Qt.QtWidgets import QWidget, QLineEdit, QMenu, QActionGroup, QAction, QWidgetAction
 
 from tp.common.python import helpers
-from tp.common.resources import theme
+# from tp.common.resources import theme
 from tp.common.qt import qtutils, formatters, dpi
 
 DEFAULT_MENU_BLUR_ALPHA = 33
@@ -144,7 +144,7 @@ def mixin(cls):
 	return cls
 
 
-@theme.mixin
+# @theme.mixin
 # @mixin.property_mixin
 class BaseMenu(QMenu, object):
 

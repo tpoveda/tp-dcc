@@ -16,7 +16,7 @@ from tp.core import log, dcc
 from tp.core.managers import resources
 from tp.preferences import manager as preferences
 from tp.common.python import helpers, path, folder
-from tp.common.resources import theme
+# from tp.common.resources import theme
 from tp.common.qt import qtutils, animation, statusbar, dragger, resizers, settings as qt_settings
 from tp.common.qt.widgets import layouts
 
@@ -33,7 +33,7 @@ class WindowContents(QFrame, object):
         super(WindowContents, self).__init__(parent=parent)
 
 
-@theme.mixin
+# @theme.mixin
 class BaseWindow(QMainWindow, object):
 
     closed = Signal()

@@ -10,10 +10,10 @@ from Qt.QtWidgets import QLabel
 from Qt.QtGui import QPixmap
 
 from tp.core.managers import resources
-from tp.common.resources import theme
+# from tp.common.resources import theme
 
 
-@theme.mixin
+# @theme.mixin
 class Avatar(QLabel, object):
     """
     Widget that can be used to represent users or objects

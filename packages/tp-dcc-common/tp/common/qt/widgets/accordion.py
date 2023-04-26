@@ -10,7 +10,7 @@ from Qt.QtWidgets import QApplication, QWidget, QGroupBox, QScrollArea
 from Qt.QtGui import QCursor, QColor, QPixmap, QPalette, QPen, QBrush, QPainter, QDrag, QPolygon, QPainterPath
 
 from tp.core import log, dcc
-from tp.common.resources import theme
+# from tp.common.resources import theme
 from tp.common.qt.widgets import layouts
 
 logger = log.tpLogger
@@ -28,7 +28,7 @@ class AccordionDragDrop(object):
     INTERNAL_MOVE = 1
 
 
-@theme.mixin
+# @theme.mixin
 class AccordionItem(QGroupBox, object):
 
     trigger = Signal(bool)

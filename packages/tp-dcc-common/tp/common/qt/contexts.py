@@ -10,7 +10,7 @@ import contextlib
 
 from Qt.QtWidgets import QApplication, QWidget
 
-from tp.core import dcc, window
+from tp.core import dcc
 from tp.common.qt import qtutils
 
 
@@ -43,12 +43,16 @@ def block_signals(widget, children=False):
 
 @contextlib.contextmanager
 def show_window(widget):
+
+    from tp.core import window
+
     with application():
         new_window = window.Window()
         new_window.main_layout.addWidget(widget)
         new_window.adjustSize()
         new_window.show()
         yield new_window
+
 
 @contextlib.contextmanager
 def waiting_cursor():

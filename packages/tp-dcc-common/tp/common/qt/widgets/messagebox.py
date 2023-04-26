@@ -10,7 +10,7 @@ from Qt.QtWidgets import QSizePolicy, QFrame, QDialog, QDialogButtonBox
 
 from tp.core import dcc
 from tp.common.python import helpers
-from tp.common.resources import theme
+# from tp.common.resources import theme
 from tp.common.qt import qtutils, animation
 from tp.common.qt.widgets import layouts, labels, checkboxes, lineedits
 

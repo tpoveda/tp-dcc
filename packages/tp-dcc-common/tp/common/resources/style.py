@@ -10,7 +10,7 @@ import re
 import string
 
 from tp.common.python import helpers, path
-from tp.common.resources import theme
+# from tp.common.resources import theme
 
 
 class StyleTemplate(string.Template):

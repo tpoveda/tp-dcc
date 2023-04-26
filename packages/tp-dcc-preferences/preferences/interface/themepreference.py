@@ -11,7 +11,8 @@ from Qt.QtCore import Signal, QObject
 from tp.core import consts, log
 from tp.preferences import preference
 from tp.common import resources
-from tp.common.resources import theme, style
+# from tp.common.resources import theme, style
+from tp.common.resources import style
 from tp.common.python import helpers, strings, path, color
 from tp.common.qt import dpi
 

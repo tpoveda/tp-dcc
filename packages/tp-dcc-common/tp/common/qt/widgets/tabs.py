@@ -10,7 +10,7 @@ from Qt.QtWidgets import QWidget, QTabWidget, QMainWindow
 from Qt.QtGui import QColor, QPalette
 
 from tp.core import dcc
-from tp.common.resources import theme
+# from tp.common.resources import theme
 from tp.common.qt import qtutils, base
 from tp.common.qt.widgets import layouts, window, tabbars, buttons, group, dividers, stack
 

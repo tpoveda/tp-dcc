@@ -7,7 +7,7 @@ Module that contains base functionality for Qt widgets
 
 from Qt import QtCore, QtWidgets, QtGui
 
-from tp.common.resources import theme
+# from tp.common.resources import theme
 from tp.common.qt import qtutils, contexts as qt_contexts
 from tp.common.qt.widgets import layouts
 
@@ -38,7 +38,7 @@ def frame(layout=None, parent=None):
     return new_frame
 
 
-@theme.mixin
+# @theme.mixin
 class BaseWidget(QtWidgets.QWidget):
     """
     Base class for all QWidgets based items
@@ -212,7 +212,7 @@ class BaseWidget(QtWidgets.QWidget):
             self.setLayout(self.main_layout)
 
 
-@theme.mixin
+# @theme.mixin
 class BaseFrame(QtWidgets.QFrame):
     mouseReleased = QtCore.Signal(object)
 

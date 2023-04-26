@@ -12,7 +12,7 @@ from Qt.QtGui import QFontMetrics, QTextCursor, QTextDocument, QPainter, QMouseE
 from tp.core.managers import resources
 from tp.common.qt import consts, qtutils, dpi
 from tp.common.qt.widgets import menus, graphicseffects
-from tp.common.resources import theme
+# from tp.common.resources import theme
 
 
 def label(text='', tooltip='', upper=False, bold=False, elide=False, parent=None):
@@ -161,7 +161,7 @@ def h5_label(text='', tooltip='', upper=False, bold=False, parent=False):
     return new_label
 
 
-@theme.mixin
+# @theme.mixin
 @menus.mixin
 class BaseLabel(QLabel, dpi.DPIScaling):
     """

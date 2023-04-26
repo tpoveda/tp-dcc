@@ -9,12 +9,12 @@ from Qt.QtCore import Qt, Signal, Property, QPoint, QRect
 from Qt.QtWidgets import QSizePolicy, QFrame, QSpinBox, QDoubleSpinBox
 from Qt.QtGui import QColor, QPainter, QDoubleValidator
 
-from tp.common.resources import theme
+# from tp.common.resources import theme
 from tp.common.qt import base, contexts as qt_contexts
 from tp.common.qt.widgets import layouts, lineedits, buttons, labels
 
 
-@theme.mixin
+# @theme.mixin
 # @mixin.cursor_mixin
 class BaseSpinBox(QSpinBox, object):
     def __init__(self, parent=None):

@@ -16,7 +16,7 @@ from tpDcc.libs.qt.core import base, animation
 from tpDcc.libs.qt.widgets import layouts, label, avatar, loading
 
 
-@theme.mixin
+# @theme.mixin
 class BaseToast(base.BaseWidget, object):
 
     class ToastTypes(object):

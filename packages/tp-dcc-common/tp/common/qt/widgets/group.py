@@ -11,7 +11,7 @@ from Qt.QtGui import QIcon
 
 from tp.core.managers import resources
 from tp.common.python import helpers, decorators
-from tp.common.resources import theme
+# from tp.common.resources import theme
 from tp.common.qt import base
 from tp.common.qt.widgets import layouts, buttons
 
@@ -147,7 +147,7 @@ class CollapsableGroup(BaseGroup, object):
         self.setTitle(title)
 
 
-@theme.mixin
+# @theme.mixin
 class GroupBoxWidget(base.BaseFrame):
 
     toggled = Signal(bool)

@@ -10,10 +10,10 @@ from Qt.QtWidgets import QSizePolicy, QHBoxLayout, QFrame
 from Qt.QtGui import QPixmap
 
 from tp.core.managers import resources
-from tp.common.resources import theme
+# from tp.common.resources import theme
 
 
-@theme.mixin
+# @theme.mixin
 class StatusWidget(QFrame, object):
 
     DEFAULT_DISPLAY_TIME = 10000  # milliseconds -> 10 seconds

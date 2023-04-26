@@ -11,7 +11,7 @@ from Qt.QtWidgets import QSizePolicy, QWidget, QCompleter, QComboBox
 from tp.common.python import helpers
 from tp.common.qt import formatters, mixin, dpi
 from tp.common.qt.widgets import layouts, labels
-from tp.common.resources import theme
+# from tp.common.resources import theme
 
 
 def combobox(items=None, placeholder_text=None, parent=None):
@@ -118,7 +118,7 @@ def bool_combobox(state=True, parent=None):
     return new_bool_combobox_widget
 
 
-@theme.mixin
+# @theme.mixin
 @mixin.dynamic_property
 class BaseComboBox(QComboBox, dpi.DPIScaling):
 
@@ -309,7 +309,7 @@ class BaseComboBox(QComboBox, dpi.DPIScaling):
             self._root_menu.set_value(value)
 
 
-@theme.mixin
+# @theme.mixin
 @mixin.dynamic_property
 class SearchableComboBox(BaseComboBox):
     def __init__(self, items=None, parent=None):
@@ -777,7 +777,7 @@ class AbstractComboBoxWidget(QWidget):
         self._PREV_INDEX = self._combo.currentIndex()
 
 
-@theme.mixin
+# @theme.mixin
 class BaseComboBoxWidget(AbstractComboBoxWidget):
     """
     Creates a basic combo box widget width a label.
@@ -846,7 +846,7 @@ class BaseComboBoxWidget(AbstractComboBoxWidget):
         return combo
 
 
-@theme.mixin
+# @theme.mixin
 class SearchableComboBoxWidget(AbstractComboBoxWidget):
     """
     Searchable combo box with a label.

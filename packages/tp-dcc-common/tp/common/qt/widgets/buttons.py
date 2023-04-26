@@ -15,7 +15,8 @@ from Qt.QtGui import QCursor, QIcon, QFontMetrics, QPainter, QColor, QRegion
 from tp.core import dcc, log
 from tp.core.managers import resources
 from tp.common.python import helpers, decorators
-from tp.common.resources import icon, theme
+# from tp.common.resources import icon, theme
+from tp.common.resources import icon
 from tp.common.qt import consts, animation, qtutils, dpi, base
 from tp.common.qt.widgets import tooltips, layouts, labels, menus
 
@@ -468,7 +469,7 @@ class AbstractButton(QAbstractButton, dpi.DPIScaling):
         self.setIcon(self._idle_icon)
 
 
-@theme.mixin
+# @theme.mixin
 class BaseButton(QPushButton, AbstractButton):
     """
     Custom button implementation that extends default Qt QPushButton widget
@@ -1166,7 +1167,7 @@ class BaseButton(QPushButton, AbstractButton):
             self.rightMenuChanged.emit()
 
 
-@theme.mixin
+# @theme.mixin
 class BasePushButton(BaseButton):
     def __init__(self, *args, **kwargs):
         super(BasePushButton, self).__init__(*args, **kwargs)
@@ -1174,7 +1175,7 @@ class BasePushButton(BaseButton):
         qtutils.set_stylesheet_object_name(self, 'DefaultButton')
 
 
-@theme.mixin
+# @theme.mixin
 class BaseToolButton(QToolButton, AbstractButton):
     def __init__(self, icon=None, tooltip=None, parent=None):
         super(BaseToolButton, self).__init__(parent=parent)
@@ -1399,7 +1400,7 @@ class BaseToolButton(QToolButton, AbstractButton):
                 self.setIcon(image)
 
 
-@theme.mixin
+# @theme.mixin
 class BaseRadioButton(QRadioButton, object):
     def __init__(self, *args, **kwargs):
         super(BaseRadioButton, self).__init__(*args, **kwargs)
@@ -1831,7 +1832,7 @@ class BaseMenuButton(QPushButton, ButtonIcons):
             self.rigthMenuChanged.emit()
 
 
-@theme.mixin
+# @theme.mixin
 class IconMenuButton(BaseButton):
     def __init__(self, icon=None, icon_hover=None, double_click_enabled=False, color=None, tint_color=None,
                  menu_name='', switch_icon_on_click=False, theme_updates=True, parent=None):

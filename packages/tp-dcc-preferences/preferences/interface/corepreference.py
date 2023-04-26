@@ -30,7 +30,7 @@ class CorePreferenceInterface(preference.PreferenceInterface):
 		:rtype: str
 		"""
 
-		packages_manager = api.get_current_package_manager()
+		packages_manager = api.current_package_manager()
 		return path.clean_path(
 			os.path.abspath(path.join_path(packages_manager.config_path, self._PREFERENCE_ROOTS_PATH)))
 

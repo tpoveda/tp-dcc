@@ -18,7 +18,7 @@ from Qt.QtWidgets import QWidget, QLabel, QFrame, QPushButton, QSlider, QLineEdi
 from tp.core import dcc
 from tp.core.managers import resources
 from tp.core.abstract import dialog as abstract_dialog
-from tp.common.resources import theme
+# from tp.common.resources import theme
 from tp.common.qt import qtutils, animation, dragger, resizers
 from tp.common.qt.widgets import layouts, dividers
 

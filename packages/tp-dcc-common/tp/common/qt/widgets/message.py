@@ -25,7 +25,7 @@ class MessageTypes(object):
     LOADING = 'loading'
 
 
-@theme.mixin
+# @theme.mixin
 # @mixin.property_mixin
 class BaseMessage(base.BaseWidget, object):
     def __init__(self, text='', parent=None):
