@@ -107,6 +107,9 @@ def init(**kwargs):
 	logger.debug('Resolving tp-dcc environment:')
 	logger.debug(f'\tResolver: {current_env.resolver}')
 	logger.debug(f'\tEnvironment configuration file: {current_env.resolver.get_environment_path()}')
+	logger.info('\n\n' + '=' * 80)
+	logger.info('tp-dcc Framework')
+	logger.info('\n' + '=' * 80 + '\n')
 	current_env.resolver.resolve_from_path(current_env.resolver.get_environment_path())
 
 	return current_env
@@ -121,6 +124,10 @@ def shutdown():
 	if not current_env:
 		logger.debug('No tp-dcc framework environment found to set shutdown.')
 		return False
+
+	logger.info('\n\n' + '=' * 80)
+	logger.info('tp-dcc Framework')
+	logger.info('\n' + '=' * 80 + '\n')
 
 	logger.debug(f'Shutting down tp-dcc framework environment: {current_env}')
 	logger.debug(f'\tRoot Path: {current_env.root_path}')

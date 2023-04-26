@@ -29,8 +29,7 @@ def startup(package_manager):
 	if not package:
 		raise bootstrap_exceptions.MissingPackage(package)
 
-	logger.info('=' * 80)
-	logger.info('Loading tpDcc DCC Package: Maya')
+	logger.info('Loading tp-dcc DCC Package: Maya')
 
 	# initialize metadata manager
 	base.MetaRegistry()
@@ -47,8 +46,5 @@ def shutdown(package_manager):
 	if not package:
 		raise bootstrap_exceptions.MissingPackage(package)
 
-	logger.info('=' * 80)
-	logger.info('Unloading tpDcc Maya Package...')
+	logger.info('Shutting down tp-dcc-maya Package...')
 
-	logger.info('tpDcc Maya Package unloaded successfully!')
-	logger.info('=' * 80)

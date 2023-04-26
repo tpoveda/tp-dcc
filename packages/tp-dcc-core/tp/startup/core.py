@@ -23,16 +23,12 @@ def startup(package_manager):
 	:return: tpDccPackagesManager
 	"""
 
-	logger.info('Loading tpDcc Core package...')
-
 	root_file_path = path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 	package = manager.get_package_from_path(root_file_path)
 	if not package:
 		raise bootstrap_exceptions.MissingPackage(package)
 
-	logger.info('\n\n' + '=' * 80)
-	logger.info('tpDcc Framework')
-	logger.info('\n' + '=' * 80 + '\n')
+	logger.info('Loading tp-dcc-core package...')
 
 
 def shutdown(package_manager):
@@ -41,4 +37,4 @@ def shutdown(package_manager):
 	This function is called at the end of tpDcc framework shutdown.
 	"""
 
-	logger.info('Unloading tpDcc Core package...')
+	logger.info('Unloading tp-dcc-core package...')

@@ -24,7 +24,7 @@ def startup(package_manager):
 	:return: tpDccPackagesManager
 	"""
 
-	logger.info('Loading tpDcc Preferences package...')
+	logger.info('Loading tp-dcc-preferences package...')
 
 	root_file_path = path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 	package = manager.get_package_from_path(root_file_path)
@@ -40,4 +40,4 @@ def shutdown(package_manager):
 	This function is called at the end of tpDcc framework shutdown.
 	"""
 
-	logger.info('Unloading tpDcc Preferences package...')
+	logger.info('Shutting down tp-dcc-preferences package...')

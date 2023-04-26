@@ -212,23 +212,21 @@ class Package(object):
         return True
 
     def shutdown(self):
-        _logger = logging.getLogger('tp-dcc-bootstrap')
-        _logger.debug(f'Shutting down package: {self}')
-        _logger.debug(f'\tCommand Paths: {self._command_paths}')
+        logger.debug(f'Shutting down package: {self}')
+        logger.debug(f'\tCommand Paths: {self._command_paths}')
         for command_path in self._command_paths:
             if not os.path.exists(command_path):
                 continue
             mod_name = os.path.basename(os.path.splitdrive(command_path)[0])
-            _logger.debug(f'Importing package startup file: {command_path}')
+            logger.debug(f'Importing package startup file: {command_path}')
             mod = commands.import_module(mod_name, os.path.realpath(command_path))
-            _logger = logging.getLogger('tp-dcc-bootstrap')
-            _logger.warning(f'Found mod: "{mod}" ...')
+            logger.debug(f'Found mod: "{mod}" ...')
             if hasattr(mod, 'shutdown'):
-                _logger.debug(f'Running shutdown function for module: {command_path}')
+                logger.debug(f'Running shutdown function for module: {command_path}')
                 mod.shutdown(self)
             # if mod_name in sys.modules:
             #     del sys.modules[mod_name]
-        _logger.debug(f'Package shutdown completed: {self}')
+        logger.debug(f'Package shutdown completed: {self}')
 
     # =================================================================================================================
     # INTERNAL

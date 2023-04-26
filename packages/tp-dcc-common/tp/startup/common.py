@@ -18,7 +18,7 @@ def startup(package_manager):
 	:return: tpDccPackagesManager
 	"""
 
-	logger.info('Loading tpDcc Common package...')
+	logger.info('Loading tp-dcc-common package...')
 
 	# Make sure QApplication instance exists before registering resources
 	app = QApplication.instance() or QApplication(sys.argv)
@@ -34,4 +34,4 @@ def shutdown(package_manager):
 	This function is called at the end of tpDcc framework shutdown.
 	"""
 
-	logger.info('Unloading tpDcc Common package...')
+	logger.info('Shutting down tp-dcc-common package...')
