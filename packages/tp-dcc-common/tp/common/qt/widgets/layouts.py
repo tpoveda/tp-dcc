@@ -19,7 +19,7 @@ def vertical_layout(spacing=consts.DEFAULT_SPACING, margins=(0, 0, 0, 0), alignm
 
     :param int spacing: layout spacing
     :param tuple(int, int, int, int) margins: layout margins.
-    :param Qt.Alignment or None alignment: optional layout alignment.
+    :param Qt.AlignmentFlag or None alignment: optional layout alignment.
     :param QtWidgets.QWidget or None parent: optional layout parent.
     :return: new vertical layout instance.
     :rtype: QVBoxLayout
@@ -40,7 +40,7 @@ def horizontal_layout(spacing=consts.DEFAULT_SPACING, margins=(0, 0, 0, 0), alig
 
     :param int spacing: layout spacing
     :param tuple(int, int, int, int) margins: layout margins.
-    :param Qt.Alignment or None alignment: optional layout alignment.
+    :param Qt.AlignmentFlag or None alignment: optional layout alignment.
     :param QtWidgets.QWidget or None parent: optional layout parent.
     :return: new horizontal layout instance.
     :rtype: QHBoxLayout

@@ -19,7 +19,7 @@ import maya.utils
 import maya.api.OpenMaya
 
 from tp.core import consts, log, dcc
-from tp.common.python import helpers
+from tp.common.python import helpers, path, folder
 from tp.common.math import matrix
 from tp.maya.om import mathlib as maya_math
 from tp.maya.cmds import helpers, gui, node, name, scene, shape, transform, decorators as maya_decorators
@@ -293,6 +293,29 @@ def get_main_menubar():
     menu_bar = win.menuBar()
 
     return menu_bar
+
+
+def register_resource_path(resources_path):
+    """
+    Registers path into given DCC so it can find specific resources (such as icons)
+
+    :param resources_path: str, path we want DCC to register
+    """
+
+    if not resources_path or not os.path.isdir(resources_path):
+        return
+
+    resources_path = path.clean_path(resources_path)
+    resources_paths = [resources_path]
+    resources_paths.extend(folder.get_folders(resources_path, recursive=True, full_path=True) or list())
+
+    for resource_path in resources_paths:
+        if not os.environ.get('XBMLANGPATH', None):
+            os.environ['XBMLANGPATH'] = resource_path
+        else:
+            paths = os.environ['XBMLANGPATH'].split(os.pathsep)
+            if resource_path not in paths and os.path.normpath(resource_path) not in paths:
+                os.environ['XBMLANGPATH'] = os.environ['XBMLANGPATH'] + os.pathsep + resource_path
 
 
 def is_window_floating(window_name):

@@ -13,15 +13,13 @@ import os
 from Qt.QtWidgets import QApplication
 
 from tp.common.qt import consts
-from tp.common.resources import font
+from tp.common.resources.core import font
 
 # set preferred binding
 os.environ['QT_PREFERRED_BINDING'] = os.pathsep.join(['PySide2', 'PySide2'])
 
 
 def font_db():
-
-	from tp.common.resources import font
 
 	global FONT_DB
 	if not FONT_DB:
@@ -31,8 +29,6 @@ def font_db():
 
 
 def pixel_ratio():
-
-	from Qt.QtWidgets import QApplication
 
 	global PIXEL_RATIO
 	if PIXEL_RATIO is None:

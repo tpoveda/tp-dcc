@@ -19,7 +19,7 @@ else:
     DPI = 72.0
 
 # global UI scale value. This should correspond to any UI scaling in the host DCC. In standalone mode, the app factors
-# in the current DPI scaling scales the UI accordingly.
+# in the current DPI scales the UI accordingly.
 UI_SCALE = 1.0
 SCALE_FACTORS = (0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0)
 
@@ -31,12 +31,12 @@ def init_ui_scale(value=None):
 
     global UI_SCALE
 
-    value = get_ui_scale(value)
+    value = ui_scale_value(value)
 
     UI_SCALE = value
 
 
-def get_ui_scale(value=None):
+def ui_scale_value(value=None):
     """
     Returns the current user-set UI scale value.
     """
@@ -68,21 +68,22 @@ def dpi_multiplier():
     :rtype: float
     """
 
-    return max(1, float(QApplication.desktop().logicalDpiY()) / float(DPI)) * float(UI_SCALE)
+    desktop = QApplication.desktop()
+    logical_y = desktop.logicalDpiY() if desktop is not None else DPI
+
+    return max(1, float(logical_y) / float(DPI)) * float(UI_SCALE)
 
 
 def dpi_scale(value):
     """
     Resizes by value based on current DPI.
 
-    :param int value: value default 2k size in pixels
+    :param int or float value: value default 2k size in pixels
     :return: size in pixels now DPI monitor is (4k 2k etc)
-    :rtype: int
+    :rtype: int or float
     """
 
-    mult = dpi_multiplier()
-
-    return value * mult
+    return value * dpi_multiplier()
 
 
 def dpi_scale_divide(value):
@@ -122,9 +123,10 @@ def margins_dpi_scale(left, top, right, bottom):
 
 def point_by_dpi(point):
     """
-    Scales given QPoint by the current DPI scaling
+    Scales given QPoint by the current DPI scaling.
+
     :param QPoint point: point to scale by current DPI scaling
-    :return: Newly scaled QPoint
+    :return: Newly scaled QPoint.
     :rtype: QPoint
     """
 

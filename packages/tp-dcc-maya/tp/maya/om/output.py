@@ -1,3 +1,10 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Module that contains class implementations related with Maya output.
+"""
+
 import maya.api.OpenMaya as OpenMaya
 
 
@@ -29,3 +36,5 @@ def display_error(text):
 	"""
 
 	OpenMaya.MGlobal.displayError(text)
+
+

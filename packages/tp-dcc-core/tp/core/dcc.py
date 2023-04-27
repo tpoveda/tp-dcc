@@ -21,6 +21,7 @@ main = __import__('__main__')
 
 # Cached current DCC name.
 CURRENT_DCC = None
+DEFAULT_DCC_PORT = 65500
 
 # Cached used to store all the reroute paths done during a session.
 DCC_REROUTE_CACHE = dict()
@@ -32,14 +33,16 @@ _CLIENTS = dict()
 class Dccs(object):
     Standalone = 'standalone'
     Maya = 'maya'
-    Max = 'max'
+    Max = '3dsmax'
     MotionBuilder = 'mobu'
     Houdini = 'houdini'
     Nuke = 'nuke'
     Unreal = 'unreal'
+    Blender = 'blender'
+    SubstancePainter = 'painter'
 
     ALL = [
-        Maya, Max, MotionBuilder, Houdini, Nuke, Unreal
+        Maya, Max, MotionBuilder, Houdini, Nuke, Unreal, Blender, SubstancePainter
     ]
 
     nice_names = OrderedDict([
@@ -48,7 +51,9 @@ class Dccs(object):
         (MotionBuilder, 'MotionBuilder'),
         (Houdini, 'Houdini'),
         (Nuke, 'Nuke'),
-        (Unreal, 'Unreal')
+        (Unreal, 'Unreal'),
+        (Blender, 'Blender'),
+        (SubstancePainter, 'SubstancePainter')
     ])
 
     packages = OrderedDict([
@@ -57,7 +62,9 @@ class Dccs(object):
         ('pyfbsdk', MotionBuilder),
         ('hou', Houdini),
         ('nuke', Nuke),
-        ('unreal', Unreal)
+        ('unreal', Unreal),
+        ('bpy', Blender),
+        ('substance_painter', SubstancePainter)
     ])
 
     # TODO: Add support for both MacOS and Linux
@@ -68,7 +75,20 @@ class Dccs(object):
         MotionBuilder: {osplatform.Platforms.Windows: 'motionbuilder.exe'},
         Houdini: {osplatform.Platforms.Windows: 'houdinifx.exe'},
         Nuke: {},
-        Unreal: {osplatform.Platforms.Windows: 'UE4Editor.exe'}
+        Unreal: {osplatform.Platforms.Windows: 'UnrealEditor..exe'},
+        Blender: {osplatform.Platforms.Windows: 'blener.exe'},
+        SubstancePainter: {osplatform.Platforms.Windows: 'painter.exe'}
+    }
+
+    ports = {
+        Standalone: DEFAULT_DCC_PORT,               # 65500
+        Maya: DEFAULT_DCC_PORT + 1,                 # 65501
+        MotionBuilder: DEFAULT_DCC_PORT + 2,        # 65502
+        Houdini: DEFAULT_DCC_PORT + 3,              # 65503
+        Max: DEFAULT_DCC_PORT + 4,                  # 65504
+        Blender: DEFAULT_DCC_PORT + 5,              # 65505
+        SubstancePainter: DEFAULT_DCC_PORT + 6,     # 65506
+        Unreal: 30010                               # Default Unreal Remote Server Plugin port
     }
 
 
@@ -88,6 +108,8 @@ class DccCallbacks(object):
     NodeSelect = (consts.CallbackTypes.NodeSelect, {'type': 'filter'})
     NodeAdded = (consts.CallbackTypes.NodeAdded, {'type': 'filter'})
     NodeDeleted = (consts.CallbackTypes.NodeDeleted, {'type': 'filter'})
+    ReferencePreLoaded = (consts.CallbackTypes.ReferencePreLoaded, {'type': 'simple'})
+    ReferencePostLoaded = (consts.CallbackTypes.ReferencePostLoaded, {'type': 'simple'})
 
 
 def dcc_port(base_port, dcc_name=None):
@@ -275,7 +297,7 @@ def is_standalone():
     :return: bool
     """
 
-    return not any(pkg in list(main.__dict__.keys()) for pkg in Dccs.packages)
+    return current_dcc() == Dccs.Standalone
 
 
 def is_maya():
@@ -284,7 +306,7 @@ def is_maya():
     :return: bool
     """
 
-    return 'cmds' in main.__dict__
+    return current_dcc() == Dccs.Maya
 
 
 def is_max():
@@ -293,7 +315,7 @@ def is_max():
     :return: bool
     """
 
-    return 'MaxPlus' in main.__dict__ or 'pymxs' in main.__dict__
+    return current_dcc() == Dccs.Max
 
 
 def is_mobu():
@@ -302,7 +324,7 @@ def is_mobu():
     :return: bool
     """
 
-    return 'pyfbsdk' in main.__dict__
+    return current_dcc() == Dccs.MotionBuilder
 
 
 def is_houdini():
@@ -311,7 +333,7 @@ def is_houdini():
     :return: bool
     """
 
-    return 'hou' in main.__dict__
+    return current_dcc() == Dccs.Houdini
 
 
 def is_unreal():
@@ -320,7 +342,7 @@ def is_unreal():
     :return: bool
     """
 
-    return 'unreal' in main.__dict__
+    return current_dcc() == Dccs.Unreal
 
 
 def is_nuke():
@@ -329,7 +351,29 @@ def is_nuke():
     :return: bool
     """
 
-    return 'nuke' in main.__dict__
+    return current_dcc() == Dccs.Nuke
+
+
+def is_blender():
+    """
+    Checks if Blender is available or not
+
+    :return: True if current DCC is Blender.
+    :rtype: bool
+    """
+
+    return current_dcc() == Dccs.Blender
+
+
+def is_substance_painter():
+    """
+    Checkcs if Substance Painter is available or not
+
+    :return: True if current DCC is Substance Painter.
+    :rtype: bool
+    """
+
+    return current_dcc() == Dccs.SubstancePainter
 
 
 # =================================================================================================================
@@ -633,9 +677,20 @@ def get_main_menubar():
 
 
 @reroute
+def register_resource_path(resources_path):
+    """
+    Registers path into given DCC so it can find specific resources (such as icons).
+
+    :param resources_path: str, path we want DCC to register.
+    """
+
+    raise NotImplementedError()
+
+
+@reroute
 def is_window_floating(window_name):
     """
-    Returns whether or not DCC window is floating
+    Returns whether DCC window is floating
     :param window_name: str
     :return: bool
     """

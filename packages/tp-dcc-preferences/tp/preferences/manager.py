@@ -21,28 +21,6 @@ from tp.preferences import errors, preference as core_preference
 logger = log.tpLogger
 
 
-def get_core_preference_interface():
-
-	"""
-	Returns the core tpDcc Tools framework preference interface.
-
-	:return: core preference interface instance.
-	:rtype: CorePreferenceInterface
-	"""
-	return preference.preference_interface('core')
-
-
-def get_theme_preference_interface():
-	"""
-	Returns the core tpDcc Tools framework preference interface.
-
-	:return: core preference interface instance.
-	:rtype: ThemePreferenceInterface
-	"""
-
-	return preference.preference_interface('theme')
-
-
 class PreferenceObject(dict):
 	"""
 	Class used to encapsulate all the data found withing preferences (.pref) files.
@@ -258,29 +236,6 @@ class PreferencesManager(object):
 
 		return True
 
-	def preference_interface(self, name, dcc=None):
-		"""
-		Returns the preference interface object with given name.
-
-		:param str name: name of the preference interface to retrieve.
-		:param str dcc: specific DCC name whose settings we are looking for.
-		:return: Preference or None
-
-		..note:: an interface is a class used to interact with preferences data structures through code.
-		"""
-
-		preference_interface_instance = self._plugin_factory.loaded_plugins.get(name)
-		if not preference_interface_instance:
-			preference_interface_class = self._plugin_factory.get_plugin_from_id(name)
-			if not preference_interface_class:
-				logger.error('Missing interface by name: {}'.format(name))
-				return None
-			if dcc and dcc not in preference_interface_class.DCCS:
-				return None
-			return preference_interface_class(self)
-
-		return preference_interface_instance
-
 	def package_preference_root_location(self, package_name):
 		"""
 		Returns the absolute path of the installed package preference root folder.
@@ -452,7 +407,7 @@ class PreferencesManager(object):
 
 		return self._plugin_factory.get_plugin_from_id(interface_id, package_name=package_name) is not None
 
-	def interface(self, interface_id, package_name=None):
+	def interface_class(self, interface_id, package_name=None):
 		"""
 		Returns the interface object.
 
@@ -462,13 +417,33 @@ class PreferencesManager(object):
 		:rtype: PreferenceInterface
 		"""
 
-		interface_class = self._plugin_factory.get_loaded_plugin_from_id(interface_id, package_name=package_name)
-		if not interface_class:
-			interface_class = self._plugin_factory.get_plugin_from_id(interface_id, package_name=package_name)
-			if not interface_class:
-				raise ValueError('Missing interface by name: {}'.format(interface_id))
+		return self._plugin_factory.get_plugin_from_id(interface_id, package_name=package_name)
 
-		return interface_class
+	def interface(self, interface_id, package_name=None, dcc=None):
+		"""
+		Returns the preference interface object with given name.
+
+		:param str interface_id: ID of the preference interface to retrieve.
+		:param str package_name: optional package name.
+		:param str dcc: specific DCC name whose settings we are looking for.
+		:return: Preference or None
+
+		..note:: an interface is a class used to interact with preferences data structures through code.
+		"""
+
+		preference_interface_instance = self._plugin_factory.get_loaded_plugin_from_id(
+			interface_id, package_name=package_name)
+
+		if not preference_interface_instance:
+			preference_interface_class = self._plugin_factory.get_plugin_from_id(interface_id, package_name=package_name)
+			if not preference_interface_class:
+				logger.error('Missing interface by name: {}'.format(interface_id))
+				return None
+			if dcc and dcc not in preference_interface_class.DCCS:
+				return None
+			return preference_interface_class(self)
+
+		return preference_interface_instance
 
 	def interfaces(self, package_name=None):
 		"""
@@ -629,9 +604,8 @@ class PreferencesManager(object):
 		Internal function that resolves all interface classes.
 		"""
 
-		# logger.debug('Resolving root locations ...')
-		core_interface = self.preference_interface('core')
-		roots_path = core_interface.get_root_config_path() if core_interface else ''
+		core_interface = self.interface('core')
+		roots_path = core_interface.root_config_path() if core_interface else ''
 		if not path.is_file(roots_path):
 			logger.error('Missing Preferences configuration file: {}'.format(roots_path))
 			return

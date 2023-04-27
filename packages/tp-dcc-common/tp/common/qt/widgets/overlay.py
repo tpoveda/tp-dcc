@@ -2,128 +2,125 @@
 # -*- coding: utf-8 -*-
 
 """
-Module that contains implementation for overlay widgets
+Module that includes classes to create overlay widgets
 """
 
 from Qt.QtCore import Qt, Signal
-from Qt.QtWidgets import QApplication
+from Qt.QtWidgets import QApplication, QDialog, QHBoxLayout
 
-from tpDcc.libs.qt.widgets import dialog
+from tp.common.qt import qtutils
 
 
-class OverlayWidget(dialog.BaseDialog, object):
-    """
-    Invisible overlay widget used to capture mouse events among other things
-    """
+class OverlayWidget(QDialog):
 
-    widgetMousePress = Signal(object)
-    widgetMouseMove = Signal(object)
-    widgetMouseRelease = Signal(object)
+	widgetMousePress = Signal(object)
+	widgetMouseMove = Signal(object)
+	widgetMouseRelease = Signal(object)
 
-    OVERLAY_ACTIVE_KEY = Qt.AltModifier
-    _PRESSED = False
+	PRESSED = False
+	OVERLAY_ACTIVE_KEY = Qt.AltModifier
 
-    def __init__(self, parent):
-        super(OverlayWidget, self).__init__(parent=parent, show_on_initialize=False)
+	def __init__(self, parent, layout_class=QHBoxLayout):
+		super().__init__(parent=parent)
 
-        self.set_debug_mode(False)
+		self._layout = layout_class(self)
+		self._debug = False
+		self.setup_ui(layout_class)
 
-    # ============================================================================================================
-    # OVERRIDES
-    # ============================================================================================================
+	def setup_ui(self, layout_class):
+		if qtutils.is_pyside2() or qtutils.is_pyqt5():
+			self.setWindowFlags(Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint)
+		else:
+			self.setWindowFlags(Qt.FramelessWindowHint)
+		self.setMouseTracking(True)
+		self.update()
+		self.setStyleSheet('background-color: transparent;')
 
-    def ui(self):
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint)
-        self.setMouseTracking(True)
-        self.update()
+		self.main_layout = layout_class()
+		self.setLayout(self.main_layout)
 
-    def mousePressEvent(self, event):
-        """
-        Overrides base QDialog mousePressEvent
-        :param event:
-        :return:
-        """
+	def update(self):
+		self.setGeometry(0, 0, self.parent().geometry().width(), self.parent().geometry().height())
+		super(OverlayWidget, self).update()
 
-        if not QApplication.keyboardModifiers() == self.OVERLAY_ACTIVE_KEY:
-            event.ignore()
-            return
+	def enterEvent(self, event):
+		"""
+		Overrides base QDialog enterEvent function.
+		On mouse enter, check if it is pressed
 
-        self.widgetMousePress.emit(event)
-        self._PRESSED = True
-        self.update()
+		:param Qt.Event event: Qt enter event.
+		"""
 
-    def enterEvent(self, event):
-        """
-        Overrides base QDialog enterEvent
-        :param event:
-        :return:
-        """
+		if not self.PRESSED:
+			self.hide()
 
-        if not self._PRESSED:
-            self.hide()
+		event.ignore()
 
-        event.ignore()
+	def mousePressEvent(self, event):
+		"""
+		Overrides base QDialog mousePressEvent function.
+		Send events back down to parent.
 
-    def mouseMoveEvent(self, event):
-        """
-        Overrides base QDialog mouseMoveEvent
-        :param event:
-        :return:
-        """
+		:param QEvent event: Qt mouse press event.
+		"""
 
-        pass
+		if not QApplication.keyboardModifiers() == self.OVERLAY_ACTIVE_KEY:
+			event.ignore()
+			return
 
-    def mouseReleaseEvent(self, event):
-        """
-        Overrides base QDialog mouseReleaseEvent
-        :param event:
-        :return:
-        """
+		self.widgetMousePress.emit(event)
+		self.PRESSED = True
+		self.update()
 
-        self.widgetMouseRelease.emit(event)
-        self._PRESSED = False
-        self.update()
+	def mouseMoveEvent(self, event):
+		"""
+		Overrides base QDialog mouseMoveEvent function.
 
-    def keyReleaseEvent(self, event):
-        """
-        Overrides base QDialog mousePressEvent
-        :param event:
-        :return:
-        """
+		:param QEvent event: Qt mouse move evente.
+		"""
 
-        self.hide()
+		pass
 
-    def update(self):
-        """
-        Overrides base QDialog update function
-        Updates geometry to match parents geometry
-        :return:
-        """
+	def mouseReleaseEvent(self, event):
+		"""
+		Overrides base QDialog mouseReleaseEvent function.
+		Send events back down to parent
 
-        self.setGeometry(0, 0, self.parent().geometry().width(), self.parent().geometry().height())
+		:param QEvent event: Qt mouse release event.
+		:return:
+		"""
+		self.widgetMouseRelease.emit(event)
+		self.PRESSED = False
+		self.update()
 
-    def show(self, *args, **kwargs):
-        """
-        Overrides base QDialog show
-        :param event:
-        :return:
-        """
+	def keyReleaseEvent(self, event):
+		"""
+		Overrides base QDialog keyReleaseEvent function.
 
-        self._PRESSED = True
-        super(OverlayWidget, self).show(*args, **kwargs)
-        self.update()
+		:param QEvent event: Qt key release event.
+		:return:
+		"""
 
-    # ============================================================================================================
-    # BASE
-    # ============================================================================================================
+		self.hide()
 
-    def set_debug_mode(self, flag):
-        """
-        Enables or disable debug mode by making window semi red transparent. Useful to know where the widget is located
-        :param flag: bool
-        """
+	def show(self, *args, **kwargs):
+		"""
+		Overrides base QDialog show function.
+		:return:
+		"""
 
-        if flag:
-            self.setStyleSheet('background-color: #88ff0000;')
-        else:
-            self.setStyleSheet('background-color: transparent;')
+		self.PRESSED = True
+		super().show(*args, **kwargs)
+		self.update()
+
+	def set_debug_mode(self, debug):
+		"""
+		Debug mode to show where the dialog window is. Turns the window a transparent red
+
+		:param bool debug:: whether loading debug mode is enabled.
+		"""
+		self._debug = debug
+		if debug:
+			self.setStyleSheet("background-color: #88ff0000;")
+		else:
+			self.setStyleSheet("background-color: transparent;")

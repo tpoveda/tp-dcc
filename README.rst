@@ -1,4 +1,4 @@
-tp-dcc
+tp-dcc-tools
 ============================================================
 
 .. image:: https://img.shields.io/badge/Python-3.7-yellow?logo=python
@@ -37,10 +37,13 @@ tp-dcc
 
 ============================================================
 
+DCC agnostic framework that allows to improve the experience when using DCCs.
 
-DCC agnostic framework that allows the creation of tools that can work under any DCC that supports Python. The framework contains tools that can be interesting for all people using a specific DCC: nomenclature manager, renamer, etc.
+Easy to setup framework that contains lot of utility functions and classes to streamline the creation of new DCC tools for TDs.
+Also, the framework features a collection of tools that can be helpful for different departments.
 
-* Python 2 and 3 support
+
+
 * Reroute DCC agnostic layer
 * Generic DCC objects
 * Inheritance based configuration files system. Your tools can use different configurations based on which DCC you are working on.
@@ -70,6 +73,10 @@ Packages
     - **nodegraph**: Library to create node graphs in a DCC agnostic way.
 * **tp-dcc-preferences**: Package that handles tpDcc package preferences
 * **tp-dcc-core**: Package that contains a collection of Python modules to interact with DCCs Python APIs in a DCC agnostic way.
+
+    - Reroute DCC agnostic layer.
+    - Generic DCC object representations.
+
 * **tp-dcc-standalone**: Standalone interface for tpDcc framework.
 * **tp-dcc-maya**: Maya interface for tpDcc framework. Package that contains a lot of utilities functions and classes to work with Maya Python APIs (cmds and OpenMaya).
 * **tp-dcc-unreal**: Unreal Engine interface for tpDcc framework. Package that contains a lot of utilities functions and classes to work with Unreal Python API (unreal).

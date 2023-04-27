@@ -11,8 +11,7 @@ from Qt.QtCore import Signal, QObject
 from tp.core import consts, log
 from tp.preferences import preference
 from tp.common import resources
-# from tp.common.resources import theme, style
-from tp.common.resources import style
+from tp.common.resources.core import theme, style
 from tp.common.python import helpers, strings, path, color
 from tp.common.qt import dpi
 
@@ -39,7 +38,7 @@ class ThemePreferenceInterface(preference.PreferenceInterface):
 	ID = 'theme'
 
 	_RELATIVE_PATH = 'prefs/global/stylesheet{}'.format(consts.PREFERENCE_EXTENSION)
-	_PACKAGE_NAME = 'tp-dcc-core'
+	_PACKAGE_NAME = 'tp-dcc-preferences'
 	_THEME_UPDATER = ThemeUpdater()
 
 	def __getattr__(self, item):
@@ -56,10 +55,6 @@ class ThemePreferenceInterface(preference.PreferenceInterface):
 
 		return result
 
-	# =================================================================================================================
-	# PROPERTIES
-	# =================================================================================================================
-
 	@property
 	def updated(self):
 		"""
@@ -70,10 +65,6 @@ class ThemePreferenceInterface(preference.PreferenceInterface):
 		"""
 
 		return self._THEME_UPDATER.updated
-
-	# =================================================================================================================
-	# BASE
-	# =================================================================================================================
 
 	def themes(self):
 		"""
@@ -105,6 +96,18 @@ class ThemePreferenceInterface(preference.PreferenceInterface):
 		"""
 
 		theme = theme or self.current_theme()
+		return self.stylesheet_for_theme(theme)
+
+	def stylesheet_for_theme(self, theme):
+		"""
+		Returns stylesheet from given theme.
+
+		:param str theme: theme name ('dark', 'light', etc).
+		:return: StyleSheet instance.
+		:rtype: StyleSheet
+		:raises ValueError: if not theme data found for given theme name.
+		"""
+
 		theme_data = self.theme_data(theme)
 		if theme_data is None:
 			raise ValueError('stylesheet theme does not exists: {}'.format(theme))
@@ -138,7 +141,7 @@ class ThemePreferenceInterface(preference.PreferenceInterface):
 		theme_name = theme_name or self.current_theme()
 		style_preferences = self._manager.find_setting(self._RELATIVE_PATH, root=None)
 		if not style_preferences:
-			style_preferences = self._manager.get_default_preference_settings(self._PACKAGE_NAME, self._RELATIVE_PATH)
+			style_preferences = self._manager.default_preference_settings(self._PACKAGE_NAME, self._RELATIVE_PATH)
 		themes = style_preferences.get('settings', dict()).get('themes', dict())
 		data = themes.get(theme_name, dict())
 		theme_data = theme.Theme(name=theme_name, data_dict=data)

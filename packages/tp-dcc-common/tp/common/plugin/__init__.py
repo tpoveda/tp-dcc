@@ -155,10 +155,6 @@ class PluginFactory(object):
         return '[{} - Identifier: {}, Plugin Count: {}]'.format(
             self.__class__.__name__, self._plugin_identifier, len(self._plugins))
 
-    # =================================================================================================================
-    # CLASS METHODS
-    # =================================================================================================================
-
     @classmethod
     def get_regex_folder_validator(cls):
         """
@@ -183,17 +179,9 @@ class PluginFactory(object):
 
         return re.compile(r'([a-zA-Z_].*)(\.py$)')
 
-    # =================================================================================================================
-    # PROPERTIES
-    # =================================================================================================================
-
     @property
     def loaded_plugins(self):
         return self._loaded_plugins
-
-    # ============================================================================================================
-    # BASE
-    # ============================================================================================================
 
     def register_path(self, path_to_register, package_name=None, mechanism=PluginLoadingMechanism.GUESS):
         """
@@ -502,12 +490,14 @@ class PluginFactory(object):
     def get_loaded_plugin_from_id(self, plugin_id, package_name=None, plugin_version=None):
         """
         Retrieves the plugin with given plugin identifier. If you require a specific version of a plugin (in a
-        scenario where there are multiple plugins with the same identifier) this can also be specified
+        scenario where there are multiple plugins with the same identifier) this can also be specified.
+
         :param plugin_id: str, identifying value of the plugin you want to retrieve
         :param package_name: str, package name current registered plugins will belong to.
         :param plugin_version: int or float, version of the plugin you want. If factory has no versioning identifier
             specified this argument has no effect.
-        :return: Plugin
+        :return: plugin instance.
+        :rtype: Plugin
         """
 
         if package_name and package_name not in self._loaded_plugins:
@@ -520,13 +510,12 @@ class PluginFactory(object):
                 package_name, list()) if self._get_identifier(plugin) == plugin_id]
         else:
             matching_plugins = list()
-            for plugins in list(self._plugins.values()):
+            for plugins in list(self._loaded_plugins.values()):
                 for plugin in plugins:
                     if self._get_identifier(plugin) == plugin_id:
                         matching_plugins.append(plugin)
 
         if not matching_plugins:
-            logger.warning('No plugin with id "{}" found in package "{}"'.format(plugin_id, package_name))
             return None
 
         if not self._version_identifier:
@@ -653,10 +642,6 @@ class PluginFactory(object):
         self._plugins.clear()
         self._registered_paths.clear()
         self._loaded_plugins.clear()
-
-    # ============================================================================================================
-    # INTERNAL
-    # ============================================================================================================
 
     def _mechanism_import(self, file_path):
         """

@@ -5,192 +5,224 @@
 Module that contains widgets related with search functionality
 """
 
-from Qt.QtCore import Qt, Signal, QSize, QEvent, QPoint
-from Qt.QtWidgets import QApplication, QWidget, QLineEdit, QStyle, QMenu
-from Qt.QtGui import QIcon
+from __future__ import print_function, division, absolute_import
 
-from tp.core.managers import resources
-from tp.common.qt.widgets import layouts, stylebuttons
+from Qt.QtCore import Qt, Signal, QSize, QEvent
+from Qt.QtWidgets import QWidget, QLineEdit, QStyle
+
+from tp.core import dcc
+from tp.common.resources import api as resources
+from tp.common.qt import dpi
+from tp.common.qt.widgets import layouts, buttons
 
 
 def search_widget(placeholder_text='', search_line=None, parent=None):
-    """
-    Returns widget that allows to do searches within widgets.
+	"""
+	Returns widget that allows to do searches within widgets.
 
-    :param str placeholder_text: search placeholder text.
-    :param QLineEdit search_line: custom line edit widget to use.
-    :param QWidget parent: parent widget.
-    :return: search find widget instance.
-    :rtype: SearchFindWidget
-    """
+	:param str placeholder_text: search placeholder text.
+	:param QLineEdit search_line: custom line edit widget to use.
+	:param QWidget parent: parent widget.
+	:return: search find widget instance.
+	:rtype: SearchFindWidget
+	"""
 
-    search_widget = SearchFindWidget(search_line=search_line, parent=parent)
-    search_widget.set_placeholder_text(str(placeholder_text))
+	search_widget = SearchFindWidget(search_line=search_line, parent=parent)
+	search_widget.set_placeholder_text(str(placeholder_text))
 
-    return search_widget
+	return search_widget
 
 
-class SearchFindWidget(QWidget, object):
+class SearchFindWidget(QWidget, dpi.DPIScaling):
 
-    textChanged = Signal(str)
-    editingFinished = Signal(str)
-    returnPressed = Signal()
+	textChanged = Signal(str)
+	editingFinished = Signal(str)
+	returnPressed = Signal()
 
-    def __init__(self, search_line=None, parent=None):
-        super(SearchFindWidget, self).__init__(parent=parent)
+	def __init__(self, search_line=None, parent=None):
+		super().__init__(parent=parent)
 
-        self.setObjectName('SearchFindWidget')
+		self._search_line = search_line
 
-        self.text = ''
-        self._placeholder_text = ''
+		self.setLayout(layouts.horizontal_layout(spacing=2, margins=(2, 2, 2, 2)))
 
-        main_layout = layouts.HorizontalLayout(spacing=2, margins=(2, 2, 2, 2))
-        self.setLayout(main_layout)
+		self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
-        self._search_line = search_line or QLineEdit(self)
-        self._search_menu = QMenu()
-        self._search_menu.addAction('Test')
+		self._search_line = self._search_line or QLineEdit(parent=self)
+		self._search_line.setParent(self)
+		self._search_line.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+		self._search_line.installEventFilter(self)
 
-        icon_size = self.style().pixelMetric(QStyle.PM_SmallIconSize)
+		# NOTE: For some weird reason, in MoBu 2022 style related calls do not work
+		# Internal C++ object (PySide2.QtWidgets.QProxyStyle) already deleted.
+		if dcc.is_mobu() and dcc.get_version_name() == '2022':
+			icon_size = dpi.dpi_scale(14)
+		else:
+			icon_size = self.style().pixelMetric(QStyle.PM_SmallIconSize)
 
-        delete_icon = resources.icon('delete')
-        search_icon = QIcon(resources.icon('search'))
+		self._clear_button = buttons.IconMenuButton(parent=self)
+		self._clear_button.setIcon(resources.icon('close'))
+		self._clear_button.setIconSize(QSize(icon_size - 6, icon_size - 6))
+		self._clear_button.setFixedSize(QSize(icon_size, icon_size))
+		self._clear_button.setFocusPolicy(Qt.NoFocus)
+		self._clear_button.hide()
+		self._search_button = buttons.IconMenuButton(parent=self)
+		self._search_button.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+		self._search_button.setIcon(resources.icon('search'))
+		self._search_button.setIconSize(QSize(icon_size, icon_size))
+		self._search_button.setFixedSize(QSize(icon_size, icon_size))
+		self._search_button.setEnabled(True)
+		self._search_button.setFocusPolicy(Qt.NoFocus)
 
-        self._clear_btn = stylebuttons.IconButton(delete_icon, icon_padding=2, parent=self)
-        self._clear_btn.setIconSize(QSize(icon_size, icon_size))
-        self._clear_btn.setFixedSize(QSize(icon_size, icon_size))
-        self._clear_btn.hide()
+		self._search_line.setStyleSheet(
+			"""
+			QLineEdit { padding-left: %spx; padding-right: %spx; border-radius:10px; }
+			""" % (self._search_button_padded_width(), self._clear_button_padded_width())
+		)
 
-        self._search_btn = stylebuttons.IconButton(search_icon, icon_padding=2, parent=self)
-        self._search_btn.setIconSize(QSize(icon_size, icon_size))
-        self._search_btn.setFixedSize(QSize(icon_size, icon_size))
-        # self._search_btn.setStyleSheet('border: none;')
-        # self._search_btn.setPopupMode(QToolButton.InstantPopup)
-        self._search_btn.setEnabled(True)
+		self.update_minimum_size()
 
-        self._search_line.setStyleSheet(
-            """
-            QLineEdit { padding-left: %spx; padding-right: %spx; border-radius:10px; border:2px; border-color:red; }
-            """ % (self._search_button_padded_width(), self._clear_button_padded_width())
-        )
-        self._search_line.setMinimumSize(
-            max(
-                self._search_line.minimumSizeHint().width(),
-                self._clear_button_padded_width() + self._search_button_padded_width()),
-            max(
-                self._search_line.minimumSizeHint().height(),
-                max(self._clear_button_padded_width(), self._search_button_padded_width()))
-        )
+		self.layout().addWidget(self._search_line)
 
-        main_layout.addWidget(self._search_line)
+	def setup_signals(self):
+		"""
+		Function that connects signals for all widget UI widgets.
+		"""
 
-        self._search_line.setFocus()
+		self._search_line.textChanged.connect(self.textChanged.emit)
+		self._search_line.textChanged.connect(self.set_text)
+		self._clear_button.clicked.connect(self.clear)
 
-        self._search_line.textChanged.connect(self.textChanged)
-        self._search_line.textChanged.connect(self.set_text)
-        # self._search_line.editingFinished.connect(self.editingFinished)
-        # self._search_line.returnPressed.connect(self.returnPressed)
-        self._clear_btn.clicked.connect(self.clear)
-        self._search_btn.clicked.connect(self._popup_menu)
+	@property
+	def search_line(self):
+		return self._search_line
 
-    @property
-    def search_line(self):
-        return self._search_line
+	def changeEvent(self, event):
+		"""
+		Function that overrides base changeEvent function to make sure line edit is properly updated.
 
-    def changeEvent(self, event):
-        if event.type() == QEvent.EnabledChange:
-            enabled = self.isEnabled()
-            self._search_btn.setEnabled(enabled and self._search_menu)
-            self._search_line.setEnabled(enabled)
-            self._clear_btn.setEnabled(enabled)
-        super(SearchFindWidget, self).changeEvent(event)
+		:param QEvent event: Qt event.
+		"""
 
-    def resizeEvent(self, event):
-        if not (self._clear_btn and self._search_line):
-            return
-        super(SearchFindWidget, self).resizeEvent(event)
-        x = self.width() - self._clear_button_padded_width() * 0.85
-        y = (self.height() - self._clear_btn.height()) * 0.5
-        self._clear_btn.move(x - 3, y)
-        self._search_btn.move(self._search_line_frame_width() * 2, (self.height() - self._search_btn.height()) * 0.5)
+		if event.type() == QEvent.EnabledChange:
+			enabled = self.isEnabled()
+			self._search_button.setEnabled(enabled)
+			self._search_line.setEnabled(enabled)
+			self._clear_button.setEnabled(enabled)
+		super(SearchFindWidget, self).changeEvent(event)
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
-            self.clear()
-        super(SearchFindWidget, self).keyPressEvent(event)
+	def resizeEvent(self, event):
+		"""
+		Function that overrides base resizeEvent function to make sure that search icons are properly placed.
 
-    def get_text(self):
-        if not self._search_line:
-            return ''
-        return self._search_line.text()
+		:param QEvent event: Qt resize event.
+		"""
 
-    def set_text(self, text):
-        if not (self._clear_btn and self._search_line):
-            return
+		if not self._clear_button and self._search_line:
+			return
+		super(SearchFindWidget, self).resizeEvent(event)
+		x = self.width() - self._clear_button_padded_width() * 0.85
+		y = (self.height() - self._clear_button.height()) * 0.5
+		self._clear_button.move(x - 6, y)
+		self._search_button.move(self._search_line_frame_width() * 3, (self.height() - self._search_button.height()) * 0.5)
 
-        self._clear_btn.setVisible(not (len(text) == 0))
-        if text != self.get_text():
-            self._search_line.setText(text)
+	def keyPressEvent(self, event):
+		"""
+		Function that overrides base keyPressEvent function to make sure that line is clared too.
 
-    def get_placeholder_text(self):
-        if not self._search_line:
-            return ''
+		:param QEvent event: Qt key event.
+		"""
 
-        return self._search_line.text()
+		if event.key() == Qt.Key_Escape:
+			self.clear()
+			self._search_line.clearFocus()
+		super(SearchFindWidget, self).keyPressEvent(event)
 
-    def set_placeholder_text(self, text):
-        if not self._search_line:
-            return
-        self._search_line.setPlaceholderText(text)
+	def eventFilter(self, widget, event):
+		"""
+		Overrides base eventFilter function
+		:param widget:
+		:param event:
+		:return:
+		"""
 
-    def get_menu(self):
-        search_icon = resources.icon('search')
-        self._search_btn.setIcon(search_icon)
-        self._search_btn.setEnabled(self.isEnabled() and self._menu)
+		try:
+			if widget is self._search_line:
+				if event.type() == QEvent.FocusIn:
+					self.focusInEvent(event)
+				elif event.type() == QEvent.FocusOut:
+					self.focusOutEvent(event)
+		except AttributeError:
+			pass
+		return super(SearchFindWidget, self).eventFilter(widget, event)
 
-    def set_focus(self, reason=Qt.OtherFocusReason):
-        if self._search_line:
-            self._search_line.setFocus(reason)
-        else:
-            self.setFocus(Qt.OtherFocusReason)
+	def get_text(self):
+		if not self._search_line:
+			return ''
+		return self._search_line.text()
 
-    def clear(self):
-        if not self._search_line:
-            return
-        self._search_line.clear()
-        self.set_focus()
+	def set_text(self, text):
+		if not (self._clear_button and self._search_line):
+			return
 
-    def select_all(self):
-        if not self._search_line:
-            return
-        self._search_line.selectAll()
+		self._clear_button.setVisible(not (len(text) == 0))
+		if text != self.get_text():
+			self._search_line.setText(text)
 
-    def _search_line_frame_width(self):
-        return self._search_line.style().pixelMetric(QStyle.PM_DefaultFrameWidth)
+	def get_placeholder_text(self):
+		if not self._search_line:
+			return ''
 
-    def _clear_button_padded_width(self):
-        return self._clear_btn.width() + self._search_line_frame_width() * 2
+		return self._search_line.text()
 
-    def _clear_button_padded_height(self):
-        return self._clear_btn.height() + self._search_line_frame_width() * 2
+	def set_placeholder_text(self, text):
+		if not self._search_line:
+			return
+		self._search_line.setPlaceholderText(text)
 
-    def _search_button_padded_width(self):
-        return self._search_btn.width() + self._search_line_frame_width() * 2
+	def set_focus(self, reason=Qt.OtherFocusReason):
+		if self._search_line:
+			self._search_line.setFocus(reason)
+		else:
+			self.setFocus(Qt.OtherFocusReason)
 
-    def _search_button_padded_height(self):
-        return self._search_btn.height() + self._search_line_frame_width() * 2
+	def clear(self):
+		if not self._search_line:
+			return
+		self._search_line.clear()
+		self.set_focus()
 
-    def _popup_menu(self):
-        if self._search_menu:
-            screen_rect = QApplication.desktop().availableGeometry(self._search_btn)
-            size_hint = self._search_menu.sizeHint()
-            rect = self._search_btn.rect()
-            top_diff = rect.top() - size_hint.height()
-            x = rect.right() - size_hint.width() if self._search_btn.isRightToLeft() else rect.left()
-            y = rect.bottom() if self._search_btn.mapToGlobal(
-                QPoint(0, rect.bottom())).y() + size_hint.height() <= screen_rect.height() else top_diff
-            point = self._search_btn.mapToGlobal(QPoint(x, y))
-            point.setX(max(screen_rect.left(), min(point.x(), screen_rect.right() - size_hint.width())))
-            point.setY(point.y() + 1)
-            print('pop up on {}'.format(point))
-            self._search_menu.popup(point)
+	def select_all(self):
+		if not self._search_line:
+			return
+		self._search_line.selectAll()
+
+	def update_minimum_size(self):
+		self._search_line.setMinimumSize(
+			max(
+				self._search_line.minimumSizeHint().width(),
+				self._clear_button_padded_width() + self._search_button_padded_width()),
+			max(
+				self._search_line.minimumSizeHint().height(),
+				max(self._clear_button_padded_width(), self._search_button_padded_width()))
+		)
+
+	def _search_line_frame_width(self):
+		# NOTE: For some weird reason, in MoBu 2022 style related calls do not work
+		# Internal C++ object (PySide2.QtWidgets.QProxyStyle) already deleted.
+		if dcc.is_mobu() and dcc.get_version_name() == '2022':
+			return 2
+		else:
+			return self._search_line.style().pixelMetric(QStyle.PM_DefaultFrameWidth)
+
+	def _clear_button_padded_width(self):
+		return self._clear_button.width() + self._search_line_frame_width() * 2
+
+	def _clear_button_padded_height(self):
+		return self._clear_button.height() + self._search_line_frame_width() * 2
+
+	def _search_button_padded_width(self):
+		return self._search_button.width() + 2 + self._search_line_frame_width() * 3
+
+	def _search_button_padded_height(self):
+		return self._search_button.height() + self._search_line_frame_width() * 2

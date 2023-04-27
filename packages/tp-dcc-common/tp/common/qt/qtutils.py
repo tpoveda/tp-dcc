@@ -13,8 +13,7 @@ import contextlib
 
 from tp.core import log, dcc
 from tp.common.python import helpers
-from tp.common.qt import consts
-from tp.common.resources import color
+from tp.common.resources.core import color
 
 logger = log.tpLogger
 
@@ -493,20 +492,10 @@ def distance_point_to_line(p, v0, v1):
 
 
 def qhash(inputstr):
-    instr = ""
-
-    if helpers.is_python2():
-        if isinstance(inputstr, str):
-            instr = inputstr
-        elif helpers.is_python2() and isinstance(inputstr, unicode):
-            instr = inputstr.encode("utf8")
-        else:
-            return -1
+    if helpers.is_string(inputstr):
+        instr = inputstr
     else:
-        if helpers.is_string(inputstr):
-            instr = inputstr
-        else:
-            return -1
+        return -1
 
     h = 0x00000000
     for i in range(0, len(instr)):
@@ -525,15 +514,64 @@ def get_focus_widget():
     return QApplication.focusWidget()
 
 
+def clear_focus_widgets():
+    """
+    Clears focus if widgets have clearFocus property.
+    """
+
+    focus_widget = QApplication.focusWidget()
+    if focus_widget is not None and focus_widget.property("clearFocus"):
+        focus_widget.clearFocus()
+
+
+def get_squared_length(point):
+    """
+    Returns the squared length of a point.
+
+    :param QPoint point: point.
+    :return: point square length.
+    :rtype: int
+
+    ..note:: higher performance than length (at the cost of accuracy).
+    """
+
+    return point.dotProduct(point, point)
+
+
+def get_window_offset(window):
+    """
+    Returns the window offset.
+
+    :param QMainWindow window: window widget.
+    :return: window offset.
+    :rtype: int
+    """
+
+    return window.pos() - window.mapToGlobal(QPoint(0, 0))
+
+
+def get_widget_center(widget):
+    """
+    Returns the center of the given widget.
+
+    :param QWidget widget: widget whose center we want to retrieve.
+    :return: widget center.
+    :rtype: QPoint
+    """
+
+    return QPoint(int(widget.width() / 2), int(widget.height() / 2))
+
+
 def get_widget_at_mouse():
     """
-    Get the widget under the mouse
-    :return: variant, QWidget || None
+    Returns the widget under the mouse.
+
+    :return: widget located over the mouse. If no widget found, None will be returned.
+    :rtype: QWidget or None
     """
 
     current_pos = QtGui.QCursor().pos()
-    widget = QApplication.widgetAt(current_pos)
-    return widget
+    return QApplication.widgetAt(current_pos)
 
 
 def get_widgets_at(pos):
@@ -577,15 +615,17 @@ def get_widget_cursor(widget):
 
 def is_valid_widget(widget):
     """
-    Checks if a widget is a valid in the backend
-    :param widget: QWidget
-    :return: bool, True if the widget still has a C++ object, False otherwise
+    Checks if a widget is a valid in the backend.
+
+    :param QWidget widget: widget to check validity of.
+    :return: True if the widget still has a valid C++ object, False otherwise.
+    :rtype: bool
     """
 
     if widget is None:
         return False
 
-    # Added try because Houdini does not includes Shiboken library by default
+    # Added try because some Dccs (such as Houdini) does not includes shiboken library by default
     # TODO: When Houdini app class implemented, add cleaner way
     try:
         if not shiboken.isValid(widget):

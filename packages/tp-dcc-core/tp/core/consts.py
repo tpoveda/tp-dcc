@@ -73,6 +73,8 @@ class CallbackTypes(object):
     NodeSelect = 'NodeSelect'
     NodeAdded = 'NodeAdded'
     NodeDeleted = 'NodeDeleted'
+    ReferencePreLoaded = 'ReferencePreLoaded'
+    ReferencePostLoaded = 'ReferencePostLoaded'
 
 
 class UnitSystem(object):

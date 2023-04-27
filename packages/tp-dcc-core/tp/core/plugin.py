@@ -12,7 +12,7 @@ from Qt.QtCore import Qt, Signal, QSize, QEvent
 from Qt.QtWidgets import QWidget, QDockWidget, QGroupBox, QLabel, QLineEdit, QToolButton, QMenu
 
 from tp.core import log, dcc
-from tp.core.managers import resources
+from tp.common.resources import api as resources
 from tp.common.qt.widgets import layouts
 
 logger = log.tpLogger

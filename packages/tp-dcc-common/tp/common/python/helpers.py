@@ -1268,7 +1268,7 @@ def order_list_numerically(list_to_order):
 
 def index_exists_in_list(items_list, index):
     """
-    Returns whether or not given index exists in given list
+    Returns whether given index exists in given list
     :param items_list: list or tuple
     :param index: int
     :return: bool
@@ -1331,3 +1331,18 @@ def merge_dictionaries(target, source, path=None, update=False):
                 raise Exception('Conflict at {}'.format('.'.join(path + [str(key)])))
 
     return target
+
+
+def get_args(local_dict):
+    """
+    Returns arguments from local function dict.
+
+    :param dict local_dict: local dictionary.
+    :return: arguments.
+    :rtype: dict
+    """
+
+    local_dict.pop('self', None)
+    local_dict.pop('__class__', None)
+
+    return local_dict

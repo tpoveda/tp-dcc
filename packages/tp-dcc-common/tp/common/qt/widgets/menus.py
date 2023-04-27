@@ -2,517 +2,546 @@
 # -*- coding: utf-8 -*-
 
 """
-Module that contains functions to handle Qt menus
+Module that contains classes that extends default behaviour of QMenu
 """
 
+from functools import partial
 
-from Qt.QtCore import Qt, Signal, QPoint
-from Qt.QtWidgets import QWidget, QLineEdit, QMenu, QActionGroup, QAction, QWidgetAction
+from Qt.QtCore import Qt, Signal
+from Qt.QtWidgets import QMenu, QAction, QWidgetAction
+from Qt.QtGui import QIcon
 
 from tp.common.python import helpers
-# from tp.common.resources import theme
-from tp.common.qt import qtutils, formatters, dpi
-
-DEFAULT_MENU_BLUR_ALPHA = 33
+from tp.common.resources import api as resources
+from tp.common.qt import qtutils
 
 
 def menu(label='', icon=None, parent=None):
-	"""
-	Creates a new menu with extended functionality.
+    """
+    Creates a new menu with extended functionality.
 
-	:param str label: label text of the menu.
-	:param QIcon icon: optional menu icon.
-	:param QWidget parent: parent widget.
-	:return: newly created menu.
-	:rtype: Menu
-	"""
+    :param str label: label text of the menu.
+    :param QIcon icon: optional menu icon.
+    :param QWidget parent: parent widget.
+    :return: newly created menu.
+    :rtype: Menu
+    """
 
-	new_menu = Menu(label, parent=parent)
-	if icon and not icon.isNull():
-		new_menu.setIcon(icon)
+    new_menu = Menu(label, parent=parent)
+    if icon and not icon.isNull():
+        new_menu.setIcon(icon)
 
-	return new_menu
+    return new_menu
 
 
 def searchable_menu(label='', icon=None, search_visible=True, parent=None):
-	"""
-	Creates a new searchable menu.
+    """
+    Creates a new searchable menu.
 
-	:param str label: label text of the menu.
-	:param QIcon icon: optional menu icon.
-	:param bool search_visible: whether search widget is visible.
-	:param QWidget parent: parent widget.
-	:return: newly created menu.
-	:rtype: SearchableMenu
-	"""
+    :param str label: label text of the menu.
+    :param QIcon icon: optional menu icon.
+    :param bool search_visible: whether or not search widget is visible.
+    :param QWidget parent: parent widget.
+    :return: newly created menu.
+    :rtype: SearchableMenu
+    """
 
-	new_menu = SearchableMenu(label, search_visible=search_visible, parent=parent)
-	if icon and not icon.isNull():
-		new_menu.setIcon(icon)
+    new_menu = SearchableMenu(label, search_visible=search_visible, parent=parent)
+    if icon and not icon.isNull():
+        new_menu.setIcon(icon)
 
-	return new_menu
+    return new_menu
 
 
-def mixin(cls):
-	"""
-	Decorator that can be added to custom widgets to automatize the creation of left/right/middle click menus.
+class Menu(QMenu):
 
-	:param cls:
-	:return:
-	"""
+    menuChanged = Signal()
+    mouseButtonClicked = Signal(object, object)     # mouseButton, QAction
 
-	original_init__ = cls.__init__
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-	def my__init__(self, *args, **kwargs):
-		original_init__(self, *args, **kwargs)
+        self._menu_items_list = list()          # internal list that contains item names read from actions list
+        self._menu_icons_list = list()          # internal list that contains icon names read from the actions list
+        self._current_menu_item = ''            # current item menu
+        self._current_menu_index = 0            # current menu index
 
-	def get_menu(self, mouse_button=Qt.RightButton):
-		"""
-		Returns the menu based on the given mouse button.
+    # =================================================================================================================
+    # OVERRIDES
+    # =================================================================================================================
 
-		:param Qt.ButtonClick mouse_button: the clicked mouse button.
-		:return: registered menu on that mouse button.
-		:rtype: QMenu or None
-		"""
+    def mouseReleaseEvent(self, event):
+        """
+        Extends mouseReleaseEvent QMenu function
 
-		return self._click_menu[mouse_button]
+        :param event: QMouseEvent
+        """
 
-	def set_menu(self, menu, action_list=None, mouse_button=Qt.RightButton):
-		"""
-		Sets the left/middle/right click menu. If a model_list is given, then the menu will be  filled with that info.
+        self.mouseButtonClicked.emit(event.button(), self.actionAt(event.pos()))
 
-		:param QMenu menu: Qt menu to show on left/middle/right click.
-		:param list(tuple(str)) action_list: list of menu modes. Eg: [('icon1', 'menuName1'), (...), ...]
-		:param Qt.ButtonClick mouse_button: the mouse button menu will be assigned to.
-		"""
+        return super(Menu, self).mouseReleaseEvent(event)
 
-		self._click_menu[mouse_button] = menu
-		self._menu_active[mouse_button] = True
-		if action_list:
-			self._add_action_list(action_list, mouse_button=mouse_button)
+    def insertAction(self, before, *args):
+        """
+        Extends insertAction QMenu function
+        Add supports for finding the before action by the given string
 
-	def show_context_menu(self, mouse_button):
-		"""
-		Shows the menu depending on the given mouse click.
+        :param before: str or QAction
+        :param args: list
+        :return: QAction
+        """
 
-		:param Qt.ButtonClick mouse_button: the mouse button menu will be assigned to.
-		"""
+        if helpers.is_string(before):
+            before = self.find_action(before)
 
-		if not self._click_menu:
-			return
-
-		menu = self.get_menu(mouse_button=mouse_button)
-		if menu is not None and self._menu_active[mouse_button]:
-			self.setFocus()
-			parent_position = self.mapToGlobal(QPoint(0, 0))
-			pos = parent_position + QPoint(0, dpi.dpi_scale(self._menu_vertical_offset))
-			menu.exec_(pos)
-
-	def _setup_menu_class(self, menu_vertical_offset=20):
-		"""
-		Internal function that handles the setup of menu creation.
+        return super().insertAction(before, *args)
 
-		:param int menu_vertical_offset: negative vertical offset of the drawn menu
-		"""
-
-		self._menu_vertical_offset = menu_vertical_offset
-		self._menu_active = {Qt.LeftButton: False, Qt.MidButton: False, Qt.RightButton: False}
-		self._click_menu = {Qt.LeftButton: None, Qt.MidButton: None, Qt.RightButton: None}
-		self._menu_searchable = {Qt.LeftButton: False, Qt.MidButton: False, Qt.RightButton: False}
-
-	def _add_action_list(self, actions_list, mouse_button=Qt.RightButton):
-		"""
-		Internal function that resets the menu and fills its with given list of actions.
-
-		:param list(tuple(str, str)) actions_list: list of menu actions. Eg: [('icon1', 'menuName1'), (...), ...]
-		:param Qt.ButtonClick mouse_button: the mouse button menu will be assigned to.
-
-		..warning:: this function only works with CPG DCC Tools framework Menu class
-		"""
-
-		menu = self.get_menu(mouse_button=mouse_button)
-		if menu is not None:
-			menu.action_connect_list(actions_list)
-
-	setattr(cls, '__init__', my__init__)
-	setattr(cls, 'get_menu', get_menu)
-	setattr(cls, 'set_menu', set_menu)
-	setattr(cls, 'show_context_menu', show_context_menu)
-	setattr(cls, '_setup_menu_class', _setup_menu_class)
-	setattr(cls, '_add_action_list', _add_action_list)
-
-	return cls
-
-
-# @theme.mixin
-# @mixin.property_mixin
-class BaseMenu(QMenu, object):
-
-	valueChanged = Signal(list)
-
-	def __init__(self, exclusive=True, cascader=False, title='', parent=None):
-		super(BaseMenu, self).__init__(title=title, parent=parent)
-
-		self._load_data_fn = None
-
-		self._action_group = QActionGroup(self)
-		self._action_group.setExclusive(exclusive)
-		self._action_group.triggered.connect(self._on_action_triggered)
-
-		self.setProperty('cascader', cascader)
-		self.setCursor(Qt.PointingHandCursor)
-
-		self.set_value('')
-		self.set_data([])
-		self.set_separator('/')
-
-	# =================================================================================================================
-	# BASE
-	# =================================================================================================================
-
-	def set_separator(self, separator_character):
-		"""
-		Sets menu separator character
-		:param separator_character: str
-		"""
-		self.setProperty('separator', separator_character)
-
-	def set_value(self, data):
-		"""
-		Sets menu value
-		:param data:  str, int or float
-		"""
-
-		assert isinstance(data, (list, str, int, float))
-		if self.property('cascader') and helpers.is_string(data):
-			data = data.split(self.property('separator'))
-		self.setProperty('value', data)
-
-	def set_data(self, option_list):
-		"""
-		Sets menu data
-		:param option_list: list
-		"""
-
-		assert isinstance(option_list, list)
-		if option_list:
-			if all(helpers.is_string(i) for i in option_list):
-				option_list = helpers.from_list_to_nested_dict(option_list, separator=self.property('separator'))
-			if all(isinstance(i, (int, float)) for i in option_list):
-				option_list = [{'value': i, 'label': str(i)} for i in option_list]
-		self.setProperty('data', option_list)
-
-	def set_loader(self, fn):
-		"""
-		Sets menu loader
-		:param fn: function
-		"""
-
-		self._load_data_fn = fn
-
-	def set_load_callback(self, fn):
-		"""
-		Sets menu load callback
-		:param fn: function
-		"""
-
-		assert callable(fn)
-		self._load_data_fn = fn
-		self.aboutToShow.connect(self._on_fetch_data)
-
-	# =================================================================================================================
-	# PROPERTY MIXIN SETTERS
-	# =================================================================================================================
-
-	def _set_value(self, value):
-		data_list = value if isinstance(value, list) else [value]
-		flag = False
-		for act in self._action_group.actions():
-			checked = act.property('value') in data_list
-			if act.isChecked() != checked:
-				act.setChecked(checked)
-				flag = True
-
-		if flag:
-			self.valueChanged.emit(value)
-
-	def _set_data(self, option_list):
-		self.clear()
-		for act in self._action_group.actions():
-			self._action_group.removeAction(act)
-		for data_dict in option_list:
-			self._add_menu(self, data_dict)
-
-	# =================================================================================================================
-	# INTERNAL
-	# =================================================================================================================
-
-	def _add_menu(self, parent_menu, data_dict):
-		if 'children' in data_dict:
-			menu = BaseMenu(title=data_dict.get('label'), parent=self)
-			menu.setProperty('value', data_dict.get('value'))
-			parent_menu.addMenu(menu)
-			if parent_menu is not self:
-				menu.setProperty('parent_menu', parent_menu)
-			for i in data_dict.get('children'):
-				self._add_menu(menu, i)
-		else:
-			action = self._action_group.addAction(formatters.display_formatter(data_dict.get('label')))
-			action.setProperty('value', data_dict.get('value'))
-			action.setCheckable(True)
-			action.setProperty('parent_menu', parent_menu)
-			parent_menu.addAction(action)
-
-	def _get_parent(self, result, obj):
-		if obj.property('parent_menu'):
-			parent_menu = obj.property('parent_menu')
-			result.insert(0, parent_menu.title())
-			self._get_parent(result, parent_menu)
-
-	# =================================================================================================================
-	# CALLBACKS
-	# =================================================================================================================
-
-	def _on_action_triggered(self, action):
-		current_data = action.property('value')
-		if self.property('cascader'):
-			selected_data = [current_data]
-			self._get_parent(selected_data, action)
-		else:
-			if self._action_group.isExclusive():
-				selected_data = current_data
-			else:
-				selected_data = [act.property('value') for act in self._action_group.actions() if act.isChecked()]
-		self.set_value(selected_data)
-		self.valueChanged.emit(selected_data)
-
-	def _on_fetch_data(self):
-		data_list = self._load_data_fn()
-		self.set_data(data_list)
-
-
-class Menu(QMenu, object):
-
-	mouseButtonClicked = Signal(object, object)     # mouseButton, QAction
-
-	def __init__(self, *args, **kwargs):
-		super(Menu, self).__init__(*args, **kwargs)
-
-	def mouseReleaseEvent(self, event):
-		"""
-		Extends mouseReleaseEvent QMenu function
-		:param event: QMouseEvent
-		"""
-
-		self.mouseButtonClicked.emit(event.button(), self.actionAt(event.pos()))
-
-		return super(Menu, self).mouseReleaseEvent(event)
-
-	def insertAction(self, before, *args):
-		"""
-		Extends insertAction QMenu function
-		Add supports for finding the before action by the given string
-		:param before: str or QAction
-		:param args: list
-		:return: QAction
-		"""
-
-		if helpers.is_string(before):
-			before = self.find_action(before)
-
-		return super(Menu, self).insertAction(before, *args)
-
-	def insertMenu(self, before, menu):
-		"""
-		Extends insertMenu QMenu function
-		Add supports for finding the before action by the given string
-		:param before: str or QAction
-		:param menu: QMenu
-		:return: QAction
-		"""
-
-		if helpers.is_string(before):
-			before = self.find_action(before)
-
-		return super(Menu, self).insertMenu(before, menu)
-
-	def insertSeparator(self, before):
-		"""
-		Extends insertSeparator QMenu function
-		:param before: str or QAction
-		:return: QAction
-		"""
-
-		if helpers.is_string(before):
-			before = self.find_action(before)
-
-		return super(Menu, self).insertSeparator(before)
-
-	def find_action(self, text):
-		"""
-		Returns the action that contains the given text
-		:param text: str
-		:return: QAction
-		"""
-
-		for child in self.children():
-			action = None
-			if isinstance(child, QMenu):
-				action = child.menuAction()
-			elif isinstance(child, QAction):
-				action = child
-			if action and action.text().lower() == text.lower():
-				return action
+    def insertMenu(self, before, menu):
+        """
+        Extends insertMenu QMenu function
+        Add supports for finding the before action by the given string
+
+        :param before: str or QAction
+        :param menu: QMenu
+        :return: QAction
+        """
+
+        if helpers.is_string(before):
+            before = self.find_action(before)
+
+        return super().insertMenu(before, menu)
+
+    def insertSeparator(self, before):
+        """
+        Extends insertSeparator QMenu function
+
+        :param before: str or QAction
+        :return: QAction
+        """
+
+        if helpers.is_string(before):
+            before = self.find_action(before)
+
+        return super().insertSeparator(before)
+
+    def current_menu_item(self):
+        """
+        Returns the current selected menu name.
+
+        :return: current menu name
+        :rtype: str
+        """
+
+        return self._current_menu_item
+
+    def set_current_menu_item(self, menu_item_name):
+        """
+        Sets both menu states for the given menu item name (without triggering a menu action).
+
+        :param str menu_item_name: name of a men uname within the menu.
+        """
+
+        self._current_menu_item = menu_item_name
+        self._current_menu_index = self._menu_items_list.index(menu_item_name)
+
+    def current_menu_index(self):
+        """
+        Returns the current selected menu index.
+
+        :return: current menu index.
+        :rtype: int
+        """
+
+        return self._current_menu_index
+
+    def set_current_menu_index(self, menu_item_index):
+        """
+        Sets both menu states for the given menu item index (without triggering a menu action).
+
+        :param int menu_item_index: index of a menu name within the menu.
+        """
+
+        self._current_menu_index = menu_item_index
+        self._current_menu_item = self._menu_items_list[menu_item_index]
+
+    def add_text_separator(self, text):
+        """
+        Adds a new QWidgetAction that acts as separator with text.
+
+        :param str text: text to add to the widget action.
+        :return: text widget action
+        :rtype: QWidgetAction
+        """
+
+        # Import here to avoid cyclic imports
+        from tp.common.qt.widgets import dividers
+
+        separator = QWidgetAction(self)
+        text_label = dividers.divider(text, alignment=Qt.AlignLeft, shadow=False, parent=self)
+        text_label._first_line.setVisible(False)
+        separator.setDefaultWidget(text_label)
+        self.addAction(separator)
+
+        return separator
+
+    def add_action(self, name, connect=None, checkable=False, checked=True, action=None, icon=None):
+        """
+        Creates a new QAction and adds it into this menu.
+
+        :param str name: text for the new menu item.
+        :param callable connect: optional function to connect when the menu item is clicked.
+        :param bool checkable: whether the menu item is checkable.
+        :param bool checked: whether the menu item is checked by default.
+        :param QAction action: set the action directly (without creating a new one).
+        :param str or QIcon icon: icon to set to the menu item.
+        :return: newly added action.
+        :rtype: QAction
+        """
+
+        if action is not None:
+            self.addAction(action)
+            return action
+
+        new_action = self._get_action(name)
+        new_action.setCheckable(checkable)
+        new_action.setChecked(checked)
+        self.addAction(new_action)
+
+        icon = resources.icon(icon) if helpers.is_string(icon) else icon
+        if icon and not icon.isNull():
+            new_action.setIcon(icon)
+
+        if connect is not None:
+            if checkable:
+                new_action.triggered.connect(partial(connect, new_action))
+            else:
+                new_action.triggered.connect(connect)
+
+        return new_action
+
+    def find_action(self, text):
+        """
+        Returns the action that contains the given text
+
+        :param str text: action text.
+        :return: QAction
+        """
+
+        for child in self.children():
+            action = None
+            if isinstance(child, QMenu):
+                action = child.menuAction()
+            elif isinstance(child, QAction):
+                action = child
+            if action and action.text().lower() == text.lower():
+                return action
+
+        return None
+
+    def find_menu(self, text):
+        """
+        Returns the menu that contains given text.
+
+        :param str text: menu text.
+        :return: QMenu
+        """
+
+        for child in self.children():
+            menu = None
+            if isinstance(child, QMenu) and child.text().lower() == text.lower():
+                return menu
+
+        return None
+
+    def action_connect_list(self, actions_list, default_menu_item=None):
+        """
+        Fills the menu with the given icons and action names from the list.
+
+        :param list(tuple(str, str)) actions_list: list of menu actions. Eg: [('icon1', 'menuName1'), (...), ...]
+        :param str default_menu_item: optional default menu item name.
+        """
+
+        self.clear()
+        self._set_icon_and_menu_name_from_actions_list(actions_list)
+        for i, menu_item_name in enumerate(self._menu_items_list):
+            if menu_item_name != 'separator':
+                item_icon = self._menu_icons_list[i]
+                item_icon = resources.icon(item_icon) if helpers.is_string(item_icon) else item_icon
+                self.add_action(menu_item_name, icon=item_icon or QIcon(), connect=partial(
+                    self._action_connect, self._menu_icons_list[i], menu_item_name, i))
+            else:
+                self.addSeparator()
+
+        if default_menu_item is None:
+            self._current_menu_item = self._menu_items_list[0]
+            self._current_menu_index = 0
+
+    def _get_action(self, name):
+        """
+        Internal function that returns a new action for this menu with given name.
+        This function can be overriden in custom classes to create custom actions by default.
+
+        :param str name: name of the action.
+        :return: action instance.
+        :rtype: QAction
+        """
+
+        return QAction(name, parent=self)
+
+    def _set_icon_and_menu_name_from_actions_list(self, actions_list):
+        """
+        Internal function that set up the variables that stores the list of icons and their names from the given
+        actions list.
+
+        :param list(tuple(str, str)) actions_list: list of menu actions. Eg: [('icon1', 'menuName1'), (...), ...]
+        """
+
+        self._menu_icons_list = list()
+        self._menu_items_list = list()
+        for i, action_tuple in enumerate(actions_list):
+            self._menu_icons_list.append(action_tuple[0])
+            self._menu_items_list.append(action_tuple[1])
+
+    def _action_connect(self, icon_name, current_menu_item, current_menu_index):
+        """
+        Internal f unction that creates a single IconMenuButton item in one menu entry. Also sets the icon to switch
+        when a menu item is clicked.
+
+        :param str icon_name: icon that will be changed to when the menu is clicked.
+        :param str current_menu_item: the current menu name.
+        :param int current_menu_index: index of the menu item within menu, being 0 the first menu item.
+        """
+
+        self._current_menu_item = current_menu_item
+        self._current_menu_index = current_menu_index
+        self.menuChanged.emit()
 
 
 class SearchableTaggedAction(QAction, object):
-	def __init__(self, label, icon=None, parent=None):
-		super(SearchableTaggedAction, self).__init__(label, parent)
+    def __init__(self, label, icon=None, parent=None):
+        super().__init__(label, parent)
 
-		self._tags = set()
+        self._tags = set()
 
-		if icon:
-			self.setIcon(icon)
+        if icon:
+            self.setIcon(icon)
 
-	@property
-	def tags(self):
-		return self._tags
+    @property
+    def tags(self):
+        return self._tags
 
-	@tags.setter
-	def tags(self, new_tags):
-		self._tags = new_tags
+    @tags.setter
+    def tags(self, new_tags):
+        self._tags = helpers.force_list(new_tags)
 
-	def has_tag(self, tag):
-		"""
-		Searches this instance tags. Returns True if the tag is valid or False otherwise
-		:param str tag: partial or full tag to search for
-		:return: bool
-		"""
+    def has_tag(self, tag):
+        """
+        Searches this instance tags. Returns True if the tag is valid or False otherwise
 
-		for t in self._tags:
-			if tag in t:
-				return True
+        :param str tag: partial or full tag to search for
+        :return: bool
+        """
 
-		return False
+        for t in self._tags:
+            if tag in t:
+                return True
 
-	def has_any_tag(self, tags):
-		"""
-		Returns True if current action has some of the given tags or False otherwise
-		:param tags: list(str)
-		:return: bool
-		"""
+        return False
 
-		for t in tags:
-			for i in self._tags:
-				if t in i:
-					return True
+    def has_any_tag(self, tags):
+        """
+        Returns True if current action has some given tags; False otherwise.
 
-		return False
+        :param tags: list(str)
+        :return: bool
+        """
+
+        for t in tags:
+            for i in self._tags:
+                if t in i:
+                    return True
+
+        return False
 
 
-class SearchableMenu(Menu, object):
-	"""
-	Extends standard QMenu to make it searchable. First action is a QLineEdit used to recursively search on all actions
-	"""
+class SearchableMenu(Menu):
+    """
+    Extends standard QMenu to make it searchable.
+    First action is a QLineEdit used to recursively search on all actions.
+    """
 
-	def __init__(self, **kwargs):
-		super(SearchableMenu, self).__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
 
-		self._search_action = None
-		self._search_edit = None
+        self._search_visible = kwargs.pop('search_visible') if kwargs.get('search_visible', None) is not None else True
 
-		self.setObjectName(kwargs.get('objectName'))
-		self.setTitle(kwargs.get('title'))
-		self._init_search_edit()
+        super(SearchableMenu, self).__init__(*args, **kwargs)
 
-	def clear(self):
-		"""
-		Extends QMenu clear function
-		"""
+        self._search_action = None
+        self._search_edit = None
 
-		super(SearchableMenu, self).clear()
+        self.setObjectName(kwargs.get('objectName', ''))
+        self.setTitle(kwargs.get('title', ''))
+        self._init_search_edit()
+        self.set_search_visible(self._search_visible)
 
-		self._init_search_edit()
+        self.setAttribute(Qt.WA_TranslucentBackground, False)
 
-	def set_search_visible(self, flag):
-		"""
-		Sets the visibility of the search edit
-		:param flag: bool
-		"""
+        # When menu is hidden we make that search text is cleared out
+        self.aboutToShow.connect(self._on_about_to_show_menu)
 
-		self._search_action.setVisible(flag)
+    def clear(self):
+        """
+        Overrides base clear function.
+        """
 
-	def search_visible(self):
-		"""
-		Returns whether or not search edit is visible
-		:return: bool
-		"""
+        super(SearchableMenu, self).clear()
 
-		return self._search_action.isVisible()
+        self._init_search_edit()
 
-	def update_search(self, search_string=None):
-		"""
-		Search all actions for a string tag
-		:param str search_string: tag names separated by spaces (for example, "elem1 elem2"
-		:return: str
-		"""
+    def showEvent(self, event):
+        """
+        Overrides base showEvent function to set the search visible or not.
 
-		def _recursive_search(menu, search_str):
-			for action in menu.actions():
-				sub_menu = action.menu()
-				if sub_menu:
-					_recursive_search(sub_menu, search_str)
-					continue
-				elif action.isSeparator():
-					continue
-				elif isinstance(action, SearchableTaggedAction) and not action.has_tag(search_str):
-					action.setVisible(False)
+        :param QEvent event: Qt show event.
+        """
 
-			menu_vis = any(action.isVisible() for action in menu.actions())
-			menu.menuAction().setVisible(menu_vis)
+        if self.search_visible():
+            self._search_edit.setFocus()
 
-		def _recursive_search_by_tags(menu, tags):
-			for action in menu.actions():
-				sub_menu = action.menu()
-				if sub_menu:
-					_recursive_search_by_tags(sub_menu, tags)
-					continue
-				elif action.isSeparator():
-					continue
-				elif isinstance(action, SearchableTaggedAction):
-					action.setVisible(action.has_any_tag(tags))
+    def _get_action(self, name):
+        """
+        Overrides _get_action internal function.
+        Internal function that returns a new action for this menu with given name.
 
-			menu_vis = any(action.isVisible() for action in menu.actions())
-			menu.menuAction().setVisible(menu_vis)
+        :param str name: name of the action.
+        :return: action instance.
+        :rtype: SearchableTaggedAction
+        """
 
-		search_str = search_string or ''
-		split = search_str.split()
-		if not split:
-			qtutils.recursively_set_menu_actions_visibility(menu=self, state=True)
-			return
-		elif len(split) > 1:
-			_recursive_search_by_tags(menu=self, tags=split)
-			return
+        new_action = SearchableTaggedAction(name, parent=self)
+        tags = list()
+        tags += name.split(" ")
+        tags += [s.lower() for s in name.split(" ")]
+        new_action.tags = str(tags)
 
-		_recursive_search(menu=self, search_str=split[0])
+        return new_action
 
-	def _init_search_edit(self):
-		"""
-		Internal function that adds a QLineEdit as the first action in the menu
-		"""
+    def set_search_visible(self, flag):
+        """
+        Sets the visibility of the search edit
 
-		self._search_action = QWidgetAction(self)
-		self._search_action.setObjectName('SearchAction')
-		self._search_edit = QLineEdit(self)
-		self._search_edit.setPlaceholderText('Search ...')
-		self._search_edit.textChanged.connect(self._on_update_search)
-		self._search_action.setDefaultWidget(self._search_edit)
-		self.addAction(self._search_action)
-		self.addSeparator()
+        :param flag: bool
+        """
 
-	def _on_update_search(self, search_string):
-		"""
-		Internal callback function that is called when the user interacts with the search line edit
-		"""
+        self._search_visible = flag
+        if not self._search_edit:
+            return
 
-		self.update_search(search_string)
+        self._search_action.setVisible(flag)
+        self._search_edit.setVisible(flag)
+
+    def search_visible(self):
+        """
+        Returns whether search edit is visible
+
+        :return: bool
+        """
+
+        return self._search_action.isVisible()
+
+    def update_search(self, search_string=None):
+        """
+        Search all actions for a string tag
+
+        :param str search_string: tag names separated by spaces (for example, "elem1 elem2")
+        :return: str
+        """
+
+        def _recursive_search(menu, search_str):
+            search_str = str(search_str).lower()
+
+            # loop through menu actions
+            for action in menu.actions():
+                if not search_str:
+                    action.setVisible(True)
+                    continue
+                # This is not valid because for some reason accession QAction menu() attributes makes Qt to
+                # not display the menu anymore. The bug was noticeable in the following scenario:
+                # 1) Type something in the menu search
+                # 2) Navigate inside a Menu
+                # 3) Execute one of the menu items
+                # 4) Now when you open the main menu again all the menus inside it will not appear.
+                # sub_menu = action.menu() if hasattr(action, 'menu') else None
+                # if sub_menu:
+                    # _recursive_search(sub_menu, search_str)
+                    # continue
+                if action.isSeparator():
+                    continue
+                elif isinstance(action, SearchableTaggedAction) and not action.has_tag(search_str):
+                    action.setVisible(False)
+
+            # loop through menu sub menus
+            for menu in menu.findChildren(QMenu):
+                _recursive_search(menu, search_str)
+
+            actions = [action for action in menu.actions() if not action.isSeparator()]
+            menu_vis = any(action.isVisible() for action in actions)
+            menu.menuAction().setVisible(menu_vis)
+
+        def _recursive_search_by_tags(menu, tags):
+            for action in menu.actions():
+                sub_menu = action.menu()
+                if sub_menu:
+                    _recursive_search_by_tags(sub_menu, tags)
+                    continue
+                elif action.isSeparator():
+                    continue
+                elif isinstance(action, SearchableTaggedAction):
+                    action.setVisible(action.has_any_tag(tags))
+
+            actions = [action for action in menu.actions() if not action.isSeparator()]
+            menu_vis = any(action.isVisible() for action in actions)
+            menu.menuAction().setVisible(menu_vis)
+
+        search_str = search_string or ''
+        tags = search_str.split()
+        if not search_str:
+            qtutils.recursively_set_menu_actions_visibility(menu=self, state=True)
+            return
+        elif len(tags) > 1:
+            _recursive_search_by_tags(menu=self, tags=tags)
+            return
+
+        _recursive_search(menu=self, search_str=tags[0])
+
+    def _init_search_edit(self):
+        """
+        Internal function that adds a QLineEdit as the first action in the menu
+        """
+
+        from tp.common.qt.widgets import search
+
+        self._search_action = QWidgetAction(self)
+        self._search_action.setObjectName('SearchAction')
+        self._search_edit = search.SearchFindWidget(parent=self)
+        self._search_edit.setStyleSheet('QPushButton {background-color: transparent; border: none;}')
+        self._search_edit.set_placeholder_text('Search ...')
+        self._search_edit.textChanged.connect(self._on_update_search)
+        self._search_action.setDefaultWidget(self._search_edit)
+        self.addAction(self._search_action)
+        self.addSeparator()
+
+    def _on_update_search(self, search_string):
+        """
+        Internal callback function that is called when the user interacts with the search line edit
+        """
+
+        self.update_search(search_string)
+
+    def _on_about_to_show_menu(self):
+        """
+        Internal callback function that is called when the menu is about to be showed
+        :return:
+        """
+
+        self._search_edit.clear()

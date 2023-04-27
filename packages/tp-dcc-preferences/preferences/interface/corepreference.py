@@ -13,16 +13,29 @@ from tp.preferences import preference
 from tp.common.python import path
 
 
+class ThemeUpdateEvent:
+	def __init__(self, stylesheet, theme_dict, preference):
+		"""
+		Updates theme event.
+
+		:param str stylesheet: stylesheet as a string.
+		:param dict theme_dict: theme dictionary.
+		:param Preference preference: preference instance.
+		"""
+
+		self.theme = None
+		self.stylesheet = stylesheet
+		self.theme_dict = theme_dict
+		self.preference = preference
+
+
 class CorePreferenceInterface(preference.PreferenceInterface):
 
 	ID = 'core'
+	_PACKAGE_NAME = 'tp-dcc-preferences'
 	_PREFERENCE_ROOTS_PATH = 'env/preference_roots.config'
 
-	# =================================================================================================================
-	# BASE
-	# =================================================================================================================
-
-	def get_root_config_path(self):
+	def root_config_path(self):
 		"""
 		Returns path where preference root configuration file is located.
 
@@ -34,7 +47,7 @@ class CorePreferenceInterface(preference.PreferenceInterface):
 		return path.clean_path(
 			os.path.abspath(path.join_path(packages_manager.config_path, self._PREFERENCE_ROOTS_PATH)))
 
-	def get_user_preferences(self):
+	def user_preferences(self):
 		"""
 		Returns user preferences path.
 

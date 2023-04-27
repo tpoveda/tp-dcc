@@ -5,7 +5,7 @@ import inspect
 from Qt.QtWidgets import QApplication
 
 from tp.core import log
-from tp.core.managers import resources
+from tp.common.resources import api as resources
 from tp.common.nodegraph.core import register
 
 logger = log.tpLogger

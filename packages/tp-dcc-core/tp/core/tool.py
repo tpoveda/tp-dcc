@@ -10,12 +10,20 @@ from tp.core import log, window, menu
 logger = log.tpLogger
 
 
-class DccTool(object):
+class DccTool:
     """
-    Base class used by Dcc tools
+    Base class used by tp-dcc-tools framework to implement DCC tools that have access to tp-dcc-tools functionality.
     """
 
-    ID = None
+    ID = None                               # Unique tool ID
+    UI_DATA = {                             # Dictionary containing tool DCC UI related data
+        'label': 'DCC Tool',
+        'icon': 'tpdcc',
+        'tooltip': '',
+        'helpUrl': ''
+    }
+    TAGS = []                               # List of tags that can be use to filter tools within DCC menus
+    CREATOR = ''                            # Tool creator
 
     def __init__(self):
         super().__init__()
