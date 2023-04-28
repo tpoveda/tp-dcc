@@ -6,14 +6,16 @@ Module that contains tp-dcc-maya startup functionality
 """
 
 import os
+import sys
 import inspect
+import logging
 
+from maya.api import OpenMaya
+
+from tp.bootstrap import log
 from tp.bootstrap.core import manager, exceptions as bootstrap_exceptions
-from tp.core import log
 from tp.common.python import path
 from tp.maya.meta import base
-
-logger = log.tpLogger
 
 
 def startup(package_manager):
@@ -28,6 +30,8 @@ def startup(package_manager):
 	package = manager.package_from_path(root_file_path)
 	if not package:
 		raise bootstrap_exceptions.MissingPackage(package)
+
+	logger = setup_logging()
 
 	logger.info('Loading tp-dcc DCC Package: Maya')
 
@@ -46,5 +50,36 @@ def shutdown(package_manager):
 	if not package:
 		raise bootstrap_exceptions.MissingPackage(package)
 
+	logger = log.tpLogger
+
 	logger.info('Shutting down tp-dcc-maya Package...')
 
+
+def setup_logging():
+	"""
+	Setup custom Maya logging
+	"""
+
+	handler = MayaLogHandler()
+	handler.setFormatter(logging.Formatter(log.LogsManager().shell_formatter))
+	log.tpLogger.addHandler(handler)
+
+	return log.tpLogger
+
+
+class MayaLogHandler(logging.Handler):
+	"""
+	Custom logging handler that displays errors and warnings records with the appropriate color within Maya GUI
+	"""
+
+	def emit(self, record: logging.LogRecord) -> None:
+		msg = self.format(record)
+		if record.levelno > logging.WARNING:
+			OpenMaya.MGlobal.displayWarning(msg)
+		elif record.levelno in (logging.CRITICAL, logging.ERROR):
+			OpenMaya.MGlobal.displayError(msg)
+		else:
+			# Write all messages to sys.__stdout__, which goes to the output window. Only write debug messages here.
+			# The script editor is incredibly slow and can easily hang Maya if we have a lot of debug logging on,
+			# but the output window is reasonably fast.
+			sys.__stdout__.write('{}\n'.format(msg))
