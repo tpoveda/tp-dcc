@@ -5,7 +5,8 @@
 Module that contains DCC scene abstract class implementation
 """
 
-from tp.core import dcc, sceneobject
+from tp.core import dcc
+from tp.core.api import sceneobject
 from tp.common.python import helpers, decorators
 
 
@@ -33,15 +34,11 @@ class AbstractScene(object):
         Rename given DCC objects with the given new names
         :param dcc_native_objects: variant or list(variant)
         :param names: list(str)
-        :param display: bool, Whether or not we want to rename internal dcc name or display name
+        :param display: bool, whether we want to rename internal dcc name or display name
         :return: bool, True if the operation is successful; False otherwise
         """
 
         raise NotImplementedError('Abstract Scene _remove_dcc_objects function not implemented!')
-
-    # ==============================================================================================
-    # BASE
-    # ==============================================================================================
 
     def objects(self, wildcard='', object_type=None):
         """
@@ -130,10 +127,6 @@ class AbstractScene(object):
             return None
 
         return sceneobject.SceneObject(self, dcc_object)
-
-    # ==============================================================================================
-    # INTERNAL
-    # ==============================================================================================
 
     def _dcc_root_object(self):
         """

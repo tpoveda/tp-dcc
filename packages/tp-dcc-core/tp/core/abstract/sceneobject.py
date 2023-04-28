@@ -5,7 +5,8 @@
 Module that contains DCC scene object abstract class implementation
 """
 
-from tp.core import consts, dcc, scenewrapper
+from tp.core import consts, dcc
+from tp.core.api import scenewrapper
 from tp.core.abstract import scenewrapper as abstract_scenewrapper
 from tp.common.python import helpers
 
