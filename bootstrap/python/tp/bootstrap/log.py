@@ -6,18 +6,16 @@ Module that contains tpDcc log manager
 """
 
 import os
-import inspect
 import logging
-from distutils.util import strtobool
 
 main = __import__('__main__')
 
-LOGGER_NAME = 'tp-dcc'
-RIG_LOGGER_NAME = 'tp-rigtoolkit'
-BOOTSTRAP_LOGGER_NAME = 'tp-dcc-bootstrap'
+LOGGER_NAME = 'tp.dcc'
+BOOTSTRAP_LOGGER_NAME = 'tp.dcc.bootstrap'
+LOG_LEVEL_ENV_NAME = 'TPDCC_LOG_LEVEL'
 
 
-def get_log_levels():
+def log_levels():
 	"""
 	Returns a list with all levels available within Python logging system.
 
@@ -28,7 +26,7 @@ def get_log_levels():
 	return map(logging.getLevelName, range(0, logging.CRITICAL + 1, 10))
 
 
-def get_levels_dict():
+def levels_dict():
 	"""
 	Returns a dict with all levels available within Python logging system.
 
@@ -36,7 +34,7 @@ def get_levels_dict():
 	:rtype: list(str, str)
 	"""
 
-	return dict(zip(get_log_levels(), range(0, logging.CRITICAL + 1, 10)))
+	return {logging.getLevelName(i): i for i in range(0, logging.CRITICAL + 1, 10)}
 
 
 def global_log_level_override(logger):
@@ -46,11 +44,32 @@ def global_log_level_override(logger):
 	:param logging.Logger logger: logger to set.
 	"""
 
-	global_logging_level = os.environ.get('TPDCC_LOG_LEVEL', 'INFO')
-	env_level = get_levels_dict()[global_logging_level]
+	global_logging_level = os.environ.get(LOG_LEVEL_ENV_NAME, 'INFO')
+	env_level = levels_dict()[global_logging_level]
 	current_level = logger.getEffectiveLevel()
 	if not current_level or current_level != env_level:
 		logger.setLevel(env_level)
+
+
+def get_logger(name):
+	"""
+	Returns tp-dcc-tools framework log name in the form tp.dcc.tools.*
+
+	:param str name: logger name to retrieve.
+	:return: logger instance.
+	:rtype: logging.Logger
+	"""
+
+	if name == LOGGER_NAME:
+		name = LOGGER_NAME
+	elif name == BOOTSTRAP_LOGGER_NAME:
+		name = BOOTSTRAP_LOGGER_NAME
+	elif name.startswith('preferences.'):
+		name = f'tp.dcc.preferences.{name[len("preferences."):]}'
+	logger = logging.getLogger(name)
+	LogsManager().add_log(logger)
+
+	return logger
 
 
 def logging_wrapper(method, source_name, *args, **kwargs):
@@ -91,36 +110,8 @@ def add_metaclass(metaclass):
 		if hasattr(cls, '__qualname__'):
 			orig_vars['__qualname__'] = cls.__qualname__
 		return metaclass(cls.__name__, cls.__bases__, orig_vars)
+
 	return wrapper
-
-
-class DccLogHandler(logging.Handler):
-	def emit(self, record):
-		pass
-
-
-class _MetaLogHandler(type):
-	def __call__(cls, *args, **kwargs):
-		as_class = kwargs.pop('as_class', False)
-
-		if as_class:
-			return DccLogHandler
-		else:
-			return type.__call__(DccLogHandler, *args, **kwargs)
-
-		# if 'cmds' in main.__dict__:
-		# 	from tp.bootstrap.dccs.maya import log
-		# 	if as_class:
-		# 		return log.MayaLogHandler
-		# 	else:
-		# 		return type.__call__(log.MayaLogHandler, *args, **kwargs)
-		# else:
-		# 	return None
-
-
-@add_metaclass(_MetaLogHandler)
-class LogHandler(object):
-	pass
 
 
 class Singleton(type):
@@ -143,44 +134,86 @@ class Singleton(type):
 		return cls._instance
 
 
-def create_loggers():
+@add_metaclass(Singleton)
+class LogsManager:
 	"""
-	Returns logger of current module
+	Singleton class that globally handles all tp-dcc-tools framework related loggers
 	"""
 
-	# import here because this was causing problems during MotionBuilder startup while loading CPG tools.
-	import logging.config
+	def __init__(self):
 
-	logger_directories = [
-		os.path.normpath(os.path.join(os.path.expanduser('~'), 'tp', 'dcc', 'logs')),
-		os.path.normpath(os.path.join(os.path.expanduser('~'), 'tp', 'rigtoolkit', 'logs'))
-	]
-	for logger_directory in logger_directories:
-		if not os.path.isdir(logger_directory):
-			os.makedirs(logger_directory)
+		self._logs = dict()
+		# [%(levelname)1.1s  %(asctime)s | %(name)s | %(module)s:%(funcName)s:%(lineno)d] > %(message)s
+		self.json_formatter = "%(asctime) %(name) %(processName) %(pathname)  %(funcName) %(levelname) %(lineno) %(" \
+							   "module) %(threadName) %(message)"
+		self.rotate_formatter = "%(asctime)s: [%(process)d - %(name)s - %(levelname)s]: %(message)s"
+		self.shell_formatter = "[%(levelname)1.1s|%(name)s|%(module)s:%(funcName)s] > %(message)s"
+		self.gui_formatter = "[%(name)s]: %(message)s"
 
-	root_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-	logging_config = os.path.normpath(os.path.join(root_path, '__logging__.ini'))
+	def add_log(self, logger):
+		"""
+		Adds a logger into this manager instance.
 
-	logging.config.fileConfig(logging_config, disable_existing_loggers=True)
-	loggers = (
-		logging.getLogger(BOOTSTRAP_LOGGER_NAME),
-		logging.getLogger(LOGGER_NAME),
-		logging.getLogger(RIG_LOGGER_NAME)
-	)
-	for logger in loggers:
-		dcc_handler = LogHandler()
-		if dcc_handler:
-			logger.addHandler(dcc_handler)
+		:param logging.Logger logger: logger instance to add.
+		"""
+
+		if logger.name not in self._logs:
+			self._logs[logger.name] = logger
+
 		global_log_level_override(logger)
 
-		dev = bool(strtobool((os.environ.get('TPDCC_DEV', 'False'))))
-		if dev:
-			logger.setLevel(logging.DEBUG)
-			for handler in logger.handlers:
-				handler.setLevel(logging.DEBUG)
+	def remove_log(self, logger_name):
+		"""
+		Removes the logger instance by name.
 
-	return loggers
+		:param str logger_name: name of the log to remove.
+		:return: True if log was removed successfully; False otherwise.
+		:rtype: bool
+		"""
+
+		if logger_name not in self._logs:
+			return False
+
+		del self._logs[logger_name]
+
+		return True
+
+	def change_level(self, logger_name, level):
+		"""
+		Changes the logger instance level.
+
+		:param str logger_name: name of the logger to change level of.
+		:param logging.Level level: logger level.
+		"""
+
+		found_log = self._logs.get(logger_name)
+		if not found_log or found_log.level == level:
+			return
+		found_log.setLevel(level)
+
+	def add_shell_handler(self, logger_name):
+		"""
+		Adds a stream handler to the logger with the given name that outputs to the shell.
+
+		:param str logger_name: name of the logger to which the handler will be added.
+		:return: stream handler object that was added to the logger.
+		:rtype: logging.StreamHandler or None
+		"""
+
+		found_log = self._logs.get(logger_name)
+		if not found_log:
+			return None
+		handler = logging.StreamHandler()
+		handler.setFormatter(logging.Formatter(self.shell_formatter))
+		logger.addHandler(handler)
+
+		return handler
 
 
-bootstrapLogger, tpLogger, rigLogger = create_loggers()
+tpLogger = get_logger(LOGGER_NAME)
+bootstrapLogger = get_logger(BOOTSTRAP_LOGGER_NAME)
+for logger in [tpLogger, bootstrapLogger]:
+	logger.propagate = False
+	handlers = tpLogger.handlers
+	if not handlers:
+		LogsManager().add_shell_handler(tpLogger.name)

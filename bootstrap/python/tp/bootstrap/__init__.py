@@ -27,6 +27,16 @@ def root_path():
 	return os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
+def register_vendors():
+	"""
+	Function that register vendor folder within sys.path.
+	"""
+
+	vendor_path = os.path.join(os.path.dirname(os.path.dirname(root_path())), 'vendor')
+	if os.path.isdir(vendor_path) and vendor_path not in sys.path:
+		sys.path.append(vendor_path)
+
+
 def init(**kwargs):
 	"""
 	Initializes tp-dcc packages manager.
@@ -62,6 +72,8 @@ def init(**kwargs):
 	logger.debug(f'\tCustom Sys Paths: {custom_sys_paths}')
 
 	# Register dependency paths
+	register_vendors()
+
 	if deps_path and os.path.isdir(deps_path):
 		py_folder = 'py2' if env.is_python2() else 'py3'
 		py_deps_folders = [
@@ -146,3 +158,6 @@ def shutdown():
 
 	current_env.shutdown()
 	api.set_current_package_manager(None)
+
+
+register_vendors()
