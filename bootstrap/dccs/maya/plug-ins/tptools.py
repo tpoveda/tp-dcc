@@ -5,18 +5,15 @@ import cProfile
 import traceback
 from functools import wraps
 
-import maya.cmds as cmds
-import maya.api.OpenMaya as OpenMaya
+from maya import cmds
+from maya import OpenMaya
+from maya import OpenMayaMPx
 
 logger = logging.getLogger(__name__)
 if not len(logger.handlers):
 	logger.addHandler(logging.StreamHandler())
 if os.environ.get('TPDCC_LOG_LEVEL', 'INFO') == 'DEBUG':
 	logger.setLevel(logging.DEBUG)
-
-
-def maya_useNewAPI():
-	pass
 
 
 def profile(fn):
@@ -69,6 +66,21 @@ def load():
 	bootstrap.init(package_version_file='package_version_maya.config')
 
 
+def load_ui():
+	try:
+		from tp.bootstrap.utils import env
+		if env.is_mayapy() or env.is_maya_batch():
+			logger.debug('Not in maya.exe, skipping tp-dcc-tools menu loading...')
+		else:
+			from tp.tools import toolbox
+			toolbox.load(application_name='maya')
+		logger.debug('Finished loading tp-dcc-tools-framework UI')
+		OpenMaya.MGlobal.displayInfo('========== tp-dcc-tools-framework ============')
+	except Exception as err:
+		logger.error('Failed to to load tp-dcc-tools framework UI due to unknown error', exc_info=True)
+		OpenMaya.MGlobal.displayError(f'Failed to start tp-dcc-tools freamework UI\n{err}')
+
+
 def shutdown():
 	"""
 	Shutdowns tp-dcc-tools framework.
@@ -79,11 +91,23 @@ def shutdown():
 
 	OpenMaya.MGlobal.displayInfo('Unloading tp-dcc-tools framework, please wait...')
 	if env.is_maya():
-		pass
+		from tp.tools import toolbox
+		try:
+			toolbox.close()
+		except Exception:
+			logger.error('Failed to shutdown currently loaded tools', exc_info=True)
 
 	bootstrap.shutdown()
 
 	cmds.flushUndo()
+
+
+def shutdown_ui():
+	"""
+	Necessary for shutdown_ui function. Not needed to implement because UI shutdown is handled by shutdown function.
+	"""
+
+	pass
 
 
 def initializePlugin(obj):
@@ -91,9 +115,10 @@ def initializePlugin(obj):
 	Maya plugin initialization function.
 	"""
 
-	mplugin = OpenMaya.MFnPlugin(obj, 'Tomi Poveda', '1.0', 'Any')
+	mplugin = OpenMayaMPx.MFnPlugin(obj, 'Tomi Poveda', '1.0', 'Any')
 	try:
 		load()
+		mplugin.registerUI(load_ui, shutdown_ui)
 	except Exception:
 		logger.error('Unhandled exception occurred during tp-dcc-tools framework startup', exc_info=True)
 		OpenMaya.MGlobal.displayError(f'Unknown tp-dcc-tools framework startup failure: \n{traceback.format_exc()}')
@@ -104,7 +129,7 @@ def uninitializePlugin(obj):
 	Maya plugin uninitializatzion function.
 	"""
 
-	OpenMaya.MFnPlugin(obj)
+	OpenMayaMPx.MFnPlugin(obj)
 	try:
 		shutdown()
 	except Exception:
