@@ -7,7 +7,7 @@ Module that contains functions and classes related with Maya API math
 
 import math
 
-import pymel.core as pm
+import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
 
 from tp.common.math import scalar
@@ -29,7 +29,7 @@ def magnitude(vector=(0, 0, 0)):
 	return OpenMaya.MVector(vector[0], vector[1], vector[2]).length()
 
 
-def axis_vector(transform, axis_vector):
+def axis_vector(transform, vector):
 	"""
 	Returns the vector matrix product.
 
@@ -37,7 +37,7 @@ def axis_vector(transform, axis_vector):
 	If you give a vector [0, 1, 0], it will return the transform's Y point
 	If you give a vector [0, 0, 1], it will return the transform's Z point
 	:param transform: str, name of a transforms. Its matrix will be checked
-	:param axis_vector: list<int>, A vector, X = [1,0,0], Y = [0,1,0], Z = [0,0,1]
+	:param vector: list<int>, A vector, X = [1,0,0], Y = [0,1,0], Z = [0,0,1]
 	:return: list<int>, the result of multiplying the vector by the matrix
 	Useful to get an axis in relation to the matrix
 	"""
@@ -47,9 +47,9 @@ def axis_vector(transform, axis_vector):
 	# TODO: Not working properly
 	OpenMaya.MGlobal.displayWarning('get_vector_matrix_product() does not work properly yet ...!')
 	vct = OpenMaya.MVector()
-	vct.x = axis_vector[0]
-	vct.y = axis_vector[1]
-	vct.z = axis_vector[2]
+	vct.x = vector[0]
+	vct.y = vector[1]
+	vct.z = vector[2]
 	space = OpenMaya.MSpace.kWorld
 	orig_vct = xform.translation(space)
 	vct *= xform.transformation().asMatrix()
@@ -198,13 +198,13 @@ def distance_between_nodes(source_node=None, target_node=None):
 	"""
 
 	if source_node is None or target_node is None:
-		sel = pm.ls(sl=True, type='transform')
+		sel = cmds.ls(sl=True, type='transform')
 		if len(sel) != 2:
 			return 0
 		source_node, target_node = sel
 
-	source_pos = OpenMaya.MPoint(*pm.xform(source_node, query=True, worldSpace=True, translation=True))
-	target_pos = OpenMaya.MPoint(*pm.xform(target_node, query=True, worldSpace=True, translation=True))
+	source_pos = OpenMaya.MPoint(*cmds.xform(source_node, query=True, worldSpace=True, translation=True))
+	target_pos = OpenMaya.MPoint(*cmds.xform(target_node, query=True, worldSpace=True, translation=True))
 
 	return source_pos.distanceTo(target_pos)
 
@@ -219,13 +219,13 @@ def direction_vector_between_nodes(source_node=None, target_node=None):
 	"""
 
 	if source_node is None or target_node is None:
-		sel = pm.ls(sl=True, type='transform')
+		sel = cmds.ls(sl=True, type='transform')
 		if len(sel) != 2:
 			return 0
 		source_node, target_node = sel
 
-	source_pos = OpenMaya.MPoint(*pm.xform(source_node, query=True, worldSpace=True, translation=True))
-	target_pos = OpenMaya.MPoint(*pm.xform(target_node, query=True, worldSpace=True, translation=True))
+	source_pos = OpenMaya.MPoint(*cmds.xform(source_node, query=True, worldSpace=True, translation=True))
+	target_pos = OpenMaya.MPoint(*cmds.xform(target_node, query=True, worldSpace=True, translation=True))
 
 	return target_pos - source_pos
 

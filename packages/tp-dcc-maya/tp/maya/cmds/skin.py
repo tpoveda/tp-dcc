@@ -17,12 +17,6 @@ import maya.mel
 import maya.api.OpenMaya
 import maya.api.OpenMayaAnim
 
-PYMEL_AVAILABLE = True
-try:
-    from pymel.core.general import PyNode
-except ImportError:
-    PYMEL_AVAILABLE = False
-
 from tp.core import log, dcc
 from tp.common.python import helpers
 from tp.common.math import vec3, kdtree
@@ -1727,24 +1721,24 @@ def get_influence_vertices(joint_nodes, mesh_name):
     progress_value = 0.0
 
     for i, joint in enumerate(joint_nodes):
-        if PYMEL_AVAILABLE:
-            joints_attached = maya.cmds.skinCluster(skin_cluster_name, query=True, inf=True)
-            if joint_nodes_short[i] not in joints_attached:
-                continue
-            skin_node = PyNode(skin_cluster_name)
-            vertices_list, values = skin_node.getPointsAffectedByInfluence(joint)
-            found_vertices = vertices_list.getSelectionStrings()
-            if len(found_vertices) == 0:
-                continue
-            selected_vertices = mesh_utils.convert_to_vertices(found_vertices)
-        else:
-            maya.cmds.select(clear=True)
-            maya.cmds.skinCluster(mesh_name, edit=True, normalizeWeights=True)
-            maya.cmds.select(joint, deselect=True)
-            mesh_utils.fix_mesh_components_selection_visualization(mesh_name)
-            maya.cmds.select(clear=True)
-            maya.cmds.skinCluster(skin_cluster_name, edit=True, selectInfluenceVerts=True)
-            selected_vertices = maya.cmds.ls(sl=True, flatten=True)
+        # PyMEL implementation
+        # from pymel.core.general import PyNode
+        # joints_attached = maya.cmds.skinCluster(skin_cluster_name, query=True, inf=True)
+        # if joint_nodes_short[i] not in joints_attached:
+        #     continue
+        # skin_node = PyNode(skin_cluster_name)
+        # vertices_list, values = skin_node.getPointsAffectedByInfluence(joint)
+        # found_vertices = vertices_list.getSelectionStrings()
+        # if len(found_vertices) == 0:
+        #     continue
+        # selected_vertices = mesh_utils.convert_to_vertices(found_vertices)
+        maya.cmds.select(clear=True)
+        maya.cmds.skinCluster(mesh_name, edit=True, normalizeWeights=True)
+        maya.cmds.select(joint, deselect=True)
+        mesh_utils.fix_mesh_components_selection_visualization(mesh_name)
+        maya.cmds.select(clear=True)
+        maya.cmds.skinCluster(skin_cluster_name, edit=True, selectInfluenceVerts=True)
+        selected_vertices = maya.cmds.ls(sl=True, flatten=True)
 
         if not selected_vertices:
             continue

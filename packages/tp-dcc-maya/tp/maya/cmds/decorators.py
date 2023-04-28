@@ -102,26 +102,6 @@ def undo(f):
 #     return lambda *args, **kwargs: utils.executeDeferred(wrapper, *args, **kwargs)
 
 
-def undo_pm(f):
-    """
-    Function decorator that enables undo functionality using PyMEL
-    :param f: fn, function
-    """
-
-    from pymel import all as pm
-
-    def wrapper(*args, **kwargs):
-        pm.undoInfo(openChunk=True)
-        try:
-            ret = f(*args, **kwargs)
-        except Exception as e:
-            raise e
-        finally:
-            pm.undoInfo(closeChunk=True)
-        return ret
-    return wrapper
-
-
 def disable_undo(fn):
 
     @wraps(fn)
