@@ -17,10 +17,9 @@ try:
 except ImportError:
     from inspect import getargspec as getfullargspec
 
-from tp.core import log, dcc
+from tp.bootstrap import log
+from tp.core import dcc
 from tp.common.python import helpers, modules, osplatform, path as path_utils, folder as folder_utils
-
-logger = log.tpLogger
 
 
 class Plugin(object):
@@ -29,9 +28,10 @@ class Plugin(object):
     """
 
     ID = ''
+    DCCS = list()
 
-    def __init__(self, manager=None):
-        self._manager = manager
+    def __init__(self, factory=None):
+        self._factory = factory
         self._stats = PluginStats(self)
 
 
@@ -127,10 +127,12 @@ class PluginFactory(object):
     # Regex validator for plugin file names
     REGEX_FILE_VALIDATOR = re.compile(r'([a-zA-Z].*)(\.py$|\.pyc$)')
 
-    def __init__(self, interface=Plugin, paths=None, package_name=None, plugin_id=None, version_id=None, env_var=None):
+    def __init__(
+            self, interface=Plugin, paths=None, package_name=None, plugin_id=None, version_id=None, env_var=None,
+            name=None):
         """
 
-        :param interfaces: Abstract class to use when searching for plugins within the registered paths.
+        :param interface: Abstract class to use when searching for plugins within the registered paths.
         :param paths: list(str), list of absolute paths to search for plugins.
         :param plugin_id: str, plugin identifier to distinguish between different plugins. If not given, plugin
             class name will be used
@@ -142,6 +144,12 @@ class PluginFactory(object):
         self._interfaces = helpers.force_list(interface)
         self._plugin_identifier = plugin_id or '__name__'
         self._version_identifier = version_id
+        module_path = self.__class__.__module__
+        if name:
+            self._name = '.'.join([module_path, f'{name}PluginFactory'])
+        else:
+            self._name = '.'.join([module_path, self.__class__.__name__])
+        self._logger = log.get_logger(self._name)
 
         self._plugins = dict()
         self._registered_paths = dict()
@@ -258,7 +266,7 @@ class PluginFactory(object):
                                 self._plugins[package_name].append(item)
                                 plugins_found.append(item)
             except Exception:
-                logger.debug('', exc_info=True)
+                self._logger.debug('', exc_info=True)
 
         return len(self._plugins) - current_plugins_count, plugins_found
 
@@ -348,18 +356,19 @@ class PluginFactory(object):
             module_path = os.path.normpath(sub_module)
             module_dotted_path = modules.convert_to_dotted_path(module_path)
             if not module_dotted_path:
-                logger.warning('Skipping module due to invalid path: {} -> {}'.format(sub_module, module_dotted_path))
+                self._logger.warning(
+                    'Skipping module due to invalid path: {} -> {}'.format(sub_module, module_dotted_path))
                 continue
             sub_module_obj = None
             try:
                 sub_module_obj = modules.import_module(module_dotted_path, skip_errors=True)
             except ValueError:
-                logger.error('Failed to load plugin module: {}'.format(sub_module))
+                self._logger.error('Failed to load plugin module: {}'.format(sub_module))
             except ImportError:
-                logger.error('Failed to import plugin module: {}'.format(sub_module), exc_info=True)
+                self._logger.error('Failed to import plugin module: {}'.format(sub_module), exc_info=True)
                 continue
             if not sub_module_obj:
-                logger.debug('Failed to load/import plugin module: {}'.format(sub_module))
+                self._logger.debug('Failed to load/import plugin module: {}'.format(sub_module))
                 continue
             for member in modules.iterate_module_members(sub_module_obj, predicate=inspect.isclass):
                 self.register_plugin_from_class(member[1])
@@ -449,7 +458,7 @@ class PluginFactory(object):
         package_name = package_name or 'tp-dcc'
 
         if package_name and package_name not in self._plugins:
-            logger.error('Impossible to retrieve data from id: {} package: "{}" not registered!'.format(
+            self._logger.error('Impossible to retrieve plugin from id: {} package: "{}" not registered!'.format(
                 plugin_id, package_name))
             return None
 
@@ -464,11 +473,18 @@ class PluginFactory(object):
                         matching_plugins.append(plugin)
 
         if not matching_plugins:
-            logger.warning('No plugin with id "{}" found in package "{}"'.format(plugin_id, package_name))
+            self._logger.warning('No plugin with id "{}" found in package "{}"'.format(plugin_id, package_name))
             return None
 
         if not self._version_identifier:
             return matching_plugins[0]
+
+        if dcc:
+            matching_plugins = [plugin_cls for plugin_cls in matching_plugins if dcc in plugin_cls.DCCS]
+        if not matching_plugins:
+            self._logger.warning(
+                'No plugin with id "{}" found in package "{}" for DCC: {}'.format(plugin_id, package_name, dcc))
+            return None
 
         versions = {
             self._get_version(plugin): plugin for plugin in matching_plugins
@@ -481,13 +497,13 @@ class PluginFactory(object):
 
         plugin_version = version.LooseVersion(str(plugin_version))
         if plugin_version not in ordered_versions:
-            logger.warning('No Plugin with id "{}" and version "{}" found in package "{}"'.format(
+            self._logger.warning('No Plugin with id "{}" and version "{}" found in package "{}"'.format(
                 plugin_id, plugin_version, package_name))
             return None
 
         return versions[str(plugin_version)]
 
-    def get_loaded_plugin_from_id(self, plugin_id, package_name=None, plugin_version=None):
+    def get_loaded_plugin_from_id(self, plugin_id, package_name=None, plugin_version=None, dcc=None):
         """
         Retrieves the plugin with given plugin identifier. If you require a specific version of a plugin (in a
         scenario where there are multiple plugins with the same identifier) this can also be specified.
@@ -496,12 +512,15 @@ class PluginFactory(object):
         :param package_name: str, package name current registered plugins will belong to.
         :param plugin_version: int or float, version of the plugin you want. If factory has no versioning identifier
             specified this argument has no effect.
+        :param dcc: str, optional DCC to retrieve plugin of.
         :return: plugin instance.
         :rtype: Plugin
         """
 
+        package_name = package_name or 'tp-dcc'
+
         if package_name and package_name not in self._loaded_plugins:
-            logger.error('Impossible to retrieve data from id: {} package: "{}" not registered!'.format(
+            self._logger.debug('Impossible to retrieve loaded plugin from id: {} package: "{}" not registered!'.format(
                 plugin_id, package_name))
             return None
 
@@ -516,6 +535,14 @@ class PluginFactory(object):
                         matching_plugins.append(plugin)
 
         if not matching_plugins:
+            self._logger.warning('No loaded plugin with id "{}" found in package "{}"'.format(plugin_id, package_name))
+            return None
+
+        if dcc:
+            matching_plugins = [plugin_cls for plugin_cls in matching_plugins if dcc in plugin_cls.DCCS]
+        if not matching_plugins:
+            self._logger.warning(
+                'No loaded plugin with id "{}" found in package "{}" for DCC: {}'.format(plugin_id, package_name, dcc))
             return None
 
         if not self._version_identifier:
@@ -532,7 +559,7 @@ class PluginFactory(object):
 
         plugin_version = version.LooseVersion(plugin_version)
         if plugin_version not in ordered_versions:
-            logger.warning('No Plugin with id "{}" and version "{}" found in package "{}"'.format(
+            self._logger.warning('No Plugin with id "{}" and version "{}" found in package "{}"'.format(
                 plugin_id, plugin_version, package_name))
             return None
 
@@ -543,6 +570,7 @@ class PluginFactory(object):
         Loads a given plugin by the given name.
 
         :param str plugin_id: id of the plugin to load.
+        :param str package_name: optional package name plugin we want to load belongs to.
         :param dict kwargs: extra keyword arguments.
         :return: instance of the loaded plugin.
         :rtype: object or None
@@ -554,19 +582,19 @@ class PluginFactory(object):
         if not plugin_class:
             return None
 
-        logger.debug('Loading plugin: {}'.format(plugin_id))
+        self._logger.debug('Loading plugin: {}'.format(plugin_id))
         spec = getfullargspec(plugin_class.__init__)
         try:
             keywords = spec.kwonlyargs
         except AttributeError:
             keywords = spec.keywords
         args = spec.args
-        if (args and "manager" in args) or (keywords and "manager" in keywords):
-            kwargs["manager"] = self
+        if (args and 'factory' in args) or (keywords and 'factory' in keywords):
+            kwargs['factory'] = self
         try:
             plugin_instance = plugin_class(**kwargs)
         except Exception:
-            logger.error("Failed to load plugin: {}".format(plugin_id), exc_info=True)
+            self._logger.error("Failed to load plugin: {}".format(plugin_id), exc_info=True)
             return None
 
         self._loaded_plugins.setdefault(package_name, list())
@@ -575,7 +603,7 @@ class PluginFactory(object):
 
         return plugin_instance
 
-    def load_all_plugins(self, package_name=None):
+    def load_all_plugins(self, package_name=None, **kwargs):
         """
         Loops over all registered plugin and loads them.
 
@@ -589,7 +617,7 @@ class PluginFactory(object):
                 continue
             for plugin_class in plugin_classes:
                 plugin_id = self._get_identifier(plugin_class)
-                self.load_plugin(plugin_id, package_name=package_name)
+                self.load_plugin(plugin_id, package_name=package_name, **kwargs)
 
     def unload_all_plugins(self, package_name=None):
         """

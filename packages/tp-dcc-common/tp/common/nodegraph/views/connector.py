@@ -1,6 +1,6 @@
 from Qt.QtCore import Qt, QObject, Signal, QPointF, QLineF
-from Qt.QtWidgets import QGraphicsPathItem, QGraphicsEllipseItem
-from Qt.QtGui import QColor, QPen, QPainterPath, QPolygonF, QPainterPathStroker
+from Qt.QtWidgets import QGraphicsPathItem
+from Qt.QtGui import QColor, QPen, QPainterPath, QPolygonF
 
 from tp.common.nodegraph.core import consts
 from tp.common.nodegraph.views import socket as socket_view

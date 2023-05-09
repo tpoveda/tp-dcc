@@ -7,13 +7,18 @@ Module that defines a base class to load resources
 
 import os
 
-from tp.common.python import folder, path
-from tp.common.resources.core import utils, pixmap, icon, theme, ui
+from Qt.QtCore import Qt, QByteArray, QFileInfo
+from Qt.QtGui import QImage, QPixmap, QIcon, QBrush, QPainter
+try:
+    from Qt.QtSvg import QSvgRenderer
+except ImportError:
+    pass
+
+from tp.common.python import path
+from tp.common.resources import cache, theme, ui
 
 
 class Resource:
-
-    RESOURCES_FOLDER = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     def __init__(self, *args):
         dirname = ''
@@ -21,7 +26,7 @@ class Resource:
             dirname = os.path.join(*args)
         if os.path.isfile(dirname):
             dirname = os.path.dirname(dirname)
-        self._dirname = dirname or self.RESOURCES_FOLDER
+        self._dirname = dirname
         self._path = None
 
     @property
@@ -174,7 +179,7 @@ class Resource:
         """
 
         image_path_retrieved = self.image_path(name=name, category=category, extension=extension, theme=theme)
-        found_icon = icon.IconCache(path=image_path_retrieved, color=color, skip_cache=skip_cache)
+        found_icon = IconCache(path=image_path_retrieved, color=color, skip_cache=skip_cache)
 
         return found_icon
 
@@ -194,7 +199,7 @@ class Resource:
         """
 
         pixmap_path_retrieved = self.image_path(name=name, category=category, extension=extension, theme=theme)
-        found_pixmap = pixmap.PixmapCache(
+        found_pixmap = PixmapCache(
             path=pixmap_path_retrieved, color=color, size=size, opacity=opacity, skip_cache=skip_cache)
 
         return found_pixmap
@@ -227,12 +232,107 @@ class Resource:
         :return:
         """
 
-        if not extension:
-            extension = theme.Theme.EXTENSION
-
+        extension = extension or theme.Theme.EXTENSION
         theme_path = self.theme_path(name=name, category=category, extension=extension)
         if not path.is_file(theme_path):
             return None
 
         return theme.Theme(theme_path)
 
+
+class _PixmapCache(object):
+    try:
+        _render = QSvgRenderer()
+    except Exception:
+        _render = None
+
+    def __init__(self):
+        super(_PixmapCache, self).__init__()
+
+        self._resources_path_cache = dict()
+
+    def __call__(self, path, color=None, size=None, opacity=1.0, skip_cache=False):
+
+        file_info = QFileInfo(path)
+        if not file_info.exists():
+            return QPixmap()
+
+        key = 'rsc:{}:{}:{}'.format(path, int(size), 'null' if not color else color.name())
+        if key in self._resources_path_cache:
+            return self._resources_path_cache[key]
+
+        image = QImage()
+        # image.setDevicePixelRatio(qt.pixel_ratio())
+        image.load(file_info.filePath())
+        if image.isNull():
+            return QPixmap()
+
+        if color is not None:
+            painter = QPainter()
+            painter.begin(image)
+            painter.setRenderHint(QPainter.Antialiasing, True)
+            painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
+            painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+            painter.setBrush(QBrush(color))
+            painter.drawRect(image.rect())
+            painter.end()
+
+        if size is not None:
+            image = self.resize_image(image, size)
+            # image = self.resize_image(image, size * qt.pixel_ratio())
+        # image.setDevicePixelRatio(qt.pixel_ratio())
+
+        if opacity < 1.0:
+            _image = QImage(image)
+            # _image.setDevicePixelRatio(qt.pixel_ratio())
+            _image.fill(Qt.transparent)
+
+            painter = QPainter()
+            painter.begin(_image)
+            painter.setOpacity(opacity)
+            painter.drawImage(0, 0, image)
+            painter.end()
+            image = _image
+
+        pixmap = QPixmap()
+        # pixmap.setDevicePixelRatio(qt.pixel_ratio())
+        pixmap.convertFromImage(image, flags=Qt.ColorOnly)
+
+        if not skip_cache:
+            self._resources_path_cache[key] = pixmap
+            return self._resources_path_cache[key]
+
+        return pixmap
+
+    def resize_image(self, image, size):
+        if not isinstance(size, (int, float)):
+            raise TypeError('Invalid size.')
+        if not isinstance(image, QImage):
+            raise TypeError('Expected a <type \'QtGui.QImage\'>, got {}.'.format(type(image)))
+
+        w = image.width()
+        h = image.height()
+        factor = float(size) / max(w, h)
+        w *= factor
+        h *= factor
+        return image.smoothScaled(round(w), round(h))
+
+    def _render_svg(self, svg_path, replace_color=None):
+        if issubclass(self._cls, QIcon) and not replace_color:
+            return QIcon(svg_path)
+
+        with open(svg_path, 'r+') as f:
+            data_content = f.read()
+            if replace_color is not None:
+                data_content = data_content.replace('#555555', replace_color)
+                self._render.load(QByteArray(data_content))
+                pix = QPixmap(128, 128)
+                pix.fill(Qt.transparent)
+                painter = QPainter(pix)
+                self._render.render(painter)
+                painter.end()
+                return pix
+
+
+PixmapCache = _PixmapCache()
+IconCache = cache.CacheResource(QIcon)

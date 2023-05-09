@@ -13,7 +13,7 @@ from Qt.QtGui import QIcon, QPixmap
 
 from tp.core import dcc
 from tp.common.python import helpers
-from tp.common.resources.core import resource
+from tp.common.resources import resource
 
 
 class ResourceTypes(object):
@@ -56,7 +56,8 @@ def register_resource(resources_path, key=None):
 
     _RESOURCES[resources_path] = resource.Resource(resources_path)
 
-    dcc.register_resource_path(resources_path)
+    # TODO: this should be called en each DCC package specific startup script
+    # dcc.register_resource_path(resources_path)
 
 
 def resources_paths(key=None):

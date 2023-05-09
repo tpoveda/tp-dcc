@@ -13,7 +13,7 @@ import contextlib
 
 from tp.core import log, dcc
 from tp.common.python import helpers
-from tp.common.resources.core import color
+from tp.common.resources import color
 
 logger = log.tpLogger
 

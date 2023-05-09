@@ -13,7 +13,7 @@ import os
 from Qt.QtWidgets import QApplication
 
 from tp.common.qt import consts
-from tp.common.resources.core import font
+from tp.common.resources import font
 
 # set preferred binding
 os.environ['QT_PREFERRED_BINDING'] = os.pathsep.join(['PySide2', 'PySide2'])

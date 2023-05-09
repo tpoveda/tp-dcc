@@ -5,13 +5,11 @@
 Module that contains base class for icons
 """
 
-import copy
-
 from Qt.QtCore import Qt, Slot, Signal, QObject, QSize, QRunnable
-from Qt.QtGui import QIcon, QImage, QColor, QPainter, QPen, qRgb
+from Qt.QtGui import QIcon, QImage, qRgb
 
 from tp.common.python import helpers
-from tp.common.resources.core import color, cache, pixmap
+from tp.common.resources import pixmap
 
 
 def resize_icon(icon, size):
@@ -31,7 +29,7 @@ def resize_icon(icon, size):
     rescaled_pixmap = icon.pixmap(orig_size)
     rescaled_pixmap = rescaled_pixmap.scaled(size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
-    return Icon(rescaled_pixmap)
+    return QIcon(rescaled_pixmap)
 
 
 def colorize_icon(icon, size=None, color=(255, 255, 255), overlay_icon=None, overlay_color=(255, 255, 255)):
@@ -68,7 +66,7 @@ def colorize_icon(icon, size=None, color=(255, 255, 255), overlay_icon=None, ove
 
     colorized_pixmap = colorized_pixmap.scaled(size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
-    return Icon(colorized_pixmap)
+    return QIcon(colorized_pixmap)
 
 
 def colorize_layered_icon(
@@ -144,10 +142,10 @@ def colorize_layered_icon(
 
     icon_pixmap = icon_pixmap.scaled(QSize(size, size), Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
-    icon = Icon(icon_pixmap)
+    icon = QIcon(icon_pixmap)
     if grayscale:
         icon_pixmap = pixmap.grayscale_pixmap(icon_pixmap)
-        icon = Icon(icon_pixmap)
+        icon = QIcon(icon_pixmap)
         icon.addPixmap(icon.pixmap(size, QIcon.Disabled))   # TODO: Use tint instead
 
     return icon
@@ -181,198 +179,6 @@ def load_svg(icon_path, size=(20, 20)):
     icon = QIcon(svg_pixmap)
 
     return icon
-
-
-class Icon(QIcon):
-
-    @classmethod
-    def state_icon(cls, path, **kwargs):
-        """
-        Creates a new icon with the given path and states
-        :param path: str
-        :param kwargs: dict
-        :return: Icon
-        """
-
-        clr = kwargs.get('color', QColor(0, 0, 0))
-        icon_pixmap = pixmap.Pixmap(path)
-        icon_pixmap.set_color(clr)
-
-        valid_options = [
-            'active',
-            'selected',
-            'disabled',
-            'on',
-            'off',
-            'on_active',
-            'on_selected',
-            'on_disabled',
-            'off_active',
-            'off_selected',
-            'off_disabled',
-            'color',
-            'color_on',
-            'color_off',
-            'color_active',
-            'color_selected',
-            'color_disabled',
-            'color_on_selected',
-            'color_on_active',
-            'color_on_disabled',
-            'color_off_selected',
-            'color_off_active',
-            'color_off_disabled',
-        ]
-
-        default = {
-            "on_active": kwargs.get("active", pixmap.Pixmap(path)),
-            "off_active": kwargs.get("active", pixmap.Pixmap(path)),
-            "on_disabled": kwargs.get("disabled", pixmap.Pixmap(path)),
-            "off_disabled": kwargs.get("disabled", pixmap.Pixmap(path)),
-            "on_selected": kwargs.get("selected", pixmap.Pixmap(path)),
-            "off_selected": kwargs.get("selected", pixmap.Pixmap(path)),
-            "color_on_active": kwargs.get("color_active", clr),
-            "color_off_active": kwargs.get("color_active", clr),
-            "color_on_disabled": kwargs.get("color_disabled", clr),
-            "color_off_disabled": kwargs.get("color_disabled", clr),
-            "color_on_selected": kwargs.get("color_selected", clr),
-            "color_off_selected": kwargs.get("color_selected", clr),
-        }
-
-        default.update(kwargs)
-        kwargs = copy.copy(default)
-
-        for option in valid_options:
-            if 'color' in option:
-                kwargs[option] = kwargs.get(option, clr)
-            else:
-                svg_path = kwargs.get(option, path)
-                kwargs[option] = pixmap.Pixmap(svg_path)
-
-        options = {
-            QIcon.On: {
-                QIcon.Normal: (kwargs['color_on'], kwargs['on']),
-                QIcon.Active: (kwargs['color_on_active'], kwargs['on_active']),
-                QIcon.Disabled: (kwargs['color_on_disabled'], kwargs['on_disabled']),
-                QIcon.Selected: (kwargs['color_on_selected'], kwargs['on_selected']),
-            },
-
-            QIcon.Off: {
-                QIcon.Normal: (kwargs['color_off'], kwargs['off']),
-                QIcon.Active: (kwargs['color_off_active'], kwargs['off_active']),
-                QIcon.Disabled: (kwargs['color_off_disabled'], kwargs['off_disabled']),
-                QIcon.Selected: (kwargs['color_off_selected'], kwargs['off_selected'])
-            }
-        }
-
-        icon = cls(icon_pixmap)
-
-        for state in options:
-            for mode in options[state]:
-                clr, _pixmap = options[state][mode]
-
-                _pixmap = pixmap.Pixmap(_pixmap)
-                _pixmap.set_color(clr)
-
-                icon.addPixmap(_pixmap, mode, state)
-
-        return icon
-
-    def __init__(self, *args):
-        super(Icon, self).__init__(*args)
-
-        self._color = None
-
-    def set_color(self, new_color, size=None):
-        """
-        Sets icon color
-        :param new_color: QColor, new color for the icon
-        :param size: QSize, size of the icon
-        """
-
-        if helpers.is_string(new_color):
-            new_color = color.Color.from_string(new_color)
-        elif isinstance(new_color, (list, tuple)):
-            new_color = color.Color(*new_color)
-
-        if self.isNull():
-            return
-
-        icon = self
-        size = size or icon.availableSizes()[0]
-        icon_pixmap = icon.pixmap(size)
-
-        painter = QPainter(icon_pixmap)
-        painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-        painter.setBrush(new_color)
-        painter.setPen(new_color)
-        painter.drawRect(icon_pixmap.rect())
-        painter.end()
-
-        icon = Icon(icon_pixmap)
-        self.swap(icon)
-
-    def set_badge(self, x, y, w, h, color=None):
-        """
-        Set badge for the icon
-        :param int x:
-        :param int y:
-        :param int w:
-        :param int h:
-        :param color: QColor or None
-        """
-
-        color = color or QColor(240, 100, 100)
-        size = self.actualSize(QSize(256, 256))
-        new_pixmap = self.pixmap(size)
-        painter = QPainter(new_pixmap)
-        pen = QPen(color)
-        pen.setWidth(0)
-        painter.setPen(pen)
-        painter.setBrush(color)
-        painter.setRenderHint(QPainter.Antialiasing)
-        painter.drawEllipse(x, y, w, h)
-        painter.end()
-        icon = Icon(new_pixmap)
-        self.swap(icon)
-
-    def resize(self, size):
-        """
-        Resize the icon. Defaults to smooth bilinear scaling and keep aspect ratio
-        :param QSize size: size to scale to
-        """
-
-        icon = resize_icon(self)
-        if not icon:
-            return
-
-        self.swap(icon)
-
-    def grayscale(self):
-        """
-        Converts this icon into grayscale
-        """
-
-        icon = grayscale_icon(self)
-        if not icon:
-            return
-
-        self.swap(icon)
-
-    def colorize(self, new_color, overlay_icon=None, overlay_color=(255, 255, 255)):
-        """
-        Colorizes current icon
-        :param new_color:
-        :param overlay_icon:
-        :param overlay_color:
-        :return:
-        """
-
-        icon = colorize_icon(icon=self, color=new_color, overlay_icon=overlay_icon, overlay_color=overlay_color)
-        if not icon:
-            return
-
-        self.swap(icon)
 
 
 class ThreadedIconSignals(QObject):
@@ -448,6 +254,3 @@ class ThreadedIcon(QRunnable):
         """
 
         return self._finished
-
-
-IconCache = cache.CacheResource(Icon)

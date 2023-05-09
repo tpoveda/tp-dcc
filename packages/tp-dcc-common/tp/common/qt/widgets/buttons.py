@@ -6,8 +6,7 @@ from Qt.QtGui import QCursor, QFontMetrics, QIcon, QPainter
 
 from tp.preferences import interfaces
 from tp.common.python import helpers
-from tp.common.resources import api as resources
-from tp.common.resources.core import icon
+from tp.common.resources import icon, api as resources
 from tp.common.qt import dpi
 from tp.common.qt.widgets import menus
 

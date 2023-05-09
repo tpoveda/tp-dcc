@@ -12,8 +12,8 @@ from Qt.QtWidgets import QGraphicsItem, QGraphicsTextItem, QGraphicsPixmapItem, 
 from Qt.QtGui import QFont, QColor, QPixmap
 
 from tp.core import log
-from tp.core.managers import resources
 from tp.common.python import helpers, path
+from tp.common.resources import api as resources
 from tp.common.nodegraph.core import consts, exceptions
 from tp.common.nodegraph.views import socket
 from tp.common.nodegraph.painters import node as node_painters

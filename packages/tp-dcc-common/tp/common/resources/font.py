@@ -40,40 +40,33 @@ class FontDatabase(QFontDatabase):
 		super().__init__(parent=parent)
 
 		self._metrics = dict()
-		self.add_custom_fonts()
+		# self.add_custom_fonts()
 
-	# =================================================================================================================
-	# BASE
-	# =================================================================================================================
-
-	def add_custom_fonts(self):
-		"""
-		Loads the fonts used by Assets Manager to the font database.
-		"""
-
-		# import here to avoid cyclic imports
-		from tp.common.resources import api as resources
-
-		if 'Roboto-Medium' in self.families():
-			return
-
-		fonts_folder = path.join_path(path.dirname(resources.__file__), 'fonts')
-		if not path.is_dir(fonts_folder):
-			logger.warning('Fonts path "{}" was not found!'.format(fonts_folder))
-			return
-
-		for font_folder_name in os.listdir(fonts_folder):
-			font_folder_path = path.join_path(fonts_folder, font_folder_name)
-			font_files = folder.get_files(font_folder_path, full_path=True, recursive=True)
-			for font_file in font_files:
-				logger.debug('Registering custom font: {} | {}'.format(path.get_basename(font_file), font_file))
-				index = self.addApplicationFont(font_file)
-				if index < 0:
-					logger.warning('Failed to add required font to the framework')
-					continue
-				family = self.applicationFontFamilies(index)
-				if not family:
-					logger.warning('Failed to add required font to the framework')
+	# def add_custom_fonts(self):
+	# 	"""
+	# 	Loads the fonts used by Assets Manager to the font database.
+	# 	"""
+	#
+	# 	if 'Roboto-Medium' in self.families():
+	# 		return
+	#
+	# 	fonts_folder = resources.get('fonts')
+	# 	if not path.is_dir(fonts_folder):
+	# 		logger.warning('Fonts path "{}" was not found!'.format(fonts_folder))
+	# 		return
+	#
+	# 	for font_folder_name in os.listdir(fonts_folder):
+	# 		font_folder_path = path.join_path(fonts_folder, font_folder_name)
+	# 		font_files = folder.get_files(font_folder_path, full_path=True, recursive=True)
+	# 		for font_file in font_files:
+	# 			logger.debug('Registering custom font: {} | {}'.format(path.get_basename(font_file), font_file))
+	# 			index = self.addApplicationFont(font_file)
+	# 			if index < 0:
+	# 				logger.warning('Failed to add required font to the framework')
+	# 				continue
+	# 			family = self.applicationFontFamilies(index)
+	# 			if not family:
+	# 				logger.warning('Failed to add required font to the framework')
 
 	def primary_font(self, font_size, family='Roboto', style='Bold'):
 		"""

@@ -6,7 +6,7 @@ from tp.core import log, dcc
 from tp.common.python import osplatform
 from tp.common.qt import dpi, qtutils
 from tp.common.qt.widgets import layouts, overlay
-from tp.common.resources.core import icon
+from tp.common.resources import icon
 
 if dcc.is_maya():
 	import maya.cmds as cmds
