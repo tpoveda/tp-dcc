@@ -12,6 +12,8 @@ main = __import__('__main__')
 
 LOGGER_NAME = 'tp.dcc'
 BOOTSTRAP_LOGGER_NAME = 'tp.dcc.bootstrap'
+RIG_LOGGER_NAME = 'tp.dcc.rig'
+ANIM_LOGGER_NAME = 'tp.dcc.anim'
 LOG_LEVEL_ENV_NAME = 'TPDCC_LOG_LEVEL'
 
 
@@ -212,8 +214,10 @@ class LogsManager:
 
 tpLogger = get_logger(LOGGER_NAME)
 bootstrapLogger = get_logger(BOOTSTRAP_LOGGER_NAME)
-for logger in [tpLogger, bootstrapLogger]:
+rigLogger = get_logger(RIG_LOGGER_NAME)
+animLogger = get_logger(ANIM_LOGGER_NAME)
+for logger in [tpLogger, bootstrapLogger, rigLogger, animLogger]:
 	logger.propagate = False
-	handlers = tpLogger.handlers
+	handlers = logger.handlers
 	if not handlers:
 		LogsManager().add_shell_handler(tpLogger.name)
