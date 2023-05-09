@@ -8,5 +8,9 @@ displayName: 'tpDcc Maya'
 environment:
   PYTHONPATH:
     - '{self}'
+  TPDCC_BASE_PATHS:
+    - '{self}'
+  TPDCC_TOOLS_MANAGER_PATHS:
+    - '{self}/tp/maya/managers/tools.py'
 commands:
-  - '{self}/tp/startup/tpmaya.py'
+  - '{self}/startup/tpmaya.py'
