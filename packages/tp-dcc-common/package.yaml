@@ -9,4 +9,4 @@ environment:
   PYTHONPATH:
     - '{self}'
 commands:
-  - '{self}/tp/startup/common.py'
+  - '{self}/startup/common.py'

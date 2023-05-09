@@ -6,9 +6,8 @@ Module that contains theme implementation
 """
 
 from tp.core import log
-from tp.preferences import manager as preferences
 from tp.common.python import helpers, color, path
-from tp.common.resources.core import cache, color as qt_color
+from tp.common.resources import cache, color as qt_color
 from tp.common.qt import consts, dpi
 
 logger = log.tpLogger

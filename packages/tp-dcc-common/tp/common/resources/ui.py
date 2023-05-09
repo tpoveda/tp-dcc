@@ -10,7 +10,7 @@ from __future__ import print_function, division, absolute_import
 import os
 import importlib
 from xml.etree.ElementTree import ElementTree
-from PySide2.QtCore import QObject, QFile
+from PySide2.QtCore import QFile
 
 try:
 	from cStringIO import StringIO
