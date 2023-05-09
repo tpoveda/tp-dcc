@@ -8,7 +8,6 @@ Module that contains functions related with Python file input/output
 import os
 import json
 import errno
-import logging
 import fnmatch
 import zipfile
 from collections import OrderedDict
