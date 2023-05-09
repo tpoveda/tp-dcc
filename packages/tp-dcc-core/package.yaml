@@ -8,5 +8,10 @@ displayName: 'tpDcc Core'
 environment:
   PYTHONPATH:
     - '{self}'
+    - '{self}/preferences'
+  TPDCC_BASE_PATHS:
+    - '{self}'
+  TPDCC_TOOLS_MANAGER_PATHS:
+    - '{self}/tp/core/managers/tools.py'
 commands:
-  - '{self}/tp/startup/core.py'
+  - '{self}/startup/core.py'

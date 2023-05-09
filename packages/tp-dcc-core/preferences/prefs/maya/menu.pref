@@ -1,0 +1,4 @@
+settings:
+    menuName: 'tp Tools'
+    loadShelfAtStartup: True
+    isActiveAtStartup: False

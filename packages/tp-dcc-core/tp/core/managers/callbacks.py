@@ -5,7 +5,8 @@
 Module that contains base callbackManager class
 """
 
-from tp.core import log, dcc, callback as dcc_callback
+from tp.core import log, dcc
+from tp.core.api import callback as dcc_callback
 from tp.core.abstract import callback
 from tp.common.python import decorators
 
@@ -13,7 +14,7 @@ logger = log.tpLogger
 
 
 @decorators.add_metaclass(decorators.Singleton)
-class CallbacksManager(object):
+class CallbacksManager:
     """
     Static class used to manage all callbacks instances
     """
@@ -30,9 +31,7 @@ class CallbacksManager(object):
         if cls._initialized:
             return
 
-        default_callbacks = {
-            'Tick': callback.PythonTickCallback
-        }
+        default_callbacks = {'Tick': callback.PythonTickCallback}
 
         try:
             shutdown_type = getattr(dcc_callback.Callback(), 'ShutdownCallback')
@@ -48,38 +47,38 @@ class CallbacksManager(object):
             elif n_type == 'filter':
                 callback_type = callback.FilterCallback
             else:
-                logger.warning('Callback Type "{}" is not valid! Using Simplecallback instead ...'.format(n_type))
+                logger.warning(f'Callback Type "{n_type}" is not valid! Using Simplecallback instead ...')
                 callback_type = callback.SimpleCallback
 
             # We extract callback types from the specific registered callbacks module
             if not dcc_callback.Callback():
-                logger.warning('DCC {} has no callbacks registered!'.format(dcc.get_name()))
+                logger.warning(f'DCC {dcc.get_name()} has no callbacks registered!')
                 return
 
-            callback_class = getattr(dcc_callback.Callback(), '{}Callback'.format(callback_name), None)
+            callback_class = getattr(dcc_callback.Callback(), f'{callback_name}Callback', None)
             if not callback_class:
                 callback_class = default_callbacks.get(callback_name, callback.ICallback)
                 logger.debug(
-                    'Dcc {} does not provides an ICallback for {}Callback. Using {} instead'.format(
-                        dcc.get_name(), callback_name, callback_class.__name__))
-
+                    f'Dcc {dcc.get_name()} does not provides an ICallback'
+                    f' for {callback_name}Callback. Using {callback_class.__name__} instead')
             new_callback = CallbacksManager._callbacks.get(callback_name, None)
             if new_callback:
                 new_callback.cleanup()
 
             CallbacksManager._callbacks[callback_name] = callback_type(callback_class, shutdown_type)
 
-            logger.debug('Creating Callback "{}" of type "{}" ...'.format(callback_name, callback_class))
+            logger.debug(f'Creating Callback "{callback_name}" of type "{callback_class}" ...')
 
         cls._initialized = True
 
     @classmethod
     def register(cls, callback_type, fn, owner=None):
         """
-        Registers, is callback exists, a new callback
-        :param callback_type: str, type of callback
-        :param fn: Python function to be called when callback is emitted
-        :param owner, class
+        Registers, is callback exists, a new callback.
+
+        :param str callback_type: type of callback.
+        :param callablce fn: Python function to be called when callback is emitted.
+        :param type or None owner: optional callback owner.
         """
 
         if type(callback_type) in [list, tuple]:
@@ -91,9 +90,10 @@ class CallbacksManager(object):
     @classmethod
     def unregister(cls, callback_type, fn):
         """
-        Unregisters, is callback exists, a new callback
-        :param callback_type: str, type of callback
-        :param fn: Python function we want to unregister
+        Unregisters, is callback exists, a new callback.
+
+        :param str callback_type: type of callback.
+        :param callable fn: Python function we want to unregister.
         """
 
         if type(callback_type) in [list, tuple]:
@@ -105,8 +105,9 @@ class CallbacksManager(object):
     @classmethod
     def unregister_owner_callbacks(cls, owner):
         """
-        Unregister all the callbacks from all registered callbacks that belongs to a specific owner
-        :param owner: class
+        Unregister all the callbacks from all registered callbacks that belongs to a specific owner.
+
+        :param type owner: callback owner.
         """
 
         if not cls._initialized:
@@ -118,8 +119,7 @@ class CallbacksManager(object):
     @classmethod
     def cleanup(cls):
         """
-        Cleanup all module callbacks
-        :return:
+        Cleanup all module callbacks.
         """
 
         # if not cls._initialized:

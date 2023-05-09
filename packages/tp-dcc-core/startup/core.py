@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Module that contains tp-dcc-core startup functionality
+Script that contains tp-dcc-core startup functionality
 """
 
 import os
@@ -17,9 +17,9 @@ logger = log.tpLogger
 
 def startup(package_manager):
 	"""
-	This function is automatically called by tpDcc packages Manager when environment setup is initialized.
+	This function is automatically called by tp-dcc-bootstrap packages manager when environment setup is initialized.
 
-	:param package_manager: current tpDcc packages Manager instance.
+	:param package_manager: current tp-dcc-bootstrap packages Manager instance.
 	:return: tpDccPackagesManager
 	"""
 
@@ -33,8 +33,8 @@ def startup(package_manager):
 
 def shutdown(package_manager):
 	"""
-	Shutdown function that is called during tpDcc framework shutdown.
-	This function is called at the end of tpDcc framework shutdown.
+	Shutdown function that is called during tp-dcc-bootstrap packages manager shutdown.
+	This function is called at the end of tp-dcc-tools framework shutdown.
 	"""
 
 	logger.info('Unloading tp-dcc-core package...')

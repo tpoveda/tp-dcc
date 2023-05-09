@@ -221,7 +221,7 @@ def reroute(fn):
         if dcc_reroute_fn_path not in DCC_REROUTE_CACHE:
             try:
                 dcc_reroute_module = importlib.import_module(dcc_reroute_path)
-            except ImportError as exc:
+            except ImportError:
                 raise NotImplementedError(
                     '{} | Function {} not implemented! {}'.format(dcc, dcc_reroute_fn_path, traceback.format_exc()))
             except Exception as exc:
@@ -259,7 +259,7 @@ def client(key=None, only_clients=False):
     Returns first current active DCC client
     :return: DccClient
     """
-    
+
     from tp.core import dcc
 
     client = None
