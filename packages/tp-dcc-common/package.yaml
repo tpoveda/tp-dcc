@@ -8,5 +8,7 @@ displayName: 'tpDcc Common'
 environment:
   PYTHONPATH:
     - '{self}'
+  TPDCC_BASE_PATHS:
+    - '{self}'
 commands:
   - '{self}/startup/common.py'

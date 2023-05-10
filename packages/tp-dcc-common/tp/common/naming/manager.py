@@ -5,13 +5,19 @@
 Module that contains naming manager implementation
 """
 
-import re
+from __future__ import annotations
 
+import re
+import collections
+
+from tp.core import log
 from tp.common.python import path, jsonio
 from tp.common.naming import token, rule
 
+logger = log.tpLogger
 
-class NameManager(object):
+
+class NameManager:
 	"""
 	Class that deals with the manipulation of a string based on an expression allowing for a formatted naming
 	convention through the usage of rules and tokens:
@@ -37,12 +43,8 @@ class NameManager(object):
 		return '<{}(name={}, path={}) object at {}>'.format(
 			self.__class__.__name__, self._name, self._config_path, hex(id(self)))
 
-	# =================================================================================================================
-	# CLASS METHODS
-	# =================================================================================================================
-
 	@classmethod
-	def from_path(cls, config_path):
+	def from_path(cls, config_path: str) -> NameManager | None:
 		"""
 		Loads the given configuration file and resets this instance with those paths.
 
@@ -57,12 +59,8 @@ class NameManager(object):
 		config = jsonio.read_file(config_path)
 		return cls(config, config_path)
 
-	# =================================================================================================================
-	# PROPERTIES
-	# =================================================================================================================
-
 	@property
-	def name(self):
+	def name(self) -> str:
 		"""
 		Returns name manager name.
 
@@ -73,7 +71,7 @@ class NameManager(object):
 		return self._name
 
 	@property
-	def description(self):
+	def description(self) -> str:
 		"""
 		Returns name manager description.
 
@@ -84,7 +82,28 @@ class NameManager(object):
 		return self._description
 
 	@property
-	def parent_manager(self):
+	def config_path(self) -> str:
+		"""
+		Return path where configuration data was retrieved from.
+
+		:return: absolute file path.
+		:rtype: str
+		"""
+
+		return self._config_path
+
+	@config_path.setter
+	def config_path(self, value: str):
+		"""
+		Sets path where configuration data is stored.
+
+		:param str value: absolute file path.
+		"""
+
+		self._config_path = value
+
+	@property
+	def parent_manager(self) -> NameManager | None:
 		"""
 		Returns this name manager parent manager.
 
@@ -95,7 +114,7 @@ class NameManager(object):
 		return self._parent_manager
 
 	@parent_manager.setter
-	def parent_manager(self, value):
+	def parent_manager(self, value: NameManager | None):
 		"""
 		Sets parent manager for this name manager instance.
 
@@ -104,11 +123,14 @@ class NameManager(object):
 
 		self._parent_manager = value
 
-	# =================================================================================================================
-	# BASER
-	# =================================================================================================================
+	def refresh(self):
+		"""
+		Loads a fresh version of this manager instance based on the original config paths.
+		"""
 
-	def rule_count(self, recursive=False):
+		self._load(self._config_path)
+
+	def rule_count(self, recursive: bool = False) -> int:
 		"""
 		Returns the total count of rules within this manager.
 
@@ -123,13 +145,13 @@ class NameManager(object):
 
 		return count
 
-	def iterate_rules(self, recursive=True):
+	def iterate_rules(self, recursive: bool = True) -> collections.Iterator[rule.Rule]:
 		"""
 		Generator function that iterates over all current active rules.
 
 		:param bool recursive: whether to recursively search the parent manager hierarchy if the parent is valid.
 		:return: list of active rules.
-		:rtype: collections.Iterator[:class:[`tp.common.naming.rule.Rule`]
+		:rtype: collections.Iterator[rule.Rule]
 		"""
 
 		visited = set()
@@ -144,7 +166,7 @@ class NameManager(object):
 			visited.add(parent_rule.name)
 			yield parent_rule
 
-	def rule(self, rule_name, recursive=True):
+	def rule(self, rule_name: str, recursive: bool = True) -> 'rule.Rule' | None:
 		"""
 		Returns the rule instance for the given name.
 
@@ -160,7 +182,23 @@ class NameManager(object):
 
 		return None
 
-	def has_rule(self, rule_name, recursive=True):
+	def rule_from_expression(self, expression: str, recursive: bool = True) -> 'rule.Rule' | None:
+		"""
+		Given the expression returns the matching rule instance.
+
+		:param str expression: expression format.
+		:param bool recursive: whether to recursively search the parent manager hierarchy if the parent is valid.
+		:return: found rule instance with matching expression.
+		:rtype: rule.Rule or None
+		"""
+
+		for found_rule in self.iterate_rules(recursive=recursive):
+			if found_rule.expression == expression:
+				return found_rule
+
+		return None
+
+	def has_rule(self, rule_name: str, recursive: bool = True) -> bool:
 		"""
 		Returns whether a rule with given name exists within this instance.
 
@@ -172,13 +210,111 @@ class NameManager(object):
 
 		return self.rule(rule_name, recursive=recursive) is not None
 
-	def iterate_tokens(self, recursive=True):
+	def add_rule(
+			self, name: str, expression: str, description: str, example_fields: dict, creator: str | None = None,
+			recursive: bool = True) -> 'rule.Rule' or None:
+		"""
+		Adds the given rule into this manager instance.
+
+		:param str name: rule name ot add.
+		:param str expression: rule expression.
+		:param str description: rule description.
+		:param dict example_fields: dictionary containing an example KeyValues for the expression fields.
+		:param str or None creator: optional rule creator name.
+		:param bool recursive: whether the parent manager will be searched as the fallback.
+		:return: newly created rule instance.
+		:rtype: rule.Rule or None
+		"""
+
+		if not self.has_rule(name, recursive=recursive):
+			logger.debug(f'Adding new rule: {name}')
+			new_rule = rule.Rule(name, creator, description, expression, example_fields)
+			self._rules.add(new_rule)
+			return new_rule
+
+		return None
+
+	def delete_rule(self, rule_to_delete: 'rule.Rule') -> bool:
+		"""
+		Deletes the given rule instance from this manager instance, ignoring the parent hierarchy.
+
+		:param rule.Rule rule_to_delete: rule instance to delete.
+		:return: True if the delete rule operation was successful; False otherwise.
+		:rtype: bool
+		"""
+
+		try:
+			self._rules.remove(rule_to_delete)
+			logger.debug(f'Rule deleted: {rule_to_delete.name}')
+		except ValueError:
+			return False
+
+		return True
+
+	def delete_rule_by_name(self, name: str) -> bool:
+		"""
+		Deletes the given rule by name from this manager instance, ignoring the parent hierarhcy.
+
+		:param str name: name of the rule to delete.
+		:return: True if the delete rule operation was successful; False otherwise.
+		:rtype: bool
+		"""
+
+		rule_to_remove = None
+		for found_rule in self.iterate_rules(recursive=False):
+			if found_rule.name == name:
+				rule_to_remove = found_rule
+				break
+
+		return self.delete_rule(rule_to_remove)
+
+	def set_rules(self, rules: set['rule.Rule']):
+		"""
+		Overrides current rules with the given ones.
+
+		:param set[rule.Rule] rules: rules to override.
+		"""
+
+		self._rules = rules
+
+	def update_rules(self, rules: list['rule.Rule']):
+		"""
+		Updates this manager instance rules list with the given rules.
+
+		:param list[rule.Rule] rules: list of rules.
+		"""
+
+		self._rules.update(set(rules))
+
+	def clear_rules(self):
+		"""
+		Clears all current rules for this manager instance.
+		"""
+
+		self._rules.clear()
+
+	def token_count(self, recursive: bool = False) -> int:
+		"""
+		Returns the total count of tokens within this manager.
+
+		:param bool recursive: whether to recursively search the parent manager hierarchy if the parent is valid.
+		:return: total token count.
+		:rtype: int
+		"""
+
+		count = len(self._tokens)
+		if recursive and self._parent_manager is not None:
+			count += self._parent_manager.token_count()
+
+		return count
+
+	def iterate_tokens(self, recursive: bool = True) -> collections.Iterator[token.Token]:
 		"""
 		Generator function that iterates over all current active tokens.
 
 		:param bool recursive: whether to recursively search the parent manager hierarchy if the parent is valid.
 		:return: list of active tokens.
-		:rtype: collections.Iterator[:class:[`tp.common.naming.token.Token`]
+		:rtype: collections.Iterator[token.Token]
 		"""
 
 		visited = set()
@@ -193,7 +329,7 @@ class NameManager(object):
 			visited.add(parent_token.name)
 			yield parent_token
 
-	def token(self, name, recursive=True):
+	def token(self, name: str, recursive: bool = True) -> token.Token | None:
 		"""
 		Returns the token instance for the given name.
 
@@ -209,7 +345,113 @@ class NameManager(object):
 
 		return None
 
-	def resolve(self, rule_name, tokens):
+	def has_token(self, name: str, recursive: bool = True):
+		"""
+		Checks whether given token exists within this manager instance.
+
+		:param str name: name of the token to check.
+		:param bool recursive: whether to recursively search the parent manager hierarchy if the parent is valid.
+		:return: True if token with given name already exists within this manager instance; False otherwise.
+		:rtype: bool
+		"""
+
+		return self.token(name, recursive=recursive) is not None
+
+	def add_token(self, name: str, fields: dict[str, str]) -> 'token.Token' | None:
+		"""
+		Adds the token with given value.
+
+		:param str name:
+		:param dict[str, str] fields:
+		:return: newly added token instance.
+		:rtype: token.Token or None
+		"""
+
+		if self.has_token(name):
+			return None
+
+		new_token = token.Token.from_dict({'name': name, 'description': '', 'table': fields})
+		self._tokens.append(new_token)
+		logger.debug(f'Added token: {name}')
+
+		return new_token
+
+	def has_token_key(self, name: str, value: str, recursive: bool = True):
+		"""
+		Checks whether a value exists withing the token table.
+
+		:param str name: name of the token to check.
+		:param str value: value to check.
+		:param bool recursive: whether to recursively search the parent manager hierarchy if the parent is valid.
+		:return: True if token with given key exists; False otherwise.
+		:rtype: bool
+		"""
+
+		found_token = self.token(name, recursive=recursive) or list()
+		return value in found_token
+
+	def set_tokens(self, tokens: set['token.Token']):
+		"""
+		Overirdes current tokens with the given ones.
+
+		:param set[token.Token] tokens: set of tokens.
+		"""
+
+		self._tokens = tokens
+
+	def clear_tokens(self):
+		"""
+		Cleras all current tokens from this manager instance.
+		"""
+
+		self._tokens.clear()
+
+	def expression_from_string(self, name: str) -> str:
+		"""
+		Returns the expression from the name. To resolve an expression, all tokens must exist within this manager
+		instance, and we must be able to resolve more than 50% for an expression to be viable.
+
+		:param str name: string to resolve.
+		:return: manager instance expression. Eg: {name}_{side}_{type}
+		:rtype: str
+		:raises ValueError: if is not possible to resolve name to an existing expression.
+		:raises ValueError: if is not possible to resolve name because there are too numerous matching expressions.
+		"""
+
+		expressed_name = list()
+		for found_token in self.iterate_tokens():
+			token_name = found_token.name
+			for key_value in found_token.iterate_key_values():
+				if token_name not in expressed_name and key_value.name in name:
+					expressed_name.append(token_name)
+					break
+
+		# we do not have an exact match, so let's find which expression is the most probable
+		possibles = set()
+		tokenized_length = len(expressed_name)
+		for found_rule in self.iterate_rules(recursive=True):
+			expression = found_rule.expression
+			expression_fields = re.findall(NameManager.REGEX_FILTER, expression)
+			total_count = 0
+			for token_name in expressed_name:
+				if token_name in expression_fields:
+					total_count += 1
+			if total_count > tokenized_length / 2:
+				possibles.add((expression, total_count))
+		if not possibles:
+			raise ValueError(f'Could not resolve name: {name} to an existing expression!')
+
+		max_possibles = max([i[1] for i in possibles])
+		true_possibles = list()
+		for possible, total_count in iter(possibles):
+			if total_count == max_possibles:
+				true_possibles.append(possible)
+		if len(true_possibles) > 1:
+			raise ValueError(f'Could not resolve name {name}, due too many possible expressions')
+
+		return true_possibles[0]
+
+	def resolve(self, rule_name: str, tokens: dict) -> str:
 		"""
 		Resolves the given rule expression using the given tokens as values.
 
@@ -243,11 +485,35 @@ class NameManager(object):
 
 		return new_str
 
-	# =================================================================================================================
-	# INTERNAL
-	# =================================================================================================================
+	def serialize(self) -> dict:
+		"""
+		Serializes current naming manager instance data as a dictionary.
 
-	def _parse_config(self, config_data):
+		:return: serialiazed data.
+		:rtype: dict
+		"""
+
+		return {
+			'name': self.name,
+			'description': self.description,
+			'rules': [rule_found.serialize() for rule_found in self._rules],
+			'tokens': [token_found.serialize() for token_found in self._tokens]
+		}
+
+	def _load(self, config_path: str):
+		"""
+		Internal function that lads manager instance initial data based on given config path.
+
+		:param str config_path: absolute path to a naming manager config file.
+		"""
+
+		if not path.is_file(config_path) or not config_path.endswith('.json'):
+			return
+		self._config_path = config_path
+		self._original_config = jsonio.read_file(config_path)
+		self._parse_config(self._original_config)
+
+	def _parse_config(self, config_data: dict):
 		"""
 		Internal function that parses given config dictionary and updates this name manager internal data.
 
@@ -257,4 +523,3 @@ class NameManager(object):
 		self._tokens = [token.Token.from_dict(token_map) for token_map in config_data.get('tokens', list())]
 		self._rules = [rule.Rule.from_dict(rule_data) for rule_data in config_data.get('rules', list())]
 		self._name = config_data.get('name', '')
-
