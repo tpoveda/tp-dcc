@@ -49,13 +49,16 @@ def open_browser(file_path):
                 os.system('gnome-terminal --working-directory={}'.format(file_path))
 
 
-def create_file(filename, directory=None, make_unique=False):
+def create_file(filename, directory=None, make_unique=False, data=''):
     """
-    Creates a file
-    :param filename: str, name of the new file
-    :param directory: str, directory of the new file
-    :param make_unique: bool, whether to make the name unique or not
-    :return: variant, str || bool, filename with path or False if create file failed
+    Creates a file/
+
+    :param str filename: name of the new file.
+    :param str directory: directory of the new file.
+    :param bool make_unique: whether to make the name unique or not.
+    :param str data: optional text to write.
+    :return: filename with path or False if create file failed.
+    :rtype: str or bool
     """
 
     from tp.common.python import name, path, osplatform
@@ -70,6 +73,9 @@ def create_file(filename, directory=None, make_unique=False):
     if make_unique:
         full_path = path.unique_path_name(full_path)
 
+    if path.is_file(full_path):
+        return full_path
+
     open_file = None
     try:
         open_file = open(full_path, 'a')
@@ -78,6 +84,10 @@ def create_file(filename, directory=None, make_unique=False):
         if open_file:
             open_file.close()
         return False
+
+    if data:
+        with open(full_path, 'w') as f:
+            f.write(data)
 
     osplatform.get_permission(full_path)
 
