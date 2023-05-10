@@ -1,0 +1,126 @@
+{
+  "name": "critGlobalConfig",
+  "description": "",
+  "rules": [
+    {
+      "name": "componentName",
+      "creator": "Tomi Poveda",
+      "description": "The rule for component names which includes the side.",
+      "expression": "{component}_{side}",
+      "exampleFields": {"componentName":  "arm",  "side":  "L"}
+    },
+    {
+      "name": "inputName",
+      "creator": "Tomi Poveda",
+      "description": "The expression for input node names.",
+      "expression": "{componentName}_{side}_{id}_{type}",
+      "exampleFields": {"componentName":  "arm", "side": "L", "id":  "world", "type":  "input"}
+    },
+    {
+      "name": "outputName",
+      "creator": "Tomi Poveda",
+      "description": "The expression for output node names.",
+      "expression": "{componentName}_{side}_{id}_{type}",
+      "exampleFields": {"componentName":  "arm", "side": "L","id":  "world", "type": "output"}
+    },
+    {
+      "name": "settingsName",
+      "creator": "Tomi Poveda",
+      "description": "The expression for Setting nodes ie. controlPanel.",
+      "expression": "{componentName}_{side}_{section}_{type}",
+      "exampleFields": {"componentName":  "arm", "side": "L", "section":  "controlPanel", "type":  "settings"}
+    },
+    {
+      "name": "layerHrc",
+      "creator": "Tomi Poveda",
+      "description": "Component Layer name.",
+      "expression": "{componentName}_{side}_{layerType}_{type}",
+      "exampleFields": {"componentName":  "arm", "side": "L", "layerType": "rigLayer", "type": "hrc"}
+    },
+    {
+      "name": "layerMeta",
+      "creator": "Tomi Poveda",
+      "description": "Component Layer Meta Node name.",
+      "expression": "{componentName}_{side}_{layerType}_{type}",
+      "exampleFields": {"componentName":  "arm", "side": "L",   "layerType": "rigLayer", "type": "meta"}
+    },
+    {
+      "name": "componentHrc",
+      "creator": "Tomi Poveda",
+      "description": "Top level Component transform name.",
+      "expression": "{componentName}_{side}_{type}",
+      "exampleFields": {"componentName":  "arm", "side": "L", "type": "hrc"}
+    },
+    {
+      "name": "componentMeta",
+      "creator": "Tomi Poveda",
+      "description": "Component Meta Node name.",
+      "expression": "{componentName}_{side}_{type}",
+      "exampleFields": {"componentName":  "arm", "side": "L",  "type": "meta"}
+    },
+    {
+      "name": "containerName",
+      "creator": "Tomi Poveda",
+      "description": "Crit Asset Container name",
+      "expression": "{componentName}_{side}_{section}_{type}",
+      "exampleFields": {"componentName":  "arm", "side": "L","section":  "world", "type": "container"}
+    },
+    {
+      "name": "guideName",
+      "creator": "Tomi Poveda",
+      "description": "The expression for Guide node names.",
+      "expression": "{componentName}_{side}_{id}_{type}",
+      "exampleFields": {"componentName":  "arm", "side": "L", "id":  "world", "type":  "guide"}
+    },
+    {
+      "name": "controlName",
+      "creator": "Tomi Poveda",
+      "description": "The expression for Animation Control node names.",
+      "expression": "{componentName}_{side}_{id}_{type}",
+      "exampleFields": {"componentName":  "arm", "side": "L", "id":  "world", "type": "control"}
+    },
+    {
+      "name": "selectionSet",
+      "creator": "Tomi Poveda",
+      "description": "Component selection set name ie. controls, joints",
+      "expression": "{componentName}_{side}_{selectionSet}_{type}",
+      "exampleFields": {"componentName":  "arm", "side": "L", "selectionSet": "ctrls", "type": "objectSet"}
+    },
+    {
+      "name": "skinJointName",
+      "creator": "Tomi Poveda",
+      "description": "Deformation joint chain name.",
+      "expression": "{componentName}_{side}_{id}_{type}",
+      "exampleFields": {"componentName":  "arm", "side": "L","id": "upr", "type": "joint"}
+    },
+    {
+      "name": "connectorsGrp",
+      "creator": "Tomi Poveda",
+      "description": "Transform which contains connectors.",
+      "expression": "{componentName}_{side}_{type}",
+      "exampleFields": {"componentName":  "arm", "side": "L", "type": "connectorsGroup"}
+    }
+  ],
+  "tokens": [
+    {
+      "name": "side",
+      "description": "Component Side name",
+      "table": {
+        "L": "L",
+        "l": "l",
+        "R": "R",
+        "r": "r",
+        "M": "M",
+        "m": "m",
+        "c": "c",
+        "C": "C",
+        "LEFT": "left",
+        "left": "left",
+        "RIGHT": "RIGHT",
+        "right": "right",
+        "middle": "mid",
+        "ctr": "ctr"
+      }
+    }
+  ]
+}

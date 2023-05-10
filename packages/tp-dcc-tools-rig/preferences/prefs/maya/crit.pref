@@ -1,0 +1,23 @@
+settings:
+    project:
+        recentProjects: []
+        maxRecent: 3
+    useProxyAttributes: true
+    buildScripts: ['default']
+    buildScriptPaths: []
+    containerOutlinerDisplayUnderParent: true
+    containerAttrsShowAtTop: true
+    namingPresetPaths: []
+    includeDefaultAssets: true
+    defaultNamingPreset: "CRIT"
+    namingPresetHierarchy:
+        name: "CRIT"
+        children:
+          - name: "defaultUserPreset"
+            children: []
+          - name: "UE5Preset"
+            children:
+              - name: "UE5ClaviclePreset"
+                children: []
+              - name: "UE5ThumbPreset"
+                children: []

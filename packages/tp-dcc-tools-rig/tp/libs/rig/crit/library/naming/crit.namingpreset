@@ -1,0 +1,13 @@
+{
+  "name": "CRIT",
+  "configs": [
+    {
+      "name": "critGlobalConfig",
+      "type": "global"
+    },
+    {
+      "name": "critRigConfig",
+      "type": "rig"
+    }
+  ]
+}
