@@ -8,5 +8,3 @@ displayName: 'tpDcc Unreal'
 environment:
   PYTHONPATH:
     - '{self}'
-commands:
-  - '{self}/tp/startup/tpunreal.py'
