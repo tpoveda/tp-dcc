@@ -149,7 +149,7 @@ class ProjectData(options.OptionObject):
             self._load_project()
 
         project_file_path = self.get_project_file()
-        project_file = path.get_basename(project_file_path)
+        project_file = path.basename(project_file_path)
         self._settings.set_directory(folder_path, project_file)
 
     def _set_options_path(self, folder_path):

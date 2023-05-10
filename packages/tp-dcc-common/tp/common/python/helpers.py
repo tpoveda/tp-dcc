@@ -830,14 +830,14 @@ def delete_pyc_file(python_script):
 
     from tp.common.python import path, fileio
 
-    script_name = path.get_basename(python_script)
+    script_name = path.basename(python_script)
     if not python_script.endswith('.py'):
         print('WARNING: Could not delete .pyc file for {}!'.format(script_name))
         return
 
     compile_script = python_script + 'c'
     if path.is_file(compile_script):
-        compile_name = path.get_basename(compile_script)
+        compile_name = path.basename(compile_script)
         compile_dir_name = path.dirname(compile_script)
         if not compile_name.endswith('.pyc'):
             return

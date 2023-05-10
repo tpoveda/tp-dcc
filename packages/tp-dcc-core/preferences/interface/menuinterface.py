@@ -23,7 +23,7 @@ class MenuInterface(preference.PreferenceInterface):
 		:rtype: str
 		"""
 
-		return self._manager.find_setting(self._RELATIVE_PATH, root=None, name='menuName', default='')
+		return self.manager.find_setting(self._RELATIVE_PATH, root=None, name='menuName', default='')
 
 
 class MayaMenuInterface(MenuInterface):
@@ -42,4 +42,4 @@ class MayaMenuInterface(MenuInterface):
 		:rtype: bool
 		"""
 
-		return self._manager.find_setting(self._RELATIVE_PATH, root=None, name='loadShelfAtStartup', default=False)
+		return self.manager.find_setting(self._RELATIVE_PATH, root=None, name='loadShelfAtStartup', default=False)

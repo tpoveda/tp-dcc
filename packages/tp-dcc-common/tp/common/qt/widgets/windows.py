@@ -3,7 +3,7 @@ from Qt.QtCore import Qt, Signal, QObject, QSettings, QPoint, QSize
 from Qt.QtWidgets import QWidget, QFrame
 
 from tp.core import dcc
-from tp.preferences import interfaces
+from tp.preferences.interfaces import core as core_interfaces
 from tp.common.qt import dpi, qtutils
 from tp.common.qt.widgets import layouts, titlebar, frameless
 
@@ -192,7 +192,7 @@ class BaseWindow(QWidget):
 		"""
 
 		try:
-			core_interface = interfaces.theme_preference_interface()
+			core_interface = core_interfaces.theme_preference_interface()
 			result = core_interface.stylesheet()
 			self.setStyleSheet(result.data)
 		except ImportError as exc:
@@ -364,7 +364,7 @@ class BaseWindow(QWidget):
 		self._title_bar.doubleClicked.connect(self._on_title_bar_double_clicked)
 
 		try:
-			theme_interface = interfaces.theme_preference_interface()
+			theme_interface = core_interfaces.theme_preference_interface()
 			theme_interface.updated.connect(self._on_update_theme)
 		except Exception:
 			pass

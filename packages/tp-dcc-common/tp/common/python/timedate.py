@@ -11,9 +11,11 @@ from datetime import datetime
 
 def convert_number_to_month(month_int):
     """
-    Return a month as string given a month number
-    :param month_int: int
-    :return: str
+    Return a month as string given a month number.
+
+    :param int month_int:
+    :return:
+    :rtype: str
     """
 
     months = ['January',
@@ -38,10 +40,12 @@ def convert_number_to_month(month_int):
 
 def get_current_time(date_and_time=True, reverse_date=False):
     """
-    Returns current time
-    :param date_and_time: bool, Whether to return only the time or time and data
-    :param reverse_date: bool, Whether to return date with {year}-{month}-{day} format or {day}-{month}-{year} format
-    :return: str
+    Returns current time.
+
+    :param bool date_and_time: whether to return only the time or time and data.
+    :param bool reverse_date: whether to return date with {year}-{month}-{day} format or {day}-{month}-{year} format.
+    :return: current time as a string.
+    :rtype: str
     """
 
     mtime = time.time()
@@ -57,7 +61,7 @@ def get_current_time(date_and_time=True, reverse_date=False):
     if len(second) == 1:
         second += '0'
 
-    time_value = '{}:{}:{}'.format(hour, minute, second)
+    time_value = f'{hour}:{minute}:{second}'
 
     if not date_and_time:
         return time_value
@@ -67,9 +71,9 @@ def get_current_time(date_and_time=True, reverse_date=False):
         day = date_value.day
 
         if reverse_date:
-            return '{}-{}-{} {}'.format(year, month, day, time_value)
+            return f'{year}-{month}-{day} {time_value}'
         else:
-            return '{}-{}-{} {}'.format(day, month, year, time_value)
+            return f'{day}-{month}-{year} {time_value}'
 
 
 def get_current_date(reverse_date=False, separator=None):
@@ -88,9 +92,9 @@ def get_current_date(reverse_date=False, separator=None):
     day = date_value.day
 
     if reverse_date:
-        return '{1}{0}{2}{0}{3}'.format(separator, year, month, day)
+        return f'{year}{separator}{month}{separator}{day}'
     else:
-        return '{1}{0}{2}{0}{3}'.format(separator, day, month, year)
+        return f'{day}{separator}{month}{separator}{year}'
 
 
 def get_date_and_time(reverse_date=False, separator=None):
@@ -99,7 +103,7 @@ def get_date_and_time(reverse_date=False, separator=None):
     :return:
     """
 
-    separator = separator or '-'
+    separator = separator or '/'
     date_value = datetime.now()
     year = date_value.year
     month = date_value.month
@@ -116,9 +120,9 @@ def get_date_and_time(reverse_date=False, separator=None):
         second = second + '0'
 
     if reverse_date:
-        return '{1}{0}{2}{0}{3} {4}:{5}:{6}'.format(separator, year, month, day, hour, minute, second)
+        return f'{day}{separator}{month}{separator}{year} {hour}:{minute}:{second}'
     else:
-        return '{1}{0}{2}{0}{3} {4}:{5}:{6}'.format(separator, day, month, year, hour, minute, second)
+        return f'{month}{separator}{day}{separator}{year} {hour}:{minute}:{second}'
 
 
 def time_ago(timestamp):
@@ -127,8 +131,8 @@ def time_ago(timestamp):
     Example:
         print timeAgo("2017-06-06 01:56:00")
         # 2 years ago
-    :param timestamp: str
-    :return:str
+    :param str timestamp:
+    :rtype: str
     """
 
     t1 = int(timestamp)

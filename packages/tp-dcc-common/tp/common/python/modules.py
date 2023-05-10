@@ -98,7 +98,7 @@ def import_module(module_path, name=None, skip_warnings=True, skip_errors=False,
     try:
         if path_utils.exists(module_path):
             if not name:
-                name = path_utils.get_basename(module_path, with_extension=False)
+                name = path_utils.basename(module_path, with_extension=False)
             if name in sys.modules:
                 if force_reload:
                     pass

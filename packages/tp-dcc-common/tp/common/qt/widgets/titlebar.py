@@ -9,7 +9,7 @@ from tp.core import log, dcc
 from tp.common.qt import consts, dpi, qtutils
 from tp.common.qt.widgets import layouts, labels, buttons
 from tp.common.resources import api as resources
-from tp.preferences import interfaces
+from tp.preferences.interfaces import core as core_interfaces
 
 if dcc.is_maya():
 	import maya.cmds as cmds
@@ -299,7 +299,7 @@ class TitleBar(QFrame):
 		self._mouse_pos = None
 		self._widget_mouse_pos = None
 		self._mouse_press_pos = None
-		self._theme_preference = interfaces.theme_preference_interface()
+		self._theme_preference = core_interfaces.theme_preference_interface()
 		self._toggle = True
 		self._icon_size = 13
 		self._move_enabled = True

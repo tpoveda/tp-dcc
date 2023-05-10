@@ -129,7 +129,7 @@ class VersionFile(object):
         if not self._file_path:
             return ''
 
-        return path.get_basename(self._file_path)
+        return path.basename(self._file_path)
 
     @property
     def updated_old(self):

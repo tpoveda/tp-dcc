@@ -62,7 +62,7 @@ def create_file(filename, directory=None, make_unique=False):
 
     if directory is None:
         directory = path.dirname(filename)
-        filename = path.get_basename(filename)
+        filename = path.basename(filename)
 
     filename = name.clean_file_string(filename)
     full_path = path.join_path(directory, filename)
@@ -98,7 +98,7 @@ def copy_file(file_path, file_path_destination):
 
     if path.is_file(file_path):
         if path.is_dir(file_path_destination):
-            file_name = path.get_basename(file_path)
+            file_name = path.basename(file_path)
             file_path_destination = path.join_path(file_path_destination, file_name)
         shutil.copy2(file_path, file_path_destination)
 
@@ -852,7 +852,7 @@ class FileVersion:
 
         self.file_path = file_path
         if file_path:
-            self.filename = path.get_basename(directory=self.file_path)
+            self.filename = path.basename(directory=self.file_path)
             self._path = path.dirname(file_path)
             self._version_folder_name = '__version__'
             self._version_name = 'version'

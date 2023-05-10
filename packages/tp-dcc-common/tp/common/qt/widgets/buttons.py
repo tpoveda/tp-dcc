@@ -4,7 +4,7 @@ from Qt.QtCore import Qt, Signal, QPoint, QSize, QTimer
 from Qt.QtWidgets import QAbstractButton, QPushButton
 from Qt.QtGui import QCursor, QFontMetrics, QIcon, QPainter
 
-from tp.preferences import interfaces
+from tp.preferences.interfaces import core as core_interfaces
 from tp.common.python import helpers
 from tp.common.resources import icon, api as resources
 from tp.common.qt import dpi
@@ -275,7 +275,7 @@ class BaseButton(QPushButton, AbstractButton):
 		self.middleClicked.connect(partial(self._on_context_menu, Qt.MidButton))
 		self.rightClicked.connect(partial(self._on_context_menu, Qt.RightButton))
 
-		self._theme_pref = interfaces.theme_preference_interface()
+		self._theme_pref = core_interfaces.theme_preference_interface()
 		self._theme_pref.updated.connect(self.update_theme)
 
 	@property

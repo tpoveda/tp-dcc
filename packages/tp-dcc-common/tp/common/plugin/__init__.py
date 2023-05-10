@@ -350,7 +350,7 @@ class PluginFactory(object):
         """
 
         for sub_module in modules.iterate_modules(package_path):
-            file_name = os.path.splitext(path_utils.get_basename(sub_module))[0]
+            file_name = os.path.splitext(path_utils.basename(sub_module))[0]
             if file_name.startswith('__') or sub_module.endswith('.pyc'):
                 continue
             module_path = os.path.normpath(sub_module)

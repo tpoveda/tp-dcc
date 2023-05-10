@@ -73,7 +73,7 @@ def rename_folder(directory, name, make_unique=False):
 
     from tp.common.python import path, osplatform
 
-    base_name = path.get_basename(directory=directory)
+    base_name = path.basename(directory=directory)
     if base_name == name:
         return
 
@@ -253,7 +253,7 @@ def clean_folder(directory):
 
     from tp.common.python import path, fileio, folder
 
-    base_name = path.get_basename(directory=directory)
+    base_name = path.basename(directory=directory)
     dir_name = path.dirname(directory=directory)
 
     if path.is_dir(directory):
@@ -284,7 +284,7 @@ def get_folder_size(directory, round_value=2, skip_names=None):
 
     size = 0
     for root, dirs, files in os.walk(directory):
-        root_name = path.get_basename(root)
+        root_name = path.basename(root)
         if root_name in skip_names:
             continue
         for name in files:
@@ -616,18 +616,21 @@ def ensure_folder_exists(folder_path, permissions=0o755, place_holder=False):
     :raise OSError: raise OSError if the creation of the folder fails
     """
 
-    if not os.path.exists(folder_path):
-        try:
-            logger.debug('Creating folder {} [{}]'.format(folder_path, permissions))
-            os.makedirs(folder_path, permissions)
-            if place_holder:
-                place_path = os.path.join(folder_path, 'placeholder')
-                if not os.path.exists(place_path):
-                    with open(place_path, 'wt') as fh:
-                        fh.write('Automatically generated place holder file')
-        except OSError as err:
-            if err.errno != errno.EEXIST:
-                raise
+    if os.path.exists(folder_path):
+        return folder_path
+
+    try:
+        logger.debug('Creating folder {} [{}]'.format(folder_path, permissions))
+        os.makedirs(folder_path, permissions)
+        if place_holder:
+            place_path = os.path.join(folder_path, 'placeholder')
+            if not os.path.exists(place_path):
+                with open(place_path, 'wt') as fh:
+                    fh.write('Automatically generated place holder file')
+        return folder_path
+    except OSError as err:
+        if err.errno != errno.EEXIST:
+            raise
 
 
 def get_latest_file_at_folder(folder_path, filter_text=''):

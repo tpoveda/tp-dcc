@@ -235,15 +235,15 @@ def relative_to(root, b):
 
         drive, p = os.path.splitdrive(path)
         parent = os.path.dirname(p)
-        basename = os.path.basename(p)
-        fragments = [os.path.basename(parent), basename]
+        base_name = os.path.basename(p)
+        fragments = [os.path.basename(parent), base_name]
         while parent not in (u"/", "", "\\"):
             yield join_path(drive, parent), os.path.sep.join(fragments).replace("\\", "/")
             parent = dirname(parent)
-            fragments.insert(0, get_basename(parent))
+            fragments.insert(0, basename(parent))
 
     if dirname(b) == root:
-        return get_basename(b)
+        return basename(b)
 
     previous = ''
     for absolute_parent, relative in _iter_parents(b):
@@ -402,7 +402,7 @@ def get_folders_from_path(path):
     return folders
 
 
-def get_basename(directory, with_extension=True):
+def basename(directory, with_extension=True):
     """
     Get the last part of a directory name
     For example, C:/test/rig.py will return rig.py if with_extension is True of rig if with_extension is False
@@ -613,7 +613,7 @@ def rename(directory, name, make_unique=False):
     :return: str, path of the renamed folder
     """
 
-    base_name = get_basename(directory=directory)
+    base_name = basename(directory=directory)
     if base_name == name:
         return
 
@@ -698,7 +698,7 @@ class FindUniquePath(name.FindUniqueString, object):
             directory = folder.get_current_working_directory()
 
         self.parent_path = self._get_parent_path(directory)
-        basename = get_basename(directory=directory)
+        basename = basename(directory=directory)
 
         super(FindUniquePath, self).__init__(basename)
 
