@@ -14,3 +14,4 @@ sentry-sdk
 comtypes
 numpy
 natsort
+overrides
