@@ -1,0 +1,28 @@
+int $cc_doesShelfExist = `shelfLayout -query -ex "CreativeCase"`;
+
+if ($cc_doesShelfExist == true)
+{
+    string $shelfButtons[] = `shelfLayout -q -ca "CreativeCase"`;
+    int $ex_b01 = 0;
+	int $ex_b02 = 0;
+    
+    for( $i=0; $i<size($shelfButtons); ++$i )
+    {
+        if( `control -exists $shelfButtons[$i]` == true)
+        {
+            if (`control -q -docTag $shelfButtons[$i]` == "bl_createBlButton") {$ex_b01 = 1;}
+			if (`control -q -docTag $shelfButtons[$i]` == "bl_createBlButton_bb") {$ex_b02 = 1;}
+        }
+    }
+    
+    if ($ex_b01 == 0) {shelfButton -p "CreativeCase" -dtg "bl_createBlButton" -annotation "Creates a BaseLocator" -image1 "BaseLoc.png" -command "BaseLocCommand";}
+	if ($ex_b02 == 0) {shelfButton -p "CreativeCase" -dtg "bl_createBlButton_bb" -annotation "Creates a BoundingBox BaseLocator" -image1 "BaseLoc_bb.png" -command "BaseLocCommand -bb 1";}
+    
+}
+	
+if ($cc_doesShelfExist == false)
+{
+		shelfLayout -cellWidth 33 -cellHeight 33 -p $gShelfTopLevel CreativeCase;
+		shelfButton -p "CreativeCase" -dtg "bl_createBlButton" -annotation "Creates a BaseLocator" -image1 "BaseLoc.png" -command "BaseLocCommand";
+		shelfButton -p "CreativeCase" -dtg "bl_createBlButton_bb" -annotation "Creates a BoundingBox BaseLocator" -image1 "BaseLoc_bb.png" -command "BaseLocCommand -bb 1";
+}

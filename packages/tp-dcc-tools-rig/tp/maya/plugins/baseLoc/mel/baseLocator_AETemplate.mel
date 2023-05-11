@@ -1,0 +1,339 @@
+//deleteUI AttrEdBaseLocFormLayout;
+global proc AEBaseLocTemplate( string $nodeName )
+{
+	editorTemplate -beginScrollLayout;
+
+	editorTemplate -beginLayout "Locator presets" -collapse 0;
+	editorTemplate -addControl "presets";
+	editorTemplate -addControl "iconType";
+	editorTemplate -addControl "2DIconType";
+	editorTemplate -addSeparator;
+	editorTemplate -addControl "radius";
+	editorTemplate -addSeparator;
+	editorTemplate -addControl "lineWidth";
+	editorTemplate -addControl "lineColor";
+	editorTemplate -addControl "lineAlpha";
+	editorTemplate -addSeparator;
+	editorTemplate -addControl "polygonColor";
+	editorTemplate -addControl "polygonAlpha";
+	editorTemplate -endLayout;
+	
+	editorTemplate -beginLayout "Visibility switches" -collapse 0;
+	editorTemplate -addControl "displayLocatorId";
+	editorTemplate -addControl "displayLocator";
+	editorTemplate -addSeparator;
+	editorTemplate -addControl "displayLocatorPivot";
+	editorTemplate -addControl "displayText";
+	editorTemplate -addSeparator;
+	editorTemplate -addControl "drawOnTop";
+	editorTemplate -endLayout;
+	
+	editorTemplate -beginLayout "File presets" -collapse 0;
+	editorTemplate -callCustom "AE_presetList_BaseLoc_create" "AE_presetList_BaseLoc_edit" "";
+	editorTemplate -endLayout;
+
+	editorTemplate -beginLayout "Transforms" -collapse 0;
+	editorTemplate -addControl "worldSpace";
+	editorTemplate -addSeparator;
+	editorTemplate -addControl "offsetX";
+	editorTemplate -addControl "offsetY";
+	editorTemplate -addControl "offsetZ";
+	editorTemplate -addSeparator;
+	editorTemplate -addControl "rotateX";
+	editorTemplate -addControl "rotateY";
+	editorTemplate -addControl "rotateZ";
+	editorTemplate -addSeparator;
+	editorTemplate -addControl "scaleX";
+	editorTemplate -addControl "scaleY";
+	editorTemplate -addControl "scaleZ";
+	editorTemplate -endLayout;
+
+	editorTemplate -beginLayout "Draw style" -collapse 0;
+	editorTemplate -addControl "lineStyle";
+	editorTemplate -addControl "paintStyle";
+	editorTemplate -endLayout;
+
+	editorTemplate -beginLayout "Text" -collapse 0;
+	editorTemplate -addControl "textyType";
+	editorTemplate -addSeparator;
+	editorTemplate -addControl "textPosition";
+	editorTemplate -addControl "textFontSize";
+	editorTemplate -addSeparator;
+	editorTemplate -addControl "text";
+	editorTemplate -addSeparator;
+	editorTemplate -addControl "fontFaceName";
+	editorTemplate -addControl "textAlignment";
+	editorTemplate -addControl "textIncline";
+	editorTemplate -addControl "textWeight";
+	editorTemplate -addControl "textStretch";
+	editorTemplate -addControl "textLine";
+	editorTemplate -addSeparator;
+	editorTemplate -addControl "textBoxSize";
+	editorTemplate -addControl "textBoxColor";
+	editorTemplate -addControl "textBoxTransparency";
+	editorTemplate -endLayout;
+	
+	editorTemplate -beginLayout "Debug presets" -collapse 0;
+	editorTemplate -addControl "debugType";
+	editorTemplate -endLayout;
+
+	editorTemplate -beginLayout "Misc" -collapse 0;
+	editorTemplate -addControl "locID";
+	editorTemplate -endLayout;
+	
+	editorTemplate -beginLayout "Plug-in Info" -collapse 0;
+	editorTemplate -callCustom "AE_bl_website_create" "AE_bl_website_edit" "";
+	editorTemplate -endLayout;
+
+	editorTemplate -suppress "division";
+	editorTemplate -suppress "displayCards";
+	editorTemplate -suppress "fadeByDistance";
+	editorTemplate -suppress "fadeDistance";
+	editorTemplate -suppress "locatorPos";
+	editorTemplate -suppress "inPointArray";
+	editorTemplate -suppress "inTriangleArray";
+	editorTemplate -suppress "mirrorX";
+	editorTemplate -suppress "mirrorY";
+	editorTemplate -suppress "mirrorZ";
+
+	AEdependNodeTemplate $nodeName;
+
+	editorTemplate -addExtraControls;
+	editorTemplate -endScrollLayout;
+}
+
+
+global proc AE_presetList_BaseLoc_create(string $attrName)
+{
+    string $nodeName[];
+    tokenize($attrName, ".", $nodeName);
+    
+    // Crete preset list
+    
+    separator -height 10 -style "in";
+	textScrollList -allowMultiSelection false -h 120 "bl_presets";
+    setParent ..;
+    // Populate preset list
+    
+    
+    string $bl_pr_path = eval("getAttr " + $nodeName[0] + ".presetFolderPath");
+    
+    string $enumFields_list[] = `getFileList -fs "*.blp" -folder $bl_pr_path`;
+    
+    string $enumName[];
+    
+    
+    for( $i=0; $i<size($enumFields_list); ++$i )
+	{
+	    tokenize($enumFields_list[$i], ".", $enumName);
+	    textScrollList -edit -append $enumName[0] "bl_presets";
+	}
+    
+    // Create add / remove preset icons
+    separator -height 10 -style "in";
+    
+    rowLayout -numberOfColumns 5 -h 25 -adjustableColumn 4 -bgc 0.2 0.2 0.2;
+    iconTextButton -w 20 -style "iconAndTextHorizontal" -image1 "baseLoc_Apply.png" -label "apply preset" -bgc 0.3 0.3 0.3 -c  ("AE_apply_customProfile_BaseLoc " + $nodeName[0] ) "bl_pres_appl";
+	iconTextButton -w 50 -style "iconAndTextHorizontal" -image1 "baseLoc_Plus.png" -label "add" -bgc 0.4 0.4 0.4 -c  ("AE_add_customProfile_BaseLoc " + $nodeName[0] ) "bl_pres_add";
+	iconTextButton  -w 90 -style "iconAndTextHorizontal" -image1 "baseLoc_Minus.png" -label "remove" -bgc 0.6 0.2 0.3 -c  ("AE_remove_customProfile_BaseLoc " + $nodeName[0] ) "bl_pres_rem";
+	textField -pht "Untitled" "bl_t_renamePreset";
+	iconTextButton -w 80 -style "iconAndTextHorizontal" -image1 "baseLoc_Refresh.png" -label "refresh" -bgc 0.6 0.6 0.6 -c  ("AE_refresh_customProfile_BaseLoc " + $nodeName[0] ) "bl_pres_refresh";
+	
+	setParent ..;
+	
+	separator -height 10 -style "in";
+    
+}
+
+
+global proc AE_presetList_BaseLoc_edit(string $attrName)
+{
+    string $nodeName[];
+    tokenize($attrName, ".", $nodeName);
+    
+    iconTextButton -edit -c ("AE_apply_customProfile_BaseLoc " + $nodeName[0] ) "bl_pres_appl";
+	iconTextButton -edit -c ("AE_add_customProfile_BaseLoc " + $nodeName[0] ) "bl_pres_add";
+	iconTextButton -edit -c ("AE_remove_customProfile_BaseLoc " + $nodeName[0] ) "bl_pres_rem";
+	iconTextButton -edit -c ("AE_refresh_customProfile_BaseLoc " + $nodeName[0] ) "bl_pres_refresh";
+    
+}
+
+// --------------
+// Custom profile
+global proc AE_refresh_customProfile_BaseLoc(string $nodeName)
+{
+    
+    string $sm_pr_path = eval("getAttr " + $nodeName + ".presetFolderPath");
+    string $enumFields_list[] = `getFileList -fs "*.blp" -folder $sm_pr_path`;
+    
+    string $enumName[];
+    
+    textScrollList -edit -ra "bl_presets";
+    
+    for( $i=0; $i<size($enumFields_list); ++$i )
+	{
+	    tokenize($enumFields_list[$i], ".", $enumName);
+	    textScrollList -edit -append $enumName[0] "bl_presets";
+	}
+}
+
+
+
+global proc AE_add_customProfile_BaseLoc(string $attrName)
+{
+    string $nodeName[];
+    tokenize($attrName, ".", $nodeName);
+    
+    string $newPresetName;
+    $newPresetName = `textField -query -tx "bl_t_renamePreset"`;
+    
+    if ($newPresetName == "") { $newPresetName = "untitled";}
+    
+    string $bl_pr_path = eval("getAttr " + $nodeName[0] + ".presetFolderPath");
+    
+    string $enumFields_list[] = `getFileList -fs "*.blp" -folder $bl_pr_path`;
+    
+    string $enumName[];
+    
+    int $isSame = 0;
+    
+    for( $i=0; $i<size($enumFields_list); ++$i )
+	{
+	    tokenize($enumFields_list[$i], ".", $enumName);
+	    
+	    if($enumName[0] == $newPresetName)
+	    {
+	        string $conFirmVal = `confirmDialog -title ("Overwrite " + $newPresetName) -message "Are you sure?"
+    -button "Yes" -button "No" -defaultButton "Yes"
+    -cancelButton "No" -dismissString "No"`;
+    
+            if($conFirmVal == "Yes")
+            {
+                BaseLocCommand -sp $newPresetName -pp $bl_pr_path -bl $nodeName[0];
+                $isSame = 1;
+            }
+            
+            if($conFirmVal == "No")
+            {
+                $isSame = 1;
+            }
+	    }
+	    
+	}
+    
+    if( $isSame == 0)
+    {
+        BaseLocCommand -sp $newPresetName -pp $bl_pr_path -bl $nodeName[0];
+    }
+    
+    
+    
+    AE_refresh_customProfile_BaseLoc($nodeName[0]);
+    
+}
+
+
+global proc AE_apply_customProfile_BaseLoc(string $attrName)
+{
+    string $nodeName[];
+    tokenize($attrName, ".", $nodeName);
+    //AE_set_ProfileType(0, $nodeName[0]);
+   
+    
+    string $presetName[];
+    $presetName = `textScrollList -query -si "bl_presets"`;
+    
+    if (`textScrollList -query -nsi "bl_presets"` != 0)
+    {
+        if ($presetName[0] != "") 
+        {
+            
+            
+            string $bl_pr_path = eval("getAttr " + $nodeName[0] + ".presetFolderPath");
+            
+            BaseLocCommand -lp $presetName -pp $bl_pr_path -bl $nodeName[0];
+            
+            textScrollList -edit -si $presetName "bl_presets";
+            
+            
+        }
+        
+        eval("setAttr " + $nodeName[0] + ".presets " + 11);
+    }
+    
+    else
+    {
+        warning -n "[BaseLoc] No items selected in list";
+    }
+    
+    AE_refresh_customProfile_BaseLoc($nodeName[0]);
+    
+    
+}
+
+
+global proc AE_remove_customProfile_BaseLoc(string $attrName)
+{
+    string $nodeName[];
+    tokenize($attrName, ".", $nodeName);
+    
+    string $presetName[];
+    $presetName = `textScrollList -query -si "bl_presets"`;
+    
+    if ($presetName[0] != "") 
+    {
+        
+        
+        string $conFirmVal = `confirmDialog -title "Delete" -message "Are you sure?" -button "Yes" -button "No" -defaultButton "Yes" -cancelButton "No" -dismissString "No"`;
+    
+            if($conFirmVal == "Yes")
+            {
+                string $sm_pr_path = eval("getAttr " + $nodeName[0] + ".presetFolderPath");
+                sysFile -delete ($sm_pr_path + $presetName[0] + ".blp");
+                AE_refresh_customProfile_BaseLoc($nodeName[0]);
+            }
+            
+            if($conFirmVal == "No")
+            {
+                
+            }
+        
+        
+        
+    }
+    
+    
+}
+
+
+
+//
+//
+
+
+global proc AE_bl_launch_website()
+{
+    launch -web "http://gumroad.com/creativecase";
+}
+
+// ----------------------------
+// Global window Create / Edit
+global proc AE_bl_website_create(string $attrName)
+{
+	string $nodeName[];
+    tokenize($attrName, ".", $nodeName);
+    
+    string $sm_pr_path = eval("getAttr " + $nodeName[0] + ".presetFolderPath");
+    
+    rowLayout -numberOfColumns 3 -adjustableColumn 2 -bgc 0.2 0.2 0.2;
+    text -al "left" -label "Preset path";
+    textField -ed false -tx $sm_pr_path;
+    iconTextButton -style "iconOnly" -image1 "baseLoc_CCLogo.png" -c "AE_bl_launch_website()";
+
+    setParent ..;
+}
+
+global proc AE_bl_website_edit(string $attrName)
+{
+
+}
