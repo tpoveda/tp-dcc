@@ -17,7 +17,7 @@ from tp.core import log
 from tp.common.python import helpers, path as path_utils
 
 if helpers.is_python3():
-    from importlib.machinery import SourceFileLoader
+    import importlib.util
 else:
     import imp
 
@@ -104,8 +104,7 @@ def import_module(module_path, name=None, skip_warnings=True, skip_errors=False,
                     pass
                     # logger.info('Force module reloading: {}'.format(name))
                     # sys.modules.pop(name)
-                else:
-                    return sys.modules[name]
+                return sys.modules[name]
         if not name:
             if not skip_warnings:
                 logger.warning(
@@ -116,7 +115,11 @@ def import_module(module_path, name=None, skip_warnings=True, skip_errors=False,
             if not path_utils.exists(module_path):
                 raise ValueError('Cannot find module path: "{}"'.format(module_path))
         if helpers.is_python3():
-            return SourceFileLoader(name, os.path.realpath(module_path)).load_module()
+            spec = importlib.util.spec_from_file_location(name, os.path.realpath(module_path))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            sys.modules[name] = mod
+            return mod
         else:
             if module_path.endswith('.py'):
                 return imp.load_source(name, os.path.realpath(module_path))
@@ -260,7 +263,11 @@ def load_module_from_source(file_path, unique_namespace=False):
             elif file_path.endswith('.pyc'):
                 return imp.load_compiled(module_name, file_path)
         else:
-            return SourceFileLoader(module_name, file_path).load_module()
+            spec = importlib.util.spec_from_file_location(module_name, os.path.realpath(file_path))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            sys.modules[module_name] = mod
+            return mod
     except BaseException:
         logger.info('Failed trying to direct load : {} | {}'.format(file_path, traceback.format_exc()))
         return None
