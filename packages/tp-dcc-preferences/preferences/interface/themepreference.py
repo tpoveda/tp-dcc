@@ -11,8 +11,8 @@ from Qt.QtCore import Signal, QObject
 from tp.core import consts, log
 from tp.preferences import preference
 from tp.common import resources
-from tp.common.resources.core import theme, style
-from tp.common.python import helpers, strings, path, color
+from tp.common.resources import theme, style
+from tp.common.python import helpers, strings, color
 from tp.common.qt import dpi
 
 logger = log.tpLogger
@@ -123,9 +123,11 @@ class ThemePreferenceInterface(preference.PreferenceInterface):
 		:rtype: StyleSheet
 		"""
 
+		from tp.common.resources import api
+
 		theme_style = theme_data.style
 		theme_style = strings.append_extension(theme_style, '.qss')
-		style_path = path.join_path(path.dirname(resources.__file__), 'styles', theme_style)
+		style_path = api.get('styles', theme_style)
 
 		return style.StyleSheet.from_path(style_path=style_path, **theme_data)
 

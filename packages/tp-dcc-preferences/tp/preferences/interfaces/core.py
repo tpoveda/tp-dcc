@@ -9,6 +9,7 @@ def core_preference_interface():
 	:return: core preference interface instance.
 	:rtype: CorePreferenceInterface
 	"""
+
 	return manager.preference.interface('core')
 
 

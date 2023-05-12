@@ -307,7 +307,7 @@ class PreferencesManager(object):
 
 		return PreferenceObject('', relative_path)
 
-	def find_setting(self, relative_path, root, name=None, extension=None):
+	def find_setting(self, relative_path, root, name=None, default=None, extension=None):
 		"""
 		Searches the roots for the relative path and returns the PreferencesObject or if name is provided the value of
 		key withing the preference data.
@@ -315,6 +315,7 @@ class PreferencesManager(object):
 		:param str relative_path: relative path to the preference file we are looking for.
 		:param str root: the root name to search. If None, all roots will be searched until the relative path is found.
 		:param str name: optional name of a specific option within the preferences to return value of.
+		:param str or None default: optional value to return if not setting with name was found.
 		:param str extension: optional extension of the setting file we are looking for.
 		:return: preference data or value found.
 		:rtype: PreferenceObject or object
@@ -356,6 +357,8 @@ class PreferencesManager(object):
 		if name is not None:
 			settings = preference_object.get('settings', dict())
 			if name not in settings:
+				if default is not None:
+					return default
 				raise core_preference.PreferenceSettingNameDoesNotExistError(
 					'Failed to find setting: {} in preference file: {}'.format(name, preference_object))
 			return settings[name]
@@ -430,6 +433,8 @@ class PreferencesManager(object):
 
 		..note:: an interface is a class used to interact with preferences data structures through code.
 		"""
+
+		package_name = package_name or 'tp-dcc'
 
 		preference_interface_instance = self._plugin_factory.get_loaded_plugin_from_id(
 			interface_id, package_name=package_name)

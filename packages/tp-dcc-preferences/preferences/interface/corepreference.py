@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Module that contains implementation for Core tpDcc Tools framework Preference interface.
-This preference handles the core preferences for tpDcc Tools framework.
+Module that contains implementation for Core tp-dcc-tools framework Preference interface.
+This preference handles the core preferences for tp-dcc-tools framework.
 """
 
 import os
@@ -11,22 +11,6 @@ import os
 from tp.bootstrap import api
 from tp.preferences import preference
 from tp.common.python import path
-
-
-class ThemeUpdateEvent:
-	def __init__(self, stylesheet, theme_dict, preference):
-		"""
-		Updates theme event.
-
-		:param str stylesheet: stylesheet as a string.
-		:param dict theme_dict: theme dictionary.
-		:param Preference preference: preference instance.
-		"""
-
-		self.theme = None
-		self.stylesheet = stylesheet
-		self.theme_dict = theme_dict
-		self.preference = preference
 
 
 class CorePreferenceInterface(preference.PreferenceInterface):
