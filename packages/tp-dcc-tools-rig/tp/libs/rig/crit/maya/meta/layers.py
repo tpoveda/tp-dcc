@@ -797,7 +797,7 @@ class CritGuideLayer(CritLayer):
 		:rtype: bool
 		"""
 
-		return self.pinned.value() if self.exists() else False
+		return self.attribute(consts.CRIT_GUIDE_PIN_PINNED_ATTR).value() if self.exists() else False
 
 	def align_guides(self):
 		"""

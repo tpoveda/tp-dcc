@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import copy
+import json
+import contextlib
+from typing import Iterator
 
 from tp.bootstrap import log
 from tp.common.python import profiler
@@ -11,7 +14,7 @@ from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.core import errors, naming
 from tp.libs.rig.crit.maya.descriptors import component
 from tp.libs.rig.crit.maya.library.functions import names
-from tp.libs.rig.crit.maya.meta import layers, component as meta_component
+from tp.libs.rig.crit.maya.meta import layers, nodes as meta_nodes, component as meta_component
 
 logger = log.tpLogger
 
@@ -64,6 +67,55 @@ def reset_joint_transforms(skeleton_layer: layers.CritSkeletonLayer, guide_layer
 		world_matrix.setScale((1, 1, 1), api.kWorldSpace)
 		joint.resetTransform()
 		joint.setWorldMatrix(world_matrix.asMatrix())
+
+
+@contextlib.contextmanager
+def disconnect_components_context(components: list[Component]):
+	"""
+	Context manager which disconnects the list of given components temporally. Yields once all
+	components are disconnected.
+
+	:param list[Component] components: list of components to temporally disconnect.
+	"""
+
+	visited = set()
+	for _component in components:
+		if _component not in visited:
+			_component.pin()
+			visited.add(_component)
+		for child in _component.iterate_children(depth_limit=1):
+			if child in visited:
+				continue
+			visited.add(child)
+			child.pin()
+	yield
+	for i in visited:
+		i.unpin()
+
+
+def generate_connection_binding_guide(component: Component) -> tuple[dict, layers.CritGuideLayer]:
+	"""
+	Generates the connection binding data for the given component.
+
+	:param Component component: component we want to generate connection binding guide data for.
+	:return: component binding guide data.
+	:rtype: tuple[dict, CritGuideLayer]
+	"""
+
+	binding = dict()
+	name, side = component.name(), component.side()
+	child_layer = component.guide_layer()
+	binding[':'.join([name, side, 'root'])] = child_layer.guide('root')
+
+	current_parent = component.parent()
+	if current_parent:
+		name, side = current_parent.name(), current_parent.side()
+		layer = current_parent.guide_layer()
+		for found_guide in layer.iterate_guides():
+			binding[':'.join([name, side, found_guide.id()])] = found_guide
+
+	return binding, child_layer
+
 
 
 class Component:
@@ -686,6 +738,25 @@ class Component:
 		self.logger.debug('Saving descriptor...')
 		self._meta.save_descriptor_data(descriptor_to_save.to_scene_data())
 
+	def iterate_children(self, depth_limit: int = 256) -> Iterator[Component]:
+		"""
+		Generator function which iterates over all component children instances.
+
+		:param int depth_limit: depth limit which to search within the meta network before stopping.
+		:return: iterated component children instances.
+		:rtype: Iterator[Component]
+		"""
+
+		if not self.exists():
+			return
+
+		for child_meta in self._meta.iterate_meta_children(depth_limit=depth_limit):
+			if child_meta.hasAttribute(consts.CRIT_IS_COMPONENT_ATTR):
+				child_component = self._rig.component(
+					child_meta.attribute(consts.CRIT_NAME_ATTR).value(), child_meta.attribute(consts.CRIT_SIDE_ATTR).value())
+				if child_component:
+					yield child_component
+
 	def find_layer(self, layer_type: str) -> layers.CritLayer | None:
 		"""
 		Finds and returns the layer instance of given type for this component.
@@ -813,6 +884,205 @@ class Component:
 	#
 	# 	return rig_layer.setting_node(consts.CONTROL_PANEL_TYPE)
 
+	def id_mapping(self) -> dict:
+		"""
+		Returns the guide ID -> layer node ID mapping acting as a lookup table.
+
+		When live linking the joints with the guides this table is used to link the correct guide transform
+		to deform joint. This table is used to figure out which joints should be deleted from the scene if the
+		guide does not exist anymore.
+
+		:return: layer ids mapping.
+		:rtype: dict
+
+		..note:: this method can be overriden in subclasses, by default it maps the guide id as 1-1.
+		"""
+
+		ids = {k.id: k.id for k in self.descriptor.guideLayer.iterate_guides(include_root=False)}
+		return {
+			consts.SKELETON_LAYER_TYPE: ids,
+			consts.INPUT_LAYER_TYPE: ids,
+			consts.OUTPUT_LAYER_TYPE: ids,
+			consts.RIG_LAYER_TYPE: ids
+		}
+
+	def disconnect(self, component_to_disconnect: Component):
+		"""
+		Disconnects this component guides from the given component guides one.
+
+		:param Component component_to_disconnect: component we want to disconnect from.
+		"""
+
+		if not self.has_guide():
+			return
+
+		guide_layer = self.guide_layer()
+		for guide in guide_layer.iterate_guides():
+			parent_srt = guide.srt()
+			if not parent_srt:
+				continue
+			for constraint in api.iterate_constraints(parent_srt):
+				for _, driver in constraint.drivers():
+					if driver is None:
+						continue
+					try:
+						driver_component = self._rig.component_from_node(driver)
+						if driver_component != component_to_disconnect:
+							continue
+					except errors.CritMissingMetaNode:
+						continue
+					constraint.delete()
+
+	def disconnect_all(self):
+		"""
+		Disconnects all guides by deleting incoming constraints on all guides and disconnects the metadata.
+		"""
+
+		if not self.has_guide():
+			return
+
+		guide_layer = self.guide_layer()
+		for guide_compound_plug in guide_layer.iterate_guides_compound_attribute():
+			source_node = guide_compound_plug.child(0).sourceNode()
+			if source_node is None:
+				continue
+			guide = meta_nodes.Guide(source_node.object())
+			parent_srt = guide.srt()
+			if not parent_srt:
+				continue
+			for constraint in api.iterate_constraints(parent_srt):
+				constraint.delete()
+
+			# remove metadata connections
+			for source_guide_element in guide_compound_plug.child(4):
+				source_guide_element.child(0).disconnectAll()
+
+	def pin(self) -> dict:
+		"""
+		Pins the current component guides in place.
+
+		:return: serialized pin connections data.
+		:rtype: dict
+		..info:: this work by serializing all upstream connections on the guide layer meta node instance, then we
+			disconnect while maintaining parenting (metadata).
+		"""
+
+		if not self.has_guide():
+			return dict()
+		guide_layer = self.guide_layer()
+		if not guide_layer or guide_layer.is_pinned():
+			return dict()
+
+		self.logger.debug('Activating pin.')
+		connection = self.serialize_component_guide_connections()
+		guide_layer.attribute(consts.CRIT_GUIDE_PIN_PINNED_CONSTRAINTS_ATTR).set(json.dumps(connection))
+		guide_layer.attribute(consts.CRIT_GUIDE_PIN_PINNED_ATTR).set(True)
+		self.disconnect_all()
+
+		return connection
+
+	def unpin(self):
+		"""
+		Unpins the current component guides.
+
+		:return: True if the unpin operation was successful; False otherwise.
+		:rtype: bool
+		"""
+
+		if not self.has_guide():
+			return False
+		guide_layer = self.guide_layer()
+		if not guide_layer or not guide_layer.is_pinned():
+			return False
+
+		self.logger.debug('Activating unpin.')
+		connection = json.loads(guide_layer.attribute(consts.CRIT_GUIDE_PIN_PINNED_CONSTRAINTS_ATTR).value())
+		self._descriptor[consts.CONNECTIONS_DESCRIPTOR_KEY] = connection
+		self.save_descriptor(self._descriptor)
+		guide_layer.attribute(consts.CRIT_GUIDE_PIN_PINNED_CONSTRAINTS_ATTR).set('')
+		guide_layer.attribute(consts.CRIT_GUIDE_PIN_PINNED_ATTR).set(False)
+		self.deserialize_component_connections(layer_type=consts.GUIDE_LAYER_TYPE)
+
+		return True
+
+	def serialize_component_guide_connections(self) -> dict:
+		"""
+		Serializes the connection for this component to the parent.
+		"""
+
+		existing_connection_descriptor = self._descriptor.get('connections', dict())
+		if not self.has_guide():
+			return existing_connection_descriptor
+
+		guide_layer = self.guide_layer()
+		root_guide = guide_layer.guide('root')
+		if not root_guide:
+			return existing_connection_descriptor
+
+		root_srt = root_guide.srt(0)
+		if not root_srt:
+			return existing_connection_descriptor
+
+		guide_constraints = list()
+		for constraint in api.iterate_constraints(root_srt):
+			content = constraint.serialize()
+			controller, controller_attr = content.get('controller', (None, None))
+			if controller:
+				content['controller'] = (controller[0].fullPathName(), controller[1])
+			targets = list()
+			for target_label, target in content.get('targets', list()):
+				if not meta_nodes.Guide.is_guide(target):
+					continue
+				target_component = self._rig.component_from_node(target)
+				full_name = ':'.join([target_component.name(), target_component.side(), meta_nodes.Guide(target.object()).id()])
+				targets.append((target_label, full_name))
+			content['targets'] = targets
+			guide_constraints.append(content)
+		if not guide_constraints:
+			return existing_connection_descriptor
+
+		return {'id': 'root', 'constraints': guide_constraints}
+
+	def deserialize_component_connections(self, layer_type: str = consts.GUIDE_LAYER_TYPE) -> tuple[list, dict]:
+		"""
+		Deserializes the component connections for given layer type.
+
+		:param str layer_type: layer type to deserialize connections of.
+		:return: deserialized layer connections
+		:rtype: tuple[list, dict]
+		"""
+
+		return self._remap_connections(layer_type)
+
+	def _remap_connections(self, layer_type: str = consts.GUIDE_LAYER_TYPE) -> tuple[list, dict]:
+		"""
+		Internal function that handles the connection remapping.
+
+		:param str layer_type: layer type to deserialize connections of.
+		:return: remmapped connections.
+		:rtype: tuple[list, dict]
+		:raises ValueError: if the layer we want to serialize is not built yet.
+		:raises ValueError: if the binding connection support for given layer type is not supported.
+		"""
+
+		if not self.descriptor.connections:
+			return list(), dict()
+
+		# now build the IO mapping before transfer this basically takes the inputs/guides and output/guides nodes
+		# from the targetComponent and the parent components and creates a binding, so we can inject into the connection
+		# graph
+
+		if layer_type == consts.GUIDE_LAYER_TYPE:
+			guide_layer = self.guide_layer()
+			if guide_layer is None:
+				raise ValueError('Target Component: {} does not have the guide layer built!'.format(self.name()))
+			binding, child_layer = generate_connection_binding_guide(self)
+			constraints = self._create_guide_constraints_from_data(self.descriptor.connections, binding)
+		else:
+			raise ValueError('Binding connection for layer of type: {} is not supported!'.format(layer_type))
+
+		return constraints
+
 	@profiler.fn_timer
 	def build_guide(self):
 		"""
@@ -882,7 +1152,7 @@ class Component:
 		self.logger.info('Running pre-setup guide...')
 		self._setup_guide_settings()
 
-		self.logger.info('Generating guides from descriptor...')
+		self.logger.debug('Generating guides from descriptor...')
 		guide_layer = self.guide_layer()
 		current_guides = {guide_node.id(): guide_node for guide_node in guide_layer.iterate_guides()}
 		component_name, component_side = self.name(), self.side()
@@ -903,6 +1173,7 @@ class Component:
 					post_parenting.append((current_scene_guide, guide_descriptor['parent']))
 				continue
 
+			# create new guide if it does not exist
 			shape_transform = guide_descriptor.get('shapeTransform', dict())
 			new_guide = guide_layer.create_guide(
 				id=guide_descriptor['id'],
@@ -1001,6 +1272,8 @@ class Component:
 				nodes_to_publish.append(shape_node)
 		if nodes_to_publish and container is not None:
 			container.publishNodes(nodes_to_publish)
+
+
 
 	def _descriptor_from_scene(self) -> component.ComponentDescriptor | None:
 		"""
@@ -1199,3 +1472,27 @@ class Component:
 			self.set_guide_naming(naming_manager, mod)
 		finally:
 			_change_lock_guide_layer(True)
+
+	def _create_guide_constraints_from_data(self, constraint_data: dict, node_binding: dict) -> list[dict]:
+		"""
+		Internal function that creates the "constraints" for the given layer.
+
+		:param dict constraint_data: deserialized constraint data.
+		:param dict node_binding: layer node binding data.
+		:return: list of created constraints.
+		:rtype: list[dict]
+		"""
+
+		constraints = list()
+		parent_component = self.parent()
+
+		for constraint in constraint_data['constraints']:
+			for _, target_id in constraint['targets']:
+				parent_target = node_binding.get(target_id)
+				if not parent_target:
+					continue
+				self.set_parent(parent_component, parent_target)
+				break
+			break
+
+		return constraints

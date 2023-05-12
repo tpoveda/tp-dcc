@@ -94,7 +94,7 @@ class ControlNode(api.DagNode):
 
 		shape = kwargs.get('shape')
 		parent = kwargs.get('parent')
-		kwargs['type'] = kwargs.get('type', 'BaseLoc')
+		kwargs['type'] = kwargs.get('type', 'critPinLocator')
 		kwargs['name'] = kwargs.get('name', 'Control')
 		kwargs['parent'] = None
 

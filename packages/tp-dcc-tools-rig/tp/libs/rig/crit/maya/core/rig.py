@@ -380,6 +380,7 @@ class Rig:
 					script.rig = self
 					getattr(script, pre_fn_name)(properties=script_properties, **kwargs)
 
+	@profiler.profile_it('~/tp/preferences/logs/crit/buildGuides.profile')
 	@profiler.fn_timer
 	def build_guides(self, components: list[component.Component] | None = None):
 		"""
@@ -392,11 +393,27 @@ class Rig:
 		:rtype: bool
 		"""
 
+		def _construct_unordered_list(_component):
+			"""
+			Internal function that walks the component parent hierarchy gathering each component.
+
+			:param component.Component _component: component to get parent hierarchy of.
+			"""
+
+			parent = child_parent_relationship[_component]
+			if parent is not None:
+				_construct_unordered_list(parent)
+			unordered.append(_component)
+
 		self.configuration.update_from_rig(self)
-		child_parent_relationship = {component: component.parent() for component in self.iterate_components()}
+		child_parent_relationship = {_component: _component.parent() for _component in self.iterate_components()}
 		components = components or list(child_parent_relationship.keys())
 
-		with self.build_script_context(consts.GUIDE_FUNCTION_TYPE):
+		unordered = list()
+		for found_component in components:
+			_construct_unordered_list(found_component)
+
+		with component.disconnect_components_context(unordered), self.build_script_context(consts.GUIDE_FUNCTION_TYPE):
 			self._build_components(components, child_parent_relationship, 'build_guide')
 			mod = api.DGModifier()
 			for comp in components:
@@ -409,22 +426,23 @@ class Rig:
 
 		return True
 
-	def set_guide_visibility(self, state_type, include_root=False, **kwargs):
+	def set_guide_visibility(
+			self, state_type: int, control_value: bool | None = None, guide_value: bool | None = None,
+			include_root: bool = False):
 		"""
 		Sets all components guides visibility.
 
 		:param str state_type: state type to set visibility of.
+		:param bool or None control_value: whether to set visibility of the control nodes.
+		:param bool or None guide_value: whether to set visibility of the guide nodes.
 		:param bool include_root: whether to set visibility of the root guide.
-		:param dict kwargs: extra keyword arguments.
 		"""
 
 		is_guide_type = state_type == consts.GUIDE_PIVOT_STATE or state_type == consts.GUIDE_PIVOT_CONTROL_STATE
 		is_control_type = state_type == consts.GUIDE_CONTROL_STATE or state_type == consts.GUIDE_PIVOT_CONTROL_STATE
-		control_value = kwargs.get('controlValue')
-		guide_value = kwargs.get('guideValue')
-		if is_control_type:
+		if is_control_type is not None:
 			self.configuration.guide_control_visibility = control_value
-		if is_guide_type:
+		if is_guide_type is not None:
 			self.configuration.guide_pivot_visibility = guide_value
 
 		self.save_configuration()

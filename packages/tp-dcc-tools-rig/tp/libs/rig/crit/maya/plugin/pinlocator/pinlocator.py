@@ -172,17 +172,19 @@ class PinLocator(OpenMayaUI.MPxLocatorNode):
         plug = plug if not plug.isChild else plug.parent()
 
         # discard our transformed shape
-        if plug in (self.transform_attr, self.localPosition, self.local_rotate_attr, self.localScale):
+        if any([plug == self.transform_attr, plug == self.localPosition, plug == self.local_rotate_attr,
+                plug == self.localScale]):
             if hasattr(self, 'transformed_shape'):
                 del self.transformed_shape
 
         # force bounding box recalculation
-        if plug in (self.transform_attr, self.shape_attr, self.localPosition, self.local_rotate_attr, self.localScale,
-                    self.color_attr, self.alpha_attr, self.border_color_attr, self.border_alpha_attr, self.xray_attr,
-                    self.draw_shape_attr):
+        if any([plug == self.transform_attr, plug == self.shape_attr, plug == self.localPosition,
+                plug == self.local_rotate_attr, plug == self.localScale, plug == self.color_attr,
+                plug == self.alpha_attr, plug == self.border_color_attr, plug == self.border_alpha_attr,
+                plug == self.xray_attr, plug == self.draw_shape_attr]):
             OpenMayaRender.MRenderer.setGeometryDrawDirty(self.thisMObject(), True)
 
-        if plug in [self.shape_attr]:
+        if plug == self.shape_attr:
             if hasattr(self, 'transformed_shape'):
                 del self.transformed_shape
             if hasattr(self, 'shape'):

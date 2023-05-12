@@ -65,3 +65,23 @@ class CritBuildComponentSkeletonUnknownError(CritError):
 class CritBuildComponentRigUnknownError(CritError):
 
 	MSG = 'Unknown build rig error'
+
+
+class CritMissingMetaNode(CritError):
+
+	MSG = 'Attached meta node is not a valid one'
+
+
+class CritInvalidInputNodeMetaData(CritError):
+
+	MSG = 'Input Layer MetaData is missing an input node connection'
+
+
+class CritInvalidOutputNodeMetaData(CritError):
+
+	MSG = 'Output Layer MetaData is missing an input node connection'
+
+
+class CritMissingControlError(CritError):
+
+	MSG = 'Missing control by ID: {}'
