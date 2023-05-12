@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import inspect
 
@@ -867,7 +869,7 @@ class Core(MetaBase):
 	Core network object, which is the starting point for any meta node graph. Must exist for other nodes to connect to.
 	"""
 
-	ID = 'core'
+	ID = 'Core'
 
 	def __init__(self, node=None, name=None, init_defaults=True, lock=False, mod=None):
 		super(Core, self).__init__(node=node, name=name, init_defaults=init_defaults, lock=lock, mod=mod)
@@ -879,7 +881,7 @@ class DependentNode(MetaBase):
 	the creation of all dependent nodes down the chain until one can connect into the existing meta node graph.
 	"""
 
-	ID = 'dependentNode'
+	ID = 'DependentNode'
 	DEPENDENT_NODE_CLASS = None
 
 	def __init__(self, node=None, name=None, parent=None, init_defaults=True, lock=False, mod=None):
