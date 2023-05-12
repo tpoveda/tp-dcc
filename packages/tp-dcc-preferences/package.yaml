@@ -10,4 +10,4 @@ environment:
     - '{self}'
     - '{self}/preferences'
 commands:
-  - '{self}/tp/startup/preferences.py'
+  - '{self}/startup/preferences.py'
