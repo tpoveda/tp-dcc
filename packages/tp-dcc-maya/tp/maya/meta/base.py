@@ -1,6 +1,8 @@
 import os
 import inspect
 
+from overrides import override
+
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
 
@@ -12,6 +14,7 @@ MCLASS_ATTR_NAME = 'tpMetaClass'
 MVERSION_ATTR_NAME = 'tpMetaVersion'
 MPARENT_ATTR_NAME = 'tpMetaParent'
 MCHILDREN_ATTR_NAME = 'tpMetaChildren'
+MTAG_ATTR_NAME = 'tpTag'
 
 logger = log.tpLogger
 
@@ -265,7 +268,8 @@ class MetaRegistry(object):
 	"""
 	Singleton class that handles global registration of the different meta clases
 	"""
-	meta_env = 'TP_META_PATHS'
+
+	meta_env = 'TPDCC_META_PATHS'
 	types = dict()
 
 	def __init__(self):
@@ -273,10 +277,6 @@ class MetaRegistry(object):
 			self.reload()
 		except ValueError:
 			logger.error('Failed to registry environment', exc_info=True)
-
-	# =================================================================================================================
-	# CLASS METHODS
-	# =================================================================================================================
 
 	@classmethod
 	def is_in_registry(cls, type_name):
@@ -313,7 +313,7 @@ class MetaRegistry(object):
 			registry_name = registry_name_for_class(class_obj)
 			if registry_name in cls.types:
 				return
-			logger.info('Registering MetaClass --> {}'.format(registry_name))
+			logger.info(f'Registering MetaClass --> {registry_name} | {class_obj}')
 			cls.types[registry_name] = class_obj
 
 	@classmethod
@@ -345,11 +345,11 @@ class MetaRegistry(object):
 
 		visited_packages = set()
 		for sub_module in modules.iterate_modules(package_path):
-			file_name = os.path.splitext(path.get_basename(sub_module))[0]
+			file_name = os.path.splitext(path.basename(sub_module))[0]
 			if file_name.startswith('__') or file_name in visited_packages:
 				continue
 			visited_packages.add(file_name)
-			sub_module_obj = modules.import_module(sub_module)
+			sub_module_obj = modules.import_module(modules.convert_to_dotted_path(os.path.normpath(sub_module)))
 			for member in modules.iterate_module_members(sub_module_obj, predicate=inspect.isclass):
 				cls.register_meta_class(member[1])
 
@@ -382,10 +382,6 @@ class MetaRegistry(object):
 		environment_paths = environment_paths.split(os.pathsep)
 
 		return cls.register_meta_classes(environment_paths)
-
-	# =================================================================================================================
-	# FUNCTIONS
-	# =================================================================================================================
 
 	def reload(self):
 		"""
@@ -468,10 +464,6 @@ class MetaBase(base.DGNode):
 	def __repr__(self):
 		return '{} ({})'.format(self.as_str(name_only=True), self.name())
 
-	# ==================================================================================================================
-	# STATIC METHODS
-	# ==================================================================================================================
-
 	@staticmethod
 	def get_class_name_from_plug(node):
 		"""
@@ -491,10 +483,6 @@ class MetaBase(base.DGNode):
 		except RuntimeError as exc:
 			return exc
 
-	# ==================================================================================================================
-	# CLASS METHODS
-	# ==================================================================================================================
-
 	@classmethod
 	def as_str(cls, name_only=False):
 		"""
@@ -512,17 +500,15 @@ class MetaBase(base.DGNode):
 
 		return '.'.join([meta_module, meta_name])
 
-	# ==================================================================================================================
-	# OVERRIDES
-	# ==================================================================================================================
-
-	def delete(self, mod=None, apply=True):
+	@override
+	def delete(self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True) -> bool:
 		"""
 		Deletes the node from the scene.
 
 		:param OpenMaya.MDGModifier mod: modifier to add the delete operation into.
 		:param bool apply: whether to apply the modifier immediately.
 		:return: True if the node deletion was successful; False otherwise.
+		:raises RuntimeError: if deletion operation fails.
 		:rtype: bool
 		"""
 
@@ -530,18 +516,14 @@ class MetaBase(base.DGNode):
 		for element in child_plug:
 			element.disconnectAll(mod=mod)
 
-		return super(MetaBase, self).delete(mod=mod, apply=apply)
+		return super().delete(mod=mod, apply=apply)
 
-	# ==================================================================================================================
-	# BASE
-	# ==================================================================================================================
-
-	def meta_attributes(self):
+	def meta_attributes(self) -> list[dict]:
 		"""
 		Returns the list of default meta attributes that should be added into the meta node during creation.
 
 		:return: list of attributes data within a dictionary.
-		:rtype: list(dict)
+		:rtype: list[dict]
 		"""
 
 		class_name = registry_name_for_class(self.__class__)
@@ -578,6 +560,15 @@ class MetaBase(base.DGNode):
 				'type': attributetypes.kMFnMessageAttribute,
 				'locked': False,
 				'isArray': True
+			},
+			{
+				'name': MTAG_ATTR_NAME,
+				'value': '',
+				'type': attributetypes.kMFnDataString,
+				'locked': False,
+				'storable': True,
+				'writable': True,
+				'connectable': False
 			}
 		]
 
@@ -603,6 +594,15 @@ class MetaBase(base.DGNode):
 			return True
 
 		return False
+
+	def set_tag(self, tag_name: str):
+		"""
+		Sets meta node tag attribute.
+
+		:param str tag_name: tag value.
+		"""
+
+		self.attribute(MTAG_ATTR_NAME).set(tag_name)
 
 	def connect_to(self, attribute_name, node):
 		"""
@@ -654,7 +654,6 @@ class MetaBase(base.DGNode):
 		"""
 
 		is_type = inspect.isclass(check_type)
-
 		if is_type:
 			node_type = meta_node_type(self)
 			if check_type in node_type.mro():
@@ -884,9 +883,9 @@ class DependentNode(MetaBase):
 	DEPENDENT_NODE_CLASS = None
 
 	def __init__(self, node=None, name=None, parent=None, init_defaults=True, lock=False, mod=None):
-		super(DependentNode, self).__init__(node=node, name=name, init_defaults=init_defaults, lock=lock, mod=mod)
+		super().__init__(node=node, name=name, init_defaults=init_defaults, lock=lock, mod=mod)
 
-		if node is None:
+		if node is None and self.DEPENDENT_NODE_CLASS is not None:
 			parent_node = parent if parent else core_meta_node()
 			dependent_node = parent_node.downstream(self.DEPENDENT_NODE_CLASS)
 			if not dependent_node:
