@@ -861,6 +861,29 @@ def set_maya_ui_container_display_settings(attrs_to_show_at_top=None, outliner_d
             cmds.outlinerEditor(outliner_path, edit=True, showContainedOnly=not outliner_display_under_parent)
 
 
+def switch_xray_joints():
+    """
+    Switches current panel xray joints.
+    """
+
+    current_panel = cmds.getPanel(withFocus=True)
+    if cmds.modelEditor(current_panel, query=True, jointXray=True):
+        cmds.modelEditor(current_panel, edit=True, jointXray=False)
+    else:
+        cmds.modelEditor(current_panel, edit=True, jointXray=True)
+
+
+def set_xray_joints(flag, panel=4):
+    """
+    Sets xray joints state.
+
+    :param bool flag: whether to enable or disable xray joints.
+    :param int panel: number of the panel to set xray joints status of.
+    """
+
+    cmds.modelEditor(f'modelPanel{panel}', edit=True, jointXray=flag)
+
+
 class DockWrapper(object):
     def __init__(self, settings=None):
         self._dock_area = 'right'
