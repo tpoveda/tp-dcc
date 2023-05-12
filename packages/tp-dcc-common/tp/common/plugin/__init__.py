@@ -432,7 +432,8 @@ class PluginFactory(object):
         package_name = package_name or 'tp-dcc'
 
         ordered_plugins = list()
-        plugins = [self.get_plugin_from_id(identifier, package_name=package_name) for identifier in self.identifiers()]
+        plugins = [self.get_plugin_from_id(
+            identifier, package_name=package_name) for identifier in self.identifiers(package_name=package_name)]
         plugins_to_order = [plugin for plugin in plugins if hasattr(plugin, 'ORDER')]
         plugins_ordered = sorted(plugins_to_order, key=operator.attrgetter("ORDER"))
         ordered_plugins.extend(plugins_ordered)
