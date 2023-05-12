@@ -182,6 +182,53 @@ class CritInterface(preference.PreferenceInterface):
 
 		return path.join_path(self.manager.asset_path(), 'crit', 'templates')
 
+	def naming_templates(self, root: str | None = None) -> dict:
+		"""
+		Returns CRIT naming templates.
+
+		:param str root: root name to search. If None, then all roots will be searched until relativePath is found.
+		:return: crit naming templates.
+		:rtype: dict
+		"""
+
+		return self.settings(root=root).get('settings', dict()).get('naming', dict()).get('templates', dict())
+
+	def current_naming_template(self, root: str | None = None) -> str:
+		"""
+		Returns current CRIT naming template.
+
+		:param str root: root name to search. If None, then all roots will be searched until relativePath is found.
+		:return: current CRIT naming template name.
+		:rtype: str
+		"""
+
+		return self.settings(root=root).get(
+			'settings', dict()).get('naming', dict()).get('profile', dict()).get('template', 'default')
+
+	def name_start_index(self, root: str | None = None) -> int:
+		"""
+		Returns the CRIT naming start index.
+
+		:param str root: root name to search. If None, then all roots will be searched until relativePath is found.
+		:return: name start index.
+		:rtype: int
+		"""
+
+		return self.settings(root=root).get(
+			'settings', dict()).get('naming', dict()).get('profile', dict()).get('startIndex', 2)
+
+	def name_index_padding(self, root: str | None = None) -> int:
+		"""
+		Returns the CRIT naming index padding.
+
+		:param str root: root name to search. If None, then all roots will be searched until relativePath is found.
+		:return: name index padding.
+		:rtype: int
+		"""
+
+		return self.settings(root=root).get(
+			'settings', dict()).get('naming', dict()).get('profile', dict()).get('indexPadding', 2)
+
 	def empty_scenes_path(self) -> str:
 		"""
 		Returns the absolute path where empty scene templates are located.

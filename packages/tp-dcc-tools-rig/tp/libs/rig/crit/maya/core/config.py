@@ -9,6 +9,7 @@ from tp.preferences.interfaces import crit
 
 from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.core import namingpresets, buildscript
+from tp.libs.rig.crit.maya.core import managers
 
 
 def initialize_components_manager(reload=False):
@@ -18,12 +19,10 @@ def initialize_components_manager(reload=False):
 	:param bool reload: whether to force reload of components manager if it is already initialized
 	"""
 
-	pass
-
-	# if reload or RigConfiguration.COMPONENTS_MANAGER is None:
-	# 	components_manager = managers.ComponentsManager()
-	# 	components_manager.refresh()
-	# 	Configuration.COMPONENTS_MANAGER = components_manager
+	if reload or RigConfiguration.COMPONENTS_MANAGER is None:
+		components_manager = managers.ComponentsManager()
+		components_manager.refresh()
+		RigConfiguration.COMPONENTS_MANAGER = components_manager
 
 
 def initialize_build_scripts_manager(preference_interface, reload=False):
@@ -105,6 +104,17 @@ class RigConfiguration:
 		"""
 
 		return cls.NAMING_PRESET_MANAGER
+
+	@classmethod
+	def components_manager(cls) -> 'tp.libs.rig.crit.maya.core.managers.ComponentsManager':
+		"""
+		Returns the current component manager instance.
+
+		:return: components manager instance.
+		:rtype: tp.rigtoolkit.crit.lib.maya.core.managers.ComponentsManager
+		"""
+
+		return cls.COMPONENTS_MANAGER
 
 	@property
 	def preferences_interface(self) -> 'CritPreferenceInterface':
@@ -216,6 +226,16 @@ class RigConfiguration:
 
 		return self._guide_control_visibility
 
+	@guide_control_visibility.setter
+	def guide_control_visibility(self, flag: bool):
+		"""
+		Sets whether guide controls are visible.
+
+		:param bool flag: True if guide controls are visible; False otherwise.
+		"""
+
+		self._guide_control_visibility = flag
+
 	@property
 	def guide_pivot_visibility(self) -> bool:
 		"""
@@ -226,6 +246,16 @@ class RigConfiguration:
 		"""
 
 		return self._guide_pivot_visibility
+
+	@guide_pivot_visibility.setter
+	def guide_pivot_visibility(self, flag: bool):
+		"""
+		Sets whether guide pivot is visible.
+
+		:param bool flag: True if guide pivot is visible; False otherwise.
+		"""
+
+		self._guide_control_visibility = flag
 
 	@property
 	def build_skeleton_marking_menu(self) -> bool:
@@ -371,6 +401,27 @@ class RigConfiguration:
 			build_script = build_scripts_manager.get_loaded_plugin_from_id(build_script_id, package_name='crit')
 			if build_script:
 				self._build_scripts.append(build_script)
+
+	def components_paths(self):
+		"""
+		Returns all current registered components paths.
+
+		:return: list of paths.
+		:rtype: list(str)
+		"""
+
+		return self.COMPONENTS_MANAGER.components_paths()
+
+	def initialize_component_descriptor(self, component_type):
+		"""
+		Initializes the component descriptor of given type.
+
+		:param str component_type: component type (which is the class name of the component to create).
+		:return: initialized component descriptor.
+		:rtype: tp.rigtoolkit.crit.lib.maya.core.descriptor.component.ComponentDescriptor
+		"""
+
+		return self.COMPONENTS_MANAGER.initialize_component_descriptor(component_type)
 
 	def _initialize_managers(self, force: bool = False):
 		"""

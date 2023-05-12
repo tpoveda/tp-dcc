@@ -12,7 +12,7 @@ environment:
   TPDCC_BASE_PATHS:
     - '{self}'
   TPDCC_META_PATHS:
-    - '{self}/tp/libs/rig/crit/meta'
+    - '{self}/tp/libs/rig/crit/maya/meta'
   CRIT_BUILD_SCRIPTS_PATH: "{self}/tp/libs/rig/crit/library/buildscripts"
   CRIT_NAME_PRESET_PATH: "{self}/tp/libs/rig/crit/library/naming"
   CRIT_COMPONENTS_PATHS: "{self}/tp/libs/rig/crit/maya/library/components"

@@ -1,18 +1,24 @@
 from __future__ import annotations
 
+import json
+
 from overrides import override
 
-import maya.OpenMaya as OpenMaya
+import maya.api.OpenMaya as OpenMaya
 
+from tp.core import log
 from tp.maya import api
 from tp.maya.meta import base
 
 from tp.libs.rig.crit import consts
 
+logger = log.tpLogger
 
-class CritRig(base.MetaBase):
+
+class CritRig(base.DependentNode):
 
 	ID = consts.RIG_TYPE
+	DEPENDENT_NODE_CLASS = base.Core
 
 	def __init__(
 			self, node: OpenMaya.MObject | None = None, name: str | None = None, init_defaults: bool = True,
@@ -20,7 +26,15 @@ class CritRig(base.MetaBase):
 		super().__init__(node=node, name=name, init_defaults=init_defaults, lock=lock, mod=mod)
 
 	@override
-	def meta_attributes(self):
+	def meta_attributes(self) -> list[dict]:
+		"""
+		Overrides base meta_attributes function.
+		Returns the list of default meta attributes that should be added into the meta node during creation.
+
+		:return: list of attributes data within a dictionary.
+		:rtype: list[dict]
+		"""
+
 		attrs = super().meta_attributes()
 
 		attrs.extend([
@@ -38,6 +52,16 @@ class CritRig(base.MetaBase):
 		])
 
 		return attrs
+
+	def rig_name(self) -> str:
+		"""
+		Returns the name for the rig.
+
+		:return: rig name.
+		:rtype: str
+		"""
+
+		return self.attribute(consts.CRIT_NAME_ATTR).asString()
 
 	def root_transform(self) -> api.DagNode:
 		"""
@@ -115,3 +139,116 @@ class CritRig(base.MetaBase):
 			existing_selection_sets['skeleton'] = object_set
 
 		return existing_selection_sets
+
+	def create_layer(
+			self, layer_type: str, hierarchy_name: str, meta_name: str,
+			parent: OpenMaya.MObject | api.DagNode | None = None) -> 'tp.libs.rig.crit.maya.meta.layer.CritLayer':
+		"""
+		Creates a new layer based on the given type. If the layer of given type already exists, creation will be
+		skipped.
+
+		:param str layer_type: layer type to create.
+		:param str hierarchy_name: new name for the layer root transform.
+		:param str meta_name: name for the layer meta node.
+		:param OpenMaya.MObject or api.DagNode or None parent: optional new parent for the root.
+		:return: newly created Layer instance.
+		:rtype: tp.libs.rig.crit.maya.meta.layer.CritLayer
+		"""
+
+		existing_layer = self.layer(layer_type)
+		if existing_layer:
+			return existing_layer
+
+		return self._create_layer(layer_type, hierarchy_name, meta_name, parent)
+
+	def layer(self, layer_type: str) -> 'tp.libs.rig.crit.maya.meta.layer.CritLayer' | None:
+		"""
+		Returns the layer of given type attached to this rig.
+
+		:param str layer_type: layer type to get.
+		:return: found layer instance.
+		:rtype: tp.libs.rig.crit.maya.meta.layer.CritLayer or None
+		"""
+
+		meta = self.find_children_by_class_type(layer_type, depth_limit=1)
+		if not meta:
+			return None
+
+		root = meta[0]
+		if root is None:
+			logger.warning(f'Missing layer connection: {layer_type}')
+			return None
+
+		return root
+
+	def layers(self) -> list['tp.libs.rig.crit.maya.meta.layer.CritLayer']:
+		"""
+		Returns a list with all layer instances attached to this rig.
+
+		:return: list of attached rig meta node instances.
+		:rtype: list['tp.libs.rig.crit.maya.meta.layer.CritLayer']
+		"""
+
+		return [layer for layer in (self.geometry_layer(), self.skeleton_layer(), self.components_layer()) if layer]
+
+	def components_layer(self) -> 'tp.libs.rig.crit.maya.meta.layers.CritComponentsLayer' | None:
+		"""
+		Returns the components layer instance attached to this rig.
+
+		:return: components layer meta node instance.
+		:rtype: tp.libs.rig.crit.maya.meta.layers.CritComponentsLayer or None
+		"""
+
+		return self.layer(consts.COMPONENTS_LAYER_TYPE)
+
+	def build_script_configuration(self) -> dict:
+		"""
+		Returns the build scripts configuration data for this rig.
+
+		:return: build script config dictionary containing the build script ID and properties.
+		:rtype: dict
+		"""
+
+		config_string = self.attribute(consts.CRIT_BUILD_SCRIPT_CONFIG_ATTR).value()
+		try:
+			data = json.loads(config_string)
+		except ValueError:
+			return dict()
+
+		return data
+
+	def set_build_script_configuration(self, config_data: dict):
+		"""
+		Sets the build script configuration within meta node instance.
+
+		:param dict config_data: JSON compatible build script config data with the following format:
+			{ 'buildScriptId': {'propertyName': 'propertyValue'}
+		"""
+
+		self.attribute(consts.CRIT_BUILD_SCRIPT_CONFIG_ATTR).set(json.dumps(config_data))
+
+	def _create_layer(
+			self, layer_type: str, hierarchy_name: str, meta_name: str,
+			parent: OpenMaya.MObject | api.DagNode | None) -> 'tp.libs.rig.crit.maya.meta.layer.CritLayer':
+		"""
+		Internal function that creates a new layer based on the given type.
+
+		:param str layer_type: layer type to create.
+		:param str hierarchy_name: new name for the layer root transform.
+		:param str meta_name: name for the layer meta node.
+		:param OpenMaya.MObject or api.DagNode or None parent: optional new parent for the root.
+		:return: newly created Layer instance.
+		:rtype: 'tp.libs.rig.crit.maya.meta.layer.CritLayer' | None
+		"""
+
+		new_layer_meta = base.create_meta_node_by_type(layer_type, name=meta_name, parent=self)
+		if not new_layer_meta:
+			logger.warning(f'Was not possible to create new layer meta node instance: {layer_type}')
+			return None
+
+		if layer_type not in [consts.REGIONS_LAYER_TYPE]:
+			new_layer_meta.create_transform(hierarchy_name, parent=parent)
+
+		self.add_meta_child(new_layer_meta)
+
+		return new_layer_meta

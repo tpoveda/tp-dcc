@@ -1,4 +1,6 @@
-from tp.common.python import path, folder, yamlio, timedate
+from __future__ import annotations
+
+from tp.common.python import path, folder, fileio, yamlio, timedate
 
 from tp.libs.rig.crit.library.functions import files
 
@@ -6,6 +8,21 @@ from tp.libs.rig.crit.library.functions import files
 class Asset:
 
 	_INSTANCE = None			# type: Asset
+
+	class DataDirectoryStruct:
+		def __init__(self, root):
+
+			self.blendshapes = folder.ensure_folder_exists(path.join_path(root, 'data', 'blendshapes'))
+			self.driven_poses = folder.ensure_folder_exists(path.join_path(root, 'data', 'driven_poses'))
+			self.sdk_correctives = folder.ensure_folder_exists(path.join_path(root, 'data', 'sdk_correctives'))
+			self.xgen = folder.ensure_folder_exists(path.join_path(root, 'data', 'xgen'))
+			self.mocap = folder.ensure_folder_exists(path.join_path(root, 'data', 'mocap'))
+			self.psd = folder.ensure_folder_exists(path.join_path(root, 'data', 'psd'))
+
+	class MappingFiles:
+		def __init__(self, data_struct: Asset.DataDirectoryStruct):
+
+			self.blendshapes = fileio.create_file(path.join_path(data_struct.blendshapes, 'mapping.json'), data=r'{}')
 
 	def __init__(self, project: 'tp.libs.rig.crit.core.project.Project', name: str, asset_type: str):
 		super().__init__()
@@ -24,6 +41,8 @@ class Asset:
 		self._build = folder.ensure_folder_exists(path.join_path(self._path, 'build'))
 		self._rig = folder.ensure_folder_exists(path.join_path(self._path, 'rig'))
 		self._settings = folder.ensure_folder_exists(path.join_path(self._path, 'settings'))
+		self._data = Asset.DataDirectoryStruct(self._path)
+		self._mapping = Asset.MappingFiles(self._data)
 
 		files.create_empty_scene(path.join_path(self._skeleton, f'{self._name}_skeleton.0000.ma'))
 		files.create_empty_scene(path.join_path(self._rig, f'{self._name}_rig.0000.ma'))
@@ -79,6 +98,14 @@ class Asset:
 	@property
 	def settings(self) -> str:
 		return self._settings
+
+	@property
+	def data(self) -> Asset.DataDirectoryStruct:
+		return self._data
+
+	@property
+	def mapping(self) -> Asset.MappingFiles:
+		return self._mapping
 
 	@property
 	def model_path(self) -> str:

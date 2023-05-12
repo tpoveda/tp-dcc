@@ -3,6 +3,8 @@ import timeit
 import maya.cmds as cmds
 
 from tp.core import log
+from tp.maya.cmds import gui
+
 from tp.libs.rig.crit.core import project, asset
 from tp.libs.rig.crit.maya.core import rig
 from tp.libs.rig.crit.library.functions import assets
@@ -47,6 +49,7 @@ class Build:
 			self.post()
 
 			cmds.select(clear=True)
+			gui.set_xray_joints(True)
 
 			logger.info('Build finished in {0:.2f}s'.format(timeit.default_timer() - self._start_time))
 		finally:
