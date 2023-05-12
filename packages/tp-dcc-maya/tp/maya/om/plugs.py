@@ -1344,3 +1344,19 @@ def serialize_connection(plug):
         'destination': OpenMaya.MFnDagNode(destination_node).fullPathName() if destination_node.hasFn(
             OpenMaya.MFn.kDagNode) else OpenMaya.MFnDependencyNode(destination_node).name()
     }
+
+
+def set_compound_as_proxy(compound_plug, source_plug):
+    """
+    Sets given compound as a proxy to the source plug by turning all chld plugs to proxy, since Maya does not
+    support doing this at the compound level. After that we do the connection to the matching children.
+
+    :param OpenMaya.MPlug compound_plug: compound plug to set as proxy.
+    :param OpenMaya.MPlug source_plug: source plug.
+    """
+
+    for child_index in range(compound_plug.numChildren()):
+        child_plug = compound_plug.child(child_index)
+        child_attr = child_plug.attribute()
+        plug_fn(child_attr)(child_attr).isProxyAttribute = True
+        connect_plugs(source_plug.child(child_index), child_plug)

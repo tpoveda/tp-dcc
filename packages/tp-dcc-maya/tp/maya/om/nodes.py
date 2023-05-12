@@ -6,8 +6,8 @@ import maya.api.OpenMayaAnim as OpenMayaAnim
 
 from tp.core import log
 from tp.common.python import helpers
-from tp.maya.om import mathlib, plugs, animation
-from tp.maya.api import exceptions, attributetypes
+from tp.maya.om import utils, mathlib, plugs, animation, scene, factory
+from tp.maya.api import exceptions, attributetypes, curves
 
 MIRROR_BEHAVIOUR = 0
 MIRROR_ORIENTATION = 1
@@ -364,7 +364,7 @@ def iterate_parents(node):
 	:rtype: generator(OpenMaya.MObject)
 	"""
 
-	parent_mobj = parent(node=node)
+	parent_mobj = parent(node)
 	while parent_mobj is not None:
 		yield parent_mobj
 		parent_mobj = parent(parent_mobj)
@@ -1351,15 +1351,6 @@ def add_proxy_attribute(mobj, source_plug, **kwargs):
 	:rtype: OpenMaya.MFnAttribute
 	"""
 
-	# turn all the child plugs to proxy, since maya doesn't support doing this
-	# at the compound level, then do the connection between the matching children
-	def _child_plug_as_proxy(compound_plug):
-		for child_index in range(compound_plug.numChildren()):
-			child_plug = compound_plug.child(child_index)
-			attr = child_plug.attribute()
-			plugs.plug_fn(attr)(attr).isProxyAttribute = True
-			plugs.connect_plugs(source_plug.child(child_index), child_plug)
-
 	# numeric compound attributes ie. double3 isn't supported via addCompound as it's an
 	# actual maya type mfn.kAttributeDouble3 which means we don't create it via MFnCompoundAttribute.
 	# therefore we manage that for via the kwargs dict.
@@ -1367,19 +1358,20 @@ def add_proxy_attribute(mobj, source_plug, **kwargs):
 		attr1 = add_compound_attribute(mobj, attrMap=kwargs['children'], **kwargs)
 		attr1.isProxyAttribute = True
 		attr_plug = OpenMaya.MPlug(mobj, attr1.object())
-		_child_plug_as_proxy(attr_plug)
-
+		plugs.set_compound_as_proxy(attr_plug, source_plug)
 	else:
 		attr1 = add_attribute(mobj, **kwargs)
 		attr1.isProxyAttribute = True
-		proxyPlug = OpenMaya.MPlug(mobj, attr1.object())
+		proxy_plug = OpenMaya.MPlug(mobj, attr1.object())
 		# is it's an attribute we're adding which is a special type like double3
 		# then ignore connecting the compound as maya proxy attributes require the children
 		# not the parent to be connected.
-		if proxyPlug.isCompound:
-			_child_plug_as_proxy(proxyPlug)
+		if proxy_plug.isCompound:
+			attr1.isProxyAttribute = True
+			plugs.set_compound_as_proxy(proxy_plug, source_plug)
 		else:
-			plugs.connect_plugs(source_plug, proxyPlug)
+			attr1.isProxyAttribute = True
+			plugs.connect_plugs(source_plug, proxy_plug)
 
 	return attr1
 
@@ -1929,8 +1921,8 @@ def mirror_transform(node, parent, translate, rotate, mirror_function=MIRROR_BEH
 
 	# put mirror rotation matrix in the space of the parent
 	if parent != OpenMaya.MObject.kNullObj:
-		parent_inverse_matrix = parent_inverse_matrix(parent)
-		rot *= parent_inverse_matrix
+		inverse_matrix = parent_inverse_matrix(parent)
+		rot *= inverse_matrix
 
 	return translation, OpenMaya.MTransformationMatrix(rot).rotation(asQuaternion=True)
 
@@ -1950,9 +1942,8 @@ def mirror_joint(node, parent, translate, rotate, mirror_function=MIRROR_BEHAVIO
 
 	dep_node = OpenMaya.MFnDependencyNode(node)
 	rotate_order = dep_node.findPlug('rotateOrder', False).asInt()
-	transform_matrix_rotate_order = int_to_mtransform_rotation_order(rotate_order)
+	transform_matrix_rotate_order = utils.int_to_mtransform_rotation_order(rotate_order)
 	translation, rotation_matrix = mirror_transform(
 		node, parent, translate=translate, rotate=rotate, mirror_function=mirror_function)
 	joint_order = OpenMaya.MEulerRotation(plugs.plug_value(dep_node.findPlug('jointOrient', False)))
 	joint_orient = OpenMaya.MTransformationMatrix().setRotation(joint_order).asMatrixInverse()
-	rotation = mathlib.to
