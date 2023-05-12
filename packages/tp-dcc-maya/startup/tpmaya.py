@@ -85,6 +85,8 @@ def setup_logging():
 	handler = MayaLogHandler()
 	handler.setFormatter(logging.Formatter(log.LogsManager().shell_formatter))
 	log.tpLogger.addHandler(handler)
+	log.rigLogger.addHandler(handler)
+	log.animLogger.addHandler(handler)
 
 	return log.tpLogger
 
@@ -104,4 +106,4 @@ class MayaLogHandler(logging.Handler):
 			# Write all messages to sys.__stdout__, which goes to the output window. Only write debug messages here.
 			# The script editor is incredibly slow and can easily hang Maya if we have a lot of debug logging on,
 			# but the output window is reasonably fast.
-			sys.__stdout__.write('{}\n'.format(msg))
+			sys.__stdout__.write(f'{msg}\n')

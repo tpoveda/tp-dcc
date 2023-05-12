@@ -804,13 +804,14 @@ class DGNode(object):
 
 		return self.mfn().isDefaultNode
 
-	def delete(self, mod=None, apply=True):
+	def delete(self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True) -> bool:
 		"""
 		Deletes the node from the scene.
 
 		:param OpenMaya.MDGModifier mod: modifier to add the delete operation into.
 		:param bool apply: whether to apply the modifier immediately.
 		:return: True if the node deletion was successful; False otherwise.
+		:raises RuntimeError: if deletion operation fails.
 		:rtype: bool
 		"""
 
@@ -1171,7 +1172,7 @@ class DGNode(object):
 
 		:param str plug_name: name of the plug to return source node of.
 		:return: source node connected to the plug.
-		:rtype: DGNode or None
+		:rtype: DGNode or DagNode or None
 		"""
 
 		plug = self.attribute(plug_name)
@@ -1386,7 +1387,9 @@ class DagNode(DGNode):
 		return parent
 
 	@lock_node_context
-	def setParent(self, parent, maintain_offset=True, mod=None, apply=True):
+	def setParent(
+			self, parent: OpenMaya.MObject, maintain_offset: bool = True, mod: OpenMaya.MDagModifier | None = None,
+			apply: bool = True) -> OpenMaya.MDagModifier:
 		"""
 		Sets the parent of this node.
 
@@ -1752,7 +1755,7 @@ class DagNode(DGNode):
 		if visibility_pulg.isLocked or visibility_pulg.isConnected and not visibility_pulg.isProxy():
 			return False
 
-		visibility_value = 1.0 if flag else 0.0
+		visibility_value = 1 if flag else 0
 		visibility_pulg.set(visibility_value, mod, apply=apply)
 
 		return True
@@ -2148,6 +2151,20 @@ class Plug(object):
 
 		return OpenMaya.MFnAttribute(self._mplug.attribute()).isProxyAttribute
 
+	def setAsProxy(self, source_plug):
+		"""
+		Sets the current attribute as a proxy attribute and connects to the given source plug.
+
+		:param Plug source_plug: source plug to connect this plug.
+		"""
+
+		if self._mplug.isCompound:
+			plugs.set_compound_as_proxy(self.plug(), source_plug.plug())
+			return
+
+		OpenMaya.MFnAttribute(self._mplug.attribute()).isProxyAttribute = True
+		source_plug.connect(self)
+
 	def isAnimated(self):
 		"""
 		Returns whether current plug is animated.
@@ -2225,6 +2242,20 @@ class Plug(object):
 
 		return True
 
+	def show(self):
+		"""
+		Shows the attribute in the channel box and makes the attribute keyable.
+		"""
+
+		self._mplug.isChannelBox = True
+
+	def hide(self):
+		"""
+		Hides the attribute from the channel box and makes the attribute non-keyable.
+		"""
+
+		self._mplug.isChannelBox = False
+
 	def lock(self, flag):
 		"""
 		Sets the current plug lock state.
@@ -2234,22 +2265,6 @@ class Plug(object):
 
 		self._mplug.isLocked = flag
 
-	def show(self):
-		"""
-		Shows the attribute in the channel box and makes the attribute keyable.
-		"""
-
-		self._mplug.isChannelBox = True
-		self._mplug.isKeyable = True
-
-	def hide(self):
-		"""
-		Hides the attribute from the channel box and makes the attribute non-keyable.
-		"""
-
-		self._mplug.isChannelBox = False
-		self._mplug.isKeyable = False
-
 	def lockAndHide(self):
 		"""
 		Locks and hides the attribute.
@@ -2258,6 +2273,15 @@ class Plug(object):
 		self._mplug.isLocked = True
 		self._mplug.isChannelBox = False
 		self._mplug.isKeyable = False
+
+	def setKeyable(self, flag):
+		"""
+		Sets the keyable state of the attribute.
+
+		:param bool flag: True to make the attribute keyable; False otherwise.
+		"""
+
+		self._mplug.isKeyable = flag
 
 	def child(self, index):
 		"""

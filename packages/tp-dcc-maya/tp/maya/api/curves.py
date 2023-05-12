@@ -6,14 +6,12 @@ Module that contains functions and classes related with Maya API curve nodes
 """
 
 from copy import copy
-from collections import OrderedDict
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
 
 from tp.common.python import helpers
-from tp.maya.api import nodes as node_api
-from tp.maya.om import plugs
+from tp.maya.om import plugs, nodes as om_nodes
 
 SHAPE_INFO = {
     'cvs': (),
@@ -102,13 +100,13 @@ def get_curve_data(curve_shape, space=None, color_data=True, parent=None):
     """
 
     if helpers.is_string(curve_shape):
-        curve_shape = node_api.mobject(curve_shape)
+        curve_shape = om_nodes.mobject(curve_shape)
     if parent and helpers.is_string(parent):
-        parent = node_api.mobject(parent)
+        parent = om_nodes.mobject(parent)
 
     space = space or OpenMaya.MSpace.kObject
     shape = OpenMaya.MFnDagNode(curve_shape).getPath()
-    data = node_api.node_color_data(shape.node()) if color_data else dict()
+    data = om_nodes.node_color_data(shape.node()) if color_data else dict()
     curve = OpenMaya.MFnNurbsCurve(shape)
     if parent:
         parent = OpenMaya.MFnDagNode(parent).getPath().partialPathName()
@@ -121,7 +119,7 @@ def get_curve_data(curve_shape, space=None, color_data=True, parent=None):
         'cvs': curve_cvs,
         'degree': int(curve.degree),
         'form': int(curve.form),
-        'matrix': tuple(node_api.world_matrix(curve.object())),
+        'matrix': tuple(om_nodes.world_matrix(curve.object())),
         'shape_parent': parent
     })
 
@@ -140,7 +138,7 @@ def serialize_transform_curve(node, space=None, color_data=True):
     """
 
     space = space or OpenMaya.MSpace.kObject
-    shapes = node_api.shapes(OpenMaya.MFnDagNode(node).getPath(), filter_types=OpenMaya.MFn.kNurbsCurve)
+    shapes = om_nodes.shapes(OpenMaya.MFnDagNode(node).getPath(), filter_types=OpenMaya.MFn.kNurbsCurve)
     data = dict()
     for shape in shapes:
         shape_dag = OpenMaya.MFnDagNode(shape.node())
@@ -208,7 +206,7 @@ def mirror_curve_cvs(curve_obj, axis='x', space=None):
     axis_dict = {'x': 0, 'y': 1, 'z': 2}
     axis_to_mirror = set(axis_dict[ax] for ax in axis)
 
-    for shape in node_api.iterate_shapes(OpenMaya.MFnDagNode(curve_obj).getPath()):
+    for shape in om_nodes.iterate_shapes(OpenMaya.MFnDagNode(curve_obj).getPath()):
         curve = OpenMaya.MFnNurbsCurve(shape)
         cvs = curve.cvPositions(space)
         for i in cvs:
@@ -233,8 +231,7 @@ def match_curves(driver, targets, space=None):
     driver_data = serialize_transform_curve(driver, space=space)
     shapes = list()
     for target in targets:
-        target_shapes = [node_api.name(i.node()) for i in node_api.iterate_shapes(
-            OpenMaya.MDagPath.getAPathTo(target))]
+        target_shapes = [om_nodes.name(i.node()) for i in om_nodes.iterate_shapes(OpenMaya.MDagPath.getAPathTo(target))]
         if target_shapes:
             cmds.delete(target_shapes)
         shapes.extend(create_curve_shape(driver_data, parent=target, space=space)[1])
@@ -267,15 +264,15 @@ def create_curve_shape(
         parent = OpenMaya.MObject.kNullObj
     else:
         if helpers.is_string(parent):
-            parent = node_api.mobject(parent)
+            parent = om_nodes.mobject(parent)
         if parent != OpenMaya.MObject.kNullObj:
-            parent_inverse_matrix = node_api.world_inverse_matrix(parent)
+            parent_inverse_matrix = om_nodes.world_inverse_matrix(parent)
 
     translate_offset = CurveCV(translate_offset)
     scale = CurveCV(scale_offset)
     order = [{'X': 0, 'Y': 1, 'Z': 2}[x] for x in axis_order]
 
-    curves_to_create = OrderedDict()
+    curves_to_create = dict()
     for shape_name, shape_data in curve_data.items():
         if not isinstance(shape_data, dict):
             continue
@@ -294,13 +291,13 @@ def create_curve_shape(
     # TODO: box to the old one
     parent_shapes = list()
     if parent and parent != OpenMaya.MObject.kNullObj:
-        parent_shapes = node_api.shapes(OpenMaya.MFnDagNode(parent).getPath())
+        parent_shapes = om_nodes.shapes(OpenMaya.MFnDagNode(parent).getPath())
 
     for shape_name, shape_children in curves_to_create.items():
 
         for parent_shape in parent_shapes:
             if parent_shape.partialPathName() == shape_name:
-                if not node_api.is_valid_mobject(parent_shape.node()):
+                if not om_nodes.is_valid_mobject(parent_shape.node()):
                     continue
                 cmds.delete(parent_shape.fullPathName())
                 break
@@ -322,7 +319,7 @@ def create_curve_shape(
                 created_curves.append(child_name)
                 all_shapes.extend(new_shapes)
                 created_parents[child_name] = child_parent
-                node_api.set_parent(new_curve.parent(0), to_parent)
+                om_nodes.set_parent(new_curve.parent(0), to_parent)
 
     return parent, all_shapes
 
@@ -386,7 +383,7 @@ def _create_curve(
         for i in range(len(cvs)):
             cvs[i] *= parent_inverse_matrix
     shape = new_curve.create(cvs, knots, degree, form, False, False, parent)
-    node_api.rename(shape, shape_name)
+    om_nodes.rename(shape, shape_name)
     new_shapes.append(shape)
     if parent == OpenMaya.MObject.kNullObj and shape.apiType() == OpenMaya.MFn.kTransform:
         parent = shape
@@ -396,7 +393,7 @@ def _create_curve(
         colors = color or shape_data['overrideColorRGB']
         outliner_color = shape_data.get('outlinerColor', None)
         use_outliner_color = shape_data.get('useOutlinerColor', False)
-        node_api.set_node_color(
+        om_nodes.set_node_color(
             new_curve.object(), colors, outliner_color=outliner_color, use_outliner_color=use_outliner_color)
 
     return shape_name, parent, new_shapes, new_curve

@@ -10,7 +10,7 @@ from tp.maya.api import base, attributetypes, nodes
 from tp.maya.om import factory
 
 CONSTRAINT_TYPES = ('parent', 'point', 'orient', 'scale', 'aim', 'matrix')
-CONSTRAINTS_ATTR_NAME = 'tpConstraints'
+TP_CONSTRAINTS_ATTR_NAME = 'tpConstraints'
 TP_CONSTRAINT_TYPE_ATTR_NAME = 'tpConstraintType'
 TP_CONSTRAINT_KWARGS_ATTR_NAME = 'tpConstraintKwargs'
 TP_CONSTRAINT_CONTROLLER_ATTR_NAME = 'tpConstraintController'
@@ -54,7 +54,7 @@ def iterate_constraints(node):
 	:rtype: generator(Constraint)
 	"""
 
-	array = node.attribute(CONSTRAINTS_ATTR_NAME)
+	array = node.attribute(TP_CONSTRAINTS_ATTR_NAME)
 	if array is None:
 		return
 	for plug_element in array:
@@ -97,11 +97,11 @@ def add_constraint_attribute(node):
 	:rtype: tp.maya.api.base.Plug
 	"""
 
-	if node.hasAttribute(CONSTRAINTS_ATTR_NAME):
-		return node.attribute(CONSTRAINTS_ATTR_NAME)
+	if node.hasAttribute(TP_CONSTRAINTS_ATTR_NAME):
+		return node.attribute(TP_CONSTRAINTS_ATTR_NAME)
 
 	constraint_plug = node.addCompoundAttribute(
-		name=CONSTRAINTS_ATTR_NAME, type=attributetypes.kMFnCompoundAttribute, isArray=True, attr_map=[
+		name=TP_CONSTRAINTS_ATTR_NAME, type=attributetypes.kMFnCompoundAttribute, isArray=True, attr_map=[
 			dict(name=TP_CONSTRAINT_TYPE_ATTR_NAME, type=attributetypes.kMFnDataString),
 			dict(name=TP_CONSTRAINT_KWARGS_ATTR_NAME, type=attributetypes.kMFnDataString),
 			dict(name=TP_CONSTRAINT_CONTROLLER_ATTR_NAME, type=attributetypes.kMFnMessageAttribute),
@@ -144,7 +144,7 @@ def build_constraint(driven, drivers, constraint_type='parent', track=True, **kw
 			constraint_attr = add_constraint_attribute(driven)[0]
 		else:
 			latest_constraint_index = constraint_attr.logicalIndex()
-			constraint_attr = driven.attribute(CONSTRAINTS_ATTR_NAME)[latest_constraint_index + 1]
+			constraint_attr = driven.attribute(TP_CONSTRAINTS_ATTR_NAME)[latest_constraint_index + 1]
 
 	constraint = create_constraint_factory(constraint_type, driven, constraint_attr, track=track)
 
@@ -236,7 +236,7 @@ def delete_constraint_map_attribute(node, mod=None):
 	:rtype: OpenMaya.MDGModifier
 	"""
 
-	constraint_attr = node.attribute(CONSTRAINTS_ATTR_NAME)
+	constraint_attr = node.attribute(TP_CONSTRAINTS_ATTR_NAME)
 	if constraint_attr is None:
 		return mod
 

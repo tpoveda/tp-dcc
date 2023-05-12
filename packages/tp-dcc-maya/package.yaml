@@ -10,7 +10,11 @@ environment:
     - '{self}'
   TPDCC_BASE_PATHS:
     - '{self}'
+  TPDCC_META_PATHS:
+    - '{self}/tp/maya/meta/base.py'
   TPDCC_TOOLS_MANAGER_PATHS:
     - '{self}/tp/maya/managers/tools.py'
+  TPDCC_CURVES_PATHS:
+    - '{self}/tp/maya/libs/curves/library'
 commands:
   - '{self}/startup/tpmaya.py'
