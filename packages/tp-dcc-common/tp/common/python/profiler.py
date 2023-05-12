@@ -5,7 +5,7 @@
 Utility methods related to profile Python code
 """
 
-import sys
+import os
 import time
 import pstats
 import timeit
@@ -14,6 +14,7 @@ from functools import wraps
 from collections import defaultdict
 
 from tp.core import log
+from tp.common.python import folder
 
 logger = log.tpLogger
 
@@ -28,6 +29,26 @@ def profile_function(sort_key='time', rows=30):
             return ret
         return __
     return _
+
+
+def profile_it(file_path):
+    """
+    cProfile decorator to profile a function by passing a valid file to write the information into.
+
+    :param str file_path: file path to store profile information into.
+    """
+
+    def inner(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            prof = profile.Profile()
+            result = prof.runcall(fn, *args, **kwargs)
+            abs_path = os.path.expanduser(os.path.expandvars(file_path))
+            folder.ensure_folder_exists(os.path.dirname(abs_path))
+            prof.dump_stats(abs_path)
+            return result
+        return wrapper
+    return inner
 
 
 def fn_timer(fn):
