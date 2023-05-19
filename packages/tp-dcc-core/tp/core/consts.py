@@ -5,37 +5,44 @@
 Module that contains constant definitions for tpDcc
 """
 
-# =======~============ GENERAL
-PROJECTS_NAME = 'project.json'
+# ======================================================================================================================
+# General Constants
+# ======================================================================================================================
+
 PREFERENCES_FOLDER = 'preferences'          # name of the folder where packages store preferences files.
 INTERFACE_FOLDER = 'interface'              # folder where package interface will be located within preferences folder.
 PREFERENCE_EXTENSION = '.pref'              # extension used by tpDcc Tools framework preference files.
 PREFERENCE_SETTINGS_KEY = 'settings'
 
-# =======~============ TOOLS
+
+# ======================================================================================================================
+# Tools Constants
+# ======================================================================================================================
+
 TOOL_IDENTIFIER = 'ID'
 TOOL_VERSION_IDENTIFIER = 'VERSION'
 
 
-class Axis(object):
-    X = 'x'
-    Y = 'y'
-    Z = 'z'
+# ======================================================================================================================
+# Dcc Agnostic Constants
+# ======================================================================================================================
 
 
-class Environment(object):
-    DEV = 'development'
-    PROD = 'production'
+class WrapperTypes:
+    """
+    Enumerator that defines available DCC agnostic wrapper types
+    """
 
-
-# =================== TYPES
-class WrapperTypes(object):
     Shape = 0
     Transform = 1
     Pointer = 2
 
 
-class ObjectTypes(object):
+class ObjectTypes:
+    """
+    Enumerator that defines available DCC agnostic object types
+    """
+
     Generic = 0
     Sphere = 1
     Box = 2
@@ -57,7 +64,11 @@ class ObjectTypes(object):
     Biped = 18
 
 
-class CallbackTypes(object):
+class CallbackTypes:
+    """
+    Enumerator that defines available DCC agnostic callback types
+    """
+
     Shutdown = 'Shutdown'
     Tick = 'Tick'
     ScenePreCreated = 'ScenePreCreated'
@@ -75,34 +86,3 @@ class CallbackTypes(object):
     NodeDeleted = 'NodeDeleted'
     ReferencePreLoaded = 'ReferencePreLoaded'
     ReferencePostLoaded = 'ReferencePostLoaded'
-
-
-class UnitSystem(object):
-    Inches = 0
-    Feet = 1
-    Millimeters = 2
-    Centimeters = 3
-    Meters = 4
-    Kilometers = 5
-    Yards = 6
-    Miles = 7
-
-
-class MaterialAttributeTypes(object):
-    Int = 0
-    Float = 1
-    String = 2
-    Path = 3
-    Color = 4
-    Bool = 5
-
-
-class MaterialTypes(object):
-    Standard = 0
-
-
-SIDE_PATTERNS = {
-    'center': ['C', 'c', 'Center', 'ct', 'center', 'middle', 'm'],
-    'left': ['L', 'l', 'Left', 'left', 'lf'],
-    'right': ['R', 'r', 'Right', 'right', 'rt']
-}

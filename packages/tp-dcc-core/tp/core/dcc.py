@@ -23,7 +23,7 @@ main = __import__('__main__')
 CURRENT_DCC = None
 DEFAULT_DCC_PORT = 65500
 
-# Cached used to store all the reroute paths done during a session.
+# Cached used to store all the rerouting paths done during a session.
 DCC_REROUTE_CACHE = dict()
 
 # Cached DCC clients
@@ -40,12 +40,13 @@ class Dccs(object):
     Unreal = 'unreal'
     Blender = 'blender'
     SubstancePainter = 'painter'
+    SubstanceDesigner = 'designer'
 
     ALL = [
-        Maya, Max, MotionBuilder, Houdini, Nuke, Unreal, Blender, SubstancePainter
+        Maya, Max, MotionBuilder, Houdini, Nuke, Unreal, Blender, SubstancePainter, SubstanceDesigner
     ]
 
-    nice_names = OrderedDict([
+    NiceNames = OrderedDict([
         (Maya, 'Maya'),
         (Max, '3ds Max'),
         (MotionBuilder, 'MotionBuilder'),
@@ -53,10 +54,11 @@ class Dccs(object):
         (Nuke, 'Nuke'),
         (Unreal, 'Unreal'),
         (Blender, 'Blender'),
-        (SubstancePainter, 'SubstancePainter')
+        (SubstancePainter, 'SubstancePainter'),
+        (SubstanceDesigner, 'SubstanceDesigner')
     ])
 
-    packages = OrderedDict([
+    Packages = OrderedDict([
         ('cmds', Maya),
         ('pymxs', Max),
         ('pyfbsdk', MotionBuilder),
@@ -64,31 +66,35 @@ class Dccs(object):
         ('nuke', Nuke),
         ('unreal', Unreal),
         ('bpy', Blender),
-        ('substance_painter', SubstancePainter)
+        ('substance_painter', SubstancePainter),
+        ('substance_designer', SubstanceDesigner)
     ])
 
     # TODO: Add support for both MacOS and Linux
-    # TODO: Add missing executables
-    executables = {
+    Executables = {
         Maya: {osplatform.Platforms.Windows: 'maya.exe'},
         Max: {osplatform.Platforms.Windows: '3dsmax.exe'},
         MotionBuilder: {osplatform.Platforms.Windows: 'motionbuilder.exe'},
         Houdini: {osplatform.Platforms.Windows: 'houdinifx.exe'},
         Nuke: {},
         Unreal: {osplatform.Platforms.Windows: 'UnrealEditor..exe'},
-        Blender: {osplatform.Platforms.Windows: 'blener.exe'},
-        SubstancePainter: {osplatform.Platforms.Windows: 'painter.exe'}
+        Blender: {osplatform.Platforms.Windows: 'blender.exe'},
+        SubstancePainter: {osplatform.Platforms.Windows: 'painter.exe'},
+        SubstanceDesigner: {osplatform.Platforms.Windows: 'designer.exe'}
     }
 
-    ports = {
-        Standalone: DEFAULT_DCC_PORT,               # 65500
-        Maya: DEFAULT_DCC_PORT + 1,                 # 65501
-        MotionBuilder: DEFAULT_DCC_PORT + 2,        # 65502
-        Houdini: DEFAULT_DCC_PORT + 3,              # 65503
-        Max: DEFAULT_DCC_PORT + 4,                  # 65504
-        Blender: DEFAULT_DCC_PORT + 5,              # 65505
-        SubstancePainter: DEFAULT_DCC_PORT + 6,     # 65506
-        Unreal: 30010                               # Default Unreal Remote Server Plugin port
+    Ports = {
+        'Undefined': DEFAULT_DCC_PORT,              # 65500
+        Standalone: DEFAULT_DCC_PORT + 1,           # 65501
+        Maya: DEFAULT_DCC_PORT + 2,                 # 65502
+        Max: DEFAULT_DCC_PORT + 3,                  # 65503
+        MotionBuilder: DEFAULT_DCC_PORT + 4,        # 65504
+        Houdini: DEFAULT_DCC_PORT + 5,              # 65505
+        Nuke: DEFAULT_DCC_PORT + 6,                 # 65506
+        Blender: DEFAULT_DCC_PORT + 7,              # 65507
+        SubstancePainter: DEFAULT_DCC_PORT + 8,     # 65508
+        SubstanceDesigner: DEFAULT_DCC_PORT + 9,    # 65509
+        Unreal: 30010                              # Default Unreal Remote Server Plugin port
     }
 
 
@@ -112,18 +118,12 @@ class DccCallbacks(object):
     ReferencePostLoaded = (consts.CallbackTypes.ReferencePostLoaded, {'type': 'simple'})
 
 
-def dcc_port(base_port, dcc_name=None):
+def dcc_port(dcc_name=None):
     dcc = dcc_name or current_dcc()
     if not dcc:
-        return base_port
+        return Dccs.Ports.Standalone
 
-    base_dcc_port = base_port
-    for dcc_name in Dccs.ALL:
-        base_dcc_port += 1
-        if dcc_name == dcc:
-            return base_dcc_port
-
-    return base_port
+    return Dccs.Ports.get(dcc_name, Dccs.Ports['Undefined'])
 
 
 def dcc_ports(base_port):
@@ -140,7 +140,7 @@ def current_dcc():
     if CURRENT_DCC:
         return CURRENT_DCC
 
-    for dcc_package, dcc_name in Dccs.packages.items():
+    for dcc_package, dcc_name in Dccs.Packages.items():
         if dcc_package in main.__dict__:
             CURRENT_DCC = dcc_name
             break
@@ -167,7 +167,7 @@ def get_dcc_loader_module():
     """
 
     dcc_mod = None
-    for dcc_package, dcc_name in Dccs.packages.items():
+    for dcc_package, dcc_name in Dccs.Packages.items():
         if dcc_package in main.__dict__:
             module_to_import = 'tp.{}.loader'.format(dcc_name)
             try:
