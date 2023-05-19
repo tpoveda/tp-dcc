@@ -33,6 +33,13 @@ from tp.maya.cmds import humanik, deformer as deformer_utils, skin as skin_utils
 logger = log.tpLogger
 
 
+SIDE_PATTERNS = {
+    'center': ['C', 'c', 'Center', 'ct', 'center', 'middle', 'm'],
+    'left': ['L', 'l', 'Left', 'left', 'lf'],
+    'right': ['R', 'r', 'Right', 'right', 'rt']
+}
+
+
 # =================================================================================================================
 # GENERAL
 # =================================================================================================================
@@ -1913,11 +1920,11 @@ def get_mirror_name(name, center_patterns=None, left_patterns=None, right_patter
         return name
 
     if name_is_left(name, patterns=left_patterns):
-        from_side = consts.SIDE_PATTERNS['left']
-        to_side = consts.SIDE_PATTERNS['right']
+        from_side = SIDE_PATTERNS['left']
+        to_side = SIDE_PATTERNS['right']
     elif name_is_left(name, patterns=right_patterns):
-        from_side = consts.SIDE_PATTERNS['right']
-        to_side = consts.SIDE_PATTERNS['left']
+        from_side = SIDE_PATTERNS['right']
+        to_side = SIDE_PATTERNS['left']
     else:
         return name
 
@@ -2002,7 +2009,7 @@ def name_is_center(side, patterns=None):
     """
 
     if not patterns:
-        patterns = consts.SIDE_PATTERNS['center']
+        patterns = SIDE_PATTERNS['center']
 
     side = str(side)
     for pattern in patterns:
@@ -2021,7 +2028,7 @@ def name_is_left(side, patterns=None):
     """
 
     if not patterns:
-        patterns = consts.SIDE_PATTERNS['left']
+        patterns = SIDE_PATTERNS['left']
 
     side = str(side)
     for pattern in patterns:
@@ -2041,7 +2048,7 @@ def name_is_right(side, patterns=None):
     """
 
     if not patterns:
-        patterns = consts.SIDE_PATTERNS['right']
+        patterns = SIDE_PATTERNS['right']
 
     side = str(side)
     for pattern in patterns:
