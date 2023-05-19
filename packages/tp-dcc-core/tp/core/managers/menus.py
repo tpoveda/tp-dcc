@@ -19,7 +19,7 @@ class MenusManager:
         self._original_menus = list()                                                   # type: list[dict]
         self._menu_preference_interface = manager.preference.interface(
             'menu', dcc=dcc.current_dcc())                                              # type: MenuInterface
-        self._menu_name = self._menu_preference_interface.menu_name()                   # default menu name
+        self._menu_name = self._menu_preference_interface.menu_name() if self._menu_preference_interface else 'tp Tools'
         self._menu_object_name = f'{self._menu_name.replace(" ", "_")}_mainMenu'        # internal Qt object name
 
     def menu_by_id(self, menu_id: str ) -> MenuItem:

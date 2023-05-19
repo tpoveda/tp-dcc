@@ -1,3 +1,10 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Module that tp-dcc-tools Core Server commands.
+"""
+
 import runpy
 
 

@@ -1,3 +1,10 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Module that tp-dcc-tools Server implementation.
+"""
+
 from __future__ import annotations
 
 import sys

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from Qt.QtWidgets import QApplication
+
 from tp.core import log, dcc, tool
 from tp.common import plugin
 from tp.core.managers import menus
@@ -124,6 +126,10 @@ class ToolsManager:
 
 		result = plugin_instance.execute(*args, **kwargs)
 		# logger.info(f'{plugin_instance} Execution time: {plugin_instance.stats.execution_time}')
+
+		if result and dcc.is_standalone():
+			app = QApplication.instance()
+			app.exec_()
 
 		return result
 

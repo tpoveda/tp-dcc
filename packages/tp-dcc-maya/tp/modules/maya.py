@@ -1,3 +1,10 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Module that tp-dcc-tools Maya Server commands.
+"""
+
 from __future__ import annotations
 
 import maya.cmds as cmds
