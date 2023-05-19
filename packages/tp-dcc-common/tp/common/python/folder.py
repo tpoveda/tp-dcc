@@ -564,10 +564,12 @@ def get_temp_folder():
     return path.clean_path(tempfile.gettempdir())
 
 
-def get_current_working_directory():
+def current_working_directory() -> str:
     """
-    Returns current working directory
-    :return: str, path to the current working directory
+    Returns current working directory.
+
+    :return: path to the current working directory.
+    :rtype: str
     """
 
     return os.getcwd()

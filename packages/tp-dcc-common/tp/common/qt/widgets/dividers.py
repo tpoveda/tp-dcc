@@ -5,22 +5,24 @@
 Module that contains custom Qt splitter widget implementation
 """
 
-from __future__ import print_function, division, absolute_import
+from __future__ import annotations
 
 from Qt.QtCore import Qt, Signal
-from Qt.QtWidgets import QWidget, QFrame, QHBoxLayout
+from Qt.QtWidgets import QWidget, QFrame, QLabel, QHBoxLayout
 
-from tp.common.qt import dpi
+from tp.common.qt import consts, dpi
 from tp.common.qt.widgets import layouts, labels
 
 
-def divider(text='', orientation=Qt.Horizontal, alignment=Qt.AlignLeft,  shadow=True, parent=None):
+def divider(
+        text: str = '', orientation: Qt.Orientation = Qt.Horizontal, alignment: Qt.AlignmentFlag = Qt.AlignLeft,
+        shadow: bool = True, parent: QWidget | None = None) -> Divider:
     """
     Returns divider widget
 
     :param str text: optional divider text.
     :param Qt.Orientation orientation: optional divider orientation.
-    :param Qt.Alignment alignment: optional divider alignment.
+    :param Qt.AlignmentFlag alignment: optional divider alignment.
     :param bool shadow: whether divider should have a shadow
     :param QWidget parent: optional parent widget.
     :return: divider widget instance.
@@ -31,7 +33,7 @@ def divider(text='', orientation=Qt.Horizontal, alignment=Qt.AlignLeft,  shadow=
     return new_divider
 
 
-def horizontal_separator_widget(max_width=60, parent=None):
+def horizontal_separator_widget(max_width: int = 60, parent: QWidget | None = None) -> QWidget:
     """
     Returns vertical separator widget
 
@@ -53,7 +55,7 @@ def horizontal_separator_widget(max_width=60, parent=None):
     return v_div_w
 
 
-def vertical_separator_widget(max_height=30, parent=None):
+def vertical_separator_widget(max_height: int = 30, parent: QWidget | None = None) -> QWidget:
     """
     Returns horizontal separator widget
 
@@ -65,7 +67,7 @@ def vertical_separator_widget(max_height=30, parent=None):
 
     h_div_w = QWidget(parent=parent)
     main_layout = layouts.vertical_layout(spacing=0, margins=(5, 5, 5, 5), alignment=Qt.AlignLeft, parent=h_div_w)
-    h_div_w.main_layout.setAlignment(Qt.AlignLeft)
+    main_layout.setAlignment(Qt.AlignLeft)
     h_div = QFrame(parent=h_div_w)
     h_div.setObjectName('dividerSeparator')         # ID selector used by style
     h_div.setMaximumHeight(dpi.dpi_scale(max_height))
@@ -89,13 +91,15 @@ class Divider(QWidget, dpi.DPIScaling):
         Qt.AlignRight: 80
     }
 
-    def __init__(self, text=None, shadow=True, orientation=Qt.Horizontal, alignment=Qt.AlignLeft, parent=None):
+    def __init__(
+            self, text: str | None = None, shadow: bool = True, orientation: Qt.Orientation = Qt.Horizontal,
+            alignment: Qt.AlignmentFlag = Qt.AlignLeft, parent: QWidget | None = None):
         """
         :param str text: Optional text to include as title in the splitter.
         :param bool shadow: True if you want a shadow above the splitter.
         :param Qt.Orientation orientation: Orientation of the splitter.
-        :param Qt.Align alignment: Alignment of the splitter.
-        :param QWidget parent: Parent of the splitter.
+        :param Qt.AlignmentFlag alignment: Alignment of the splitter.
+        :param QWidget or None parent: Parent of the splitter.
         """
 
         super().__init__(parent=parent)
@@ -136,9 +140,9 @@ class Divider(QWidget, dpi.DPIScaling):
         self.set_text(text)
 
     @classmethod
-    def left(cls, text=''):
+    def left(cls, text: str = '') -> Divider:
         """
-        Creates an horizontal splitter with text at left.
+        Creates a horizontal splitter with text at left.
 
         :param str text: divider left text.
         :return: Divider instance.
@@ -148,9 +152,9 @@ class Divider(QWidget, dpi.DPIScaling):
         return cls(text, alignment=Qt.AlignLeft)
 
     @classmethod
-    def right(cls, text=''):
+    def right(cls, text: str = '') -> Divider:
         """
-        Creates an horizontal splitter with text at right
+        Creates a horizontal splitter with text at right
 
         :param str text: divider right text.
         :return: Divider instance.
@@ -160,9 +164,9 @@ class Divider(QWidget, dpi.DPIScaling):
         return cls(text, alignment=Qt.AlignRight)
 
     @classmethod
-    def center(cls, text=''):
+    def center(cls, text: str = '') -> Divider:
         """
-        Creates an horizontal splitter with text at center.
+        Creates a horizontal splitter with text at center.
 
         :param str text: divider center text.
         :return: Divider instance.
@@ -172,7 +176,7 @@ class Divider(QWidget, dpi.DPIScaling):
         return cls(text, alignment=Qt.AlignCenter)
 
     @classmethod
-    def vertical(cls):
+    def vertical(cls) -> Divider:
         """
         Creates a vertical splitter.
 
@@ -182,7 +186,7 @@ class Divider(QWidget, dpi.DPIScaling):
 
         return cls(orientation=Qt.Vertical)
 
-    def get_text(self):
+    def text(self) -> str:
         """
         Returns splitter text.
 
@@ -192,7 +196,7 @@ class Divider(QWidget, dpi.DPIScaling):
 
         return self._label.text()
 
-    def set_text(self, text):
+    def set_text(self, text: str):
         """
         Sets splitter text.
 
@@ -220,3 +224,24 @@ class DividerLayout(QHBoxLayout, dpi.DPIScaling):
         splitter.setFixedHeight(2)
 
         self.addWidget(splitter)
+
+
+class LabelDivider(QWidget):
+    """
+    Custom divider built using a label and a divider
+    """
+
+    def __init__(
+            self, text: str = '', margins: tuple[int, int, int, int] = (0, consts.SPACING, 0, consts.SMALL_SPACING),
+            spacing=consts.SPACING, bold: bool = True, upper: bool = False, tooltip: str = '',
+            parent: QWidget | None = None):
+        super().__init__(parent)
+
+        main_layout = layouts.horizontal_layout(spacing=spacing, margins=margins, parent=self)
+        if text:
+            label = labels.label(text=text, bold=bold, upper=upper, tooltip=tooltip)
+            main_layout.addWidget(label, 1)
+        new_divider = QLabel()
+        new_divider.setMaximumHeight(dpi.dpi_scale(2))
+        new_divider.setToolTip(tooltip)
+        main_layout.addWidget(new_divider, 10)

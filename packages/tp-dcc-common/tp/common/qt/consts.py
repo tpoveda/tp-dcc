@@ -18,6 +18,23 @@ LARGE_SPACING = 10                      # large spacing of each widget (spacing 
 SUPER_LARGE_SPACING = 15                # very large spacing of each widget (spacing between each sub-widget)
 SUPER_LARGE_SPACING_2 = 20              # very large spacing of each widget (spacing between each sub-widget)
 SUPER_EXTRA_LARGE_SPACING = 30          # extra large spacing of each widget (spacing between each sub-widget)
+WINDOW_SPACING = SPACING
+
+# PADDINGS
+TOP_PADDING = 10                        # padding between the top widget and the top frame
+BOTTOM_PADDING = 5                      # padding between the bottom widget and bottom of frame.
+REGULAR_PADDING = 10                    # padding between widgets
+SMALL_PADDING = 5
+VERY_SMALL_PADDING = 3
+LARGE_PADDING = 15
+WINDOW_SIDE_PADDING = 6                 # overall padding for each window side.
+WINDOW_TOP_PADDING = 6                  # overall window padding at the top of frame.
+WINDOW_BOTTOM_PADDING = 6               # overall window padding at the bottom of frame.
+
+# MARGINS
+MARGINS = (2, 2, 2, 2)                  # default left, top, right, bottom widget margins.
+WINDOW_MARGINS = (WINDOW_SIDE_PADDING, WINDOW_BOTTOM_PADDING, WINDOW_SIDE_PADDING, WINDOW_TOP_PADDING)
+
 
 BUTTON_WIDTH_ICON_MEDIUM = 30
 

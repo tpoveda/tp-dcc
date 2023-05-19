@@ -1,6 +1,12 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Module that contains generic Qt windows implementation
+"""
 
 from Qt.QtCore import Qt, Signal, QObject, QSettings, QPoint, QSize
-from Qt.QtWidgets import QWidget, QFrame
+from Qt.QtWidgets import QLayout, QWidget, QFrame
 
 from tp.core import dcc
 from tp.preferences.interfaces import core as core_interfaces
@@ -94,6 +100,9 @@ class BaseWindow(QWidget):
 		if not maximize_button:
 			self.set_maximize_button_visible(False)
 
+		self.setup_ui()
+		self.setup_signals()
+
 	@property
 	def docked(self):
 		return self._title_bar.logo_button.docked
@@ -117,6 +126,20 @@ class BaseWindow(QWidget):
 	@property
 	def parent_container(self):
 		return self._parent_container
+
+	def setup_ui(self):
+		"""
+		Function that can be overriden to add custom widgets and layouts.
+		"""
+
+		pass
+
+	def setup_signals(self):
+		"""
+		Function that can be overriden to setup widget signals.
+		"""
+
+		pass
 
 	def show(self, move=None):
 		"""
@@ -152,12 +175,12 @@ class BaseWindow(QWidget):
 
 		return super().keyPressEvent(event)
 
-	def main_layout(self):
+	def main_layout(self) -> QLayout:
 		"""
 		Returns window main content layouts instance.
 
 		:return: contents layout.
-		:rtype: QtWidgets.QLayout
+		:rtype: QLayout
 		..note:: if not layout exists, a new one will be created.
 		"""
 
@@ -165,6 +188,15 @@ class BaseWindow(QWidget):
 			self._main_contents.setLayout(layouts.vertical_layout())
 
 		return self._main_contents.layout()
+
+	def set_main_layout(self, layout: QLayout):
+		"""
+		Sets main window layout.
+
+		:param QLayout layout: main window contents layout.
+		"""
+
+		self._main_contents.setLayout(layout)
 
 	def set_title(self, title):
 		"""

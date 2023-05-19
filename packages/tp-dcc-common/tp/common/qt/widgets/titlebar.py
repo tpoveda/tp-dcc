@@ -274,9 +274,9 @@ class TitleLabel(labels.ClippedLabel):
 	Used for CSS purposes.
 	"""
 
-	def __init__(self, text='', width=0, ellipsis=True, always_show_all=False, parent=None):
+	def __init__(self, text='', width=0, elide=True, always_show_all=False, parent=None):
 		super().__init__(
-			text=text, width=width, ellipsis=ellipsis, always_show_all=always_show_all, parent=parent)
+			text=text, width=width, elide=elide, always_show_all=always_show_all, parent=parent)
 
 		self.setAttribute(Qt.WA_TransparentForMouseEvents)
 

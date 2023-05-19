@@ -1,14 +1,17 @@
+from __future__ import annotations
+
 from functools import partial
 
-from Qt.QtCore import Qt, Signal, QPoint, QSize, QTimer
-from Qt.QtWidgets import QAbstractButton, QPushButton
+from overrides import override
+from Qt.QtCore import Qt, Signal, QPoint, QSize, QTimer, QEvent
+from Qt.QtWidgets import QWidget, QAbstractButton, QPushButton
 from Qt.QtGui import QCursor, QFontMetrics, QIcon, QPainter
 
 from tp.preferences.interfaces import core as core_interfaces
 from tp.common.python import helpers
 from tp.common.resources import icon, api as resources
 from tp.common.qt import dpi
-from tp.common.qt.widgets import menus
+from tp.common.qt.widgets import layouts, menus
 
 
 class AbstractButton(QAbstractButton, dpi.DPIScaling):
@@ -25,54 +28,33 @@ class AbstractButton(QAbstractButton, dpi.DPIScaling):
 	_icon_colors = (200, 200, 200)
 	_icon_scaling = list()
 
-	def enterEvent(self, event):
-		"""
-		Overrides base enterEvent function to update hover icon.
-
-		:param QEvent event: Qt event.
-		"""
-
+	@override
+	def enterEvent(self, event: QEvent) -> None:
 		if self._hover_icon is not None and self.isEnabled():
 			self.setIcon(self._hover_icon)
 
-	def leaveEvent(self, event):
-		"""
-		Overrides base leaveEvent function to update hover icon.
-
-		:param QEvent event: Qt event.
-		"""
-
+	@override
+	def leaveEvent(self, event: QEvent) -> None:
 		if self._idle_icon is not None and self.isEnabled():
 			self.setIcon(self._idle_icon)
 
-	def setEnabled(self, flag):
-		"""
-		Overrides base setEnabled function to make sure icons are updated when enable status changes.
+	@override(check_signature=False)
+	def setEnabled(self, flag: bool) -> None:
+		super().setEnabled(flag)
 
-		:param bool flag: True to enable the button; False otherwise.
-		"""
-
-		super(AbstractButton, self).setEnabled(flag)
+		# force update of the icons after resizing
 		self.update_icons()
 
-	def setDisabled(self, flag):
-		"""
-		Overrides base setDisabled function to make sure icons are updated when enable status changes.
+	@override(check_signature=False)
+	def setDisabled(self, flag: bool) -> None:
+		super().setDisabled(flag)
 
-		:param bool flag: True to enable the button; False otherwise.
-		"""
-
-		super(AbstractButton, self).setDisabled(flag)
+		# force update of the icons after resizing
 		self.update_icons()
 
-	def setIconSize(self, size):
-		"""
-		Overrides base setIconSize function to make sure icon size respects DPI
-
-		:param QSize size: new icon size
-		"""
-
-		super(AbstractButton, self).setIconSize(dpi.size_by_dpi(size))
+	@override
+	def setIconSize(self, size: QSize) -> None:
+		super().setIconSize(dpi.size_by_dpi(size))
 
 		# force update of the icons after resizing
 		self.update_icons()
@@ -831,3 +813,26 @@ class IconMenuButton(BaseButton):
 		"""
 
 		self.set_menu_name(action.text())
+
+
+class OkCancelButtons(QWidget):
+
+	okButtonPressed = Signal()
+	cancelButtonPressed = Signal()
+
+	def __init__(self, ok_text: str = 'OK', cancel_text: str = 'Cancel', parent: QWidget | None = None):
+		super().__init__(parent=parent)
+
+		self._main_layout = layouts.horizontal_layout()
+		self._ok_button = QPushButton(ok_text, parent=self)
+		self._cancel_button = QPushButton(cancel_text, parent=self)
+		self._main_layout.addWidget(self._ok_button)
+		self._main_layout.addWidget(self._cancel_button)
+
+	def _setup_signals(self):
+		"""
+		Internal function that setup all the signals for this widget.
+		"""
+
+		self._ok_button.clicked.connect(self.okButtonPressed.emit)
+		self._cancel_button.clicked.connect(self.cancelButtonPressed.emit)

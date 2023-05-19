@@ -5,14 +5,20 @@
 Module that extends default Qt labels (QLabel) functionality
 """
 
+from __future__ import annotations
+
+from overrides import override
+
 from Qt.QtCore import Qt, Property, Signal
-from Qt.QtWidgets import QLabel, QSizePolicy, QStyleOption
-from Qt.QtGui import QPainter
+from Qt.QtWidgets import QWidget, QLabel, QSizePolicy, QStyleOption
+from Qt.QtGui import QPainter, QMouseEvent, QResizeEvent, QPaintEvent
 
 from tp.common.qt import dpi
 
 
-def label(text='', tooltip='', upper=False, bold=False, elide_mode=Qt.ElideNone, parent=None):
+def label(
+		text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
+		elide_mode: Qt.TextElideMode = Qt.ElideNone, parent: QWidget | None = None) -> BaseLabel:
 	"""
 	Creates a new label widget.
 
@@ -20,7 +26,7 @@ def label(text='', tooltip='', upper=False, bold=False, elide_mode=Qt.ElideNone,
 	:param str tooltip: label tooltip.
 	:param bool upper: whether label text is forced to be uppercase.
 	:param bool bold: whether label font is bold.
-	:param Qt.Elide elide_mode: whether label text should elide.
+	:param Qt.TextElideMode elide_mode: whether label text should elide.
 	:param QWidget parent: parent widget.
 	:return: new label widget instance.
 	:rtype: BaseLabel
@@ -29,7 +35,9 @@ def label(text='', tooltip='', upper=False, bold=False, elide_mode=Qt.ElideNone,
 	return BaseLabel(text=text, tooltip=tooltip, bold=bold, upper=upper, elide_mode=elide_mode, parent=parent)
 
 
-def h1_label(text='', tooltip='', upper=False, bold=False, parent=False):
+def h1_label(
+		text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
+		parent: QWidget | None = False) -> BaseLabel:
 	"""
 	Creates a new H1label widget.
 
@@ -42,12 +50,12 @@ def h1_label(text='', tooltip='', upper=False, bold=False, parent=False):
 	:rtype: BaseLabel
 	"""
 
-	new_label = label(text=text, tooltip=tooltip, upper=upper, bold=bold, parent=parent).h1()
-
-	return new_label
+	return label(text=text, tooltip=tooltip, upper=upper, bold=bold, parent=parent).h1()
 
 
-def h2_label(text='', tooltip='', upper=False, bold=False, parent=False):
+def h2_label(
+		text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
+		parent: QWidget | None = False) -> BaseLabel:
 	"""
 	Creates a new H2 label widget.
 
@@ -65,7 +73,9 @@ def h2_label(text='', tooltip='', upper=False, bold=False, parent=False):
 	return new_label
 
 
-def h3_label(text='', tooltip='', upper=False, bold=False, parent=False):
+def h3_label(
+		text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
+		parent: QWidget | None = False) -> BaseLabel:
 	"""
 	Creates a new H3 label widget.
 
@@ -83,7 +93,9 @@ def h3_label(text='', tooltip='', upper=False, bold=False, parent=False):
 	return new_label
 
 
-def h4_label(text='', tooltip='', upper=False, bold=False, parent=False):
+def h4_label(
+		text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
+		parent: QWidget | None = False) -> BaseLabel:
 	"""
 	Creates a new H4 label widget.
 
@@ -101,7 +113,9 @@ def h4_label(text='', tooltip='', upper=False, bold=False, parent=False):
 	return new_label
 
 
-def h5_label(text='', tooltip='', upper=False, bold=False, parent=False):
+def h5_label(
+		text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
+		parent: QWidget | None = False) -> BaseLabel:
 	"""
 	Creates a new H5 label widget.
 
@@ -119,19 +133,22 @@ def h5_label(text='', tooltip='', upper=False, bold=False, parent=False):
 	return new_label
 
 
-def clipped_label(text='', width=0, ellipsis=True, always_show_all=False, parent=None):
+def clipped_label(
+		text: str = '', width: int = 0, elide: bool = True, always_show_all: bool = False,
+		parent: QWidget | None = None) -> ClippedLabel:
 	"""
 	Custom QLabel that clips itself if the widget width is smaller than the text.
 
 	:param str text: label text.
 	:param int width: minimum width.
-	:param bool ellipsis: whether to elide label.
-	:param bool ellipsis: whether label will have ellipsis.
+	:param bool elide: whether to elide label.
 	:param bool always_show_all: force the label to show the complete text or hide the complete text.
 	:param QWidget parent: parent widget.
+	:return: new clipped label widget instance.
+	:rtype: ClippedLabel
 	"""
 
-	return ClippedLabel(text=text, width=width, ellipsis=ellipsis, always_show_all=always_show_all, parent=parent)
+	return ClippedLabel(text=text, width=width, elide=elide, always_show_all=always_show_all, parent=parent)
 
 
 class BaseLabel(QLabel, dpi.DPIScaling):
@@ -162,7 +179,8 @@ class BaseLabel(QLabel, dpi.DPIScaling):
 		DANGER = 'danger'
 
 	def __init__(
-			self, text='', tooltip='', upper=False, bold=False, enable_menu=True, parent=None, elide_mode=Qt.ElideNone):
+			self, text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False, enable_menu: bool = True,
+			parent: QWidget | None = None, elide_mode: Qt.TextElideMode = Qt.ElideNone):
 		text = text.upper() if upper else text
 		self._enable_menu = enable_menu
 		self._actual_text = text
@@ -183,49 +201,49 @@ class BaseLabel(QLabel, dpi.DPIScaling):
 		self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
 		self.strong(bold)
 
-	def _get_type(self):
+	def _get_type(self) -> str:
 		"""
 		Internal Qt property function that returns label type.
 
 		:return: label type.
-		:rtype: BaseLabel.Types
+		:rtype: str
 		"""
 
 		return self._type
 
-	def _set_type(self, value):
+	def _set_type(self, value: BaseLabel.Types):
 		"""
 		Internal Qt property function that sets label type.
 
-		:param BaseLabel.Types value: label type.
+		:param str value: label type.
 		"""
 
 		self._type = value
 		self.style().polish(self)
 
-	def _get_level(self):
+	def _get_level(self) -> int:
 		"""
 		Internal Qt property function that returns label level.
 
 		:return: label level.
-		:rtype: str
+		:rtype: int
 		"""
 
 		return self._level
 
-	def _set_level(self, value):
+	def _set_level(self, value: int):
 		"""
 		Internal Qt property function that sets label level.
 
-		:param str value: label level.
+		:param int value: label level.
 		"""
 
 		self._level = value
 		self.style().polish(self)
 
-	def _get_underline(self):
+	def _get_underline(self) -> bool:
 		"""
-		Internal Qt property function that returns whether or not label is using an underline style.
+		Internal Qt property function that returns whether label is using an underline style.
 
 		:return: True if labael has underline style; False otherwise.
 		:rtype: bool
@@ -233,7 +251,7 @@ class BaseLabel(QLabel, dpi.DPIScaling):
 
 		return self._underline
 
-	def _set_underline(self, flag):
+	def _set_underline(self, flag: bool):
 		"""
 		Internal Qt property function that sets label to use an underline style.
 
@@ -243,29 +261,29 @@ class BaseLabel(QLabel, dpi.DPIScaling):
 		self._underline = flag
 		self.style().polish(self)
 
-	def _get_delete(self):
+	def _get_delete(self) -> bool:
 		"""
-		Internal Qt property function that returns whether or not label is using a delete style.
+		Internal Qt property function that returns whether label is using delete style.
 
-		:return: True if the label has a delete style; False otherwise.
+		:return: True if the label is using delete style; False otherwise.
 		:rtype: bool
 		"""
 
 		return self._delete
 
-	def _set_delete(self, flag):
+	def _set_delete(self, flag: bool):
 		"""
-		 Internal Qt property function that sets label to use a delete style.
+		Internal Qt property function that sets label to use a delete style.
 
-		 :param bool flag: delete flag
-		 """
+		:param bool flag: delete flag
+		"""
 
 		self._delete = flag
 		self.style().polish(self)
 
-	def _get_strong(self):
+	def _get_strong(self) -> bool:
 		"""
-		Internal Qt property function that returns whether or not label is using a strong style.
+		Internal Qt property function that returns whether label is using a strong style.
 
 		:return: True if the label has a strong style; False otherwise.
 		:type: bool
@@ -273,19 +291,19 @@ class BaseLabel(QLabel, dpi.DPIScaling):
 
 		return self._strong
 
-	def _set_strong(self, flag):
+	def _set_strong(self, flag: bool):
 		"""
-		 Internal Qt property function that sets label to use a strong style.
+		Internal Qt property function that sets label to use a strong style.
 
-		 :param bool flag: strong flag.
-		 """
+		:param bool flag: strong flag.
+		"""
 
 		self._strong = flag
 		self.style().polish(self)
 
-	def _get_mark(self):
+	def _get_mark(self) -> bool:
 		"""
-		Internal Qt property function that returns whether or not label is using a mark style.
+		Internal Qt property function that returns whether label is using a mark style.
 
 		:return: True if the label has a mark style; False otherwise.
 		:rtype: bool
@@ -293,19 +311,19 @@ class BaseLabel(QLabel, dpi.DPIScaling):
 
 		return self._mark
 
-	def _set_mark(self, flag):
+	def _set_mark(self, flag: bool):
 		"""
-		 Internal Qt property function that sets label to use a mark style.
+		Internal Qt property function that sets label to use a mark style.
 
-		 :param bool flag: mark flag.
-		 """
+		:param bool flag: mark flag.
+		"""
 
 		self._mark = flag
 		self.style().polish(self)
 
-	def _get_code(self):
+	def _get_code(self) -> bool:
 		"""
-		Internal Qt property function that returns whether or not label is using a code style.
+		Internal Qt property function that returns whether label is using a code style.
 
 		:return: True if the label has a code style; False otherwise.
 		:rtype: bool
@@ -313,7 +331,7 @@ class BaseLabel(QLabel, dpi.DPIScaling):
 
 		return self._code
 
-	def _set_code(self, flag):
+	def _set_code(self, flag: bool):
 		"""
 		Internal Qt property function that sets label to use a code style.
 
@@ -323,22 +341,21 @@ class BaseLabel(QLabel, dpi.DPIScaling):
 		self._code = flag
 		self.style().polish(self)
 
-	def _get_elide_mode(self):
+	def _get_elide_mode(self) -> Qt.TextElideMode:
 		"""
 		Internal Qt property function that returns which elide mode label is using.
 
 		:return: label elide mode.
-		:rtype: Qt.ElideLeft or Qt.ElideMiddle or Qt.ElideRight or Qt.ElideNone
+		:rtype: Qt.TextElideMode
 		"""
 
 		return self._elide_mode
 
-	def _set_elide_mode(self, value):
+	def _set_elide_mode(self, value: Qt.TextElideMode):
 		"""
 		Internal Qt property function that sets elide mode used by the label.
 
-
-		:param Qt.ElideLeft or Qt.ElideMiddle or Qt.ElideRight or Qt.ElideNone value: elide mode.
+		:param Qt.TextElideMode value: elide mode.
 		"""
 
 		self._elide_mode = value
@@ -353,162 +370,202 @@ class BaseLabel(QLabel, dpi.DPIScaling):
 	theme_code = Property(bool, _get_code, _set_code)
 	theme_elide_mode = Property(bool, _get_elide_mode, _set_elide_mode)
 
-	def mousePressEvent(self, event):
+	@override
+	def mousePressEvent(self, ev: QMouseEvent) -> None:
 		"""
 		Overrides mousePressEvent function to emit clicked signal each time user clicks on the label.
 
-		:param QEvent event: Qt mouse event.
+		:param QEvent ev: Qt mouse event.
 		"""
 
 		self.clicked.emit()
-		super(BaseLabel, self).mousePressEvent(event)
+		super().mousePressEvent(ev)
 
-	def resizeEvent(self, event):
+	@override
+	def resizeEvent(self, event: QResizeEvent) -> None:
 		"""
-		Overrides base QObject resizeEvent function
+		Overrides base QObject resizeEvent function.
 		"""
 
 		self._update_elided_text()
 
-	def text(self):
+	@override
+	def text(self) -> str:
 		"""
-		Overrides base QLabel text function
+		Overrides base QLabel text function.
+
 		:return: str
 		"""
 
 		return self._actual_text
 
-	def setText(self, text):
+	@override
+	def setText(self, arg__1: str) -> None:
 		"""
-		Overrides base QLabel setText function
-		:return: str
+		Overrides base QLabel setText function.
+
+		:param str arg__1: label text tos set.
 		"""
 
-		self._actual_text = text
+		self._actual_text = arg__1
 		self._update_elided_text()
-		self.setToolTip(text)
+		self.setToolTip(arg__1)
 
-	def h1(self):
+	def h1(self) -> BaseLabel:
 		"""
 		Sets label with h1 type.
+
+		:return: current label instance.
+		:rtype: BaseLabel
 		"""
 
 		self.theme_level = self.Levels.H1
 
 		return self
 
-	def h2(self):
+	def h2(self) -> BaseLabel:
 		"""
 		Sets label with h2 type.
+
+		:return: current label instance.
+		:rtype: BaseLabel
 		"""
 
 		self.theme_level = self.Levels.H2
 
 		return self
 
-	def h3(self):
+	def h3(self) -> BaseLabel:
 		"""
 		Sets label with h3 type.
+
+		:return: current label instance.
+		:rtype: BaseLabel
 		"""
 
 		self.theme_level = self.Levels.H3
 
 		return self
 
-	def h4(self):
+	def h4(self) -> BaseLabel:
 		"""
 		Sets label with h4 type.
+
+		:return: current label instance.
+		:rtype: BaseLabel
 		"""
 
 		self.theme_level = self.Levels.H4
 
 		return self
 
-	def h5(self):
+	def h5(self) -> BaseLabel:
 		"""
 		Sets label with h4 type.
+
+		:return: current label instance.
+		:rtype: BaseLabel
 		"""
 
 		self.theme_level = self.Levels.H5
 
 		return self
 
-	def secondary(self):
+	def secondary(self) -> BaseLabel:
 		"""
 		Sets label with secondary type.
+
+		:return: current label instance.
+		:rtype: BaseLabel
 		"""
 
 		self.theme_type = self.Types.SECONDARY
 
 		return self
 
-	def warning(self):
+	def warning(self) -> BaseLabel:
 		"""
 		Sets label with warning type.
+
+		:return: current label instance.
+		:rtype: BaseLabel
 		"""
 
 		self.theme_type = self.Types.WARNING
 
 		return self
 
-	def danger(self):
+	def danger(self) -> BaseLabel:
 		"""
 		Sets label with danger type.
+
+		:return: current label instance.
+		:rtype: BaseLabel
 		"""
 
 		self.theme_type = self.Types.DANGER
 
 		return self
 
-	def strong(self, flag=True):
+	def strong(self, flag: bool = True) -> BaseLabel:
 		"""
 		Sets label with strong type.
 
 		:param bool flag: whether enable strong mode.
+		:return: current label instance.
+		:rtype: BaseLabel
 		"""
 
 		self.theme_strong = flag
 
 		return self
 
-	def mark(self, flag=True):
+	def mark(self, flag: bool = True) -> BaseLabel:
 		"""
 		Sets label with mark type.
 
 		:param bool flag: whether or not enable mar mode.
+		:return: current label instance.
+		:rtype: BaseLabel
 		"""
 
 		self.theme_mark = flag
 
 		return self
 
-	def code(self, flag=True):
+	def code(self, flag: bool = True) -> BaseLabel:
 		"""
 		Sets label with code type.
 
 		:param bool flag: whether or not enable code mode.
+		:return: current label instance.
+		:rtype: BaseLabel
 		"""
 
 		self.theme_code = flag
 
 		return self
 
-	def delete(self, flag=True):
+	def delete(self, flag: bool = True) -> BaseLabel:
 		"""
 		Sets label with delete type.
 
 		:param bool flag: whether or not enable delete mode.
+		:return: current label instance.
+		:rtype: BaseLabel
 		"""
 
 		self.theme_delete = flag
 
 		return self
 
-	def underline(self, flag=True):
+	def underline(self, flag: bool = True) -> BaseLabel:
 		"""
 		Sets label with underline type.
 
 		:param bool flag: whether or not enable underline mode.
+		:return: current label instance.
+		:rtype: BaseLabel
 		"""
 
 		self.theme_underline = flag
@@ -522,7 +579,7 @@ class BaseLabel(QLabel, dpi.DPIScaling):
 
 		font_metrics = self.fontMetrics()
 		elided_text = font_metrics.elidedText(self._actual_text, self._elide_mode, self.width() - 2 * 2)
-		super(BaseLabel, self).setText(elided_text)
+		super().setText(elided_text)
 
 
 class ClippedLabel(BaseLabel):
@@ -531,22 +588,23 @@ class ClippedLabel(BaseLabel):
 
 	:param str text: label text.
 	:param int width: minimum width.
-	:param bool ellipsis: whether label will have ellipsis.
+	:param bool elipsis: whether label will have ellipsis.
 	:param bool always_show_all: force the label to show the complete text or hide the complete text.
 	:param QWidget parent: parent widget.
 	"""
 
 	_width = _text = _elided = None
 
-	def __init__(self, text='', width=0, ellipsis=True, always_show_all=False, parent=None):
+	def __init__(self, text='', width=0, elide=True, always_show_all=False, parent=None):
 		super(ClippedLabel, self).__init__(text, parent=parent)
 
 		self._always_show_all = always_show_all
-		self._ellipsis = ellipsis
+		self._elide = elide
 
 		self.setMinimumWidth(width if width > 0 else 1)
 
-	def paintEvent(self, event):
+	@override
+	def paintEvent(self, arg__1: QPaintEvent) -> None:
 		painter = QPainter(self)
 		self.drawFrame(painter)
 		margin = self.margin()
@@ -570,7 +628,7 @@ class ClippedLabel(BaseLabel):
 					self.isEnabled(), self.text(), self.foregroundRole())
 
 		else:  # if alwaysShowAll is false though, draw the ellipsis as normal
-			if self._ellipsis:
+			if self._elide:
 				self.style().drawItemText(
 					painter, rect, self.alignment(), option.palette, self.isEnabled(),
 					self._elided, self.foregroundRole())

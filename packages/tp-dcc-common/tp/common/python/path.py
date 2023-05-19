@@ -695,7 +695,7 @@ def get_user_data_dir(appname=None, appauthor=None, version=None, roaming=False)
 class FindUniquePath(name.FindUniqueString, object):
     def __init__(self, directory):
         if not directory:
-            directory = folder.get_current_working_directory()
+            directory = folder.current_working_directory()
 
         self.parent_path = self._get_parent_path(directory)
         basename = basename(directory=directory)

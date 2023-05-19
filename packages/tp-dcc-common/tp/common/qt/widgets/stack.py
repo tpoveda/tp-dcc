@@ -1,8 +1,17 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Module that contains custom QStackedWidget widgets.
+"""
+
+from __future__ import annotations
+
 from Qt.QtCore import QPoint, QPropertyAnimation, QEasingCurve
-from Qt.QtWidgets import QFrame, QStackedWidget, QGraphicsOpacityEffect
+from Qt.QtWidgets import QWidget, QFrame, QStackedWidget, QGraphicsOpacityEffect
 
 
-def sliding_opacity_stacked_widget(parent=None):
+def sliding_opacity_stacked_widget(parent: QWidget | None = None) -> SlidingOpacityStackedWidget:
 	"""
 	Creates a new QStackWidget that uses opacity animation to switch between stack widgets.
 
@@ -20,7 +29,7 @@ class SlidingOpacityStackedWidget(QStackedWidget):
 	Custom stack widget that activates opacity animation when current stack index changes
 	"""
 
-	def __init__(self, parent=None):
+	def __init__(self, parent: QWidget | None = None):
 		super(SlidingOpacityStackedWidget, self).__init__(parent)
 
 		self._prev_index = 0
@@ -46,7 +55,7 @@ class SlidingOpacityStackedWidget(QStackedWidget):
 
 		self.currentChanged.connect(self._on_play_anim)
 
-	def _on_play_anim(self, index):
+	def _on_play_anim(self, index: int):
 		"""
 		Internal callback function that is called when an animated is played.
 
