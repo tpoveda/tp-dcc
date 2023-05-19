@@ -233,6 +233,31 @@ class tpDccPackagesManager:
 
         return self._command_lib_cache
 
+    @property
+    def is_admin(self):
+        """
+        Returns whether the current user is in admin mode.
+
+        :return: True if current user is an administrator; False otherwise.
+        :rtype: bool
+        """
+
+        try:
+            return strtobool(os.getenv(consts.TPDCC_ADMIN_ENV, '0'))
+        except TypeError:
+            return False
+
+    @is_admin.setter
+    def is_admin(self, flag: bool):
+        """
+        Sets whether current user is in admin mode.
+
+        :param bool flag: True to allow tools to either allow certain behaviours; False otherwise.
+        """
+
+        logger.info(f'tp-dcc-tools framework admin mode set to: {flag}')
+        os.environ[consts.TPDCC_ADMIN_ENV] = str(int(flag))
+
     def is_dev(self):
         """
         Returns whether packages manner is running in development mode.
