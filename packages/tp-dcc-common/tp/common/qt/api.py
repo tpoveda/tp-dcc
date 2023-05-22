@@ -29,6 +29,10 @@ from tp.common.qt import consts
 from tp.common.qt.contexts import block_signals
 from tp.common.qt.dpi import dpi_scale, dpi_scale_divide, dpi_multiplier, margins_dpi_scale, size_by_dpi, point_by_dpi
 from tp.common.qt.qtutils import get_widget_at_mouse, compat_ui_loader, clear_layout, to_qt_object
+from tp.common.qt.models.datasources import BaseDataSource
+from tp.common.qt.models.listmodel import BaseListModel
+from tp.common.qt.models.tablemodel import BaseTableModel
+from tp.common.qt.models.treemodel import BaseTreeModel
 from tp.common.qt.widgets.layouts import (
 	vertical_layout, horizontal_layout, grid_layout, form_layout, box_layout, flow_layout, graphics_linear_layout,
 	vertical_graphics_linear_layout, horizontal_graphics_linear_layout
@@ -36,7 +40,8 @@ from tp.common.qt.widgets.layouts import (
 from tp.common.qt.widgets.labels import (
 	label, clipped_label, h1_label, h2_label, h3_label, h4_label, h5_label
 )
-from tp.common.qt.widgets.windows import BaseWindow
+
+from tp.common.qt.widgets.frameless import FramelessWindow, FramelessWindowThin
 from tp.common.qt.widgets.comboboxes import combobox, ComboBoxRegularWidget
 from tp.common.qt.widgets.lineedits import line_edit, text_browser, BaseLineEdit
 from tp.common.qt.widgets.dividers import divider, Divider, DividerLayout, LabelDivider
@@ -44,10 +49,10 @@ from tp.common.qt.widgets.buttons import BaseButton, OkCancelButtons
 from tp.common.qt.widgets.listviews import ExtendedListView
 from tp.common.qt.widgets.tableviews import BaseTableView, ExtendedTableView
 from tp.common.qt.widgets.treeviews import BaseTreeView, ExtendedTreeView
-from tp.common.qt.models.datasources import BaseDataSource
-from tp.common.qt.models.listmodel import BaseListModel
-from tp.common.qt.models.tablemodel import BaseTableModel
-from tp.common.qt.models.treemodel import BaseTreeModel
+from tp.common.qt.widgets.menus import menu, searchable_menu, extended_menu
+
+
+
 
 
 
@@ -56,7 +61,6 @@ from tp.common.qt.models.treemodel import BaseTreeModel
 # 	button, base_button, base_push_button, regular_button, rounded_button, tool_button, axis_button, shadowed_button,
 # 	ButtonStyles
 # )
-# from tp.common.qt.widgets.menus import menu, searchable_menu
 # from tp.common.qt.widgets.checkboxes import checkbox, checkbox_widget
 # from tp.common.qt.widgets.directory import open_folder_widget, open_file_widget, save_file_widget, PathWidget
 # from tp.common.qt.widgets.comboboxes import (

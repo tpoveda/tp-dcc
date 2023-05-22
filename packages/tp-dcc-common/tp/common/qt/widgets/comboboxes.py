@@ -5,7 +5,7 @@ from typing import Iterable, Any
 from overrides import override
 from Qt.QtCore import Qt, Signal
 from Qt.QtWidgets import QWidget, QLabel, QComboBox
-from Qt.QtGui import QWheelEvent
+from Qt.QtGui import QIcon, QKeyEvent, QWheelEvent
 
 from tp.common.qt import consts, dpi
 from tp.common.qt.widgets import layouts, labels
@@ -14,7 +14,7 @@ from tp.common.qt.widgets import layouts, labels
 def combobox(
         items: Iterable = (), item_data: Iterable[list[Any]] = (), placeholder_text: str = '',
         tooltip: str = '', set_index: int = 0, sort_alphabetically: bool = True,
-        support_middle_mouse_scroll: bool = False, parent: QWidget | None = None):
+        support_middle_mouse_scroll: bool = True, parent: QWidget | None = None) -> BaseComboBox:
     """
     Creates a basic QComboBox widget.
 
@@ -33,7 +33,7 @@ def combobox(
     if not support_middle_mouse_scroll:
         combo_box = NoWheelComboBox(parent)
     else:
-        combo_box = QComboBox(parent)
+        combo_box = BaseComboBox(parent)
 
     if sort_alphabetically:
         combo_box.setInsertPolicy(QComboBox.InsertAlphabetically)
@@ -52,6 +52,40 @@ def combobox(
         combo_box.setCurrentIndex(set_index)
 
     return combo_box
+
+
+class BaseComboBox(QComboBox):
+
+    itemSelected = Signal(str)
+    checkStateChanged = Signal(int, int)
+
+    def __init__(self, items: list[str] | None = None, parent: QWidget | None = None):
+        super().__init__(parent)
+
+        self._is_checkable = False
+
+        self.setEditable(True)
+
+    @override
+    def keyPressEvent(self, e: QKeyEvent) -> None:
+        super().keyPressEvent(e)
+
+        if e.key() == Qt.Key_Escape:
+            self.close()
+            self.parent().setFocus()
+        elif e.key() in (Qt.Key_Enter, Qt.Key_Return):
+            self.itemSelected.emit(self.currentText())
+            self.parent().setFocus()
+
+    @override(check_signature=False)
+    def addItem(self, text: str, userData: Any = ..., is_checkable: bool = False) -> None:
+        super().addItem(text)
+
+        model = self.model()
+        item = model.item(model.rowCount() - 1, 0)
+        if item and is_checkable:
+            self._is_checkable = is_checkable
+            item.setCheckState(Qt.Checked)
 
 
 class NoWheelComboBox(QComboBox):

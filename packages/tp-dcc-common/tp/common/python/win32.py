@@ -6,12 +6,15 @@ Module that contains functions to work with win32
 """
 
 import sys
+from typing import Tuple, List
 
 if 'win' in sys.platform:
     import ctypes
     import ctypes.wintypes
+    import win32gui
+    import win32process
+    import winreg
 
-from tp.common.python import helpers
 
 GWL_WNDPROC = -4
 GWL_HINSTANCE = -6
@@ -52,9 +55,11 @@ WS_VSCROLL = 0x200000
 
 def to_hwnd(pycobject):
     """
-    Convenience method to get a Windows Handle from a PySide WinID
+    Convenience method to get a Windows Handle from a PySide WinID.
     Based on http://srinikom.github.io/pyside-bz-archive/523.html
-    @return A value equivalent to a void* that represents the Windows handle if one exists; None otherwise.
+
+    :param pycobject: A value equivalent to a void* that represents the Windows handle if one exists; None otherwise.
+    :return: Window handle.
     """
 
     if type(pycobject) is int:
@@ -107,17 +112,13 @@ def set_owner(hwnd, hwnd_owner):
 
 def get_reg_key(registry, key, architecture=None):
     """
-    Returns a _winreg hkey if found
+    Returns a _winreg hkey if found.
+
     :param registry: str, registry to look in. HKEY_LOCAL_MACHINE for example
     :param key: str, key to open 'Software/Ubisoft/Test' for example
     :param architecture: variant, int || None, 32 or 64 bit. If None, default system architecture is used
     :return: _winreg handle object
     """
-
-    try:
-        import _winreg as winreg
-    except ImportError:
-        import winreg
 
     reg_key = None
     a_reg = winreg.ConnectRegistry(None, getattr(winreg, registry))
@@ -140,17 +141,13 @@ def list_reg_keys(registry, key, architecture=None):
     Returns a list of child keys as tuples containing:
         - A string that identifies the value name
         - An object that holds the value data, and whose type depends on the underlying registry type
-        - An integer that identifies the type of the value data (see table in docs for _winreg.SetValueEx)
+        - An integer that identifies the type of the value data (see table in docs for _winreg.SetValueEx).
+
     :param registry: str, registry to look in. HKEY_LOCAL_MACHINE for example
     :param key: str, key to open 'Software/Ubisoft/Test' for example
     :param architecture: variant, int || None, 32 or 64 bit. If None, default system architecture is used
     :return: list<tuple>
     """
-
-    try:
-        import _winreg as winreg
-    except ImportError:
-        import winreg
 
     reg_key = get_reg_key(registry=registry, key=key, architecture=architecture)
     ret = list()
@@ -172,16 +169,12 @@ def list_reg_key_values(registry, key, architecture=None):
         - A string that identifies the value name
         - An object that holds the value data, and whose type depends on the underlying registry type
         - An integer that identifies the type of the value data (see table in docs for _winreg.SetValueEx)
-    :param registry: str, registry to look in. HKEY_LOCAL_MACHINE for example
+    :param registry: str, registry to look in. HKEY_LOCAL_MACHINE for example.
+
     :param key: str, key to open 'Software/Ubisoft/Test' for example
     :param architecture: variant, int || None, 32 or 64 bit. If None, default system architecture is used
     :return: list<tuple>
     """
-
-    try:
-        import _winreg as winreg
-    except ImportError:
-        import winreg
 
     reg_key = get_reg_key(registry=registry, key=key, architecture=architecture)
     ret = list()
@@ -205,26 +198,27 @@ def registry_value(registry, key, value_name, architecture=None):
 
     reg_key = get_reg_key(registry, key, architecture=architecture)
     if reg_key:
-        import _winreg
-        value = _winreg.QueryValueEx(reg_key, value_name)
-        _winreg.CloseKey(reg_key)
+        value = winreg.QueryValueEx(reg_key, value_name)
+        winreg.CloseKey(reg_key)
         return value
 
     return '', 0
 
 
-def get_monitors():
+def monitors() -> List:
     """
-    Returns a list of all monitors
+    Returns a list of all monitors.
+
     code.activestate.com/recipes/460509-get-the-actual-and-usable-sizes-of-all-the-monitor
-    :return:
+    :return: list of active monitors.
+    :rtype: List
     """
 
     result = list()
 
     CBFUNC = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong, ctypes.POINTER(Rect), ctypes.c_double)
 
-    def cb(h_monitor, hdc_monitor, l_prc_monitor, dw_data):
+    def _cb(h_monitor, hdc_monitor, l_prc_monitor, dw_data):
         r = l_prc_monitor.contents
         data = [h_monitor]
         data.append(r.dump())
@@ -232,22 +226,22 @@ def get_monitors():
 
         return 1
 
-    cb_fn = CBFUNC(cb)
+    cb_fn = CBFUNC(_cb)
     ctypes.windll.user32.EnumDisplayMonitors(0, 0, cb_fn, 0)
 
     return result
 
 
-def get_active_monitor_area():
+def active_monitor_areas():
     """
-    Returns the active and working area of each monitor
+    Returns the active and working area of each monitor.
+
     code.activestate.com/recipes/460509-get-the-actual-and-usable-sizes-of-all-the-monitor
     :return:
     """
 
     result = list()
-    monitors = get_monitors()
-    for h_monitor, extents in monitors:
+    for h_monitor, extents in monitors():
         data = [h_monitor]
         monitor_info = MonitorInfo()
         monitor_info.cbSize = ctypes.sizeof(MonitorInfo)
@@ -261,12 +255,79 @@ def get_active_monitor_area():
     return result
 
 
+def set_coordinates_to_screen(x: int, y: int, w: int, h: int, padding: int = 0) -> Tuple[int, int]:
+    """
+    With the given window position and size, finds a location where the window is not off-screen.
+
+    :param int x: X position of the window.
+    :param int y: Y position of the window.
+    :param int w: width of the window.
+    :param int h: height of the windowd.
+    :param padding: optional extra padding.
+    :return: tuple containing a valid window position.
+    :rtype: Tuple[int, int]
+    """
+
+    monitor_adjusted = [
+        (x1, y1, x2 - w - padding, y2 - h - padding) for x1, y1, x2, y2 in tuple(m[1] for m in active_monitor_areas())]
+    location_groups = tuple(zip(*monitor_adjusted))
+
+    x_orig = x
+    y_orig = y
+    if monitor_adjusted:
+        # Make sure window is within monitor bounds
+        x_min = min(location_groups[0])
+        x_max = max(location_groups[2])
+        y_min = min(location_groups[1])
+        y_max = max(location_groups[3])
+
+        if x < x_min:
+            x = x_min
+        elif x > x_max:
+            x = x_max
+        if y < y_min:
+            y = y_min
+        elif y > y_max:
+            y = y_max
+
+        # Check offset to find the closest monitor
+        monitor_offsets = dict()
+        for monitor_location in monitor_adjusted:
+            monitor_offsets[monitor_location] = 0
+            x1, y1, x2, y2 = monitor_location
+            if x < x1:
+                monitor_offsets[monitor_location] += x1 - x
+            elif x > x2:
+                monitor_offsets[monitor_location] += x - x2
+            if y < y1:
+                monitor_offsets[monitor_location] += y1 - y
+            elif y > y2:
+                monitor_offsets[monitor_location] += y - y2
+
+        # Check the window is correctly in the monitor
+        x1, y1, x2, y2 = min(monitor_offsets.items(), key=lambda d: d[1])[0]
+        if x < x1:
+            x = x1
+        elif x > x2:
+            x = x2
+        if y < y1:
+            y = y1
+        elif y > y2:
+            y = y2
+
+    # Reverse window padding if needed
+    if x != x_orig:
+        x -= padding
+    if y != y_orig:
+        y -= padding
+
+    return x, y
+
+
 def focus_window_from_pid(window_pid, restore=True):
 
     def _window_enumeration_handler(hwnd, list_to_append):
         list_to_append.append((hwnd, win32gui.GetWindowText(hwnd)))
-
-    import win32gui
 
     hwnds = get_hwnds_for_pid(window_pid)
 
@@ -281,9 +342,6 @@ def focus_window_from_pid(window_pid, restore=True):
 
 
 def get_hwnds_for_pid(pid):
-
-    import win32gui
-    import win32process
 
     def _window_enumeration_handler(hwnd, hwnds):
         if win32gui.IsWindowVisible(hwnd) and win32gui.IsWindowEnabled(hwnd):
@@ -302,22 +360,17 @@ def _get_win_folder_from_registry(csidl_name):
     Based on appdirs _get_win_folder_from_registry function
     """
 
-    if helpers.is_python3():
-        import winreg as _winreg
-    else:
-        import _winreg
-
     shell_folder_name = {
         "CSIDL_APPDATA": "AppData",
         "CSIDL_COMMON_APPDATA": "Common AppData",
         "CSIDL_LOCAL_APPDATA": "Local AppData",
     }[csidl_name]
 
-    key = _winreg.OpenKey(
-        _winreg.HKEY_CURRENT_USER,
+    key = winreg.OpenKey(
+        winreg.HKEY_CURRENT_USER,
         r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders"
     )
-    dir, type = _winreg.QueryValueEx(key, shell_folder_name)
+    dir, type = winreg.QueryValueEx(key, shell_folder_name)
 
     return dir
 
@@ -336,7 +389,7 @@ def _get_win_folder_with_ctypes(csidl_name):
     buf = ctypes.create_unicode_buffer(1024)
     ctypes.windll.shell32.SHGetFolderPathW(None, csidl_const, None, 0, buf)
 
-    # Downgrade to short path name if have highbit chars. See
+    # Downgrade to short path name if it has highbit chars. See
     # <http://bugs.activestate.com/show_bug.cgi?id=85099>.
     has_high_char = False
     for c in buf:
@@ -353,7 +406,6 @@ def _get_win_folder_with_ctypes(csidl_name):
 
 if 'win' in sys.platform:
     try:
-        from ctypes import windll
         get_win_folder = _get_win_folder_with_ctypes
     except ImportError:
         get_win_folder = _get_win_folder_from_registry

@@ -8,7 +8,7 @@ Module that defines a base class to load resources
 import os
 
 from Qt.QtCore import Qt, QByteArray, QFileInfo
-from Qt.QtGui import QImage, QPixmap, QIcon, QBrush, QPainter
+from Qt.QtGui import QColor, QImage, QPixmap, QIcon, QBrush, QPainter
 try:
     from Qt.QtSvg import QSvgRenderer
 except ImportError:
@@ -256,6 +256,9 @@ class _PixmapCache(object):
         file_info = QFileInfo(path)
         if not file_info.exists():
             return QPixmap()
+
+        if color and isinstance(color, (tuple, list)):
+            color = QColor(*color)
 
         key = 'rsc:{}:{}:{}'.format(path, int(size), 'null' if not color else color.name())
         if key in self._resources_path_cache:

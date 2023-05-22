@@ -280,7 +280,7 @@ class Token:
 		:rtype: dict
 		"""
 
-		token_values = {token_value.name for token_value in self._token_values}
+		token_values = {token_value.name: token_value.value for token_value in self._token_values}
 		permissions = [{'name': token_value.name} for token_value in self._token_values if token_value.protected]
 		return {
 			'name': self.name,

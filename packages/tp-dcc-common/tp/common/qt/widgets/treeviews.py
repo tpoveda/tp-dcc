@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from Qt.QtCore import Qt, Signal, QModelIndex, QItemSelectionModel, QItemSelection
-from Qt.QtWidgets import QApplication, QWidget, QFrame, QTreeView
+from typing import List
+
+from Qt.QtCore import Qt, Signal, QPoint, QSize, QModelIndex, QItemSelectionModel, QItemSelection
+from Qt.QtWidgets import QApplication, QWidget, QFrame, QTreeView, QMenu, QAction
 from Qt.QtGui import QMouseEvent
 
-from tp.common.qt import qtutils
-from tp.common.qt.models import utils, treemodel, sortmodel
-from tp.common.qt.widgets import layouts
+from tp.common.qt import dpi, qtutils
+from tp.common.qt.models import utils, datasources, treemodel, sortmodel
+from tp.common.qt.widgets import layouts, search, sliding, labels, menus
 
 
 class BaseTreeView(QTreeView):
@@ -72,6 +74,7 @@ class ExtendedTreeView(QFrame):
 
 		self.setFrameStyle(QFrame.NoFrame | QFrame.Plain)
 
+		self._title = title
 		self._sorting = sorting
 		self._model = None								# type: treemodel.BaseTreeModel
 		self._column_data_sources = list()
@@ -149,13 +152,45 @@ class ExtendedTreeView(QFrame):
 
 		self._tree_view.collapseAll()
 
+	def selected_indices(self) -> List[QModelIndex]:
+		"""
+		Returns a list of selected model indices.
+
+		:return: List[QModelIndex]
+		"""
+
+		return self._proxy_search.mapSelectionToSource(self.selection_model().selection()).indexes()
+
+	def selected_items(self) -> List[datasources.BaseDataSource]:
+		"""
+		Returns a list of selected data source items.
+
+		:return: list of selected items.
+		:rtype: List[datasources.BaseDataSource]
+		"""
+
+		indices = self.selection_model().selection()
+		model_indices = self._proxy_search.mapSelectionToSource(indices).indexes()
+		return list(map(self._model.item_from_index, model_indices))
+
+	def header_items(self) -> List[str]:
+		"""
+		List of header item names.
+
+		:return: header item names.
+		:rtype: List[str]
+		"""
+
+		header_items = list()
+		for i in range(self._model.columnCount(QModelIndex())):
+			header_items.append(self._model.root.header_text(i))
+
+		return header_items
+
 	def refresh(self):
 		"""
 		Refreshes tree view based on the model contents and adjust columns to the displayed contents.
 		"""
-
-		print('refreshing ...')
-		print(self._model)
 
 		for index in range(self._model.columnCount(QModelIndex())):
 			self._tree_view.resizeColumnToContents(index)
@@ -171,19 +206,54 @@ class ExtendedTreeView(QFrame):
 		self._tree_view = BaseTreeView(parent=self)
 		self._tree_view.setSelectionMode(QTreeView.ExtendedSelection)
 		self._tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
+
+		self._setup_filter()
 		self._main_layout.addWidget(self._tree_view)
 
 		self._proxy_search = sortmodel.LeafTreeFilterProxyModel(sort=False, parent=self)
 		self.set_sorting_enabled(self._sorting)
 		self.set_alternating_color_enabled(True)
 
+		self._tree_view.customContextMenuRequested.connect(self._on_custom_context_menu_requested)
+
+	def _setup_filter(self):
+		"""
+		Internal function that setup table view filtering widgets.
+		"""
+
+		self._sliding_widget = sliding.SlidingWidget(parent=self)
+		self._title_label = labels.ClippedLabel(text=self._title.upper(), parent=self)
+		self._search_edit = search.SearchLineEdit(parent=self)
+		self._search_edit.setMinimumSize(dpi.size_by_dpi(QSize(21, 21)))
+		self._sliding_widget.set_widgets(self._search_edit, self._title_label)
+
+		self._toolbar_layout = layouts.horizontal_layout(spacing=0, margins=(10, 6, 6, 0))
+		self._toolbar_layout.addWidget(self._sliding_widget)
+		self._main_layout.addLayout(self._toolbar_layout)
+
 	def _setup_signals(self):
 		"""
 		Internal function that connects signals.
 		"""
 
+		self._search_edit.textChanged.connect(self._proxy_search.setFilterRegExp)
 		selection_model = self.selection_model()
 		selection_model.selectionChanged.connect(self._on_selection_changed)
+		self._tree_view.header().setContextMenuPolicy(Qt.CustomContextMenu)
+		self._tree_view.header().customContextMenuRequested.connect(self._on_header_custom_context_menu_requested)
+
+	def _toggle_column(self, column: int, state: bool):
+		"""
+		Toggles column state.
+
+		:param int column: column index.
+		:param bool state: whether column is enabled.
+		"""
+
+		if column == 0:
+			self._tree_view.showColumn(0) if state == Qt.Checked else self._tree_view.hideColumn(0)
+		else:
+			self._tree_view.showColumn(column) if state == Qt.Checked else self._tree_view.hideColumn(column)
 
 	def _on_selection_changed(self, current: QItemSelection, previous: QItemSelection):
 		"""
@@ -195,3 +265,36 @@ class ExtendedTreeView(QFrame):
 
 		event = ExtendedTreeView.ExtendedTreeViewSelectionChangedEvent(current=current, previous=previous, parent=self)
 		self.selectionChanged.emit(event)
+
+	def _on_custom_context_menu_requested(self, pos: QPoint):
+		"""
+		Internal callback function that is called when context menu is opened.
+
+		:param QPoint pos: context menu position.
+		"""
+
+		context_menu = menus.extended_menu(parent=self)
+		selection = self.selected_items()
+		if self._model.root is not None:
+			self._model.root.context_menu(selection, context_menu)
+		self.contextMenuRequested.emit(selection, context_menu)
+		if max(len(context_menu.children()) - 4, 0) != 0:
+			context_menu.exec_(self._tree_view.viewport().mapToGlobal(pos))
+
+	def _on_header_custom_context_menu_requested(self, pos: QPoint):
+		"""
+		Internal callback function that is called when header context menu is opened.
+
+		:param QPoint pos: context menu position.
+		"""
+
+		global_pos = self.mapToGlobal(pos)
+		context_menu = QMenu(parent=self)
+		headers = self.header_items()
+		for i in range(len(headers)):
+			item = QAction(headers[i], context_menu, checkable=True)
+			context_menu.addAction(item)
+			item.setChecked(not self._tree_view.header().isSectionHidden(i))
+			item.setData({'index': i})
+		selected_item = context_menu.exec_(global_pos)
+		self._toggle_column(selected_item.data()['index'], Qt.Checked if selected_item.isChecked() else Qt.Unchecked)

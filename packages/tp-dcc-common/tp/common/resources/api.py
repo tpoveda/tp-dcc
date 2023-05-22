@@ -165,14 +165,12 @@ def get(*args, **kwargs):
     return None
 
 
-def icon(*args, **kwargs):
+def icon(*args, **kwargs) -> QIcon:
     """
     Returns icon.
 
-    :param tuple args: tuple width arguments.
-    :param dict kwargs: dictionary with arguments.
-    :param: icon found
-    :return: Icon or QIcon
+    :return: icon found
+    :rtype: Icon or QIcon
     """
 
     if not _RESOURCES:

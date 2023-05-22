@@ -377,7 +377,7 @@ class Singleton(type):
         return cls._instance
 
 
-class HybridMethod(object):
+class HybridMethod:
     """
     Merges a normal method with a classmethod
     First two arguments are (cls, self), where self will match cls if it is a classmethod

@@ -5,14 +5,17 @@
 Utility module that contains useful utilities functions for PySide
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import struct
 import inspect
 import contextlib
+from typing import Tuple, Callable
 
 from tp.core import log, dcc
-from tp.common.python import helpers
+from tp.common.python import helpers, win32
 from tp.common.resources import color
 
 logger = log.tpLogger
@@ -22,13 +25,16 @@ QT_ERROR_MESSAGE = 'Qt.py is not available and Qt related functionality will not
 QT_AVAILABLE = True
 _QT_TEST_AVAILABLE = True
 try:
-    from Qt.QtCore import Qt, Signal, QObject, QPoint, QSize, QTimer
+    from Qt.QtCore import Qt, Signal, QObject, QPoint, QRect, QSize, QTimer
     from Qt.QtWidgets import QApplication, QLayout, QVBoxLayout, QHBoxLayout, QWidget, QFrame, QLabel, QPushButton
-    from Qt.QtWidgets import QSizePolicy, QMessageBox, QInputDialog, QFileDialog, QMenu, QMenuBar
+    from Qt.QtWidgets import (
+        QSizePolicy, QMessageBox, QInputDialog, QFileDialog, QMenu, QMenuBar, QGraphicsDropShadowEffect
+    )
     from Qt.QtGui import QFontDatabase, QPixmap, QIcon, QColor, QCursor
     from Qt import QtGui
     from Qt import QtCompat
     from Qt import __binding__
+    from tp.common.qt import dpi
 except ImportError as e:
     QT_AVAILABLE = False
     logger.warning('Impossible to load Qt libraries. Qt dependant functionality will be disabled!')
@@ -55,8 +61,6 @@ if QT_AVAILABLE:
                 except Exception:
                     pass
 
-# ==============================================================================
-
 MAX_INT = 2 ** (struct.Struct('i').size * 8 - 1) - 1
 
 UI_EXTENSION = '.ui'
@@ -70,8 +74,6 @@ CURRENT_DIR = os.path.expanduser('~')
 if helpers.is_python3():
     long = int
 
-
-# ==============================================================================
 
 def is_pyqt():
     """
@@ -538,7 +540,7 @@ def get_squared_length(point):
     return point.dotProduct(point, point)
 
 
-def get_window_offset(window):
+def window_offset(window):
     """
     Returns the window offset.
 
@@ -550,7 +552,7 @@ def get_window_offset(window):
     return window.pos() - window.mapToGlobal(QPoint(0, 0))
 
 
-def get_widget_center(widget):
+def widget_center(widget: QWidget) -> QPoint:
     """
     Returns the center of the given widget.
 
@@ -559,7 +561,7 @@ def get_widget_center(widget):
     :rtype: QPoint
     """
 
-    return QPoint(int(widget.width() / 2), int(widget.height() / 2))
+    return QPoint(int(widget.width() * 0.5), int(widget.height() * 0.5))
 
 
 def get_widget_at_mouse():
@@ -1115,11 +1117,12 @@ def get_or_create_menu(menu_bar, menu_title):
     return menu
 
 
-def recursively_set_menu_actions_visibility(menu, state):
+def recursively_set_menu_actions_visibility(menu: QMenu, state: bool):
     """
-    Recursively sets the visible state of all actions of the given menu
-    :param QMenu menu: menu to edit actions visibility of
-    :param bool state: new visibility status
+    Recursively sets the visible state of all actions of the given menu.
+
+    :param QMenu menu: menu to edit actions visibility of.
+    :param bool state: new visibility status.
     """
 
     for action in menu.actions():
@@ -1218,7 +1221,7 @@ def find_coordinates_inside_screen(x, y, width, height, padding=0):
 
     monitor_adjusted = [
         (x1, y1, x2 - width - padding, y2 - height - padding
-         ) for x1, y1, x2, y2 in tuple(m[1] for m in win32.get_active_monitor_area())]
+         ) for x1, y1, x2, y2 in tuple(m[1] for m in win32.active_monitor_areas())]
     location_groups = tuple(zip(*monitor_adjusted))
 
     x_orig = x
@@ -1285,15 +1288,19 @@ def update_widget_style(widget):
     widget.setStyle(widget.style())
 
 
-def update_widget_sizes(widget):
+def update_widget_sizes(widget: QWidget):
     """
     Updates the given widget sizes.
 
     :param QWidget widget: widget to update sizes of.
     """
 
-    widget.layout().update()
-    widget.layout().activate()
+    if not widget:
+        return
+    widget_layout = widget.layout()
+    if widget_layout:
+        widget_layout.update()
+        widget_layout.activate()
 
 
 def set_stylesheet_object_name(widget, name, update=True):
@@ -1309,6 +1316,30 @@ def set_stylesheet_object_name(widget, name, update=True):
     widget.setObjectName(name)
     if update:
         update_widget_style(widget)
+
+
+def set_shadow_effect_enabled(widget: QWidget, flag: bool) -> QGraphicsDropShadowEffect | None:
+    """
+    Sets shadow effect for given widget.
+
+    :param QWidget widget: widget to set shadow effect for.
+    :param bool flag: whether to enable shadow effect.
+    """
+
+    shadow_effect = None
+    if flag:
+        shadow_effect = widget.property('shadowEffect')
+        if shadow_effect is None:
+            shadow_effect = QGraphicsDropShadowEffect(widget)
+            widget.setProperty('shadowEffect', shadow_effect)
+            shadow_effect.setBlurRadius(dpi.dpi_scale(8))
+            shadow_effect.setColor(QColor(0, 0, 0, 150))
+            shadow_effect.setOffset(dpi.dpi_scale(2))
+        widget.setGraphicsEffect(shadow_effect)
+    else:
+        widget.setGraphicsEffect(None)
+
+    return shadow_effect
 
 
 def iterate_parents(widget):
@@ -1374,7 +1405,7 @@ def get_current_screen(global_pos=None):
     return screen
 
 
-def get_current_screen_number(global_pos=None):
+def current_screen_number(global_pos=None):
     """
     Returns current screen number.
 
@@ -1386,7 +1417,7 @@ def get_current_screen_number(global_pos=None):
     return QApplication.desktop().screenNumber(global_pos)
 
 
-def get_current_screen_geometry():
+def current_screen_geometry() -> QRect:
     """
     Returns the current screen geometry.
 
@@ -1394,7 +1425,7 @@ def get_current_screen_geometry():
     :rtype: QRect
     """
 
-    screen = get_current_screen_number()
+    screen = current_screen_number()
     return QApplication.desktop().screenGeometry(screen)
 
 
@@ -1410,21 +1441,23 @@ def contain_widget_in_screen(widget, pos=None):
         pos = widget.mapToGlobal(QPoint(0, 0))
     else:
         pos = QPoint(pos)
-    geo = get_current_screen_geometry()
+    geo = current_screen_geometry()
     pos.setX(min(max(geo.x(), pos.x()), geo.right() - widget.width()))
     pos.setY(min(max(geo.y(), pos.y()), geo.bottom() - widget.height()))
 
     return pos
 
 
-def click_under(pos, under=1, button=Qt.LeftButton, modifier=Qt.KeyboardModifier.NoModifier):
+def click_under(
+        pos: QPoint, under: int = 1, button: Qt.MouseButton = Qt.LeftButton,
+        modifier: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier):
     """
     Clicks under the widget.
 
     :param QPoint pos: cursor position.
     :param int under: number of iterations under.
     :param Qt.Button button: button to simulate click with.
-    :param Qt.Modifier modifier: modifier to simulate click with.
+    :param Qt.KeyboardModifier modifier: modifier to simulate click with.
     """
 
     if not _QT_TEST_AVAILABLE:
@@ -1435,7 +1468,7 @@ def click_under(pos, under=1, button=Qt.LeftButton, modifier=Qt.KeyboardModifier
     QtTest.QTest.mouseClick(widgets[under][0], button, modifier, widgets[under][1])
 
 
-def single_shot_timer(func, time=0):
+def single_shot_timer(func: Callable, time: int = 0):
     """
     Calls given callable in the given time.
 
@@ -1618,3 +1651,5 @@ def get_open_filename(title='Open File', file_dir=None, ext_filter='*', parent=N
         set_current_directory(file_path)
 
     return file_dialog
+
+

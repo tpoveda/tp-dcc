@@ -5,8 +5,10 @@
 Module that includes classes to create overlay widgets
 """
 
-from Qt.QtCore import Qt, Signal
-from Qt.QtWidgets import QApplication, QDialog, QHBoxLayout
+from overrides import override
+from Qt.QtCore import Qt, Signal, QEvent
+from Qt.QtWidgets import QApplication, QDialog, QHBoxLayout, QLayout
+from Qt.QtGui import QMouseEvent, QKeyEvent
 
 from tp.common.qt import qtutils
 
@@ -27,7 +29,7 @@ class OverlayWidget(QDialog):
 		self._debug = False
 		self.setup_ui(layout_class)
 
-	def setup_ui(self, layout_class):
+	def setup_ui(self, layout_class: QLayout):
 		if qtutils.is_pyside2() or qtutils.is_pyqt5():
 			self.setWindowFlags(Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint)
 		else:
@@ -39,16 +41,18 @@ class OverlayWidget(QDialog):
 		self.main_layout = layout_class()
 		self.setLayout(self.main_layout)
 
-	def update(self):
+	@override(check_signature=False)
+	def update(self) -> None:
 		self.setGeometry(0, 0, self.parent().geometry().width(), self.parent().geometry().height())
 		super(OverlayWidget, self).update()
 
-	def enterEvent(self, event):
+	@override
+	def enterEvent(self, event: QEvent) -> None:
 		"""
 		Overrides base QDialog enterEvent function.
 		On mouse enter, check if it is pressed
 
-		:param Qt.Event event: Qt enter event.
+		:param QEvent event: Qt enter event.
 		"""
 
 		if not self.PRESSED:
@@ -56,12 +60,13 @@ class OverlayWidget(QDialog):
 
 		event.ignore()
 
-	def mousePressEvent(self, event):
+	@override
+	def mousePressEvent(self, event: QMouseEvent) -> None:
 		"""
 		Overrides base QDialog mousePressEvent function.
 		Send events back down to parent.
 
-		:param QEvent event: Qt mouse press event.
+		:param QMouseEvent event: Qt mouse press event.
 		"""
 
 		if not QApplication.keyboardModifiers() == self.OVERLAY_ACTIVE_KEY:
@@ -72,28 +77,31 @@ class OverlayWidget(QDialog):
 		self.PRESSED = True
 		self.update()
 
-	def mouseMoveEvent(self, event):
+	@override
+	def mouseMoveEvent(self, event: QMouseEvent) -> None:
 		"""
 		Overrides base QDialog mouseMoveEvent function.
 
-		:param QEvent event: Qt mouse move evente.
+		:param QMouseEvent event: Qt mouse move evente.
 		"""
 
 		pass
 
-	def mouseReleaseEvent(self, event):
+	@override
+	def mouseReleaseEvent(self, event: QMouseEvent) -> None:
 		"""
 		Overrides base QDialog mouseReleaseEvent function.
 		Send events back down to parent
 
-		:param QEvent event: Qt mouse release event.
+		:param QMouseEvent event: Qt mouse release event.
 		:return:
 		"""
 		self.widgetMouseRelease.emit(event)
 		self.PRESSED = False
 		self.update()
 
-	def keyReleaseEvent(self, event):
+	@override
+	def keyReleaseEvent(self, event: QKeyEvent) -> None:
 		"""
 		Overrides base QDialog keyReleaseEvent function.
 
@@ -103,7 +111,8 @@ class OverlayWidget(QDialog):
 
 		self.hide()
 
-	def show(self, *args, **kwargs):
+	@override(check_signature=False)
+	def show(self, *args, **kwargs) -> None:
 		"""
 		Overrides base QDialog show function.
 		:return:
@@ -113,7 +122,7 @@ class OverlayWidget(QDialog):
 		super().show(*args, **kwargs)
 		self.update()
 
-	def set_debug_mode(self, debug):
+	def set_debug_mode(self, debug: bool):
 		"""
 		Debug mode to show where the dialog window is. Turns the window a transparent red
 

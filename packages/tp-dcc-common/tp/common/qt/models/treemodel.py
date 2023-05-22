@@ -189,7 +189,7 @@ class BaseTreeModel(QAbstractItemModel):
 
 	def refresh(self):
 		"""
-		Hard reloads the model,
+		Hard reloads the model.
 		"""
 
 		self.modelReset.emit()

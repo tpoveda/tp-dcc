@@ -520,6 +520,17 @@ class BaseDataSource(QObject):
 
 		return self.DISABLED_COLOR
 
+	def display_changed_color(self, index: int) -> int | None:
+		"""
+		Returns the display changed color.
+
+		:param int index: column index for the item.
+		:return: display changed color index.
+		:rtype: int
+		"""
+
+		return None
+
 	def user_objects(self) -> list[Any]:
 		"""
 		Returns list of user objects for this data source.
@@ -586,6 +597,15 @@ class BaseDataSource(QObject):
 		"""
 
 		return False
+
+	def on_vertical_header_selection(self, index: int):
+		"""
+		Triggered by the view (if this source is attached to one) when the vertical header of the view is clicked.
+
+		:param int index: row index.
+		"""
+
+		pass
 
 	def can_fetch_more(self) -> bool:
 		"""

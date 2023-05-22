@@ -4,11 +4,16 @@ from Qt import QtCompat
 from Qt.QtCore import Qt, Signal
 from Qt.QtWidgets import QWidget, QFrame, QHeaderView, QTableView
 
-from tp.common.qt.widgets import layouts
+from tp.common.qt.widgets import layouts, search
 from tp.common.qt.models import datasources, tablemodel
 
 
 class ExtendedTableView(QFrame):
+
+	selectionChanged = Signal(object)
+	contextMenuRequested = Signal(list, object)
+	refreshRequested = Signal()
+
 	def __init__(self, searchable: bool = False, manual_reload: bool = True, parent: QWidget | None = None):
 		super().__init__(parent)
 
@@ -22,6 +27,25 @@ class ExtendedTableView(QFrame):
 	@property
 	def table_view(self) -> BaseTableView:
 		return self._table_view
+
+	def refresh(self):
+		"""
+		Refreshes view.
+		"""
+
+		if self._refreshing:
+			return
+		self._refreshing = True
+		try:
+			self.refreshRequested.emit()
+			row_data_source = self._model.row_data_source
+			column_data_sources = self._model.column_data_sources
+			header_items = list()
+			for i in range(len(column_data_sources)):
+				header_items.append(column_data_sources[i].header_text(i))
+			self._search_widget.set_header_items([row_data_source.header_text(0)] + header_items)
+		finally:
+			self._refreshing = False
 
 	def set_model(self, model: tablemodel.BaseTableModel):
 		"""
@@ -58,6 +82,11 @@ class ExtendedTableView(QFrame):
 			self._table_view.setColumnWidth(0, width)
 
 	def register_column_data_sources(self, data_sources: list[datasources.BaseDataSource]):
+		"""
+		Register given column data sources into the model.
+
+		:param list data_sources:
+		"""
 
 		if not self._row_data_source:
 			raise ValueError('Must assign row data source before columns')
@@ -84,11 +113,23 @@ class ExtendedTableView(QFrame):
 		Internal function that creates list view widgets.
 		"""
 
-		self._main_layout = layouts.vertical_layout()
-		self.setLayout(self._main_layout)
+		self._main_layout = layouts.vertical_layout(parent=self)
 
 		self._table_view = BaseTableView(parent=self)
+		self._setup_filter()
+
 		self._main_layout.addWidget(self._table_view)
+
+	def _setup_filter(self):
+		"""
+		Internal function that setup table view filtering widgets.
+		"""
+
+		self._search_widget = search.ViewSearchWidget(parent=self)
+
+		self._search_layout = layouts.horizontal_layout(spacing=0)
+		self._search_layout.addWidget(self._search_widget)
+		self._main_layout.addLayout(self._search_layout)
 
 
 class BaseTableView(QTableView):
