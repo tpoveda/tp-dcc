@@ -15,4 +15,5 @@ comtypes
 numpy
 natsort
 overrides
+pywin32
 PySide2
