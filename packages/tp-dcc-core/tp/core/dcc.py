@@ -5,19 +5,21 @@
 Module that contains DCC core functions an classes
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import importlib
 import traceback
+from typing import Callable, List
 from functools import wraps
 from collections import OrderedDict
+from importlib.util import find_spec
 
 from tp.core import consts, log
 from tp.common.python import osplatform
 
 logger = log.tpLogger
-
-main = __import__('__main__')
 
 # Cached current DCC name.
 CURRENT_DCC = None
@@ -26,11 +28,9 @@ DEFAULT_DCC_PORT = 65500
 # Cached used to store all the rerouting paths done during a session.
 DCC_REROUTE_CACHE = dict()
 
-# Cached DCC clients
-_CLIENTS = dict()
-
 
 class Dccs(object):
+
     Standalone = 'standalone'
     Maya = 'maya'
     Max = '3dsmax'
@@ -41,9 +41,10 @@ class Dccs(object):
     Blender = 'blender'
     SubstancePainter = 'painter'
     SubstanceDesigner = 'designer'
+    Fusion = 'fusion'
 
     ALL = [
-        Maya, Max, MotionBuilder, Houdini, Nuke, Unreal, Blender, SubstancePainter, SubstanceDesigner
+        Maya, Max, MotionBuilder, Houdini, Nuke, Unreal, Blender, SubstancePainter, SubstanceDesigner, Fusion
     ]
 
     NiceNames = OrderedDict([
@@ -55,19 +56,23 @@ class Dccs(object):
         (Unreal, 'Unreal'),
         (Blender, 'Blender'),
         (SubstancePainter, 'SubstancePainter'),
-        (SubstanceDesigner, 'SubstanceDesigner')
+        (SubstanceDesigner, 'SubstanceDesigner'),
+        (Fusion, 'Fusion')
     ])
 
     Packages = OrderedDict([
-        ('cmds', Maya),
+        ('maya', Maya),
         ('pymxs', Max),
+        ('MaxPlus', Max),
         ('pyfbsdk', MotionBuilder),
         ('hou', Houdini),
         ('nuke', Nuke),
         ('unreal', Unreal),
         ('bpy', Blender),
         ('substance_painter', SubstancePainter),
-        ('substance_designer', SubstanceDesigner)
+        ('sd', SubstanceDesigner),
+        ('fusionscript', Fusion),
+        ('PeyeonScript', Fusion)
     ])
 
     # TODO: Add support for both MacOS and Linux
@@ -75,12 +80,13 @@ class Dccs(object):
         Maya: {osplatform.Platforms.Windows: 'maya.exe'},
         Max: {osplatform.Platforms.Windows: '3dsmax.exe'},
         MotionBuilder: {osplatform.Platforms.Windows: 'motionbuilder.exe'},
-        Houdini: {osplatform.Platforms.Windows: 'houdinifx.exe'},
-        Nuke: {},
-        Unreal: {osplatform.Platforms.Windows: 'UnrealEditor..exe'},
+        Houdini: {osplatform.Platforms.Windows: 'houdini'},
+        Nuke: {osplatform.Platforms.Windows: 'Nuke'},
+        Unreal: {osplatform.Platforms.Windows: 'UnrealEditor.exe'},
         Blender: {osplatform.Platforms.Windows: 'blender.exe'},
         SubstancePainter: {osplatform.Platforms.Windows: 'painter.exe'},
-        SubstanceDesigner: {osplatform.Platforms.Windows: 'designer.exe'}
+        SubstanceDesigner: {osplatform.Platforms.Windows: 'designer.exe'},
+        Fusion: {osplatform.Platforms.Windows: 'Fusion.exe'}
     }
 
     Ports = {
@@ -94,54 +100,75 @@ class Dccs(object):
         Blender: DEFAULT_DCC_PORT + 7,              # 65507
         SubstancePainter: DEFAULT_DCC_PORT + 8,     # 65508
         SubstanceDesigner: DEFAULT_DCC_PORT + 9,    # 65509
+        Fusion: DEFAULT_DCC_PORT + 10,              # 65510
         Unreal: 30010                              # Default Unreal Remote Server Plugin port
     }
 
+    class Callbacks:
+        Shutdown = (consts.CallbackTypes.Shutdown, {'type': 'simple'})
+        Tick = (consts.CallbackTypes.Tick, {'type': 'simple'})
+        ScenePreCreated = (consts.CallbackTypes.ScenePreCreated, {'type': 'simple'})
+        ScenePostCreated = (consts.CallbackTypes.ScenePostCreated, {'type': 'simple'})
+        SceneNewRequested = (consts.CallbackTypes.SceneNewRequested, {'type': 'simple'})
+        SceneNewFinished = (consts.CallbackTypes.SceneNewFinished, {'type': 'simple'})
+        SceneSaveRequested = (consts.CallbackTypes.SceneSaveRequested, {'type': 'simple'})
+        SceneSaveFinished = (consts.CallbackTypes.SceneSaveFinished, {'type': 'simple'})
+        SceneOpenRequested = (consts.CallbackTypes.SceneOpenRequested, {'type': 'simple'})
+        SceneOpenFinished = (consts.CallbackTypes.SceneOpenFinished, {'type': 'simple'})
+        UserPropertyPreChanged = (consts.CallbackTypes.UserPropertyPreChanged, {'type': 'filter'})
+        UserPropertyPostChanged = (consts.CallbackTypes.UserPropertyPostChanged, {'type': 'filter'})
+        NodeSelect = (consts.CallbackTypes.NodeSelect, {'type': 'filter'})
+        NodeAdded = (consts.CallbackTypes.NodeAdded, {'type': 'filter'})
+        NodeDeleted = (consts.CallbackTypes.NodeDeleted, {'type': 'filter'})
+        ReferencePreLoaded = (consts.CallbackTypes.ReferencePreLoaded, {'type': 'simple'})
+        ReferencePostLoaded = (consts.CallbackTypes.ReferencePostLoaded, {'type': 'simple'})
 
-class DccCallbacks(object):
-    Shutdown = (consts.CallbackTypes.Shutdown, {'type': 'simple'})
-    Tick = (consts.CallbackTypes.Tick, {'type': 'simple'})
-    ScenePreCreated = (consts.CallbackTypes.ScenePreCreated, {'type': 'simple'})
-    ScenePostCreated = (consts.CallbackTypes.ScenePostCreated, {'type': 'simple'})
-    SceneNewRequested = (consts.CallbackTypes.SceneNewRequested, {'type': 'simple'})
-    SceneNewFinished = (consts.CallbackTypes.SceneNewFinished, {'type': 'simple'})
-    SceneSaveRequested = (consts.CallbackTypes.SceneSaveRequested, {'type': 'simple'})
-    SceneSaveFinished = (consts.CallbackTypes.SceneSaveFinished, {'type': 'simple'})
-    SceneOpenRequested = (consts.CallbackTypes.SceneOpenRequested, {'type': 'simple'})
-    SceneOpenFinished = (consts.CallbackTypes.SceneOpenFinished, {'type': 'simple'})
-    UserPropertyPreChanged = (consts.CallbackTypes.UserPropertyPreChanged, {'type': 'filter'})
-    UserPropertyPostChanged = (consts.CallbackTypes.UserPropertyPostChanged, {'type': 'filter'})
-    NodeSelect = (consts.CallbackTypes.NodeSelect, {'type': 'filter'})
-    NodeAdded = (consts.CallbackTypes.NodeAdded, {'type': 'filter'})
-    NodeDeleted = (consts.CallbackTypes.NodeDeleted, {'type': 'filter'})
-    ReferencePreLoaded = (consts.CallbackTypes.ReferencePreLoaded, {'type': 'simple'})
-    ReferencePostLoaded = (consts.CallbackTypes.ReferencePostLoaded, {'type': 'simple'})
 
+def dcc_port(dcc_name: str | None = None) -> int:
+    """
+    Returns the port assigned for given DCC.
 
-def dcc_port(dcc_name=None):
+    :param str or None dcc_name: optional name of the DCC to get port of. If not given, current DCC will be used.
+    :return: tp-dcc-tools framework client/server port to use.
+    :rtype: int
+    """
+
     dcc = dcc_name or current_dcc()
     if not dcc:
-        return Dccs.Ports.Standalone
+        return Dccs.Ports['Standalone']
 
     return Dccs.Ports.get(dcc_name, Dccs.Ports['Undefined'])
 
 
-def dcc_ports(base_port):
-    all_ports = OrderedDict()
-    all_ports['base'] = base_port
-    for dcc_name in enumerate(Dccs.ALL):
-        all_ports[dcc_name] = base_port + 1
+def importable(module_name: str) -> bool:
+    """
+    Returns whether given module is importable.
 
-    return all_ports
+    :param str module_name: name of the module to check.
+    :return: True if given module is importable; False otherwise.
+    :rtype: bool
+    """
+
+    try:
+        return bool(find_spec(module_name))
+    except TypeError:
+        return False
 
 
-def current_dcc():
+def current_dcc() -> str:
+    """
+    Returns name of the current DCC being used.
+
+    :return: DCC being used.
+    :rtype: str
+    """
+
     global CURRENT_DCC
     if CURRENT_DCC:
         return CURRENT_DCC
 
     for dcc_package, dcc_name in Dccs.Packages.items():
-        if dcc_package in main.__dict__:
+        if importable(dcc_package) and Dccs.Executables[dcc_name][osplatform.get_platform()] in sys.executable:
             CURRENT_DCC = dcc_name
             break
     if not CURRENT_DCC:
@@ -161,44 +188,14 @@ def current_dcc():
     return CURRENT_DCC
 
 
-def get_dcc_loader_module():
-    """
-    Checks DCC we are working on an initializes proper variables
-    """
-
-    dcc_mod = None
-    for dcc_package, dcc_name in Dccs.Packages.items():
-        if dcc_package in main.__dict__:
-            module_to_import = 'tp.{}.loader'.format(dcc_name)
-            try:
-                dcc_mod = importlib.import_module(module_to_import)
-            except ImportError:
-                logger.warning('DCC loader module {} not found!'.format(module_to_import))
-                continue
-            if dcc_mod:
-                break
-    if not dcc_mod:
-        try:
-            import unreal
-            dcc_mod = importlib.import_module('tp.unreal.loader')
-        except Exception:
-            try:
-                import pyfbsdk
-                dcc_mod = importlib.import_module('tp.mobu.loader')
-            except ImportError:
-                pass
-
-    return dcc_mod
-
-
-def reroute(fn):
+def reroute(fn: Callable):
     """
     Decorator that reroutes the function call on runtime to the specific DCC implementation of the function
     Rerouted function calls are cached, and are only loaded once.
     The used DCC API will be retrieved from the current session, taking into account the current available
     implementations
 
-    :param fn:
+    :param Callable fn: decorated function.
     """
 
     @wraps(fn)
@@ -239,14 +236,16 @@ def reroute(fn):
     return wrapper
 
 
-def callbacks():
+def callbacks() -> List[str]:
     """
-    Return a full list of callbacks based on DccCallbacks dictionary
-    :return: list<str>
+    Return a full list of callbacks based on DccCallbacks dictionary.
+
+    :return: list of callback names.
+    :rtype: List[str]
     """
 
     new_list = list()
-    for k, v in DccCallbacks.__dict__.items():
+    for k, v in Dccs.Callbacks.__dict__.items():
         if k.startswith('__') or k.endswith('__'):
             continue
         new_list.append(v[0])
@@ -254,126 +253,136 @@ def callbacks():
     return new_list
 
 
-def client(key=None, only_clients=False):
+def is_standalone() -> bool:
     """
-    Returns first current active DCC client
-    :return: DccClient
-    """
+    Check if current environment is standalone or not.
 
-    from tp.core import dcc
-
-    client = None
-    if _CLIENTS:
-        if key:
-            client = _CLIENTS.get(key, None)
-            if client:
-                return client()
-        else:
-            client = _CLIENTS[list(_CLIENTS.keys())[0]]
-
-    if not client:
-        if only_clients:
-            return None
-        return dcc
-
-    return client
-
-
-def clients():
-    """
-    Returns all current active DCCs
-    :return: list(DccClient)
-    """
-
-    if not _CLIENTS:
-        return client()
-
-    return [found_client() for found_client in _CLIENTS]
-
-
-def is_standalone():
-    """
-    Check if current environment is standalone or not
-    :return: bool
+    :return: True if current environment is standalone; False otherwise.
+    :rtype: bool
     """
 
     return current_dcc() == Dccs.Standalone
 
 
-def is_maya():
+def is_maya() -> bool:
     """
-    Checks if Maya is available or not
-    :return: bool
+    Checks if Maya is available or not.
+
+    :return: True if current environment is Autodesk Maya; False otherwise.
+    :rtype: bool
     """
 
     return current_dcc() == Dccs.Maya
 
 
-def is_max():
+def is_mayapy() -> bool:
     """
-    Checks if Max is available or not
-    :return: bool
+    Checks if MayaPy is available or not.
+
+    :return: True if current environment is Autodesk MayaPy; False otherwise.
+    :rtype: bool
+    """
+
+    return is_maya() and 'mayapy' in sys.executable
+
+
+def is_max() -> bool:
+    """
+    Checks if 3ds Max is available or not.
+
+    :return: True if current environment is Autodesk 3ds Max; False otherwise.
+    :rtype: bool
     """
 
     return current_dcc() == Dccs.Max
 
 
-def is_mobu():
+def is_mobu() -> bool:
     """
-    Checks if MotionBuilder is available or not
-    :return: bool
+    Checks if MotionBuilder is available or not.
+
+    :return: True if current environment is Autodesk MotionBuilder; False otherwise.
+    :rtype: bool
     """
 
     return current_dcc() == Dccs.MotionBuilder
 
 
-def is_houdini():
+def is_houdini() -> bool:
     """
-    Checks if Houdini is available or not
-    :return: bool
+    Checks if Houdini is available or not.
+
+    :return: True if current environment is SideFX Houdini; False otherwise.
+    :rtype: bool
     """
 
     return current_dcc() == Dccs.Houdini
 
 
-def is_unreal():
+def is_unreal() -> bool:
     """
-    Checks if Houdini is available or not
-    :return: bool
+    Checks if Houdini is available or not.
+
+    :return: True if current environment is Epic Games Unreal Engine; False otherwise.
+    :rtype: bool
     """
 
     return current_dcc() == Dccs.Unreal
 
 
-def is_nuke():
+def is_nuke() -> bool:
     """
-    Checks if Nuke is available or not
-    :return: bool
+    Checks if Nuke is available or not.
+
+    :return: True if current environment is Nuke; False otherwise.
+    :rtype: bool
     """
 
     return current_dcc() == Dccs.Nuke
 
 
-def is_blender():
+def is_blender() -> bool:
     """
-    Checks if Blender is available or not
+    Checks if Blender is available or not.
 
-    :return: True if current DCC is Blender.
+    :return: True if current environment is Blender; False otherwise.
     :rtype: bool
     """
 
     return current_dcc() == Dccs.Blender
 
 
-def is_substance_painter():
+def is_substance_painter() -> bool:
     """
-    Checkcs if Substance Painter is available or not
+    Checks if Substance Painter is available or not.
 
-    :return: True if current DCC is Substance Painter.
+    :return: True if current environment is Adobe Substance Painter; False otherwise.
     :rtype: bool
     """
 
     return current_dcc() == Dccs.SubstancePainter
+
+
+def is_substance_designer() -> bool:
+    """
+    Checks if Substance Designer is available or not.
+
+    :return: True if current environment is Adobe Substance Painter; False otherwise.
+    :rtype: bool
+    """
+
+    return current_dcc() == Dccs.SubstancePainter
+
+
+def is_fusion() -> bool:
+    """
+    Checks if Fusion is available or not.
+
+    :return: True if current environment is Fusion; False otherwise.
+    :rtype: bool
+    """
+
+    return current_dcc() == Dccs.Fusion
 
 
 # =================================================================================================================
