@@ -4,6 +4,9 @@ tp-dcc-tools
 .. image:: https://img.shields.io/badge/Python-3.7-yellow?logo=python
     :target: https://www.python.org/
 
+.. image:: https://img.shields.io/badge/Python-3.9-yellow?logo=python
+    :target: https://www.python.org/
+
 .. image:: https://img.shields.io/badge/Windows-blue?logo=windows
     :target: https://www.python.org/
 
