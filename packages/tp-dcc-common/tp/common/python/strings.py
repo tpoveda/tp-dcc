@@ -8,20 +8,15 @@ Module that contains utility functions related with strings
 
 import re
 import os
-import sys
 import random
 import logging
 from string import ascii_letters
 from distutils.util import strtobool
 
-iters = [list, tuple, set, frozenset]
+from tp.core import log
+from tp.common.python import helpers
 
-if sys.version_info[0] == 2:
-    string_types = basestring,
-    text_type = unicode
-else:
-    string_types = str,
-    text_type = str
+iters = [list, tuple, set, frozenset]
 
 
 class _hack(tuple):
@@ -34,7 +29,7 @@ A list of iterable items (like lists, but not strings). Includes whichever
 of lists, tuples, sets, and Sets are available in this version of Python.
 """
 
-LOGGER = logging.getLogger('tpDcc-libs-python')
+logger = log.tpLogger
 
 
 def _strips(direction, text, remove):
@@ -438,7 +433,7 @@ def rst_to_html(rst):
     try:
         from docutils import core
     except Exception:
-        LOGGER.warning('docutils module is not availble. Impossible to convert RST to HTML ...')
+        logger.warning('docutils module is not available. Impossible to convert RST to HTML ...')
         return rst
 
     return core.publish_string(rst, writer_name='html').decode('utf-8')
@@ -541,10 +536,8 @@ def flatten_array(array):
     :return: str
     """
 
-    from tp.common.python import helpers
-
     out_array = ''
-    array = python.force_list(array)
+    array = helpers.force_list(array)
     for obj in array:
         if type(obj).__name__ != 'str':
             obj = obj.__str__()
@@ -563,10 +556,8 @@ def flatten_array_colon(array):
     :return: str
     """
 
-    from tp.common.python import helpers
-
     out_array = ''
-    array = python.force_list(array)
+    array = helpers.force_list(array)
     for obj in array:
         if type(obj).__name__ != 'str':
             obj = obj.__str__()
@@ -582,7 +573,7 @@ def append_extension(input_string, extension):
     """
     Adds the given extension at the end of the string if the input string does not already end with that extension
 
-    :param str input_string: string to append extension
+    :param str input_string: string to append extension.
     :param str extension: extension to append into the input string.
     :return: string with the extension appended.
     :rtype: str
@@ -596,3 +587,15 @@ def append_extension(input_string, extension):
         input_string = '{}{}'.format(input_string, extension)
 
     return input_string
+
+
+def new_lines(text: str) -> int:
+    """
+    Returns the total count of new lines in given text.
+
+    :param str text: text to get new lines count from.
+    :return: total new lines.
+    :rtype: int
+    """
+
+    return text.count('\n')
