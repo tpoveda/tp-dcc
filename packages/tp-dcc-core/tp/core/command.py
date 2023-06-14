@@ -5,96 +5,178 @@
 Module that contains DCC command implementation
 """
 
+from __future__ import annotations
+
 import sys
 import time
 import inspect
 import traceback
+from typing import Type, Deque, List, Dict, Any
 from collections import deque
-from abc import ABCMeta, abstractproperty, abstractmethod
+from abc import ABCMeta, abstractmethod
 
-from tp.core import log, exceptions, dcc
+from overrides import override
+
+from tp.core import log, exceptions, dcc, output
 from tp.common.python import decorators, osplatform
 from tp.common import plugin
+
 
 logger = log.tpLogger
 
 
+def execute(command_id: str, **kwargs: Dict) -> Any:
+    """
+    Executes given DCC command with given ID.
+
+    :param str command_id: DCC command ID to execute.
+    :param Dict kwargs: DCC command keyword arguments.
+    :return: DCC command result.
+    :rtype: Any
+    """
+
+    return CommandRunner().run(command_id, **kwargs)
+
+
 @decorators.add_metaclass(ABCMeta)
-class DccCommand(object):
+class DccCommandInterface:
+    """
+    DCC command metaclass interface. Each DCC command MUST implement this interface.
+    """
 
     class ArgumentParser(dict):
         def __getattr__(self, item):
             result = self.get(item)
             if result:
                 return result
-            try:
-                return self[item]
-            except KeyError:
-                return super(DccCommand.ArgumentParser, self).__getattribute__(item)
 
-    is_enabled = True
+            return super().__getattribute__(item)
 
-    def __init__(self, stats=None):
+    UI_DATA = {'icon': '', 'tooltip': '', 'label': '', 'color': '', 'backgroundColor': ''}
+
+    def __init__(self, stats: CommandStats | None = None):
         self._stats = stats
-        self._arguments = self.ArgumentParser()
+        self._arguments = DccCommandInterface.ArgumentParser()
         self._return_result = None
+        self._warning = ''
         self.initialize()
 
     @property
-    def stats(self):
+    def stats(self) -> CommandStats | None:
         return self._stats
 
     @stats.setter
-    def stats(self, value):
+    def stats(self, value: CommandStats):
         self._stats = value
 
     @property
-    def arguments(self):
+    def arguments(self) -> DccCommandInterface.ArgumentParser:
         return self._arguments
 
-    @abstractproperty
-    def id(self):
+    @abstractmethod
+    def id(self) -> str:
         """
-        Returns unique command ID used to call the command
-        :return: str, unique command ID
+        Returns unique command ID used to call the command.
+
+        :return: unique command ID.
+        :rtype: str
         """
 
         raise NotImplementedError('abstract command DCC property id not implemented!')
 
-    @abstractproperty
-    def creator(self):
+    @abstractmethod
+    def creator(self) -> str:
         """
-        Returns the command developer name
-        :return: str
+        Returns the command developer name.
+
+        :return: creator name.
+        :rtype: str
         """
 
         raise NotImplementedError('abstract command DCC property creator not implemented!')
 
-    @abstractproperty
-    def is_undoable(self):
+    @abstractmethod
+    def is_undoable(self) -> bool:
         """
-        Returns whether or not this command is undoable
-        :return: bol
+        Returns whether this command is undoable.
+
+        :return: True if command is undoable; False otherwise.
+        :rtype: bool
         """
 
         return False
 
-    @abstractmethod
-    def run(self, **kwargs):
+    def initialize(self):
         """
-        Executes the command functionality.
-        :param kwargs: dict, dictionary with key value pairs. Any kind of type is supported (even DCC specific types).
-        :return: variant, this function can return values. Any kind type is supported. (even DCC specific types).
+        Function that should be overridden by subclasses.
+        Intended to be used as a replacement for the code that should be initialized witin __init__ function.
+        """
+
+        pass
+
+    @abstractmethod
+    def do(self, **kwargs: Dict) -> Any:
+        """
+        Executes the command functionality. This function only supports keyword arguments, so every argument MUST have
+        a default value.
+
+        :param Dict kwargs: dictionary with key value pairs. Any kind of type is supported (even DCC specific types).
+        :return: command run result.
+        :rtype: Any
         """
 
         raise NotImplementedError('abstract command DCC function run not implemented!')
 
+    def undo(self):
+        """
+        If the command is undoable this function is call to reverse the operation done by run function.
+        """
+
+        pass
+
+    def run(self) -> Any:
+        """
+        Runs `do` function with the current arguments.
+
+        :return: command run result.
+        :rtype: Any
+        """
+
+        return self.do(**self._arguments)
+
+    def resolve_arguments(self, arguments: Dict) -> Dict:
+        """
+        Function that is called before running the command. Useful to valid incoming command arguments before executing
+        the command.
+
+        :param Dict arguments: key, value pairs of commands being passed to the run command function
+        :return: dictionary with the same key value pairs as the arguments param.
+        :rtype: Dict
+        """
+
+        return arguments
+
+
+class DccCommand(DccCommandInterface):
+
+    is_enabled = True
+    use_undo_chunk = True           # whether to chunk all operations in `do`
+    disable_queue = False           # whether to disable the undo queue in `do`
+
+    @override
     def initialize(self):
         """
         Initializes functionality for the command
         """
 
-        func_args = inspect.getargspec(self.run)
+        self.prepare_command()
+
+    def prepare_command(self):
+        """
+        Prepares command so it can be executed.
+        """
+
+        func_args = inspect.getfullargspec(self.run)
         args = func_args.args[1:]
         defaults = func_args.defaults or tuple()
         if len(args) != len(defaults):
@@ -106,88 +188,98 @@ class DccCommand(object):
 
         return self.ArgumentParser()
 
-    def description(self):
+    def description(self) -> str:
         """
-        Returns the descriptino of the command. Class doc is used by default.
-        :return: str
+        Returns the description of the command. Class doc is used by default.
+
+        :return: command description.
+        :rtype: str
         """
 
         return self.__doc__
 
-    def undo(self):
+    def has_argument(self, name: str) -> bool:
         """
-        If the command is undoable this function is call to reverse the operation done by run function
-        """
+        Returns whether this command supports given argument.
 
-        pass
-
-    def has_argument(self, name):
-        """
-        Returns whether or not this command supports given argument
-        :param name: str
-        :return: bool
+        :param str name: argument name.
+        :return: True if command supports given arguments; False otherwise.
+        :rtype: bool
         """
 
         return name in self._arguments
 
-    def parse_arguments(self, arguments):
+    def parse_arguments(self, arguments: Dict) -> bool:
         """
-        Parses given command arguments
-        :param arguments: dict
-        :return: bool
+        Parses given command arguments and prepares them for the command to use.
+
+        :param Dict arguments: arguments to parse.
+        :return: True if the parse arguments operation was successful; False otherwise.
+        :rtype: bool
         """
 
         kwargs = self._arguments
         kwargs.update(arguments)
-        self.resolve_arguments(self.ArgumentParser(**kwargs))
+        result = self.resolve_arguments(self.ArgumentParser(**kwargs)) or {}
+        kwargs.update(result)
 
         return True
 
-    def resolve_arguments(self, arguments):
+    def requires_warning(self) -> bool:
         """
-        Function that is called before running the command. Useful to valid incoming command arguments before executing
-        the command.
-        :param arguments: dict, key, value pairs of commands being passed to the run command function
-        :return: dict, dictionary with the same key value pairs as the arguments param
+        Returns whether this command requires warning.
+
+        :return: True if command has warning; False otherwise.
+        :rtype: bool
         """
 
-        return arguments
+        return True if self._warning else False
+
+    def warning_message(self) -> str:
+        """
+        Returns command warning message.
+
+        :return: warning message.
+        :rtype: str
+        """
+
+        return self._warning
 
 
-class CommandStats(object):
-    def __init__(self, command):
-        self._command = command
+class CommandStats:
+    def __init__(self, command_class: Type):
+        self._command = command_class
         self._start_time = 0.0
         self._end_time = 0.0
         self._execution_time = 0.0
 
-        self._info = dict()
+        self._info = {}
 
         self._init()
 
     @property
-    def start_time(self):
+    def start_time(self) -> float:
         return self._start_time
 
     @start_time.setter
-    def start_time(self, value):
+    def start_time(self, value: float):
         self._start_time = value
 
     @property
-    def end_time(self):
+    def end_time(self) -> float:
         return self._end_time
 
     @end_time.setter
-    def end_time(self, value):
+    def end_time(self, value: float):
         self._end_time = value
 
     @property
-    def execution_time(self):
+    def execution_time(self) -> float:
         return self._execution_time
 
     def _init(self):
         """
-        Internal function that initializes info for the plugin and its environment
+        Internal function that initializes info for the command and its environment.
         """
 
         self._info.update({
@@ -196,21 +288,22 @@ class CommandStats(object):
             'module': self._command.__class__.__module__,
             'filepath': inspect.getfile(self._command.__class__),
             'id': self._command.id,
-            'application': dcc.get_name()
+            'application': dcc.name()
         })
         self._info.update(osplatform.machine_info())
 
     def start(self):
         """
-        Starts the execution of the plugin
+        Starts the execution of the command.
         """
 
         self._start_time = time.time()
 
-    def finish(self, trace=None):
+    def finish(self, trace: str | None = None):
         """
-        Function that is called when plugin finishes its execution
-        :param trace: str or None
+        Function that is called when plugin finishes its execution.
+
+        :param str or None trace: optional trace stack.
         """
 
         self._end_time = time.time()
@@ -222,13 +315,16 @@ class CommandStats(object):
 
 
 class MetaCommandRunner(type):
+    """
+    Command runner singleton class that returns runner class based on current DCC.
+    """
 
     _instance = None
 
     def __call__(cls, *args, **kwargs):
         if cls._instance is None:
             if dcc.is_maya():
-                from tp.maya.cmds import command
+                from tp.maya.api import command
                 cls._instance = type.__call__(command.MayaCommandRunner, *args, **kwargs)
             else:
                 cls._instance = type.__call__(BaseCommandRunner, *args, **kwargs)
@@ -236,44 +332,56 @@ class MetaCommandRunner(type):
         return cls._instance
 
 
-class BaseCommandRunner(object):
-    def __init__(self):
+class BaseCommandRunner:
+    def __init__(self, interface: Type | None = None, register_env: str = 'TPDCC_COMMAND_LIB'):
+        interface = interface or DccCommand
         self._undo_stack = deque()
         self._redo_stack = deque()
-        self._manager = plugin.PluginFactory(DccCommand, plugin_id='id')
-        self._manager.register_paths_from_env_var('TPDCC_COMMAND_LIB', package_name='tp-dcc')
+        self._manager = plugin.PluginFactory(interface, plugin_id='id')
+        self._manager.register_paths_from_env_var(register_env, package_name='tp-dcc')
 
     @property
-    def undo_stack(self):
+    def undo_stack(self) -> Deque:
         return self._undo_stack
 
     @property
-    def redo_stack(self):
+    def redo_stack(self) -> Deque:
         return self._redo_stack
 
-    def commands(self):
+    def commands(self) -> List[DccCommand]:
         return self._manager.plugins()
 
-    def manager(self):
+    def manager(self) -> plugin.PluginFactory:
         return self._manager
 
-    def run(self, command_id, **kwargs):
+    def run(self, command_id: str, **kwargs: Dict) -> Any:
+        """
+        Run the command with given ID.
+
+        :param str command_id: ID of the command to run.
+        :param Dict kwargs: keyword arguments for the command execution.
+        :return: command run result.
+        :rtype: Any
+        """
+
         command_to_run = self.find_command(command_id)
         if not command_to_run:
-            raise ValueError(
-                'No command found with given id "{}" in package "{}"'.format(command_id, self._manager.package))
+            raise ValueError(f'No command found with given id "{command_id}"')
 
         command_to_run = command_to_run(CommandStats(command_to_run))
         if not command_to_run.is_enabled:
             return
         try:
             command_to_run.parse_arguments(kwargs)
+            if command_to_run.requires_warning():
+                output.display_warning(command_to_run.warning_message())
+                return
         except exceptions.CommandCancel:
             return
         except Exception:
             raise
 
-        trace = None
+        exc_tb, exc_type, exc_value = None, None, None
         result = None
         try:
             result = self._run(command_to_run)
@@ -282,18 +390,25 @@ class BaseCommandRunner(object):
             command_to_run.stats.finish(None)
             return result
         except Exception:
-            exc_type, exc_value, exc_trace = sys.exc_info()
-            trace = traceback.format_exception(exc_type, exc_value, exc_trace)
-            logger.exception(trace)
+            exc_type, exc_value, exc_tb = sys.exc_info()
             raise
         finally:
-            if not trace and command_to_run.is_undoable:
+            tb = None
+            if exc_type and exc_value and exc_tb:
+                tb = traceback.format_exception(exc_type, exc_value, exc_tb)
+            elif command_to_run.is_undoable:
                 self._undo_stack.append(command_to_run)
-            command_to_run.stats.finish(trace)
+            command_to_run.stats.finish(tb)
 
             return result
 
-    def undo_last(self):
+    def undo_last(self) -> bool:
+        """
+        Undoes last executed command.
+        :return: True if the undo operation was successful; False otherwise.
+        :rtype: bool
+        """
+
         if not self._undo_stack:
             return False
 
@@ -306,8 +421,15 @@ class BaseCommandRunner(object):
 
         return False
 
-    def redo_last(self):
-        trace = None
+    def redo_last(self) -> Any:
+        """
+        Redoes last undo command.
+
+        :return: redo command result.
+        :rtype: Any
+        """
+
+        exc_tb, exc_type, exc_value = None, None, None
         result = None
         if self._redo_stack:
             command_to_redo = self._redo_stack.pop()
@@ -320,64 +442,88 @@ class BaseCommandRunner(object):
                     command_to_redo.stats.finish(None)
                     raise
                 except Exception:
-                    exc_type, exc_value, exc_trace = sys.exc_info()
-                    trace = traceback.format_exception(exc_type, exc_value, exc_trace)
-                    logger.exception(trace)
+                    exc_type, exc_value, exc_tb = sys.exc_info()
+                    raise
                 finally:
-                    if not trace and command_to_redo.is_undoable:
+                    tb = None
+                    if exc_type and exc_value and exc_tb:
+                        tb = traceback.format_exception(exc_type, exc_value, exc_tb)
+                    elif command_to_redo.is_undoable:
                         self._undo_stack.append(command_to_redo)
-                    command_to_redo.stats.finish(trace)
+                    command_to_redo.stats.finish(tb)
 
         return result
 
-    def find_command(self, command_id):
+    def find_command(self, command_id: str) -> Type | None:
         """
-        Returns registered command by its ID
-        :param command_id: str
-        :return: DccCommand
+        Returns registered command by its ID.
+
+        :param str command_id: ID of the command to find.
+        :return: found command.
+        :rtype: Type or None
         """
 
         return self._manager.get_plugin_from_id(command_id)
 
-    def command_help(self, command_id):
+    def command_help(self, command_id: str) -> str:
         """
-        Returns the command help of the given command
-        :param command_id: str
-        :return: str
+        Returns the command help of the given command.
+
+        :param str command_id: ID of the command to get help of.
+        :return: command help.
+        :rtype: str
         """
 
         command = self.find_command(command_id)
         if not command:
-            return
+            return ''
 
         doc_help = inspect.getdoc(command)
         run_help = inspect.getdoc(command.run)
 
-        return 'Class: {}\n{}\nRun: {}'.format(command.__name__, doc_help, run_help)
+        return f"""
+        Class: {command.__name__}
+        {doc_help}
+        Run:
+        {run_help}
+        """
 
     def flush(self):
         """
-        Clears the undo/redo history of the command
+        Clears the undo/redo history of the command.
         """
 
         self._undo_stack.clear()
         self._redo_stack.clear()
 
-    def cancel(self, msg):
+    def cancel(self, msg: str):
         """
-        Cancels command execution
-        :param msg: str
+        Cancels command execution.
+
+        :param str msg: cancel message.
         """
 
         raise exceptions.CommandCancel(msg)
 
-    def _run(self, command_to_run):
-        result = command_to_run.run(**command_to_run.arguments)
+    def _run(self, command_to_run: DccCommand) -> Any:
+        """
+        Internal function that executes given command.
+
+        :param DccCommand command_to_run: command to run.
+        :return: command run result.
+        :rtype: Any
+        """
+
+        result = command_to_run.do(**command_to_run.arguments)
         command_to_run._return_result = result
 
         return result
 
 
 @decorators.add_metaclass(MetaCommandRunner)
-class CommandRunner(object):
+class CommandRunner:
+    """
+    Command runner class
+    """
+
     pass

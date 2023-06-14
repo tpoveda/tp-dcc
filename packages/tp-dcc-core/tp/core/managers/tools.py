@@ -36,7 +36,7 @@ def load(application_name=None, parent=None):
 	global _TOOLS_MANAGER
 	global _TOOLS_FACTORY
 
-	application_name = application_name or dcc.get_name()
+	application_name = application_name or dcc.name()
 
 	instance = current_instance()
 	if instance is not None:
@@ -44,7 +44,7 @@ def load(application_name=None, parent=None):
 
 	if _TOOLS_FACTORY is None:
 		_TOOLS_FACTORY = plugin.PluginFactory(interface=[ToolsManager], plugin_id='APPLICATION', name='Toolbox')
-		_TOOLS_FACTORY.register_by_env('TPDCC_TOOLS_MANAGER_PATHS')
+		_TOOLS_FACTORY.register_paths_from_env_var('TPDCC_TOOLS_MANAGER_PATHS')
 		_TOOLS_FACTORY.load_plugin(application_name, parent=parent)
 
 	_TOOLS_MANAGER = _TOOLS_FACTORY.get_loaded_plugin_from_id(application_name)
@@ -83,7 +83,7 @@ class ToolsManager:
 		self._menus_manager = menus.MenusManager()
 		self._tools_factory = plugin.PluginFactory(
 			interface=[tool.Tool], plugin_id='id', name='Tools')
-		self._tools_factory.register_by_env(self.TOOLS_ENV)
+		self._tools_factory.register_paths_from_env_var(self.TOOLS_ENV)
 		self._tools_factory.load_all_plugins(tools_manager=self)
 
 	def iterate_tool_classes(self) -> 'collections.Generator[type]':
