@@ -18,7 +18,7 @@ from tp.common.qt.widgets import layouts
 logger = log.tpLogger
 
 
-class BasePlugin(object):
+class BasePlugin:
     """
     Base class used by all  editor tools
     """
@@ -376,9 +376,9 @@ def create_plugin_instance(plugin_class, already_registered_plugins=None, **kwar
 
     supported_softwares = plugin_class.SUPPORTED_SOFTWARES
     if 'any' not in supported_softwares:
-        if dcc.get_name() not in supported_softwares:
+        if dcc.name() not in supported_softwares:
             logger.warning(
-                'Plugin {} is not suppported in current software: "{}"'.format(plugin_class.NAME, dcc.get_name()))
+                'Plugin {} is not suppported in current software: "{}"'.format(plugin_class.NAME, dcc.name()))
             return None
 
     # if python.is_python2():

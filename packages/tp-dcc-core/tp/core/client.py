@@ -12,7 +12,7 @@ import requests
 
 from overrides import override
 
-from tp.core import dcc
+from tp.core import dcc, dccs
 
 
 class AbstractClient:
@@ -23,7 +23,7 @@ class AbstractClient:
 	class CantReacherServer(Exception):
 		pass
 
-	def __init__(self, port: int = dcc.Dccs.Ports['Undefined'], host_address: str = '127.0.0.1'):
+	def __init__(self, port: int = dccs.Ports['Undefined'], host_address: str = '127.0.0.1'):
 		super().__init__()
 
 		self._port = port
@@ -32,7 +32,7 @@ class AbstractClient:
 		self._echo_execution = True
 		self._echo_payload = True
 		self._is_executing = False
-		self._host_program = dcc.Dccs.Standalone
+		self._host_program = dccs.Standalone
 
 	def is_executing(self) -> bool:
 		"""
@@ -164,9 +164,9 @@ class MayaClient(AbstractClient):
 	Custom client for Maya
 	"""
 
-	def __init__(self, port: int = dcc.dcc_port(dcc.Dccs.Maya), host_address: str = '127.0.0.1'):
+	def __init__(self, port: int = dcc.dcc_port(dccs.Maya), host_address: str = '127.0.0.1'):
 		super().__init__(port=port, host_address=host_address)
-		self._host_program = dcc.Dccs.Maya
+		self._host_program = dccs.Maya
 
 
 class MaxClient(AbstractClient):
@@ -174,9 +174,9 @@ class MaxClient(AbstractClient):
 	Custom client for 3ds Max
 	"""
 
-	def __init__(self, port: int = dcc.dcc_port(dcc.Dccs.Max), host_address: str = '127.0.0.1'):
+	def __init__(self, port: int = dcc.dcc_port(dccs.Max), host_address: str = '127.0.0.1'):
 		super().__init__(port=port, host_address=host_address)
-		self._host_program = dcc.Dccs.Max
+		self._host_program = dccs.Max
 
 
 class BlenderClient(AbstractClient):
@@ -184,9 +184,9 @@ class BlenderClient(AbstractClient):
 	Custom client for Blender
 	"""
 
-	def __init__(self, port: int = dcc.dcc_port(dcc.Dccs.Blender), host_address: str = '127.0.0.1'):
+	def __init__(self, port: int = dcc.dcc_port(dccs.Blender), host_address: str = '127.0.0.1'):
 		super().__init__(port=port, host_address=host_address)
-		self._host_program = dcc.Dccs.Blender
+		self._host_program = dccs.Blender
 
 
 class HoudiniClient(AbstractClient):
@@ -194,9 +194,9 @@ class HoudiniClient(AbstractClient):
 	Custom client for Blender
 	"""
 
-	def __init__(self, port: int = dcc.dcc_port(dcc.Dccs.Houdini), host_address: str = '127.0.0.1'):
+	def __init__(self, port: int = dcc.dcc_port(dccs.Houdini), host_address: str = '127.0.0.1'):
 		super().__init__(port=port, host_address=host_address)
-		self._host_program = dcc.Dccs.Houdini
+		self._host_program = dccs.Houdini
 
 
 class UnrealClient(AbstractClient):
@@ -204,9 +204,9 @@ class UnrealClient(AbstractClient):
 	Custom client for Unreal Engine
 	"""
 
-	def __init__(self, port: int = dcc.dcc_port(dcc.Dccs.Unreal), host_address: str = '127.0.0.1'):
+	def __init__(self, port: int = dcc.dcc_port(dccs.Unreal), host_address: str = '127.0.0.1'):
 		super().__init__(port=port, host_address=host_address)
-		self._host_program = dcc.Dccs.Unreal
+		self._host_program = dccs.Unreal
 
 		self._command_object_path = '/Engine/PythonTypes.Default__tpDccCommands'
 		self._server_command_object_path = '/Engine/PythonTypes.Default__tpDccServerCommands'

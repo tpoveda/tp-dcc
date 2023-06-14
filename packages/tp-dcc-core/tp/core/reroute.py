@@ -24,7 +24,7 @@ def reroute_factory(module_path=None, module_name=None):
 
 			global _REROUTE_CACHE
 
-			current_dcc = os.getenv('REROUTE_DCC', dcc.get_name())
+			current_dcc = os.getenv('REROUTE_DCC', dcc.name())
 			if not current_dcc:
 				return None
 

@@ -67,7 +67,7 @@ def start_server_in_thread(
 		_thread.exit()
 		logger.info('DCC server thread was killed!')
 
-	host_program = host_program or dcc.get_name()
+	host_program = host_program or dcc.name()
 	port = port or dcc.dcc_port(host_program)
 
 	if port_in_use(port=port, host=host):
@@ -125,7 +125,7 @@ class Server(QObject):
 			echo_response: bool = True):
 		super().__init__()
 
-		self._host_program = host_program or dcc.get_name()
+		self._host_program = host_program or dcc.name()
 		self._host_address = host_address
 		self._port = port or dcc.dcc_port(host_program)
 		self._use_main_thread_executor = use_main_thread_executor

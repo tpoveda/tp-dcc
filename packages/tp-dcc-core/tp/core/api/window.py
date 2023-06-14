@@ -14,9 +14,9 @@ from tp.core import dcc
 
 if dcc.is_mayapy():
     QApplication(sys.argv)
-    from tp.maya.ui.window import MayaBatchWindow as Window
+    from tp.maya.api.window import MayaBatchWindow as Window
 elif dcc.is_maya():
-    from tp.maya.ui.window import MayaWindow as Window
+    from tp.maya.api.window import MayaWindow as Window
 elif dcc.is_nuke():
     from tp.nuke.ui.window import NukeWindow as Window
 elif dcc.is_houdini():

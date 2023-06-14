@@ -52,14 +52,14 @@ class CallbacksManager:
 
             # We extract callback types from the specific registered callbacks module
             if not dcc_callback.Callback():
-                logger.warning(f'DCC {dcc.get_name()} has no callbacks registered!')
+                logger.warning(f'DCC {dcc.name()} has no callbacks registered!')
                 return
 
             callback_class = getattr(dcc_callback.Callback(), f'{callback_name}Callback', None)
             if not callback_class:
                 callback_class = default_callbacks.get(callback_name, callback.ICallback)
                 logger.debug(
-                    f'Dcc {dcc.get_name()} does not provides an ICallback'
+                    f'Dcc {dcc.name()} does not provides an ICallback'
                     f' for {callback_name}Callback. Using {callback_class.__name__} instead')
             new_callback = CallbacksManager._callbacks.get(callback_name, None)
             if new_callback:
