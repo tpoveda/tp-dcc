@@ -18,7 +18,7 @@ from tp.common.qt import dpi
 logger = log.tpLogger
 
 
-class ThemeUpdateEvent(object):
+class ThemeUpdateEvent:
 	def __init__(self, stylesheet, theme_dict, preference):
 		self.theme = None
 		self.stylesheet = stylesheet
