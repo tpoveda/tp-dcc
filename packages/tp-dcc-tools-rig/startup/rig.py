@@ -2,7 +2,7 @@ from tp.core import log, dcc
 from tp.preferences.interfaces import crit
 
 if dcc.is_maya():
-	from tp.maya.plugins import loader
+	from tp.maya.plugins import rigloader
 	from tp.libs.rig.crit.maya import plugin as crit_plugin
 
 
@@ -23,7 +23,7 @@ def startup(package_manager):
 	crit_interface.upgrade_assets()
 
 	if dcc.is_maya():
-		loader.load_all_plugins()
+		rigloader.load_all_plugins()
 		crit_plugin.load()
 
 
@@ -37,4 +37,4 @@ def shutdown(package_manager):
 
 	if dcc.is_maya():
 		crit_plugin.unload()
-		loader.unload_all_plugins()
+		rigloader.unload_all_plugins()

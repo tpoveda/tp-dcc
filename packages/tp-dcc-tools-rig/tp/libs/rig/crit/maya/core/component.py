@@ -222,12 +222,12 @@ class Component:
 		self._meta = value
 
 	@property
-	def configuration(self) -> 'tp.libs.rig.crit.maya.core.config.RigConfiguration':
+	def configuration(self) -> 'tp.libs.rig.crit.maya.core.config.Configuration':
 		"""
 		Returns component configuration instance.
 
 		:return: configuration instance.
-		:rtype: tp.libs.rig.crit.maya.core.config.RigConfiguration
+		:rtype: tp.libs.rig.crit.maya.core.config.Configuration
 		"""
 
 		return self._configuration

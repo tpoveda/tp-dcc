@@ -1,8 +1,17 @@
-def unique_name_for_rig(rigs: list['tp.libs.rig.crit.core.rig.Rig'], name: str):
+from __future__ import annotations
+
+import typing
+from typing import Iterator
+
+if typing.TYPE_CHECKING:
+	from tp.libs.rig.crit.maya.core.rig import Rig
+
+
+def unique_name_for_rig(rigs: Iterator[Rig], name: str):
 	"""
 	Returns a unique name for a rig.
 
-	:param list['tp.libs.rig.crit.core.rig.Rig'] rigs: list of rig instances to compare names with.
+	:param Iterator[Rig] rigs: list of rig instances to compare names with.
 	:param str name: new name for the rig.
 	:return: unique name for the rig based on the comparison with the names of the list of rigs.
 	:rtype: str
@@ -18,11 +27,11 @@ def unique_name_for_rig(rigs: list['tp.libs.rig.crit.core.rig.Rig'], name: str):
 	return new_name
 
 
-def unique_name_for_component_by_rig(rig, name, side):
+def unique_name_for_component_by_rig(rig: Rig, name: str, side: str) -> str:
 	"""
 	Returns a unique name for the component using based on the given rig instance.
 
-	:param tp.rigtoolkit.crit.lib.maya.core.rig.Rig rig: rig instance to use as the filter.
+	:param Rig rig: rig instance to use as the filter.
 	:param str name: name for the component.
 	:param str side: side for the component.
 	:return: unique name for the component within the rig.

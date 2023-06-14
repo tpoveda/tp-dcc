@@ -3,6 +3,13 @@
   "description": "",
   "rules": [
     {
+      "name": "object",
+      "creator": "Tomi Poveda",
+      "description": "Standard Maya node type convention, used for utility nodes or any node which doesn't have an explicit Rule",
+      "expression": "{componentName}_{side}_{section}_{type}",
+      "exampleFields": {"componentName":  "arm", "side": "L","section":  "world", "type": "transform"}
+    },
+    {
       "name": "componentName",
       "creator": "Tomi Poveda",
       "description": "The rule for component names which includes the side.",
@@ -121,6 +128,138 @@
         "middle": "mid",
         "ctr": "ctr"
       }
+    },
+    {
+        "name": "sideSymmetry",
+        "description": "The name for the side when the component is mirrored.",
+        "table": {
+            "L": "R",
+            "l": "r",
+            "R": "L",
+            "r": "l",
+            "LEFT": "RIGHT",
+            "left": "right",
+            "RIGHT": "LEFT",
+            "right": "left"
+        }
+    },
+    {
+        "name": "selectionSet",
+        "description": "Component and rig selection sets names",
+        "permission": [{"name":  "rig"}, {"name":  "componentDeform"}, {"name":  "componentCtrls"},
+        {"name":  "deform"}, {"name":  "ctrls"}],
+        "table": {
+            "rig": "root",
+            "componentDeform": "deform",
+            "componentCtrls": "ctrls",
+            "deform": "skeleton",
+            "ctrls": "ctrls"
+        }
+    },
+    {
+        "name": "layerType",
+        "description": "The CRIT Layer name which is used for both the root Transform and the Meta Node",
+        "permission": [{"name":  "CritComponentLayer"},
+        {"name":  "CritRigLayer"},
+        {"name":  "CritGuideLayer"},
+        {"name":  "CritDeformLayer"},
+        {"name":  "CritInputLayer"},
+        {"name":  "CritOutputLayer"},
+        {"name":  "CritXGroupLayer"},
+        {"name":  "CritGeometryLayer"}],
+        "table": {
+            "CritComponentLayer": "componentLayer",
+            "CritRigLayer": "rigLayer",
+            "CritGuideLayer": "guideLayer",
+            "CritDeformLayer": "deformLayer",
+            "CritInputLayer": "inputLayer",
+            "CritOutputLayer": "outputLayer",
+            "CritXGroupLayer": "xGroupLayer",
+            "CritGeometryLayer": "geo"
+        }
+    },
+    {
+        "name": "section",
+        "description": "",
+        "permissions": [{"name":  "guide_offset"},
+                        {"name":  "root"},
+                        {"name":  "CritGuideLayer"},
+                        {"name":  "controlPanel"}],
+        "table": {
+            "guide_offset": "guideOffset",
+            "root": "root",
+            "HiveGuideLayer": "guide",
+            "controlPanel": "controlPanel"
+        }
+    },
+    {
+        "name": "system",
+        "description": "The name for a system within a component ie. ik/fk",
+        "permissions": [{"name":  "fk"},
+                        {"name":  "ik"},
+                        {"name":  "poleVector"}],
+        "table": {
+            "fk": "fk",
+            "ik": "ik",
+            "poleVector": "pv"
+        }
+    },
+    {
+        "name": "type",
+        "description": "Specifies the name for a Maya Node Type or CRIT Node Type",
+        "permissions":[{"name": "meta"},
+                        {"name": "control"},
+                        {"name": "annotation"},
+                        {"name": "curve"},
+                        {"name": "settings"},
+                        {"name": "controlLayer"},
+                        {"name": "critOutput"},
+                        {"name": "critInput"},
+                        {"name": "input"},
+                        {"name": "output"},
+                        {"name": "guide"},
+                        {"name": "hrc"},
+                        {"name": "joint"},
+                        {"name": "objectSet"},
+                        {"name": "transform"},
+                        {"name": "poleVector"}],
+        "table": {
+            "meta": "meta",
+            "control": "anim",
+            "annotation": "ann",
+            "curve": "crv",
+            "settings": "settings",
+            "controlLayer": "ctrlLayer",
+            "hiveOutput": "out",
+            "hiveInput": "in",
+            "input": "in",
+            "output": "out",
+            "guide": "guide",
+            "hrc": "hrc",
+            "joint": "jnt",
+            "objectSet": "set",
+            "transform": "srt",
+            "poleVector": "pv",
+            "parentConstraint": "parentConst",
+            "scaleConstraint": "scaleConst",
+            "orientConstraint": "orientConst",
+            "pointConstraint": "pointConst",
+            "decomposeMatrix": "decomp",
+            "multMatrix": "matMult",
+            "plusMinusAverage": "pma",
+            "blendMatrix": "blend",
+            "inverseMatrix": "inverse",
+            "blendTwoAttr": "blendTwo",
+            "floatMath": "fMath",
+            "pickMatrix": "pick",
+            "quatToEuler": "quatToEuler",
+            "distanceBetween": "dist",
+            "pairBlend": "pairBlend",
+            "multDoubleLinear": "multDoubleLinear",
+            "ikHandle": "ikhandle",
+            "effector": "ikeffector",
+            "annotationGroup": "annotationGrp"
+        }
     }
   ]
 }

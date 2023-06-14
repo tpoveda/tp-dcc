@@ -1,4 +1,7 @@
-from tp.maya.api import spaceswitch
+from tp.core import dcc
+
+if dcc.is_maya():
+	from tp.maya.api import spaceswitch
 
 
 # ======================================================================================================================
@@ -196,7 +199,9 @@ CRIT_DESCRIPTOR_CACHE_ATTR_NAMES = (
 # Non Publishable Attributes
 # ======================================================================================================================
 
-ATTRIBUTES_TO_SKIP_PUBLISH = (CRIT_ID_ATTR, 'metaNode', spaceswitch.TP_CONSTRAINTS_ATTR_NAME)
+ATTRIBUTES_TO_SKIP_PUBLISH = [CRIT_ID_ATTR, 'metaNode']
+if dcc.is_maya():
+	ATTRIBUTES_TO_SKIP_PUBLISH.append(spaceswitch.TP_CONSTRAINTS_ATTR_NAME)
 
 
 # ======================================================================================================================

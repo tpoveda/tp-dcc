@@ -8,6 +8,10 @@
     {
       "name": "critRigConfig",
       "type": "rig"
+    },
+    {
+        "name": "critGlobalAimComponent",
+        "type": "aimcomponent"
     }
   ]
 }

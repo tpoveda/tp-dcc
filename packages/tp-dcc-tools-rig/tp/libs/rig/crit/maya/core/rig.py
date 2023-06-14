@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import typing
 import contextlib
 import collections
 
@@ -14,6 +15,12 @@ from tp.libs.rig.crit.maya.core import config, component
 from tp.libs.rig.crit.maya.meta import rig
 from tp.libs.rig.crit.maya.library.functions import rigs
 
+if typing.TYPE_CHECKING:
+	from tp.common.naming.manager import NameManager
+	from tp.maya.api import DagNode
+	from tp.libs.rig.crit.maya.meta.layers import CritComponentsLayer
+	from tp.libs.rig.crit.maya.descriptors.component import ComponentDescriptor
+
 logger = log.rigLogger
 
 
@@ -23,12 +30,12 @@ class Rig:
 	This class handles the construction and destruction of rig components.
 	"""
 
-	def __init__(self, rig_config: config.RigConfiguration | None = None, meta: rig.CritRig | None = None):
+	def __init__(self, rig_config: config.MayaConfiguration | None = None, meta: rig.CritRig | None = None):
 		super().__init__()
 
 		self._meta = meta
 		self._components_cache = set()					# type: set[component.Component]
-		self._config = rig_config or config.RigConfiguration()
+		self._config = rig_config or config.MayaConfiguration()
 
 	def __repr__(self) -> str:
 		return f'<{self.__class__.__name__}> name:{self.name()}'
@@ -70,7 +77,7 @@ class Rig:
 		return self._meta
 
 	@property
-	def configuration(self) -> config.RigConfiguration:
+	def configuration(self) -> config.MayaConfiguration:
 		return self._config
 
 	@profiler.fn_timer
@@ -123,12 +130,12 @@ class Rig:
 
 		return self._meta.rig_name() if self.exists() else ''
 
-	def naming_manager(self) -> 'tp.common.naming.manager.NameManager':
+	def naming_manager(self) -> NameManager:
 		"""
 		Returns the naming manager for the current rig instance.
 
 		:return: naming manager.
-		:rtype: tp.common.naming.manager.NameManager
+		:rtype: NameManager
 		"""
 
 		return self.configuration.find_name_manager_for_type('rig')
@@ -167,32 +174,32 @@ class Rig:
 
 		return config_data
 
-	def root_transform(self) -> 'tp.maya.api.DagNode' | None:
+	def root_transform(self) -> DagNode | None:
 		"""
 		Returns the root transform node for this rig instance.
 
 		:return: root transform instance.
-		:rtype: tp.maya.api.DagNode or None
+		:rtype: DagNode or None
 		"""
 
 		return self._meta.root_transform() if self.exists() else None
 
-	def components_layer(self) -> 'tp.libs.rig.crit.maya.meta.layers.CritComponentsLayer' | None:
+	def components_layer(self) -> CritComponentsLayer | None:
 		"""
 		Returns the components layer instance from this rig by querying the attached meta node.
 
 		:return: components layer instance.
-		:rtype: tp.libs.rig.crit.maya.meta.componentslayer.CritComponentsLayer or None
+		:rtype: CritComponentsLayer or None
 		"""
 
 		return self._meta.components_layer()
 
-	def get_or_create_components_layer(self) -> 'tp.libs.rig.crit.maya.meta.layers.CritComponentsLayer':
+	def get_or_create_components_layer(self) -> CritComponentsLayer:
 		"""
 		Returns the components layer if it is attached to this rig or creates a new one and attaches it.
 
 		:return: components layer instance.
-		:rtype: tp.libs.rig.crit.maya.meta.layers.CritComponentsLayer
+		:rtype: CritComponentsLayer
 		"""
 
 		components_layer = self.components_layer()
@@ -208,7 +215,7 @@ class Rig:
 
 	def create_component(
 			self, component_type: str | None = None, name: str | None = None, side: str | None = None,
-			descriptor: 'tp.libs.rig.crit.maya.descriptors.component.ComponentDescriptor' | None = None):
+			descriptor: ComponentDescriptor | None = None):
 		"""
 		Adds a new component instance to the rig and creates the root node structure for that component.
 
@@ -218,7 +225,7 @@ class Rig:
 		:param tp.rigtoolkit.crit.lib.maya.core.descriptor.component.ComponentDescriptor descriptor: optional component
 			descriptor.
 		:return: new instance of the created component.
-		:rtype: tp.libs.rig.crit.maya.descriptors.component.ComponentDescriptor
+		:rtype: ComponentDescriptor
 		:raises errors.CritMissingComponentType: if not component with given type is registered.
 		"""
 

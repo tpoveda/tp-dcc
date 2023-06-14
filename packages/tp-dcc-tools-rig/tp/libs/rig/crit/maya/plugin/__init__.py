@@ -1,6 +1,5 @@
 import os
 
-from tp.core import dcc
 from tp.common.python import osplatform, path
 from tp.maya.cmds import helpers
 
@@ -17,11 +16,11 @@ def load(reload=False):
 
 	osplatform.append_path_env_var('MAYA_PLUG_IN_PATH', plugin_path)
 
-	if not dcc.is_plugin_loaded(plugin_path):
-		dcc.load_plugin(plugin_path)
-	elif dcc.is_plugin_loaded(plugin_path) and reload:
-		dcc.unload_plugin(path.basename(plugin_path))
-		dcc.load_plugin(plugin_path)
+	if not helpers.is_plugin_loaded(plugin_path):
+		helpers.load_plugin(plugin_path)
+	elif helpers.is_plugin_loaded(plugin_path) and reload:
+		helpers.unload_plugin(path.basename(plugin_path))
+		helpers.load_plugin(plugin_path)
 
 	helpers.add_trusted_plugin_location_path(plugin_path)
 
@@ -34,8 +33,8 @@ def unload():
 	"""
 
 	plugin_name = 'crit.py'
-	if dcc.is_plugin_loaded(plugin_name):
-		dcc.unload_plugin(plugin_name)
+	if helpers.is_plugin_loaded(plugin_name):
+		helpers.unload_plugin(plugin_name)
 		return True
 
 	return False

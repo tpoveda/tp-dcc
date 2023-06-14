@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import json
+import tempfile
 
 from tp.core import log
 from tp.common.python import osplatform, path, folder, jsonio
@@ -13,6 +14,18 @@ CONFIG_EXT = 'namingcfg'
 CRIT_PRESET = 'CRIT'
 
 logger = log.rigLogger
+
+
+def surround_text_as_token(text: str) -> str:
+	"""
+	Returns the given text with the token syntax added.
+
+	:param str text: text to convert to token syntax.
+	:return: token.
+	:rtype: str
+	"""
+
+	return '{' + text + '}'
 
 
 class Preset:
@@ -158,6 +171,41 @@ class Preset:
 
 		return path.is_file(self.file_path)
 
+	def create_name_manager_data(
+			self, name: str | None, crit_type: str, tokens: list[dict] | None, rules: list[dict] | None) -> NameManagerData:
+		"""
+		Creates in memory (not in disk) a new name manager and adds it to the preset.
+
+		:param str or None name: name for the manager.
+		:param str crit_type: CRIT component name to use.
+		:param list[dict] or None tokens: tokens to set on the newly created name manager.
+		:param list[dict] or None rules: newly created config.
+		:return: newly created name manager data instance.
+		:rtype: NameManagerData
+		"""
+
+		def _generate_unique_name_manager_name(_crit_type: str, _directory: str) -> str:
+			"""
+			Internal function that generates a unique name for the name manager.
+
+			:param str _crit_type: crit type.
+			:param str _directory: directory.
+			:return: unique name manager name.
+			:rtype: str
+			"""
+
+			return os.path.basename(tempfile.mktemp(prefix=f'{crit_type}_', dir=_directory))
+
+		name = name or _generate_unique_name_manager_name(crit_type, _directory=os.path.dirname(self._file_path))
+		name_manager = manager.NameManager({'name': name, 'tokens': tokens or list(), 'rules': rules or list()})
+		name_manager_data = NameManagerData(name, crit_type)
+		parent = self.find_name_manager_for_type(crit_type)
+		name_manager.parent_manager = parent
+		name_manager_data.manager = name_manager
+		self._managers_data.append(name_manager_data)
+
+		return name_manager_data
+
 	def find_name_manager_data_by_type(self, crit_type: str, recursive: bool = True):
 		"""
 		Returns the configuration data instance stored on the preset with given type.
@@ -222,7 +270,7 @@ class Preset:
 		}
 
 
-class NameManagerData(object):
+class NameManagerData:
 	"""
 	Data class which stores the config name, critType, and linked name manager on a preset.
 	"""
@@ -277,7 +325,7 @@ class NameManagerData(object):
 		}
 
 
-class PresetsManager(object):
+class PresetsManager:
 	"""
 	Manager to handle the different naming presets used by CRIT.
 	"""
@@ -291,16 +339,57 @@ class PresetsManager(object):
 		self._preferences_interface = crit.crit_Interface()
 
 		# full list of preset instances
-		self._presets = list()									# type: list[tp.common.naming.rule.Rule]
+		self._presets = list()									# type: list[Preset]
 
 		# root preset loaded from naming preset hierarchy
-		self._root_preset = None								# type: tp.common.naming.rule.Rule or None
+		self._root_preset = None								# type: Preset or None
 
 		# dictionary containing all naming managers
 		self._naming_managers = dict()							# type: dict[str, tp.common.naming.manager.NameManager]
 
 		# dictionary containing all available naming manager types
 		self._available_manager_types = set()
+
+	@property
+	def preferences_interface(self) -> 'CritPreferenceInterface':
+		"""
+		Returns the CRIT preference interface that allow to access CRIT related preferences.
+
+		:return: CRIT preference instance.
+		:rtype: CritPreferenceInterface
+		"""
+
+		return self._preferences_interface
+
+	@property
+	def root_preset(self) -> Preset | None:
+		"""
+		Returns root preset loaded from naming preset hierarchy.
+
+		:return: root preset.
+		:rtype: Preset or None
+		"""
+
+		return self._root_preset
+
+	def available_naming_manager_types(self) -> set:
+		"""
+		Returns all currently available naming manager types.
+
+		:return: set of naming manager types.
+		:rtype: set[str]
+		"""
+
+		return self._available_manager_types
+
+	def update_available_naming_managers(self, types: list[str] or set[str]):
+		"""
+		Updates the currently available naming manger types.
+
+		:param list[str] or set[str] types: types to update
+		"""
+
+		self._available_manager_types.update(set(types))
 
 	def contains_path(self, file_path: str) -> bool:
 		"""
