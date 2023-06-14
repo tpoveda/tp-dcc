@@ -1,16 +1,21 @@
+from __future__ import annotations
+
 import os
+from typing import List, Iterator
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
 
+from tp.maya.cmds import node
 
-def root_node():
-	"""
-	Returns the root Maya object
-	:return:
-	"""
 
-	from tp.maya.cmds import node
+def root_node() -> OpenMaya.MFnDependencyNode | None:
+	"""
+	Returns the root Maya object.
+
+	:return: root Maya object.
+	:rtype: OpenMaya.MObject or None
+	"""
 
 	for n in node.get_objects_of_mtype_iterator(object_type=OpenMaya.MFn.kWorld):
 		return n
@@ -18,23 +23,25 @@ def root_node():
 	return None
 
 
-def all_scene_nodes():
+def all_scene_nodes() -> List[OpenMaya.MFnDependencyNode]:
 	"""
-	Returns all nodes in the scene
-	:return:
-	"""
+	Returns all nodes in the scene.
 
-	from tp.maya.cmds import node
+	:return: list of scene nodes.
+	:rtype: List[OpenMaya.MFnDependencyNode]
+	"""
 
 	obj_types = (
 		OpenMaya.MFn.kDagNode, OpenMaya.MFn.kCharacter, OpenMaya.MFn.kDependencyNode)
 	return node.get_objects_of_mtype_iterator(obj_types)
 
 
-def iterate_references():
+def iterate_references() -> Iterator[OpenMaya.MFnReference]:
 	"""
-	Generator function that returns a MObject for each valid reference node
-	:return: Generator<OpenMaya.MObject>
+	Generator function that returns a MObject for each valid reference node.
+
+	:return: iterated references.
+	:rtype: Iterator[OpenMaya.MFnReference]
 	"""
 
 	iterator = OpenMaya.MItDependencyNodes(OpenMaya.MFn.kReference)
@@ -51,12 +58,12 @@ def iterate_references():
 			iterator.next()
 
 
-def find_scene_references():
+def scene_references() -> List[str]:
 	"""
-	Returns a list of all scene references within current scene.
+	Returns a list of all scene references paths within current scene.
 
-	:return: list of scene references.
-	:rtype: list(str)
+	:return: list of scene reference paths.
+	:rtype: List[str]
 	"""
 
 	paths = set()
@@ -66,13 +73,15 @@ def find_scene_references():
 		if ref_path:
 			paths.add(ref_path)
 
-	return paths
+	return list(paths)
 
 
-def find_scene_textures():
+def scene_textures() -> List[str]:
 	"""
-	Find scene texture dependencies of the current scene that are not referenced
-	:return: set<str>
+	Find scene texture dependencies of the current scene that are not referenced.
+
+	:return: list of texture paths.
+	:rtype: List[str]
 	"""
 
 	paths = set()
@@ -84,35 +93,35 @@ def find_scene_textures():
 		if texture_path:
 			paths.add(texture_path)
 
-	return paths
+	return list(paths)
 
 
-def find_additional_scene_dependencies(references=True, textures=True):
+def find_additional_scene_dependencies(references: bool = True, textures: bool = True) -> List[str]:
 	"""
 	Returns additional dependencies from the scene by looking at the file references and texture paths.
 
 	:param bool references: whether to return scene references.
 	:param bool textures: whether to return textures.
-	:return: scene dependnecies paths.
-	:rtype: set(str)
+	:return: scene dependencies paths.
+	:rtype: List[str]
 	"""
 
 	dependency_paths = set()
 	if references:
-		dependency_paths.union(find_scene_references())
+		dependency_paths.union(scene_references())
 	if textures:
-		dependency_paths.union(find_scene_textures())
+		dependency_paths.union(scene_textures())
 
-	return dependency_paths
+	return list(dependency_paths)
 
 
-def iterate_selected_nodes(filtered_type=None):
+def iterate_selected_nodes(filtered_type: OpenMaya.MFn.kObjectTypeFilter | None = None) -> Iterator[OpenMaya.MObject]:
 	"""
 	Generator function that iterates over all current selected nodes within Maya scene.
 
-	:param OpenMaya.MFn.kType filtered_type: selected nodes to filter.
-	:return: generator of iterated selected nodes.
-	:rtype: generator(OpenMaya.MObject)
+	:param OpenMaya.MFn.kObjectTypeFilter filtered_type: selected nodes to filter.
+	:return: iterated selected nodes.
+	:rtype: Iterator[OpenMaya.MObject]
 	"""
 
 	current_selection = OpenMaya.MGlobal.getActiveSelectionList()
@@ -122,13 +131,112 @@ def iterate_selected_nodes(filtered_type=None):
 			yield found_node
 
 
-def selected_nodes(filtered_type=None):
+def selected_nodes(filtered_type: OpenMaya.MFn.kObjectTypeFilter | None = None) -> Iterator[OpenMaya.MObject]:
 	"""
 	Returns a list of all currently selected nodes.
 
-	:param OpenMaya.MFn.kType filtered_type: selected nodes to filter.
+	:param OpenMaya.MFn.kObjectTypeFilter filtered_type: selected nodes to filter.
 	:return: list of selected nodes.
-	:rtype: list(OpenMaya.MObject)
+	:rtype: List[OpenMaya.MObject]
 	"""
 
 	return list(iterate_selected_nodes(filtered_type=filtered_type))
+
+
+def is_centimeters() -> bool:
+	"""
+	Returns whether current scene is in centimeters.
+
+	:return: True if current scene is in centimeters; False otherwise.
+	:rtype: bool
+	"""
+
+	return OpenMaya.MDistance.uiUnit() == OpenMaya.MDistance.kCentimeters
+
+
+def is_feet() -> bool:
+	"""
+	Returns whether current scene is in feet.
+
+	:return: True if current scene is in feet; False otherwise.
+	:rtype: bool
+	"""
+
+	return OpenMaya.MDistance.uiUnit() == OpenMaya.MDistance.kFeet
+
+
+def is_inches() -> bool:
+	"""
+	Returns whether current scene is in inches.
+
+	:return: True if current scene is in inches; False otherwise.
+	:rtype: bool
+	"""
+
+	return OpenMaya.MDistance.uiUnit() == OpenMaya.MDistance.kInches
+
+
+def is_kilometers() -> bool:
+	"""
+	Returns whether current scene is in kilometers.
+
+	:return: True if current scene is in kilometers; False otherwise.
+	:rtype: bool
+	"""
+
+	return OpenMaya.MDistance.uiUnit() == OpenMaya.MDistance.kKilometers
+
+
+def is_last() -> bool:
+	"""
+	Returns whether current scene is in last.
+
+	:return: True if current scene is in last; False otherwise.
+	:rtype: bool
+	"""
+
+	return OpenMaya.MDistance.uiUnit() == OpenMaya.MDistance.kLast
+
+
+def is_meters() -> bool:
+	"""
+	Returns whether current scene is in meters.
+
+	:return: True if current scene is in meters; False otherwise.
+	:rtype: bool
+	"""
+
+	return OpenMaya.MDistance.uiUnit() == OpenMaya.MDistance.kMeters
+
+
+def is_miles() -> bool:
+	"""
+	Returns whether current scene is in miles.
+
+	:return: True if current scene is in miles; False otherwise.
+	:rtype: bool
+	"""
+
+	return OpenMaya.MDistance.uiUnit() == OpenMaya.MDistance.kMiles
+
+
+def is_millimeters() -> bool:
+	"""
+	Returns whether current scene is in millimeters.
+
+	:return: True if current scene is in millimeters; False otherwise.
+	:rtype: bool
+	"""
+
+	return OpenMaya.MDistance.uiUnit() == OpenMaya.MDistance.kMillimeters
+
+
+def is_yards() -> bool:
+	"""
+	Returns whether current scene is in yards.
+
+	:return: True if current scene is in yards; False otherwise.
+	:rtype: bool
+	"""
+
+	return OpenMaya.MDistance.uiUnit() == OpenMaya.MDistance.kYards
