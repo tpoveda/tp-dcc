@@ -8,6 +8,7 @@ Module that contains naming rule implementation
 from __future__ import annotations
 
 import re
+from typing import List, Dict
 
 
 class Rule:
@@ -15,7 +16,7 @@ class Rule:
 	Class that encapsulates a rule expression.
 	"""
 
-	def __init__(self, name: str, creator: str, description: str, expression, example_fields: dict):
+	def __init__(self, name: str, creator: str, description: str, expression, example_tokens: Dict):
 		"""
 		Constructor.
 
@@ -23,14 +24,14 @@ class Rule:
 		:param str creator: person who created the rule.
 		:param str description: description of what the expression represents.
 		:param str expression: expression to use which con contain tokens using the format, "{token1}_{token2}
-		:param dict example_fields: example fields for the expression.
+		:param dict example_tokens: example tokens for the expression.
 		"""
 
 		self._name = name
 		self._creator = creator
 		self._description = description
 		self._expression = expression
-		self._example_fields = example_fields
+		self._example_tokens = example_tokens
 
 	def __repr__(self):
 		"""
@@ -81,11 +82,11 @@ class Rule:
 		return self.name != other.name
 
 	@classmethod
-	def from_dict(cls, data: dict) -> Rule:
+	def from_dict(cls, data: Dict) -> Rule:
 		"""
 		Creates a new Rule instance from the given JSON serialized dictionary.
 
-		:param dict data: rule data.
+		:param Dict data: rule data.
 		:return: newly rule instance.
 		:rtype: Rule
 		"""
@@ -111,26 +112,31 @@ class Rule:
 	def expression(self) -> str:
 		return self._expression
 
-	@property
-	def example_fields(self) -> dict:
-		return self._example_fields
+	@expression.setter
+	def expression(self, value: str):
+		self._expression = value
 
-	def tokens(self) -> list[str]:
+	@property
+	def example_tokens(self) -> Dict[str, List[str]]:
+		return self._example_tokens
+
+	def tokens(self) -> List[str]:
 		"""
 		List of tokens found within the current expression.
 
 		:return: list of token names.
-		:rtype: list[str]
+		:rtype: List[str]
 		"""
 
 		from tp.common.naming import manager
 		return re.findall(manager.NameManager.REGEX_FILTER, self._expression)
 
-	def serialize(self) -> dict:
+	def serialize(self) -> Dict[str, str]:
 		"""
 		Returns the raw data for the rule.
 
 		:return: rule data.
+		:rtype: Dict[str, str]
 
 		..code-block:: python
 			new_rule = Rule.from_data({
@@ -151,5 +157,5 @@ class Rule:
 			'creator': self.creator,
 			'description': self.description,
 			'expression': self.expression,
-			'exampleFields': self.example_fields
+			'exampleFields': self.example_tokens
 		}
