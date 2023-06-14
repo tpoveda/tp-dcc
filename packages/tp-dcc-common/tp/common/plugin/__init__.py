@@ -18,11 +18,11 @@ except ImportError:
     from inspect import getargspec as getfullargspec
 
 from tp.bootstrap import log
-from tp.core import dcc
+from tp.core import dcc, dccs
 from tp.common.python import helpers, modules, osplatform, path as path_utils, folder as folder_utils
 
 
-class Plugin(object):
+class Plugin:
     """
     Base plugin class.
     """
@@ -35,7 +35,7 @@ class Plugin(object):
         self._stats = PluginStats(self)
 
 
-class PluginStats(object):
+class PluginStats:
     def __init__(self, plugin, id_attr='ID'):
         self._plugin = plugin
         self._id = getattr(self._plugin, id_attr)
@@ -46,17 +46,9 @@ class PluginStats(object):
         self._info = dict()
         self._init()
 
-    # =================================================================================================================
-    # PROPERTIES
-    # =================================================================================================================
-
     @property
     def info(self):
         return self._info
-
-    # =================================================================================================================
-    # BASE
-    # =================================================================================================================
 
     def start(self):
         """
@@ -77,10 +69,6 @@ class PluginStats(object):
         if traceback:
             self._info['traceback'] = traceback
 
-    # =================================================================================================================
-    # INTERNAL
-    # =================================================================================================================
-
     def _init(self):
         """
         Internal function that initializes some basic info about the plugin and the use environment
@@ -95,13 +83,13 @@ class PluginStats(object):
             'module': self._plugin.__class__.__module__,
             'filepath': file_path,
             'id': self._id,
-            'application': dcc.get_name()})
+            'application': dcc.name()})
         self._info.update(osplatform.machine_info())
 
 
-class PluginFactory(object):
+class PluginFactory:
 
-    class PluginLoadingMechanism(object):
+    class PluginLoadingMechanism:
         """
         Class that contains variables used to define how the plugins on a registered path should be loaded.
         """
@@ -169,8 +157,8 @@ class PluginFactory(object):
         Returns regex validator for plugin folder directories.
         """
 
-        dcc_name = dcc.get_name()
-        all_dccs = dcc.Dccs.ALL
+        dcc_name = dcc.name()
+        all_dccs = dccs.ALL
         dcc_exclude = ''
         for _dcc in all_dccs:
             if _dcc == dcc_name:
@@ -345,7 +333,7 @@ class PluginFactory(object):
 
         :param str package_path: package path.
 
-        ..note:: this is a costly operation because it requires a recursive search by importing all sub modules and
+        ..note:: this is a costly operation because it requires a recursive search by importing all submodules and
             searching them.
         """
 
@@ -372,17 +360,6 @@ class PluginFactory(object):
                 continue
             for member in modules.iterate_module_members(sub_module_obj, predicate=inspect.isclass):
                 self.register_plugin_from_class(member[1])
-
-    def register_by_env(self, env):
-        """
-        Registers all plugins located in the paths defined within the given environment variable.
-
-        :param str env: name of the environment variable.
-        """
-
-        paths = osplatform.get_env_var(env, '').split(os.pathsep)
-        if paths:
-            self.register_paths(paths)
 
     def paths(self, package_name=None):
         """
@@ -481,7 +458,12 @@ class PluginFactory(object):
             return matching_plugins[0]
 
         if dcc:
-            matching_plugins = [plugin_cls for plugin_cls in matching_plugins if dcc in plugin_cls.DCCS]
+            _matching_plugins = []
+            for plugin_cls in matching_plugins:
+                if hasattr(plugin_cls, 'DCCS') and dcc not in plugin_cls.DCCS:
+                    continue
+                _matching_plugins.append(plugin_cls)
+            matching_plugins = _matching_plugins
         if not matching_plugins:
             self._logger.warning(
                 'No plugin with id "{}" found in package "{}" for DCC: {}'.format(plugin_id, package_name, dcc))
