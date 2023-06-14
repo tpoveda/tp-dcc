@@ -12,7 +12,7 @@ import maya.cmds
 import maya.OpenMayaUI
 import maya.app.general.mayaMixin
 
-from tp.common.qt.widgets import layouts, window
+from tp.common.qt.widgets import layouts
 
 BOOTSTRAP_WIDGETS = dict()
 
@@ -136,15 +136,16 @@ class BootStrapWidget(maya.app.general.mayaMixin.MayaQWidgetDockableMixin, QWidg
             maya.cmds.deleteUI(name)
             maya.cmds.workspaceControlState(name, remove=True)
         kwargs["retain"] = False
-        kwargs["uiScript"] = 'try: from tpDcc.dccs.maya.ui import window;window.rebuild("{}")\n' \
+        kwargs["uiScript"] = 'try: from tp.maya.ui import window;window.rebuild("{}")\n' \
                              'except ImportError: pass'.format(self.objectName())
-        kwargs["closeCallback"] = 'try: from tpDcc.dccs.maya.ui import window;window.bootstrap_destroy_window("{}")\n' \
+        kwargs["closeCallback"] = 'try: from tp.maya.ui import window;window.bootstrap_destroy_window("{}")\n' \
                                   'except ImportError: pass'.format(self.objectName())
         super(BootStrapWidget, self).show(**kwargs)
 
 
 def rebuild(object_name):
-    """If the bootstrap widget exists then we reapply it to mayas layout, otherwise do nothing.
+    """
+    If the bootstrap widget exists then we reapply it to mayas layout, otherwise do nothing.
 
     :param object_name: the bootStrap objectName
     :type object_name: str

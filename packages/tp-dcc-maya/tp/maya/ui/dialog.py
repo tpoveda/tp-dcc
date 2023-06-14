@@ -29,7 +29,7 @@ class MayaColorDialog(dialog.BaseColorDialog):
         super(MayaColorDialog, self).__init__(name=name, parent=parent, **kwargs)
 
     def ui(self):
-        if dcc.get_version() <= 2016:
+        if dcc.version() <= 2016:
             self.main_layout = self.get_main_layout()
             self.setLayout(self.main_layout)
 
@@ -52,13 +52,13 @@ class MayaColorDialog(dialog.BaseColorDialog):
             super(MayaColorDialog, self).ui()
 
     def setup_signals(self):
-        if dcc.get_version() <= 2016:
+        if dcc.version() <= 2016:
             pass
         else:
             super(MayaColorDialog, self).setup_signals()
 
     def _on_set_color(self, color_index):
-        if dcc.get_version() <= 2016:
+        if dcc.version() <= 2016:
             self.color_dialog.setCurrentColor(QColor.fromRgb(
                 self.maya_colors[color_index][0] * 255,
                 self.maya_colors[color_index][1] * 255,
@@ -68,7 +68,7 @@ class MayaColorDialog(dialog.BaseColorDialog):
             super(MayaColorDialog, self)._on_set_color()
 
     def _on_ok_btn(self):
-        if dcc.get_version() <= 2016:
+        if dcc.version() <= 2016:
             self.close()
         else:
             super(MayaColorDialog, self)._on_ok_btn()
