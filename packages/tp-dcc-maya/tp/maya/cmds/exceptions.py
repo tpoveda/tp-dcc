@@ -8,7 +8,7 @@ Utility methods related to Maya exceptions
 
 class MayaException(Exception):
     """
-    Raise exceptions specific to tpDcc.dccs.maya
+    Raise exceptions specific to tp-dcc-maya
     """
 
     pass

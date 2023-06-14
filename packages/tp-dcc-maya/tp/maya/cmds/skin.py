@@ -1257,7 +1257,7 @@ def reset_skinned_joints(skinned_joints, skin_cluster_name=None):
                 skin_cluster = skin_cluster_plug[:skin_cluster_plug.index('.')]
                 inverse_matrix = maya.cmds.getAttr('{}.worldInverseMatrix'.format(joint))
                 maya.cmds.setAttr('{}.bindPreMatrix[{}]'.format(skin_cluster, index), type='matrix', *inverse_matrix)
-                if dcc.get_version() >= 2016:
+                if dcc.version() >= 2016:
                     maya.cmds.skinCluster(skin_cluster, edit=True, recacheBindMatrices=True)
                     maya.cmds.dgdirty(skin_cluster)
         else:
@@ -2014,7 +2014,7 @@ def combine_skinned_meshes(meshes=None):
     if not meshes:
         return False
 
-    if dcc.get_version() < 2015:
+    if dcc.version() < 2015:
         logger.warning('Combine Skinned meshes functionality is only available in Maya 2015 or higher')
         return False
 

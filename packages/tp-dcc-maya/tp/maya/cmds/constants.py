@@ -2,15 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Module that contains constants definitions for tpDcc.dccs.maya
+Module that contains constants definitions for tp-dcc-maya
 """
 
-from tp.common.python import helpers
-
-if helpers.is_python2():
-    from tp.common.python.enum import Enum
-else:
-    from enum import Enum
+from enum import Enum
 
 
 class DebugLevels(Enum):

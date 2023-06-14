@@ -6,7 +6,6 @@ Module that contains functions and classes to work with HumanIK
 """
 
 import os
-import logging
 
 import maya.cmds
 import maya.mel
@@ -14,6 +13,7 @@ import maya.app.hik.retargeter
 
 from tp.core import log, dcc
 from tp.common.python import path as path_utils
+from tp.maya.cmds import helpers
 
 logger = log.tpLogger
 
@@ -1238,12 +1238,12 @@ def load_human_ik_plugin():
     maya.mel.eval('source "' + maya_location + '/scripts/others/characterSelector.mel"')
 
     # Load HumanIK plugins
-    if not dcc.is_plugin_loaded('mayaHIK'):
-        dcc.register_plugin('mayaHIK')
-    if not dcc.is_plugin_loaded('mayaCharacterization'):
-        dcc.register_plugin('mayaCharacterization')
-    if not dcc.is_plugin_loaded('retargeterNodes'):
-        dcc.register_plugin('retargeterNodes')
+    if not helpers.is_plugin_loaded('mayaHIK'):
+        helpers.register_plugin('mayaHIK')
+    if not helpers.is_plugin_loaded('mayaCharacterization'):
+        helpers.register_plugin('mayaCharacterization')
+    if not helpers.is_plugin_loaded('retargeterNodes'):
+        helpers.register_plugin('retargeterNodes')
 
     # HIK Character Controls Tool
     maya.mel.eval('HIKCharacterControlsTool')

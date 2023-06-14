@@ -6,12 +6,13 @@ Module that contains functions and classes related with custom Maya Python conte
 """
 
 import contextlib
+from typing import List
 
 import maya.mel as mel
 import maya.cmds as cmds
 
 from tp.core import log
-from tp.maya.cmds import helpers, exceptions
+from tp.maya.cmds import helpers, exceptions, nodeeditor
 
 logger = log.tpLogger
 
@@ -118,6 +119,22 @@ def no_refresh_context():
         yield
     finally:
         cmds.paneLayout(pane, e=1, manage=state)
+
+
+@contextlib.contextmanager
+def isolated_nodes(nodes: List[str], panel: str):
+    """
+    Context Manager for isolating nodes in Maya model panel.
+
+    :param List[str] nodes: list of node names to isolate.
+    :param str panel: Maya model panel name.
+    """
+
+    cmds.isolateSelect(panel, state=True)
+    for obj in nodes:
+        cmds.isolateSelect(panel, addDagObject=obj)
+    yield
+    cmds.isolateSelect(panel, state=False)
 
 
 @contextlib.contextmanager
@@ -296,3 +313,22 @@ def maintain_time_context():
         yield
     finally:
         cmds.currentTime(current_time, edit=True)
+
+
+@contextlib.contextmanager
+def disable_node_editor_add_node_context():
+    """
+    Context manager which disables the current node editors "Add to graph on create", which slows Maya down a lot.
+    """
+
+    editor = nodeeditor.primary_node_editor()
+    state = False
+    editor_wrapper = None
+    if editor:
+        editor_wrapper = nodeeditor.NodeEditorWrapper(editor)
+        state = editor_wrapper.add_nodes_on_create()
+        if state:
+            editor_wrapper.set_add_nodes_on_create(False)
+    yield
+    if state:
+        editor_wrapper.set_add_nodes_on_create(state)

@@ -113,7 +113,7 @@ class MayaSceneWrapper(scenewrapper.AbstractSceneWrapper, object):
         :return: int or str
         """
 
-        if dcc.get_version() >= 2016:
+        if dcc.version() >= 2016:
             node_name = node_utils.get_name(self._dcc_native_object, fullname=True)
             return maya.cmds.ls(node_name, uuid=True)[0]
         else:

@@ -34,8 +34,9 @@ import maya.utils as utils
 import maya.mel as mel
 import maya.OpenMayaUI as OpenMayaUI1
 
-from tp.core import log, dcc
+from tp.core import log
 from tp.maya.api import env
+from tp.maya.cmds import helpers
 
 logger = log.tpLogger
 
@@ -457,7 +458,7 @@ def isolated_nodes(nodes, panel):
     yield
 
 
-def to_qt_object(maya_name, qobj=None):
+def to_qt_object(maya_name: str, qobj=None):
     """
     Returns an instance of the Maya UI element as a QWidget
     """
@@ -553,12 +554,12 @@ def create_dock_window(window, dock_area='right', allowed_areas=None):
 
 def is_window_floating(window_name):
     """
-    Returns whether or not given window is floating
+    Returns whether given window is floating
     :param window_name: str
     :return: bool
     """
 
-    if dcc.get_version() < 2017:
+    if helpers.get_version() < 2017:
         floating = cmds.dockControl(window_name, floating=True, query=True)
     else:
         floating = cmds.workspaceControl(window_name, floating=True, query=True)
@@ -706,16 +707,15 @@ def delete_dock_control(control_name):
     return floating
 
 
-def delete_workspace_control(control_name, reset_floating=True):
+def delete_workspace_control(control_name: str, reset_floating: bool = True) -> str:
     """
-    Handles the deletion of a workspace control with a specific name
-    :param control_name: str
-    :param reset_floating: bool
-    :return: bool
-    """
+    Handles the deletion of a workspace control with a specific name.
 
-    if not dcc.get_version() > 2017:
-        return None
+    :param str control_name: name of the workspace control object to delete.
+    :param bool reset_floating: whether to resset workspace floating status.
+    :return: name of the removed workspace control object.
+    :rtype: str
+    """
 
     if cmds.workspaceControl(control_name, query=True, exists=True):
         floating = cmds.workspaceControl(control_name, query=True, floating=True)

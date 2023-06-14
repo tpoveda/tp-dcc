@@ -2493,7 +2493,6 @@ def reset_selected_nodes_attributes(skip_visibility=True):
     return reset_nodes_attributes(selected_nodes, skip_visibility=skip_visibility)
 
 
-
 class AttributeValidator(object):
     """
     Static class with functionality to validate different types of attributes

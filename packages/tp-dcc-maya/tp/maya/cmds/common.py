@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Module that contains common definitions for tpDcc.dccs.maya
+Module that contains common definitions for tp-dcc-maya
 """
 
 from __future__ import print_function, division, absolute_import

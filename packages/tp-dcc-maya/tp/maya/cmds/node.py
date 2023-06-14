@@ -14,7 +14,6 @@ import maya.api.OpenMaya as OpenMaya
 from tp.core import log
 from tp.common.python import helpers, name, color
 from tp.maya.cmds import exceptions, helpers, color as maya_color, namespace as namespace_utils
-from tp.maya.om import nodes
 
 logger = log.tpLogger
 
@@ -781,7 +780,7 @@ def get_objects_of_mtype_iterator(object_type):
 
     object_type = helpers.force_list(object_type)
     for obj_type in object_type:
-        obj_iter = maya.api.OpenMaya.MItDependencyNodes(obj_type)
+        obj_iter = OpenMaya.MItDependencyNodes(obj_type)
         while not obj_iter.isDone():
             yield obj_iter.thisNode()
             obj_iter.next()
