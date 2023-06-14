@@ -14,8 +14,8 @@ from typing import Tuple, List, Type
 from overrides import override
 from Qt.QtCore import Qt, Signal, QObject, QPoint, QSize, QTimer, QEvent, QSettings
 from Qt.QtWidgets import (
-	QApplication, QSizePolicy, QWidget, QFrame, QToolButton, QLayout, QGridLayout, QHBoxLayout, QMainWindow, QTabWidget,
-	QSpacerItem, QAction, QSplitter
+	QApplication, QSizePolicy, QWidget, QFrame, QToolButton, QGridLayout, QVBoxLayout, QHBoxLayout, QMainWindow,
+	QTabWidget, QSpacerItem, QAction, QSplitter
 )
 from Qt.QtGui import (
 	QCursor, QColor, QPainter, QResizeEvent, QShowEvent, QCloseEvent, QMoveEvent, QMouseEvent, QKeyEvent
@@ -47,7 +47,7 @@ def frameless_windows() -> List[FramelessWindow]:
 	"""
 
 	found_windows = list()
-	for child in dcc.get_main_window().children():
+	for child in dcc.main_window().children():
 		if isinstance(child, FramelessWindow):
 			found_windows.append(child)
 
@@ -227,7 +227,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
 
 		pos = QCursor.pos()
 		window = self._win
-		if self._win == dcc.get_main_window() and self._win is not None:
+		if self._win == dcc.main_window() and self._win is not None:
 			logger.error('{}: Found Maya window instead of DockingContainer!'.format(
 				self._workspace_control_name))
 			return
@@ -1075,6 +1075,8 @@ class FramelessWindow(QWidget):
 		self.setup_ui()
 		self.setup_signals()
 
+		self.set_title_style(TitleBar.TitleStyle.DEFAULT)
+
 		self._filter.modifierPressed.connect(self.show_overlay)
 		self.installEventFilter(self._filter)
 
@@ -1226,12 +1228,12 @@ class FramelessWindow(QWidget):
 
 		return super().keyPressEvent(event)
 
-	def main_layout(self) -> QLayout:
+	def main_layout(self) -> QVBoxLayout | QHBoxLayout:
 		"""
 		Returns window main content layouts instance.
 
 		:return: contents layout.
-		:rtype: QLayout
+		:rtype: QVBoxLayout or QHBoxLayout
 		..note:: if not layout exists, a new one will be created.
 		"""
 
@@ -1240,11 +1242,11 @@ class FramelessWindow(QWidget):
 
 		return self._main_contents.layout()
 
-	def set_main_layout(self, layout: QLayout):
+	def set_main_layout(self, layout: QVBoxLayout | QHBoxLayout):
 		"""
 		Sets main window layout.
 
-		:param QLayout layout: main window contents layout.
+		:param QVBoxLayout or QHBoxLayout layout: main window contents layout.
 		"""
 
 		self._main_contents.setLayout(layout)
@@ -1461,7 +1463,7 @@ class FramelessWindow(QWidget):
 		:rtype: FramelessWindowContainer
 		"""
 
-		self._parent = self._parent or dcc.get_main_window()
+		self._parent = self._parent or dcc.main_window()
 		self._parent_container = FramelessWindowContainer(
 			width=self._init_width, height=self._init_height, save_window_pref=save_window_pref, on_top=self._on_top,
 			parent=self._parent)
@@ -1719,7 +1721,7 @@ class SpawnerIcon(buttons.IconMenuButton):
 		self._docked = True
 		frameless.close()
 
-	@override
+	@override(check_signature=False)
 	def update_theme(self, event: 'ThemeUpdateEvent'):
 		"""
 		Overrides base update_theme function to ignore it.
@@ -1923,7 +1925,7 @@ class TitleBar(QFrame):
 	def __init__(self, show_title: bool = True, always_show_all: bool = False, parent: FramelessWindow | None = None):
 		super().__init__(parent)
 
-		self._title_bar_height = 40
+		self._title_bar_height = 30
 		self._pressed_at = None
 		self._frameless_window = parent
 		self._mouse_pos = None
@@ -2049,7 +2051,7 @@ class TitleBar(QFrame):
 		self._contents_layout.setSpacing(0)
 		self._title_layout.addWidget(self._title_label)
 		self._title_layout.setSpacing(0)
-		self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 8, 0, 7))
+		self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 2, 2, 6))
 		self._title_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding)
 		self._title_label.setMidLineWidth(1)
 
@@ -2217,17 +2219,19 @@ class TitleBar(QFrame):
 		self._title_style = style
 
 		if style == self.TitleStyle.DEFAULT:
+			qtutils.set_stylesheet_object_name(self, '')
 			qtutils.set_stylesheet_object_name(self._title_label, '')
 			self.setFixedHeight(dpi.dpi_scale(self._title_bar_height))
-			self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 5, 0, 7))
+			self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 2, 2, 6))
+			# self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 5, 0, 7))
 			self._main_right_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 5, 6, 0))
-			self._logo_button.setIconSize(QSize(24, 24))
+			self._logo_button.setIconSize(QSize(16, 16))
 			self._logo_button.setFixedSize(QSize(30, 24))
 			self._minimize_button.setFixedSize(QSize(28, 24))
 			self._minimize_button.setIconSize(QSize(24, 24))
-			self._maximize_button.setFixedSize(QSize(28, 24))
+			self._maximize_button.setFixedSize(QSize(24, 24))
 			self._maximize_button.setIconSize(QSize(24, 24))
-			self._close_button.setFixedSize(QSize(28, 24))
+			self._close_button.setFixedSize(QSize(24, 24))
 			self._close_button.setIconSize(QSize(16, 16))
 			self._window_buttons_layout.setSpacing(6)
 			if self._frameless_window.HELP_URL:
@@ -2235,18 +2239,18 @@ class TitleBar(QFrame):
 			self._window_buttons_layout.setSpacing(dpi.dpi_scale(6))
 		elif style == self.TitleStyle.THIN:
 			self.setFixedHeight(dpi.dpi_scale(int(self._title_bar_height / 2)))
-			self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 3, 15, 7))
+			# self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 3, 15, 7))
+			self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 0, 0, 6))
 			self._main_right_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 0, 6, 0))
 			self._logo_button.setIconSize(QSize(12, 12))
-			self._logo_button.setFixedSize(QSize(10, 12))
-			self._minimize_button.setFixedSize(QSize(10, 18))
-			self._maximize_button.setFixedSize(QSize(10, 18))
-			self._maximize_button.setFixedSize(QSize(12, 12))
-			self._close_button.setFixedSize(QSize(10, 18))
-			self._close_button.setFixedSize(QSize(12, 12))
-			self._title_label.setFixedHeight(dpi.dpi_scale(20))
+			self._logo_button.setFixedSize(QSize(14, 16))
+			self._minimize_button.setFixedSize(QSize(14, 14))
+			self._maximize_button.setFixedSize(QSize(14, 14))
+			self._close_button.setFixedSize(QSize(14, 14))
+			self._title_label.setFixedHeight(dpi.dpi_scale(16))
 			self._window_buttons_layout.setSpacing(dpi.dpi_scale(6))
 			self._help_button.hide()
+			qtutils.set_stylesheet_object_name(self, 'Minimized')
 			qtutils.set_stylesheet_object_name(self._title_label, 'Minimized')
 		else:
 			logger.error('{} style does not exists for {}!'.format(style, self._frameless_window.__class__.__name__))

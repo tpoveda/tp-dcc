@@ -14,7 +14,7 @@ class BaseTableModel(QAbstractTableModel):
 		super().__init__(parent=parent)
 
 		self._row_data_source = None								# type: datasources.BaseDataSource
-		self._column_data_sources = list()							# type: list[datasources.BaseDataSource]
+		self._column_data_sources = list()							# type: list[datasources.ColumnDataSource]
 
 	@property
 	def column_data_sources(self) -> list[datasources.BaseDataSource]:
@@ -60,7 +60,7 @@ class BaseTableModel(QAbstractTableModel):
 		if column == 0:
 			kwargs = {'index': row}
 		else:
-			kwargs = {'rowDataSource': self._row_data_source, 'index': row}
+			kwargs = {'row_data_source': self._row_data_source, 'index': row}
 		role_to_fn = {
 			Qt.DisplayRole: data_source.data,
 			Qt.EditRole: data_source.data,

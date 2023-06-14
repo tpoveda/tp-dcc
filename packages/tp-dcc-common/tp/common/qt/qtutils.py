@@ -12,10 +12,10 @@ import sys
 import struct
 import inspect
 import contextlib
-from typing import Tuple, Callable
+from typing import Callable, Iterator
 
 from tp.core import log, dcc
-from tp.common.python import helpers, win32
+from tp.common.python import helpers
 from tp.common.resources import color
 
 logger = log.tpLogger
@@ -26,9 +26,10 @@ QT_AVAILABLE = True
 _QT_TEST_AVAILABLE = True
 try:
     from Qt.QtCore import Qt, Signal, QObject, QPoint, QRect, QSize, QTimer
-    from Qt.QtWidgets import QApplication, QLayout, QVBoxLayout, QHBoxLayout, QWidget, QFrame, QLabel, QPushButton
     from Qt.QtWidgets import (
-        QSizePolicy, QMessageBox, QInputDialog, QFileDialog, QMenu, QMenuBar, QGraphicsDropShadowEffect
+        QApplication, QLayout, QVBoxLayout, QHBoxLayout, QWidget, QFrame, QLabel, QPushButton, QSizePolicy, QMessageBox,
+        QInputDialog, QFileDialog, QMenu, QMenuBar, QGraphicsDropShadowEffect, QTreeWidget, QTreeWidgetItem,
+        QTreeWidgetItemIterator
     )
     from Qt.QtGui import QFontDatabase, QPixmap, QIcon, QColor, QCursor
     from Qt import QtGui
@@ -1145,7 +1146,7 @@ def get_window_menu_bar(window=None):
     :return: QMenuBar or None
     """
 
-    window = window or dcc.get_main_window()
+    window = window or dcc.main_window()
     if not window:
         return
 
@@ -1653,3 +1654,19 @@ def get_open_filename(title='Open File', file_dir=None, ext_filter='*', parent=N
     return file_dialog
 
 
+def safe_tree_widget_iterator(
+        item: QTreeWidget | QTreeWidgetItemIterator,
+        flags: QTreeWidgetItemIterator.IteratorFlags = QTreeWidgetItemIterator.All) -> Iterator[QTreeWidgetItem]:
+    """
+    Custom iterator that handles the incrementing of the iterator on each loop to avoid infinite loops.
+
+    :param QTreeWidget or QTreeWidgetItemIterator item: item to iterate.
+    :param QTreeWidgetItemIterator.IteratorFlags flags: tree widget iterator flags.
+    :return: iterated tree widget items.
+    :rtype: Iterator[QTreeWidgetItem]
+    """
+
+    iterator = QTreeWidgetItemIterator(item, flags)
+    while iterator.value():
+        yield iterator.value()
+        iterator += 1

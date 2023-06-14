@@ -8,6 +8,7 @@ Module that contains base class for icons
 from Qt.QtCore import Qt, Slot, Signal, QObject, QSize, QRunnable
 from Qt.QtGui import QIcon, QImage, qRgb
 
+from tp.common.qt import dpi
 from tp.common.python import helpers
 from tp.common.resources import pixmap
 
@@ -45,14 +46,6 @@ def colorize_icon(icon, size=None, color=(255, 255, 255), overlay_icon=None, ove
     :rtype: Icon
     """
 
-    # import here to avoid cyclic imports
-    from tp.common.resources import api as resources
-    from tp.common.qt import dpi
-
-    icon = resources.icon(icon) if helpers.is_string(icon) else icon
-    if not icon:
-        return icon
-
     size = size or icon.availableSizes()[0]
     size = dpi.dpi_scale(size)
     if isinstance(size, (int, float)):
@@ -81,12 +74,9 @@ def colorize_layered_icon(
     :param list(float) or str or QColor tint_color: icon tint color used to colorize.
     :param QPainter.Composition composition: layer composition mode.
     :param bool grayscale: whether to grayscale icons or not.
-    :return:
+    :return: new colorized icon.
+    :rtype: QIcon
     """
-
-    # Import here to avoid cyclic imports
-    from tp.common.resources import api as resources
-    from tp.common.qt import dpi
 
     if not icons:
         return
@@ -109,7 +99,6 @@ def colorize_layered_icon(
 
     # Create copies of the lists
     icons = helpers.force_list(icons)
-    icons = [resources.icon(icon) if helpers.is_string(icon) else icon for icon in icons]
     icon_scaling = helpers.force_list(scaling)
 
     if colors is None or (len(icons) > len(colors)):
@@ -208,10 +197,6 @@ class ThreadedIcon(QRunnable):
         self._image = None
         self._finished = False
 
-    # =================================================================================================================
-    # OVERRIDES
-    # =================================================================================================================
-
     @Slot()
     def run(self):
         """
@@ -231,10 +216,6 @@ class ThreadedIcon(QRunnable):
         self._image = image
         self.finished(True)
 
-    # =================================================================================================================
-    # BASE
-    # =================================================================================================================
-
     def finished(self, state):
         """
         Sets the finish status of the runnable object.
@@ -247,7 +228,7 @@ class ThreadedIcon(QRunnable):
 
     def is_finished(self):
         """
-        Returns whether or not runnable has completed its operation.
+        Returns whether runnable has completed its operation.
 
         :return: True if the runnable is completed; False otherwise.
         :rtype: bool

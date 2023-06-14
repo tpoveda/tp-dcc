@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from Qt.QtCore import Qt, Signal
 from Qt.QtWidgets import QWidget, QLineEdit, QTextBrowser
 
 

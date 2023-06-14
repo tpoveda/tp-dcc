@@ -11,6 +11,8 @@ from Qt.QtCore import Qt, QByteArray
 from Qt.QtGui import QPixmap, QIcon, QPainter
 from Qt.QtSvg import QSvgRenderer
 
+from tp.common.resources import icon
+
 
 class CacheResource(object):
 
@@ -37,7 +39,7 @@ class CacheResource(object):
             else:
                 resource = self._cls(path)
                 if color:
-                    resource.set_color(color)
+                    resource = icon.colorize_icon(resource, color=color)
 
             if not skip_cache:
                 self._resources_path_cache.update({key: resource})

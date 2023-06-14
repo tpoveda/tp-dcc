@@ -734,7 +734,7 @@ def is_string(s):
     :return: bool
     """
 
-    return isinstance(s, strings.string_types)
+    return isinstance(s, str)
 
 
 def is_number(s):

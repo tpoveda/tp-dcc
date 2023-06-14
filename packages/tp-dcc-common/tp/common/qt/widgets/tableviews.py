@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from typing import List
+
 from Qt import QtCompat
-from Qt.QtCore import Qt, Signal
-from Qt.QtWidgets import QWidget, QFrame, QHeaderView, QTableView
+from Qt.QtCore import Qt, Signal, QPoint, QModelIndex, QItemSelectionModel
+from Qt.QtWidgets import QWidget, QFrame, QHeaderView, QTableView, QMenu
 
 from tp.common.qt.widgets import layouts, search
-from tp.common.qt.models import datasources, tablemodel
+from tp.common.qt.models import datasources, tablemodel, sortmodel
 
 
 class ExtendedTableView(QFrame):
@@ -23,6 +25,7 @@ class ExtendedTableView(QFrame):
 		self._column_data_sources = list()				# type: list[datasources.BaseDataSource]
 
 		self._setup_ui()
+		self._setup_signals()
 
 	@property
 	def table_view(self) -> BaseTableView:
@@ -47,12 +50,25 @@ class ExtendedTableView(QFrame):
 		finally:
 			self._refreshing = False
 
+	def model(self) -> sortmodel.TableFilterProxyModel:
+		"""
+		Returns table view model.
+
+		:return: proxy model.
+		:rtype: sortmodel.TableFilterProxyModel
+		"""
+
+		return self._table_view.model()
+
 	def set_model(self, model: tablemodel.BaseTableModel):
 		"""
 		Sets the model to use by this table view.
 
 		:param tablemodel.BaseTableModel model: table model to use.
 		"""
+
+		self._proxy_search.setSourceModel(model)
+		self._proxy_search.setDynamicSortFilter(True)
 
 		self._model = model
 		if self._row_data_source:
@@ -108,6 +124,26 @@ class ExtendedTableView(QFrame):
 		self._model.column_data_sources = data_sources
 		self._search_widget.set_visibility_items([self._row_data_source.header_text(0)] + visible_items)
 
+	def selection_model(self) -> QItemSelectionModel:
+		"""
+		Returns current selection model.
+
+		:return: selection model.
+		:rtype: QItemSelectionModel
+		"""
+
+		return self._table_view.selectionModel()
+
+	def selected_rows(self) -> List[int]:
+		"""
+		From all the selected indices returns the row numbers.
+
+		:return: list of row numbers.
+		:rtype: List[int]
+		"""
+
+		return list(set([i.row() for i in self.selection_model().selectedIndexes()]))
+
 	def _setup_ui(self):
 		"""
 		Internal function that creates list view widgets.
@@ -116,9 +152,20 @@ class ExtendedTableView(QFrame):
 		self._main_layout = layouts.vertical_layout(parent=self)
 
 		self._table_view = BaseTableView(parent=self)
+		self._table_view.contextMenuRequested.connect(self._on_context_menu_requested)
 		self._setup_filter()
 
 		self._main_layout.addWidget(self._table_view)
+
+		self._proxy_search = sortmodel.TableFilterProxyModel(parent=self)
+		self._table_view.setModel(self._proxy_search)
+
+	def _setup_signals(self):
+		"""
+		Internal function that connects signals.
+		"""
+
+		self._search_widget.columnFilterIndexChanged.connect(self._on_search_box_column_filter_index_changed)
 
 	def _setup_filter(self):
 		"""
@@ -130,6 +177,30 @@ class ExtendedTableView(QFrame):
 		self._search_layout = layouts.horizontal_layout(spacing=0)
 		self._search_layout.addWidget(self._search_widget)
 		self._main_layout.addLayout(self._search_layout)
+
+	def _on_context_menu_requested(self, pos: QPoint):
+		"""
+		Internal callback function that is called each time context menu is requested by the user.
+
+		:param QPoint pos: context menu position.
+		"""
+
+		menu = QMenu(self)
+		selection = self.selected_rows()
+		if self._row_data_source:
+			self._row_data_source.context_menu(selection, menu)
+		self.contextMenuRequested.emit(selection, menu)
+		menu.exec_(self._table_view.viewport().mapToGlobal(pos))
+
+	def _on_search_box_column_filter_index_changed(self, index: int, text: str):
+		"""
+		Internal callback function that is called each time search box column filter index changes.
+
+		:param int index: current index.
+		:param str text: current search text.
+		"""
+
+		self._proxy_search.setFilterKeyColumn(index)
 
 
 class BaseTableView(QTableView):

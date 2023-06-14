@@ -61,7 +61,7 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
 
 		# NOTE: For some weird reason, in MoBu 2022 style related calls do not work
 		# Internal C++ object (PySide2.QtWidgets.QProxyStyle) already deleted.
-		if dcc.is_mobu() and dcc.get_version_name() == '2022':
+		if dcc.is_mobu() and dcc.version_name() == '2022':
 			icon_size = dpi.dpi_scale(14)
 		else:
 			icon_size = self.style().pixelMetric(QStyle.PM_SmallIconSize)
@@ -276,7 +276,7 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
 
 		# NOTE: For some weird reason, in MoBu 2022 style related calls do not work
 		# Internal C++ object (PySide2.QtWidgets.QProxyStyle) already deleted.
-		if dcc.is_mobu() and dcc.get_version_name() == '2022':
+		if dcc.is_mobu() and dcc.version_name() == '2022':
 			return 2
 		else:
 			return self._search_line.style().pixelMetric(QStyle.PM_DefaultFrameWidth)

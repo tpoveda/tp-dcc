@@ -9,7 +9,6 @@ Module that contains utility functions related with strings
 import re
 import os
 import random
-import logging
 from string import ascii_letters
 from distutils.util import strtobool
 

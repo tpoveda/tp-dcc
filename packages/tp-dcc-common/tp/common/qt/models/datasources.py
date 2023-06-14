@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Iterator, Any
 
+from overrides import override
 from Qt.QtCore import Qt, QObject, QModelIndex, QAbstractItemModel, QSize
 from Qt.QtWidgets import QStyledItemDelegate
 from Qt.QtGui import QColor, QFont, QIcon
@@ -634,3 +635,23 @@ class BaseDataSource(QObject):
 		"""
 
 		return delegates.HtmlDelegate(parent)
+
+
+class ColumnDataSource(BaseDataSource):
+	def __init__(
+			self, header_text: str = '', model: QAbstractItemModel | None = None, parent: BaseDataSource | None = None):
+		super().__init__(header_text=header_text, model=model, parent=parent)
+
+	@override(check_signature=False)
+	def data(self, row_data_source: BaseDataSource, index: int) -> str:
+		"""
+		Returns the text for this column.
+
+		:param BaseDataSource row_data_source: row data source model for the column index.
+		:param index: column index for the text.
+		:return: column text.
+		:rtype: str
+		"""
+
+		return ''
+

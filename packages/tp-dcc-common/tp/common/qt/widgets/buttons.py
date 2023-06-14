@@ -4,15 +4,336 @@ from functools import partial
 from typing import Tuple, List, Iterable, Callable, Any
 
 from overrides import override
-from Qt.QtCore import Qt, Signal, QPoint, QSize, QTimer, QEvent
-from Qt.QtWidgets import QWidget, QAbstractButton, QPushButton, QAction, QMenu
-from Qt.QtGui import QCursor, QFontMetrics, QColor, QIcon, QPainter, QMouseEvent, QKeyEvent, QResizeEvent
+from Qt.QtCore import Qt, Signal, Property, QPoint, QSize, QTimer, QEvent
+from Qt.QtWidgets import (
+	QSizePolicy, QWidget, QAbstractButton, QPushButton, QAction, QMenu, QLabel, QFrame, QGridLayout, QToolButton
+)
+from Qt.QtGui import (
+	QCursor, QFontMetrics, QColor, QIcon, QPainter, QMouseEvent, QKeyEvent, QResizeEvent, QPixmap, QRegion
+)
 
+from tp.core import log
 from tp.preferences.interfaces import core as core_interfaces
 from tp.common.python import helpers
 from tp.common.resources import icon, api as resources
-from tp.common.qt import dpi
-from tp.common.qt.widgets import layouts, menus
+from tp.common.qt import consts, dpi, qtutils, mixin
+from tp.common.qt.widgets import layouts, labels, menus
+
+# cached theme preference
+THEME_PREFERENCE = None
+
+logger = log.tpLogger
+
+
+def styled_button(
+		text: str = '', icon: str | QIcon | None = None, icon_size: int = 16,
+		icon_color: Tuple[int, int, int] or None =None, icon_hover_color: Tuple[int, int, int] | None = None,
+		overlay_icon_color: Tuple[int, int, int] or None = None, overlay_icon: str | QIcon | None = None,
+		icon_color_theme: str | None = None, min_width: int | None = None, max_width: int | None = None,
+		min_height: int | None = None, max_height: int | None = None, width: int | None = None,
+		height: int | None = None, style: int = consts.ButtonStyles.DEFAULT, tooltip: str = '',
+		theme_updates: bool = True, checkable: bool = False, checked: bool = False, force_upper: bool = False,
+		button_width: int | None = None, button_height: int | None = None,
+		parent: QWidget | None = None) -> QPushButton | BaseButton | ShadowedButton | RoundButton | LabelSmallButton:
+	"""
+	Creates a new button with the given options.
+
+	Style 0: Default button with optional text or icon.
+	Style 1: Default button with transparent background.
+	Style 2: Button with shadow underline (icon in a colored box).
+	Style 3: Rounded button with a background color and a colored icon.
+	Style 4: Default style using standard Qt PushButton.
+	Style 5: Regular Qt label with a small button beside.
+
+	:param str text: button text.
+	:param str or QIcon icon: icon name or QIcon instance.
+	:param int icon_size: size of the icon in pixels.
+	:param tuple(int, int, int) icon_color: icon color in 0 to 255 range.
+	:param tuple(int, int, int) icon_hover_color: icon hover color in 0 to 255 range.
+	:param tuple(int, int, int) overlay_icon_color: color of the overlay image icon.
+	:param str or QIcon overlay_icon: the name of the icon image that will be overlayed on top of the original icon.
+	:param str icon_color_theme: color attribute that should be applied from current applied theme.
+	:param int min_width: minimum width of the button in pixels.
+	:param int max_width: maximum width of the button in pixels.
+	:param int min_height: minimum height of the button in pixels.
+	:param int max_height: maximum height of the button in pixels.
+	:param int width: fixed width of the button in pixels. This one overrides the values defined in min/max values.
+	:param int height: fixed height of the button in pixels. This one overrides the values defined in min/max values.
+	:param int style: the style of the button.
+	:param str tooltip: tooltip as seen with mouse over.
+	:param bool theme_updates: whether  button style will be updated when current style changes.
+	:param bool checkable: whether the button can be checked.
+	:param bool checked: whether (if checkable is True) button is checked by default.
+	:param bool force_upper: whether to show button text as uppercase.
+	:param int button_width: optional button width.
+	:param int button_height: optional button height.
+	:param QWidget parent: parent widget.
+	:return: newly created button.
+	:rtype: QPushButton or BaseButton or ShadowedButton or RoundButton or LabelSmallButton
+
+	..note:: button icons are always squared.
+	"""
+
+	global THEME_PREFERENCE
+
+	if not THEME_PREFERENCE:
+		THEME_PREFERENCE = core_interfaces.theme_preference_interface()
+
+	icon_color = icon_color or THEME_PREFERENCE.BUTTON_ICON_COLOR
+	if not icon_hover_color:
+		hover_offset = 25
+		icon_hover_color = icon_color
+		icon_hover_color = tuple([min(255, c + hover_offset) for c in icon_hover_color])
+
+	min_width = min_width if width is None else width
+	max_width = max_width if width is None else width
+	min_height = min_height if height is None else height
+	max_height = max_height if height is None else height
+	icon = resources.icon(icon) if helpers.is_string(icon) else icon
+	overlay_icon = resources.icon(overlay_icon) if helpers.is_string(overlay_icon) else overlay_icon
+
+	if style in (consts.ButtonStyles.DEFAULT, consts.ButtonStyles.TRANSPARENT_BACKGROUND):
+		new_button = base_button(
+			text=text, icon=icon, icon_size=icon_size, icon_color=icon_color, icon_color_theme=icon_color_theme,
+			min_width=min_width, max_width=max_width, min_height=min_height, max_height=max_height, style=style,
+			tooltip=tooltip, theme_updates=theme_updates, checkable=checkable, checked=checked, parent=parent)
+	elif style == consts.ButtonStyles.ICON_SHADOW:
+		new_button = shadowed_button(
+			text=text, icon=icon, icon_color=icon_color, icon_color_theme=icon_color_theme, min_width=min_width,
+			max_width=max_width, max_height=max_height, tooltip=tooltip, theme_updates=theme_updates,
+			force_upper=force_upper, parent=parent)
+	elif style == consts.ButtonStyles.DEFAULT_QT:
+		new_button = regular_button(
+			text=text, button_icon=icon, icon_size=icon_size, icon_color=icon_color, overlay_icon_color=overlay_icon_color,
+			overlay_icon=overlay_icon, min_width=min_width, max_width=max_width, min_height=min_height,
+			max_height=max_height, tooltip=tooltip, checkable=checkable, checked=checked, parent=parent)
+	elif style == consts.ButtonStyles.ROUNDED:
+		new_button = rounded_button(
+			text=text, button_icon=icon, icon_size=icon_size, icon_color=icon_color, tooltip=tooltip,
+			button_width=width, button_height=height, checkable=checkable, checked=checked, parent=parent
+		)
+	elif style == consts.ButtonStyles.LABEL_SMALL:
+		new_button = LabelSmallButton(text=text, icon=icon, parent=parent)
+	else:
+		logger.warning(f'Button style "{style}" is not supported. Default button will be created')
+		new_button = regular_button(
+			text=text, button_icon=icon, icon_size=icon_size, icon_color=icon_color, overlay_icon_color=overlay_icon_color,
+			overlay_icon=overlay_icon, min_width=min_width, max_width=max_width, min_height=min_height,
+			max_height=max_height, tooltip=tooltip, checkable=checkable, checked=checked, parent=parent)
+
+	if button_width is not None:
+		new_button.setFixedWidth(button_width)
+	if button_height is not None:
+		new_button.setFixedHeight(button_height)
+
+	return new_button
+
+
+def base_button(
+		text: str = '', icon: str | QIcon | None = None, icon_size: int = 16,
+		icon_color: Tuple[int, int, int] or None =None, icon_color_theme: str | None = None,
+		min_width: int | None = None, max_width: int | None = None, min_height: int | None = None,
+		max_height: int | None = None, style: int = consts.ButtonStyles.DEFAULT, tooltip: str = '',
+		theme_updates: bool = True, checkable: bool = False, checked: bool = False,
+		parent: QWidget | None = None) -> BaseButton | BasePushButton:
+	"""
+	Creates an extended CPG PushButton with a transparent background or with its regular style.
+
+	:param str text: button text.
+	:param str or QIcon icon: icon name or QIcon instance.
+	:param int icon_size: size of the icon in pixels.
+	:param tuple(int, int, int) icon_color: icon color in 0 to 255 range.
+	:param str icon_color_theme: color attribute that should be applied from current applied theme.
+	:param int min_width: minimum width of the button in pixels.
+	:param int max_width: maximum width of the button in pixels.
+	:param int min_height: minimum height of the button in pixels.
+	:param int max_height: maximum height of the button in pixels.
+	:param int style: the style of the button.
+	:param str tooltip: tooltip as seen with mouse over.
+	:param bool theme_updates: whether  button style will be updated when current style changes.
+	:param bool checkable: whether the button can be checked.
+	:param bool checked: whether (if checkable is True) button is checked by default.
+	:param QWidget parent: parent widget.
+	:return: newly created button.
+	:rtype: BaseButton or BasePushButton
+	"""
+
+	if icon:
+		kwargs = dict(text=text, icon_color_theme=icon_color_theme, theme_updates=theme_updates, parent=parent)
+		new_button = BasePushButton(**kwargs) if style == consts.ButtonStyles.DEFAULT else BaseButton(**kwargs)
+		new_button.set_icon(icon, size=icon_size, colors=icon_color)
+	else:
+		kwargs = dict(text=text, icon_color_theme=icon_color_theme, parent=parent)
+		new_button = BasePushButton(**kwargs) if style == consts.ButtonStyles.DEFAULT else BaseButton(**kwargs)
+	new_button.setToolTip(tooltip)
+
+	if min_width is not None:
+		new_button.setMinimumWidth(min_width)
+	if max_width is not None:
+		new_button.setMaximumWidth(max_width)
+	if min_height is not None:
+		new_button.setMinimumHeight(min_height)
+	if max_height is not None:
+		new_button.setMaximumHeight(max_height)
+	if checkable:
+		new_button.setCheckable(True)
+		new_button.setChecked(checked)
+
+	return new_button
+
+
+def regular_button(
+		text: str = '', button_icon: str | QIcon | None = None, icon_size: int = 16,
+		icon_color: Tuple[int, int, int] or None = None, min_width: int | None = None, max_width: int | None = None,
+		min_height: int | None = None, max_height: int | None = None, tooltip: str = '',
+		overlay_icon_color: Tuple[int, int, int] or None = None, overlay_icon: str | QIcon | None = None,
+		checkable: bool = False, checked: bool = False, parent: QWidget | None = None) -> QPushButton:
+	"""
+	Creates a standard Qt QPushButton.
+
+	:param str text: button text.
+	:param str or QIcon button_icon: icon name or QIcon instance.
+	:param int icon_size: size of the icon in pixels.
+	:param tuple(int, int, int) icon_color: icon color in 0 to 255 range.
+	:param int min_width: minimum width of the button in pixels.
+	:param int max_width: maximum width of the button in pixels.
+	:param int min_height: minimum height of the button in pixels.
+	:param int max_height: maximum height of the button in pixels.
+	:param str tooltip: tooltip as seen with mouse over.
+	:param tuple(int, int, int) overlay_icon_color: color of the overlay image icon.
+	:param str or QIcon overlay_icon: the name of the icon image that will be overlayed on top of the original icon.
+	:param bool checkable: whether the button can be checked.
+	:param bool checked: whether (if checkable is True) button is checked by default.
+	:param QWidget parent: parent widget.
+	:return: newly created button.
+	:rtype: QPushButton
+	"""
+
+	new_button = QPushButton(text, parent=parent)
+	if button_icon:
+		new_button.setIcon(icon.colorize_icon(
+			button_icon, size=dpi.dpi_scale(icon_size), color=icon_color,
+			overlay_icon=overlay_icon, overlay_color=overlay_icon_color))
+	new_button.setToolTip(tooltip)
+
+	if min_width is not None:
+		new_button.setMinimumWidth(dpi.dpi_scale(min_width))
+	if max_width is not None:
+		new_button.setMaximumWidth(dpi.dpi_scale(max_width))
+	if min_height is not None:
+		new_button.setMinimumHeight(dpi.dpi_scale(min_height))
+	if max_height is not None:
+		new_button.setMaximumHeight(dpi.dpi_scale(max_height))
+	if checkable:
+		new_button.setCheckable(True)
+		new_button.setChecked(checked)
+
+	return new_button
+
+
+def rounded_button(
+		text: str = '', button_icon: str | QIcon | None = None, icon_size: int = 16,
+		icon_color: Tuple[int, int, int] or None = None, tooltip: str = '', button_width: int = 24,
+		button_height: int = 24, checkable: bool = False, checked: bool = False,
+		parent: QWidget | None = None) -> RoundButton:
+	"""
+	Creates a rounded button with an icon within a round circle.
+
+	:param str text: button text.
+	:param str or QIcon button_icon: icon name or QIcon instance.
+	:param int icon_size: size of the icon in pixels.
+	:param tuple(int, int, int) icon_color: icon color in 0 to 255 range.
+	:param str tooltip: tooltip as seen with mouse over.
+	:param int button_width: button width.
+	:param int button_height: button height.
+	:param bool checkable: whether the button can be checked.
+	:param bool checked: whether (if checkable is True) button is checked by default.
+	:param QWidget parent: parent widget.
+	:return: newly created button.
+	:rtype: RoundButton
+	"""
+
+	button_icon = button_icon or QIcon()
+	if button_icon and not button_icon.isNull():
+		button_icon = icon.colorize_icon(button_icon, size=icon_size, color=icon_color)
+	new_button = RoundButton(text=text, icon=button_icon, tooltip=tooltip, parent=parent)
+	new_button.setFixedSize(QSize(button_width, button_height))
+	if checkable:
+		new_button.setCheckable(True)
+		new_button.setChecked(checked)
+
+	return new_button
+
+
+def shadowed_button(
+		text: str = '', icon: str = '', icon_size: int | None = None,
+		icon_color: Tuple[int, int, int, int] or None = None, min_width: int | None = None, max_width: int | None = None,
+		max_height: int | None = None, shadow_height: int = 4, force_upper: bool = False, tooltip: str = '',
+		icon_color_theme: str | None = None, theme_updates: bool = True,
+		parent: QWidget | None = None) -> ShadowedButton:
+	"""
+	Creates a new shadowed button with the icon in a coloured box and a button shadow ath the bottom of the button.
+
+	:param str text: button text.
+	:param str icon: icon name to set.
+	:param int or None icon_size: optional icon size before DPI scaling.
+	:param int shadow_height: shadow height.
+	:param Tuple[int, int, int, int] or None icon_color: optional icon color which will fill the masked area of the
+		icon.
+	:param int or None  min_width: minimum width of the button in pixels.
+	:param int or None max_width: maximum width of the button in pixels.
+	:param int or None max_height: maximum height of the button in pixels.
+	:param bool force_upper: whether to force text to be displayed in upper case/
+	:param str tooltip: optional tooltip.
+	:param str or None icon_color_theme: optional icon color theme to apply.
+	:param bool theme_updates: whether to apply theme updates.
+	:param QWidget or None parent: optional parent widget.
+	:return: newly created shadowed button.
+	:rtype: ShadowedButton
+	"""
+
+	global THEME_PREFERENCE
+
+	if not THEME_PREFERENCE:
+		THEME_PREFERENCE = core_interfaces.theme_preference_interface()
+
+	icon = icon or THEME_PREFERENCE.BUTTON_ICON_COLOR
+
+	new_button = ShadowedButton(
+		text=text, shadow_height=shadow_height, force_upper=force_upper, tooltip=tooltip,
+		icon_color_theme=icon_color_theme, theme_updates=theme_updates, parent=parent)
+	new_button.set_icon(icon, colors=icon_color, size=icon_size)
+	if max_height is not None:
+		new_button.setFixedHeight(max_height)
+	if max_width is not None:
+		new_button.setMaximumWidth(max_width)
+	if min_width is not None:
+		new_button.setMinimumWidth(min_width)
+
+	return new_button
+
+
+def tool_button(text: str = '', icon: str = '', tooltip: str = '', parent: QWidget | None = None):
+	"""
+	Creates a new QToolButton instance.
+
+	:param str text: tool button text.
+	:param str or QIcon icon: tool button icon.
+	:param str tooltip: optional button tooltip.
+	:param QWidget parent: tool button parent widget.
+
+	:return: new tool button instance.
+	:rtype: BaseToolButton
+	"""
+
+	new_tool_button = BaseToolButton(parent=parent)
+	new_tool_button.setText(text)
+	if icon:
+		new_tool_button.image(icon)
+	if tooltip:
+		new_tool_button.setToolTip(tooltip)
+
+	return new_tool_button
 
 
 class AbstractButton(QAbstractButton, dpi.DPIScaling):
@@ -25,9 +346,9 @@ class AbstractButton(QAbstractButton, dpi.DPIScaling):
 	_pressed_icon = None						# type: QIcon
 	_hover_icon = None							# type: QIcon
 	_highlight_offset = 40
-	_icon_names = list()						# type: list[str]
-	_icon_colors = (200, 200, 200)
-	_icon_scaling = list()
+	_icon_names = []							# type: List[str]
+	_icon_colors = (128, 128, 128)
+	_icon_scaling = []
 
 	@override
 	def enterEvent(self, event: QEvent) -> None:
@@ -90,7 +411,7 @@ class AbstractButton(QAbstractButton, dpi.DPIScaling):
 		if scaling is not None:
 			self._icon_scaling = scaling
 
-		self._icon_names = icon_name
+		self._icon_names = icon_name if isinstance(icon_name, QIcon) else resources.icon(icon_name)
 		self._grayscale = kwargs.pop('grayscale', False)
 		self._tint_composition = kwargs.pop('tint_composition', QPainter.CompositionMode_Plus)
 		colors = colors or self._icon_colors
@@ -234,12 +555,12 @@ class BaseButton(QPushButton, AbstractButton):
 					return result
 
 	def __init__(
-			self, text: str = '', icon: QIcon | None =None, icon_hover: QIcon | None = None,
+			self, text: str = '', icon: QIcon | str | None = None, icon_hover: QIcon | str | None = None,
 			icon_color_theme: str | None =None, elided: bool = False, theme_updates: bool = True, menu_padding: int = 5,
 			menu_align: Qt.AlignmentFlag = Qt.AlignLeft, double_click_enabled: bool = False, parent: QWidget | None = None):
 
-		self._idle_icon = icon or QIcon()
-		self._hover_icon = icon_hover
+		self._idle_icon = resources.icon(icon) if icon and helpers.is_string(icon) else (icon or QIcon())
+		self._hover_icon = resources.icon(icon_hover) if icon_hover and helpers.is_string(icon_hover) else icon_hover
 		self._icon_color_theme = icon_color_theme
 		self._text = text
 
@@ -507,9 +828,9 @@ class BaseButton(QPushButton, AbstractButton):
 		:rtype: SearchableTaggedAction
 		"""
 
-		found_menu = self.menu(mouse_menu, searchable=False)
+		found_menu = self.menu(mouse_menu, searchable=False)			# type: menus.SearchableMenu
 
-		new_action = menus.SearchableTaggedAction(name, parent=found_menu)
+		new_action = menus.SearchableMenu.SearchableTaggedAction(name, parent=found_menu)
 		new_action.setCheckable(checkable)
 		new_action.setChecked(checked)
 		new_action.tags = set(self._string_to_tags(name))
@@ -735,6 +1056,13 @@ class BaseButton(QPushButton, AbstractButton):
 			self.rightMenuChanged.emit()
 
 
+class BasePushButton(BaseButton):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+		qtutils.set_stylesheet_object_name(self, 'DefaultButton')
+
+
 class IconMenuButton(BaseButton):
 	"""
 	Custom menu that represents a button with an icon (no text). Clicking it will pop up a context menu.
@@ -866,6 +1194,7 @@ class OkCancelButtons(QWidget):
 		super().__init__(parent=parent)
 
 		self._main_layout = layouts.horizontal_layout()
+		self.setLayout(self._main_layout)
 		self._ok_button = QPushButton(ok_text, parent=self)
 		self._cancel_button = QPushButton(cancel_text, parent=self)
 		self._main_layout.addWidget(self._ok_button)
@@ -878,3 +1207,527 @@ class OkCancelButtons(QWidget):
 
 		self._ok_button.clicked.connect(self.okButtonPressed.emit)
 		self._cancel_button.clicked.connect(self.cancelButtonPressed.emit)
+
+
+class RoundButton(QPushButton, dpi.DPIScaling):
+	"""
+	Custom round button. It can be rendered in two different ways:
+		1. Mask: will cut the button into a circle. Allow also stylesheets. It is pixelated when drawing it out.
+		2. Stylesheet: creates a smooth circle button without pixelation. For rectangle buttons it will not be round
+			and also the user will not be able to user their own stylesheet.
+	"""
+
+	class RenderingMethod:
+		MASK = 0
+		STYLESHEET = 1
+
+	def __init__(
+			self, text: str | None = None, icon: str | None = None, method: int = RenderingMethod.STYLESHEET, tooltip='',
+			parent: QWidget | None = None):
+		super().__init__(text=text, icon=icon, parent=parent)
+
+		self._method = method
+		self._custom_style = ''
+		self.setToolTip(tooltip)
+
+		self._update_button()
+
+	@override
+	def resizeEvent(self, event: QResizeEvent) -> None:
+		self._update_button()
+		super().resizeEvent(event)
+
+	@override(check_signature=False)
+	def setStyleSheet(self, text: str) -> None:
+		if self._method == self.RenderingMethod.STYLESHEET:
+			self._custom_style = text
+			self._update_button()
+		else:
+			super().setStyleSheet(text)
+
+	def set_method(self, method: int):
+		"""
+		Sets the rendering method to use.
+			- Mask: pixelated edges but can set custom stylesheets.
+			- Stylesheet: Smooth edges but cannot set custom stylesheets.
+		:param RoundButton.RenderingMethod method: render method to use.
+		"""
+
+		self._method = method
+		self._update_button()
+
+	def _round_style(self) -> str:
+		"""
+		Internal function that returns custom rounded stylesheet string.
+
+		:return: rounded stylesheet string.
+		:rtype: str
+		"""
+
+		radius = (min(self.rect().width() * 0.5, self.rect().height() * 0.5) - 1.0)
+		return 'border-radius: {}px;'.format(radius)
+
+	def _update_button(self):
+		"""
+		Internal function that updates the button drawing.
+		"""
+
+		if self._method == self.RenderingMethod.MASK:
+			self.setMask(QRegion(self.rect(), QRegion.Ellipse))
+		else:
+			super().setStyleSheet(self._round_style() + self._custom_style)
+
+
+class LabelSmallButton(QWidget):
+
+	clicked = Signal()
+
+	def __init__(
+			self, text: str = '', icon: str | QIcon | None = None, icon_size: int = 16,
+			icon_color: Tuple[int, int, int, int] | None = None, min_width: int | None = None,
+			min_height: int | None = None, max_height: int | None = None, style: int = consts.ButtonStyles.DEFAULT,
+			max_width: int | None = None, tooltip: str = '', force_upper: bool = False, parent: QWidget | None = None):
+		super().__init__(parent=parent)
+
+		self._text = text
+		if text:
+			self._label = labels.BaseLabel(text=text, tooltip=tooltip, upper=force_upper)
+		self._button = base_button(
+			text='', icon=icon, icon_size=icon_size, tooltip=tooltip, icon_color=icon_color, min_width=min_width,
+			max_width=max_width,  min_height=min_height, max_height=max_height, style=style, parent=parent)
+		button_layout = layouts.horizontal_layout(parent=self)
+		if text:
+			button_layout.addWidget(self._label, 5)
+		button_layout.addWidget(self._button, 1)
+
+		self._setup_signals()
+
+	@override
+	def setDisabled(self, arg__1: bool) -> None:
+		self._button.setDisabled(arg__1)
+		if self._text:
+			self._label.setDisabled(arg__1)
+
+	def _setup_signals(self):
+		"""
+		Internal function that setup widget signals.
+		"""
+
+		self._button.clicked.connect(self.clicked.emit)
+
+
+class ShadowedButton(BaseButton):
+
+	_MENU_INDICATOR_ICON = 'menu_indicator'
+
+	def __init__(
+			self, text: str = '', shadow_height: int = 4, force_upper: bool = False, tooltip: str = '',
+			icon_color_theme: str | None = None, theme_updates: bool = True, parent: QWidget | None = None):
+
+		super(ShadowedButton, self).__init__(
+			icon_color_theme=icon_color_theme, theme_updates=theme_updates, parent=parent)
+
+		self._main_layout = None									# type: layouts.GridLayout
+		self._text_label = None										# type: QLabel
+		self._image_widget = None									# type: ShadowedButtonImage
+		self._shadow = None											# type: ShadowedButtonShadow
+		self._spacing_widget = None									# type: QWidget
+		self._force_upper = force_upper
+		self._mouse_entered = True
+		self._icon_pixmap = None									# type: QPixmap
+		self._icon_hovered_pixmap = None							# type: QPixmap
+		self._icon_pressed_pixmap = None							# type: QPixmap
+		self._is_menu = True
+		self._icon_size = dpi.size_by_dpi(QSize(16, 16))
+		self._theme_pref = core_interfaces.theme_preference_interface()
+
+		self.setup_ui()
+
+		self.setToolTip(tooltip)
+		self.setText(text)
+		self.set_shadow_height(shadow_height)
+
+	@property
+	def is_menu(self) -> bool:
+		return self._is_menu
+
+	@is_menu.setter
+	def is_menu(self, flag: bool):
+		self._is_menu = flag
+
+	@override
+	def setFixedHeight(self, h: int) -> None:
+		self.update_image_widget(h)
+		super().setFixedHeight(h)
+
+	@override(check_signature=False)
+	def setFixedSize(self, size: QSize) -> None:
+		self.update_image_widget(size.height())
+		super(ShadowedButton, self).setFixedSize(size)
+
+	@override
+	def setText(self, text: str) -> None:
+		if not self._text_label:
+			return
+		if self._force_upper and text is not None:
+			text = text.upper()
+
+		self._text_label.setText(text)
+
+	@override
+	def setIconSize(self, size: QSize) -> None:
+		self._icon_size = dpi.size_by_dpi(size)
+		self._image_widget.setFixedSize(self._icon_size)
+
+	@override
+	def enterEvent(self, event: QEvent) -> None:
+		self._mouse_entered = True
+		qtutils.set_stylesheet_object_name(self, '')
+		qtutils.set_stylesheet_object_name(self._shadow, 'buttonShadowHover')
+		qtutils.set_stylesheet_object_name(self._image_widget, 'shadowedImageHover')
+		qtutils.set_stylesheet_object_name(self._text_label, 'shadowedLabelHover')
+		self._image_widget.setPixmap(self._icon_hovered_pixmap)
+
+	@override
+	def leaveEvent(self, event: QEvent) -> None:
+		self._mouse_entered = False
+		qtutils.set_stylesheet_object_name(self, '')
+		qtutils.set_stylesheet_object_name(self._shadow, '')
+		qtutils.set_stylesheet_object_name(self._image_widget, '')
+		qtutils.set_stylesheet_object_name(self._text_label, '')
+		self._image_widget.setPixmap(self._icon_pixmap)
+
+	@override
+	def mousePressEvent(self, e: QMouseEvent) -> None:
+		qtutils.set_stylesheet_object_name(self, 'shadowedButtonPressed')
+		qtutils.set_stylesheet_object_name(self._shadow, 'buttonShadowPressed')
+		qtutils.set_stylesheet_object_name(self._image_widget, 'shadowedImagePressed')
+		qtutils.set_stylesheet_object_name(self._text_label, 'shadowedLabelPressed')
+		self._image_widget.setPixmap(self._icon_pressed_pixmap)
+
+		return super().mousePressEvent(e)
+
+	@override
+	def mouseReleaseEvent(self, e: QMouseEvent) -> None:
+		# if mouse still entered while mouse released then set it back to hovered style
+		if self._mouse_entered:
+			self.enterEvent(e)
+
+		return super().mouseReleaseEvent(e)
+
+	@override
+	def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+		event.ignore()
+		return super().mouseDoubleClickEvent(event)
+
+	@override
+	def update_theme(self, event: 'ThemeUpdateEvent'):
+		if self._theme_updates_color:
+			self._icon_color_theme = self._icon_color_theme or '$BUTTON_ICON_COLOR'
+
+	def setup_ui(self):
+		"""
+		Initializes shadow button UI.
+		"""
+
+		self._main_layout = QGridLayout(spacing=0)
+		self.setLayout(self._main_layout)
+
+		self._image_widget = ShadowedButtonImage(parent=self)
+		self._text_label = QLabel(parent=self)
+		self._shadow = ShadowedButtonShadow(parent=self)
+
+		self._image_widget.setFixedHeight(self.sizeHint().height())
+		self._image_widget.setAlignment(Qt.AlignCenter)
+		self._text_label.setAlignment(Qt.AlignCenter)
+		self._spacing_widget = QWidget(parent=self)
+
+		self._main_layout.addWidget(self._image_widget, 0, 0, 1, 1)
+		self._main_layout.addWidget(self._text_label, 0, 1, 1, 1)
+		self._main_layout.addWidget(self._spacing_widget, 0, 2, 1, 1)
+		self._main_layout.addWidget(self._shadow, 1, 0, 1, 3)
+		self._main_layout.setContentsMargins(0, 0, 0, 0)
+
+	def set_force_upper(self, flag: bool):
+		"""
+		Sets whether button text should appear as upper case.
+
+		:param bool flag: whether to force text upper case.
+		"""
+
+		self._force_upper = flag
+
+	def set_shadow_height(self, height: int):
+		"""
+		Sets the shadow height in pixels.
+
+		:param int height: shadow height (in pixels).
+		"""
+
+		self._shadow.setFixedHeight(height)
+
+	def set_icon(
+			self, icons: str | List[QIcon] | List[str], colors: Tuple[int, int, int] | None = None,
+			hover_colors: Tuple[int, int, int] | None = None, size: int | None = None,
+			pressed_colors: Tuple[int, int, int] | None = None, scaling: Tuple[float, float, float] | None = None):
+		"""
+		Set button icon.
+
+		:param str or List[QIcon] or List[str] icons: icon to set.
+		:param Tuple[int, int, int] or None colors: optional icon color.
+		:param Tuple[int, int, int] or None hover_colors: optional hover icon color.
+		:param int or None size: optional icon size.
+		:param Tuple[int, int, int] or None pressed_colors: optional icon pressed colors.
+		:param Tuple[float, float, float] or None scaling: optional scaling.
+		"""
+
+		if size is not None:
+			self.setIconSize(QSize(size, size))
+
+		hover_colors = hover_colors or colors
+		pressed_colors = pressed_colors or colors
+
+		colors = [colors]
+		hover_color = [hover_colors]
+		pressed_color = [pressed_colors]
+
+		self._icon_names = icons
+
+		if self._is_menu and helpers.is_string(icons):
+			self._icon_names = [icons, self._MENU_INDICATOR_ICON]
+			colors += colors
+			hover_color += hover_color
+			pressed_color += pressed_color
+
+		new_size = self._icon_size.width()
+		self._icon_pixmap = icon.colorize_layered_icon(
+			self._icon_names, colors=colors, size=new_size, scaling=scaling).pixmap(QSize(new_size, new_size))
+		self._icon_hovered_pixmap = icon.colorize_layered_icon(
+			self._icon_names, colors=hover_color, size=new_size, scaling=scaling).pixmap(QSize(new_size, new_size))
+		self._icon_pressed_pixmap = icon.colorize_layered_icon(
+			self._icon_names, colors=pressed_color, size=new_size, scaling=scaling).pixmap(QSize(new_size, new_size))
+
+		self._image_widget.setPixmap(self._icon_pixmap)
+
+	def update_image_widget(self, new_height: int):
+		"""
+		Updates button to make sure widget is always square.
+
+		:param int new_height: new height of the widget to update to.
+		"""
+
+		self._image_widget.setFixedSize(QSize(new_height, new_height))
+		self._spacing_widget.setFixedWidth(int(dpi.dpi_scale(new_height) * 0.5))
+
+
+class ShadowedButtonImage(QLabel, dpi.DPIScaling):
+	"""
+	stylesheet purposes
+	"""
+
+	pass
+
+
+class ShadowedButtonShadow(QFrame, dpi.DPIScaling):
+	"""
+	stylesheet purposes
+	"""
+
+	pass
+
+
+@mixin.cursor_mixin
+class BaseToolButton(QToolButton):
+	def __init__(self, tooltip: str | None = None, parent: QWidget | None = None):
+		super().__init__(parent=parent)
+
+		self._image = None
+		self._theme_pref = THEME_PREFERENCE or core_interfaces.theme_preference_interface()
+
+		self.setAutoExclusive(False)
+		self.setAutoRaise(True)
+
+		self._polish_icon()
+		self.toggled.connect(self._polish_icon)
+		self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+
+		if tooltip:
+			self.setToolTip(tooltip)
+
+		self._theme_size = self._theme_pref.theme_data().default_size
+
+	@override
+	def enterEvent(self, arg__1: QEvent) -> None:
+		if self._image:
+			theme_data = self._theme_pref.theme_data()
+			if theme_data:
+				accent_color = theme_data.ACCENT_COLOR
+				self.setIcon(resources.icon(self._image, color=accent_color))
+		return super().enterEvent(arg__1)
+
+	@override
+	def leaveEvent(self, arg__1: QEvent) -> None:
+		self._polish_icon()
+		return super().leaveEvent(arg__1)
+
+	def image(self, name, **kwargs):
+		"""
+		Sets the name of the image to use by the tool button.
+
+		:param str name: name of the icon to use.
+		:return: itself instance.
+		:rtype: BaseToolButton
+		"""
+
+		self._image = name
+		self._polish_icon(**kwargs)
+
+		return self
+
+	def tiny(self) -> BaseToolButton:
+		"""
+		Sets tool button to tiny size.
+
+		:return: itself instance.
+		:rtype: BaseToolButton
+		"""
+
+		self.theme_size = self._theme_pref.theme_data().TINY
+
+		return self
+
+	def small(self) -> BaseToolButton:
+		"""
+		Sets tool button to small size.
+
+		:return: itself instance.
+		:rtype: BaseToolButton
+		"""
+
+		self.theme_size = self._theme_pref.theme_data().SMALL
+
+		return self
+
+	def medium(self) -> BaseToolButton:
+		"""
+		Sets tool button to medium size.
+
+		:return: itself instance.
+		:rtype: BaseToolButton
+		"""
+
+		self.theme_size = self._theme_pref.theme_data().MEDIUM
+
+		return self
+
+	def large(self) -> BaseToolButton:
+		"""
+		Sets tool button to large size.
+
+		:return: itself instance.
+		:rtype: BaseToolButton
+		"""
+
+		self.theme_size = self._theme_pref.theme_data().LARGE
+
+		return self
+
+	def huge(self) -> BaseToolButton:
+		"""
+		Sets tool button to huge size.
+
+		:return: itself instance.
+		:rtype: BaseToolButton
+		"""
+
+		self.theme_size = self._theme_pref.theme_data().HUGE
+
+		return self
+
+	def icon_only(self) -> BaseToolButton:
+		"""
+		Sets tool button style to icon only.
+
+		:return: itself instance.
+		:rtype: BaseToolButton
+		"""
+
+		self.setToolButtonStyle(Qt.ToolButtonIconOnly)
+		self.setFixedSize(self._size, self._size)
+
+		return self
+
+	def text_only(self) -> BaseToolButton:
+		"""
+		Sets tool button style to text only.
+
+		:return: itself instance.
+		:rtype: BaseToolButton
+		"""
+
+		self.setToolButtonStyle(Qt.ToolButtonTextOnly)
+
+		return self
+
+	def text_beside_icon(self) -> BaseToolButton:
+		"""
+		Sets tool button style to text beside icon.
+
+		:return: itself instance.
+		:rtype: BaseToolButton
+		"""
+
+		self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+
+		return self
+
+	def text_under_icon(self) -> BaseToolButton:
+		"""
+		Sets tool button style to text under icon.
+
+		:return: itself instance.
+		:rtype: BaseToolButton
+		"""
+
+		self.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+
+		return self
+
+	def _polish_icon(self, **kwargs):
+		"""
+		Internal function that polishes button icon.
+		"""
+
+		if self._image:
+			theme_data = self._theme_pref.theme_data()
+			accent_color = theme_data.ACCENT_COLOR
+			if self.isCheckable() and self.isChecked():
+				self.setIcon(resources.icon(self._image, color=accent_color))
+			else:
+				button_icon = resources.icon(self._image, **kwargs) if helpers.is_string(self._image) else self._image
+				if button_icon and not button_icon.isNull():
+					self.setIcon(button_icon)
+
+	def _get_theme_size(self) -> int:
+		"""
+		Internal function that returns the button height size.
+
+		:return: button height size.
+		:rtype: int
+		"""
+
+		return self._theme_size
+
+	def _set_theme_size(self, value: int):
+		"""
+		Sets button height size.
+
+		:param int value: button height size.
+		"""
+
+		self._theme_size = value
+		self.style().polish(self)
+		if self.toolButtonStyle() == Qt.ToolButtonIconOnly:
+			self.setFixedSize(self._theme_size, self._theme_size)
+
+	theme_size = Property(int, _get_theme_size, _set_theme_size)

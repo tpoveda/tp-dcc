@@ -11,9 +11,12 @@ from typing import Tuple, List
 if 'win' in sys.platform:
     import ctypes
     import ctypes.wintypes
-    import win32gui
-    import win32process
     import winreg
+    try:
+        import win32gui
+        import win32process
+    except ImportError:
+        pass
 
 
 GWL_WNDPROC = -4
