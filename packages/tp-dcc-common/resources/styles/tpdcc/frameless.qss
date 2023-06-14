@@ -1,0 +1,44 @@
+/*
+ --------------------------------------------------------------------------
+ tp-dcc extended style for following module:
+    - tp.common.qt.widgets.frameless
+ --------------------------------------------------------------------------
+*/
+
+
+TitleBar
+{
+    border-top-right-radius: @FRAMELESS_ROUNDED_CORNERSpx;
+    border-top-left-radius: @FRAMELESS_ROUNDED_CORNERSpx;
+    border-bottom-right-radius: 0px;
+    border-bottom-left-radius: 0px;
+    background-color: @FRAMELESS_TITLEBAR_COLOR;
+}
+
+TitleBar#Minimized
+{
+    border-bottom-right-radius: @FRAMELESS_ROUNDED_CORNERSpx;
+    border-bottom-left-radius: @FRAMELESS_ROUNDED_CORNERSpx;
+}
+
+TitleLabel
+{
+    color: @FRAMELESS_TITLE_LABEL_COLOR;
+    font-weight: bold;
+    font-size: @TITLE_FONT_SIZE;
+    font-family: 'Roboto';
+}
+
+TitleLabel#Minimized
+{
+    font-size: @TITLE_MINIMIZED_FONT_SIZE;
+}
+
+
+
+FramelessWindowContents {
+    /*background-color: @FRAMELESS_WINDOW_CONTENTS;*/
+    background-color: @BLACK_EERIE_COLOR;
+    border-bottom-left-radius: @FRAMELESS_ROUNDED_CORNERSpx;
+    border-bottom-right-radius: @FRAMELESS_ROUNDED_CORNERSpx;
+}

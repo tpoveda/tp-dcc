@@ -1,13 +1,14 @@
 /*
  --------------------------------------------------------------------------
- Checbox Base Style
+ QChecbox Unreal Style
  --------------------------------------------------------------------------
 */
 
 QCheckBox
 {
     background-color: transparent;
-    color: @INVERSE_TEXT_COLOR;
+    color: white;
+    /*color: @INVERSE_TEXT_COLOR;*/
     height: 20px;
 }
 

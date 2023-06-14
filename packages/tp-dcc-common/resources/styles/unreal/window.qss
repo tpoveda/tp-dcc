@@ -1,6 +1,6 @@
 /*
  --------------------------------------------------------------------------
- QMainWindow Base Style
+ QMainWindow Unreal Style
  --------------------------------------------------------------------------
 */
 
@@ -11,12 +11,12 @@ QMainWindow
     font-family: "Roboto";
 }
 
-QMainWindow::separator
-{
-    background-color: @BORDER_COLOR;
-    width: @THREE_PIXELSpx;
-    border: none;
-}
+/*QMainWindow::separator*/
+/*{*/
+/*    background-color: @BORDER_COLOR;*/
+/*    width: @THREE_PIXELSpx;*/
+/*    border: none;*/
+/*}*/
 
 #centralwidget
 {

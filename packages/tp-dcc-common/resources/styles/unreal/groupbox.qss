@@ -1,6 +1,6 @@
 /*
  --------------------------------------------------------------------------
- GroupBox Base Style
+ QGroupBox Unreal Style
  --------------------------------------------------------------------------
 */
 
@@ -18,8 +18,8 @@ QGroupBox::title
 
 QGroupBox::indicator
 {
-    height: 15px;
-    width: 15px;
+    height: @CHECKBOX_SIZEpx;
+    width: @CHECKBOX_SIZEpx;
     border-radius: @ROUND_SIZEpx;
     border: 1px solid @BLACK_GRAY_COLOR;
 }
@@ -32,6 +32,11 @@ QGroupBox::indicator:hover
 QGroupBox::indicator:checked
 {
     image: url(@CHECK_SVG_ICON);
+}
+
+QGroupBox::indicator:unchecked
+{
+    image: url(@UNCHECK_SVG_ICON);
 }
 
 

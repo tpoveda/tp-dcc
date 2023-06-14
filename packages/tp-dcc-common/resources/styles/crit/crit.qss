@@ -1,0 +1,10 @@
+LoadingWidget QFrame#border
+{
+    border: @ONE_PIXELpx solid @SECONDARY_FOREGROUND_COLOR;
+}
+
+LoadingFrame
+{
+    background-color: @MAIN_BACKGROUND_COLOR;
+    border-radius: @WIDGET_ROUNDED_CORNERSpx;
+}

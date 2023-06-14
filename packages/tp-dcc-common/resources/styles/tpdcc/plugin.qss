@@ -1,6 +1,0 @@
-DockTitleBar QGroupBox
-{
-    background-color: @window_dragger_color;
-    color: @window_dragger_label_color;
-    border: @border_color;
-}

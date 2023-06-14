@@ -1,5 +1,0 @@
-QMessageBox
-{
-    background-color: @MAIN_BACKGROUND_COLOR;
-    color: @INVERSE_TEXT_COLOR;
-}

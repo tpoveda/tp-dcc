@@ -1,28 +1,29 @@
 /*
  --------------------------------------------------------------------------
- MenuLineButton Default Style
+ tp-dcc extended style for following module:
+    - tp.common.qt.widgets.linetabwidget
  --------------------------------------------------------------------------
 */
 
-MenuLineButton
+UnderLineButton
 {
-    padding: 5px 0px;
+    border-radius: 0;
+    padding: 6px 10px;
     border-color: transparent;
 }
 
-MenuLineButton:hover
+UnderLineButton:hover
 {
     border-radius: 0;
-    color: @accent_color_5;
+    color: @ACCENT_COLOR_5;
     border: none;
 }
 
-MenuLineButton:checked
+UnderLineButton:checked
 {
     border-radius: 0;
-    color: @accent_color;
-    background-color: @accent_color_10;
+    color: @ACCENT_COLOR;
     border-style: solid;
-    border-color: @accent_color;
+    border-color: @ACCENT_COLOR;
     border-width: 0 0 2px 0;
 }

@@ -1,6 +1,6 @@
 /*
  --------------------------------------------------------------------------
- PushButton Base Style
+ QPushButton Unreal Style
  --------------------------------------------------------------------------
 */
 
@@ -8,7 +8,7 @@
 QPushButton
 {
     background-color: @BLACK_GRAY_COLOR;
-    /*height: 20px;*/
+    height: 20px;
     padding-bottom: @ONE_PIXELpx;
     border-radius: @ROUND_SIZEpx;
     border: @ONE_PIXELpx solid black;
@@ -21,6 +21,7 @@ QDialogButtonBox QPushButton:hover
 }
 
 QPushButton:checked,
+QPushButton:flat:checked,
 QDialogButtonBox QPushButton:checked
 {
     color: white;
@@ -28,6 +29,7 @@ QDialogButtonBox QPushButton:checked
 }
 
 QPushButton:checked:hover,
+QPushButton:flat:checked:hover,
 QDialogButtonBox QPushButton:checked:hover
 {
     background-color: @BLUE_BRIGHT_COLOR;

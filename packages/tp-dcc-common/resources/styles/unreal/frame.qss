@@ -1,11 +1,12 @@
 /*
  --------------------------------------------------------------------------
- Frame Base Style
+ QFrame Unreal Style
  --------------------------------------------------------------------------
 */
 
 QFrame
 {
-    background-color: @BLACK_EERIE_COLOR;
+    /* This is causing troubles when adding widgets within frames */
+    /*background-color: @BLACK_EERIE_COLOR;*/
     border-style: transparent;
 }

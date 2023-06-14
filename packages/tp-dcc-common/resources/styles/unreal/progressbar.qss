@@ -1,15 +1,15 @@
 /*
  --------------------------------------------------------------------------
- QProgressBar Default Style
+ QProgressBar Unreal Style
  --------------------------------------------------------------------------
 */
 
 QProgressBar
 {
-    border: 1@UNIT transparent @BORDER_COLOR;
-    border-radius: 3@UNIT;
+    border: 1px transparent black;
+    border-radius: 3px;
     background: @BLACK_DARK_COLOR;
-    color: @INVERSE_TEXT_COLOR;
+    color: transparent;
     height: 10px;
 }
 

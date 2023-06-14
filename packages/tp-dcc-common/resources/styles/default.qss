@@ -6,3 +6,4 @@
 
 #include unreal/unreal.qss
 #include tpdcc/tpdcc.qss
+#include crit/crit.qss

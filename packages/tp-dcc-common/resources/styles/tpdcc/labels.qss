@@ -1,18 +1,13 @@
 /*
  --------------------------------------------------------------------------
  tp-dcc extended style for following module:
-    - tp.common.qt.widgets.buttons
+    - tp.common.qt.widgets.labels
  --------------------------------------------------------------------------
 */
 
-
-BaseButton
+ClippedLabel
 {
-    background-color: transparent;
-    border: 0px solid transparent;
-}
-
-ExtendedButton:hover
-{
-    background-color: transparent;
+    color: @MAIN_FOREGROUND_COLOR;
+    font-weight: bold;
+    font-size: @HEADER_FONT_SIZEpx;
 }
