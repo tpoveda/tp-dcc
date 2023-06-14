@@ -13,11 +13,13 @@ import logging
 import maya.cmds as cmds
 from maya.api import OpenMaya
 
+from tp.core import dcc
 from tp.bootstrap import log
 from tp.bootstrap.utils import env, profile
 from tp.bootstrap.core import manager, exceptions as bootstrap_exceptions
 from tp.common.python import path
 from tp.maya.meta import base
+from tp.maya.plugins import loader
 
 
 @profile.profile
@@ -38,6 +40,9 @@ def startup(package_manager):
 
 	logger.info('Loading tp-dcc DCC Package: Maya')
 
+	resources_path = path.join_path(os.path.dirname(root_file_path), 'resources')
+	dcc.register_resource_path(resources_path)
+
 	try:
 		if env.is_mayapy() or env.is_maya_batch():
 			logger.debug('Not in maya.exe, skipping tp-dcc-tools menu loading...')
@@ -47,6 +52,9 @@ def startup(package_manager):
 			logger.debug('Finished loading tp-dcc-tools framework Maya tools!')
 	except Exception:
 		logger.error('Failed to load tp-dcc-tools framework Maya tools due to unknown error', exc_info=True)
+
+	# load tp-dcc-maya plugins
+	loader.load_all_plugins()
 
 	# initialize metadata manager
 	base.MetaRegistry()
@@ -66,6 +74,8 @@ def shutdown(package_manager):
 	logger = log.tpLogger
 
 	logger.info('Shutting down tp-dcc-maya Package...')
+
+	loader.unload_all_plugins()
 
 	if env.is_maya():
 		from tp.core.managers import tools
