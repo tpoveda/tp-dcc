@@ -1,0 +1,78 @@
+trailing_numbers:
+  label: Trailing Numbers
+  category: naming
+duplicated_names:
+  label: Duplicated Names
+  category: naming
+shape_names:
+  label: Shape Names
+  category: naming
+namespaces:
+   label: Namespaces
+   category: naming
+layers:
+  label: Layers
+  category: general
+history:
+  label: History
+  category: general
+shaders:
+  label: Shaders
+  category: general
+unfrozen_transforms:
+  label: Unfrozen Transforms
+  category: general
+uncentered_pivots:
+  label: Uncentered Pivots
+  category: general
+parent_geometry:
+  label: Parent Geometry
+  category: general
+empty_groups:
+  label: Empty Groups
+  category: general
+triangles:
+  label: Triangles
+  category: topology
+ngons:
+  label: Ngons
+  category: topology
+open_edges:
+  label: Open Edges
+  category: topology
+poles:
+  label: Poles
+  category: topology
+hard_edges:
+  label: Hard Edges
+  category: topology
+lamina:
+  label: Lamina
+  category: topology
+zero_area_faces:
+  label: Zero Area Faces
+  category: topology
+zero_length_edges:
+  label: Zero Length Edges
+  category: topology
+non_manifold_edges:
+  label: Non Manifold Edges
+  category: topology
+star_like:
+  label: Star Like
+  category: topology
+self_penetrating_uvs:
+  label: Self Penetrating UVs
+  category: UVs
+missing_uvs:
+  label: Missing UVs
+  category: UVs
+uv_range:
+  label: UV Range
+  category: UVs
+cross_border:
+  label: Cross Border
+  category: UVs
+on_border:
+  label: On Border
+  category: UVs

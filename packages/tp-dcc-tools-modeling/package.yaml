@@ -1,0 +1,16 @@
+name: 'tp-dcc-tools-modeling'
+version: '1.0.0'
+required: True
+author: 'Tomas Poveda'
+authorEmail: 'tpovedatd@gmail.com'
+description: 'Modeling tools package for tp-dcc-tools framework'
+displayName: 'tp-dcc-tools Modeling Tools'
+environment:
+  PYTHONPATH:
+    - '{self}'
+  TPDCC_BASE_PATHS:
+    - '{self}'
+  TPDCC_TOOL_DEFINITION_MODULES:
+    - '{self}/tp/tools/modelchecker/tool.py'
+  MODEL_CHECKER_MODULES_PATHS:
+    - '{self}/tp/tools/modelchecker/{app}/commands.py'
