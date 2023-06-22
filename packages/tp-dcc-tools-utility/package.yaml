@@ -3,10 +3,12 @@ version: '1.0.0'
 required: True
 author: 'Tomas Poveda'
 authorEmail: 'tpovedatd@gmail.com'
-description: 'Core package for tpDcc Tools framework'
-displayName: 'tpDcc Core'
+description: 'General Utility tools package for tp-dcc-tools framework'
+displayName: 'tp-dcc-tools General Utility Tools'
 environment:
   PYTHONPATH:
     - '{self}'
-commands:
-  - '{self}/tp/startup/core.py'
+  TPDCC_BASE_PATHS:
+    - '{self}'
+  TPDCC_TOOL_DEFINITION_MODULES:
+    - '{self}/tp/tools/renamer/tool.py'
