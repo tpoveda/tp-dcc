@@ -7,15 +7,18 @@ from tp.common.qt import api as qt
 from tp.tools.rig.crit.builder.views import componentstree
 
 if typing.TYPE_CHECKING:
+	from tp.libs.rig.crit.maya.descriptors.component import ComponentDescriptor
 	from tp.tools.rig.crit.builder.models.rig import RigModel
 	from tp.tools.rig.crit.builder.ui import CritBuilderWindow
+	from tp.tools.rig.crit.builder.controller import CritBuilderController
 
 
 class CreateView(qt.QWidget):
 
-	def __init__(self, parent: CritBuilderWindow | None = None):
+	def __init__(self, controller: CritBuilderController, parent: CritBuilderWindow | None = None):
 		super().__init__(parent)
 
+		self._controller = controller
 		self._crit_builder = parent
 
 		self._components_tree_view = componentstree.ComponentsTreeView(parent=self)
@@ -39,6 +42,22 @@ class CreateView(qt.QWidget):
 		"""
 
 		self._components_tree_view.tree_widget.clear()
+
+	def create_component(self, component_id: str, descriptor: ComponentDescriptor | None = None):
+		"""
+		Creates a new component.
+
+		:param str component_id: ID of the component to create.
+		:param ComponentDescriptor descriptor: optional component descriptor to use.
+		:raises ValueError: if component creation fails.
+		"""
+
+		if not self._controller.current_rig_exists():
+			self._controller.add_rig(set_current=True)
+
+		component_model = self._controller.add_component(component_id, descriptor=descriptor)
+		if component_model is None:
+			raise ValueError(f'Was not possible to add component of type "{component_id}"')
 
 	def _setup_ui(self):
 		"""

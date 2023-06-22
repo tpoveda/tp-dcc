@@ -215,7 +215,7 @@ class Rig:
 
 	def create_component(
 			self, component_type: str | None = None, name: str | None = None, side: str | None = None,
-			descriptor: ComponentDescriptor | None = None):
+			descriptor: component.Component | None = None):
 		"""
 		Adds a new component instance to the rig and creates the root node structure for that component.
 
@@ -225,7 +225,7 @@ class Rig:
 		:param tp.rigtoolkit.crit.lib.maya.core.descriptor.component.ComponentDescriptor descriptor: optional component
 			descriptor.
 		:return: new instance of the created component.
-		:rtype: ComponentDescriptor
+		:rtype: Component
 		:raises errors.CritMissingComponentType: if not component with given type is registered.
 		"""
 

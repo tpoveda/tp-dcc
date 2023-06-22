@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import os
 import copy
+import typing
 import inspect
+from typing import List, Dict
 
 from tp.core import log
 from tp.common.python import decorators, yamlio
@@ -16,6 +18,11 @@ from tp.libs.rig.crit.maya.descriptors import component as descriptor_component
 
 logger = log.rigLogger
 
+if typing.TYPE_CHECKING:
+	from tp.common.plugin import PluginFactory
+	from tp.libs.rig.crit.maya.core.rig import Rig
+	from tp.libs.rig.crit.maya.meta.component import CritComponent
+
 
 @decorators.add_metaclass(decorators.Singleton)
 class ComponentsManager(object):
@@ -27,17 +34,17 @@ class ComponentsManager(object):
 	def __init__(self):
 		super(ComponentsManager, self).__init__()
 
-		self._components = dict()
-		self._descriptors = dict()
-		self._manager = None						# type: tp.common.plugin.PluginFactory
+		self._components = {}
+		self._descriptors = {}
+		self._manager = None										# type: PluginFactory
 		self._preferences_interface = crit.crit_Interface()
 
 	@property
-	def components(self) -> dict:
+	def components(self) -> Dict:
 		return self._components
 
 	@property
-	def descriptors(self) -> dict:
+	def descriptors(self) -> Dict:
 		return self._descriptors
 
 	def refresh(self):
@@ -87,34 +94,34 @@ class ComponentsManager(object):
 				'descriptor': class_id
 			}
 
-	def components_paths(self) -> list[str]:
+	def components_paths(self) -> List[str]:
 		"""
 		Returns all registered components paths.
 
 		:return: list of paths.
-		:rtype: list(str)
+		:rtype: List(str)
 		"""
 
 		return self._manager.paths('crit')
 
-	def component_data(self, component_type: str) -> dict | None:
+	def component_data(self, component_type: str) -> Dict | None:
 		"""
 		Returns the component data stored within manager.
 
 		:param str component_type: component type to get data of.
 		:return: component data {'object': ...', 'path': str, 'descriptor': str}
-		:rtype: dict or None
+		:rtype: Dict or None
 		"""
 
 		return self._components.get(component_type)
 
-	def load_component_descriptor(self, component_type: str) -> dict:
+	def load_component_descriptor(self, component_type: str) -> Dict:
 		"""
 		Loads teh descriptor file for the component of the given type already registered.
 
 		:param str component_type: component type to load.
 		:return: component data loaded from component descriptor file.
-		:rtype: dict
+		:rtype: Dict
 		:raises ValueError: if component with given type is not already registered.
 		"""
 
@@ -152,7 +159,7 @@ class ComponentsManager(object):
 
 		return descriptor_component.load_descriptor(descriptor_data, descriptor_data, path=component_data.get('path'))
 
-	def find_component_by_type(self, component_type):
+	def find_component_by_type(self, component_type: str):
 		"""
 		Finds and returns the component class from the manager.
 
@@ -169,17 +176,18 @@ class ComponentsManager(object):
 				'Component requested is not available. Requested: {}; Available: {}'.format(
 					component_type, self._components.keys()))
 
-	def from_meta_node(self, rig, meta):
+	def from_meta_node(self, rig: Rig, meta: CritComponent) -> component.Component:
 		"""
-		Returns component instance initialized from given meta node instance.
+		Creates a new component instance and attaches it to given rig.
 
-		:param tp.rigtoolkit.crit.lib.maya.core.rig.Rig rig: rig instance.
-		:param tp.maya.meta.base.BaseMeta meta: meta node instance.
-		:return: component instance.
-		:rtype: tp.rigtoolkit.crit.lib.maya.core.component.Component
+		:param Rig rig: rig to which the new component will be attached.
+		:param CritComponent meta: metadata for the new component.
+		:return: new component initialized with the given metadata.
+		:rtype: component.Component
+		:raises errors.CritMissingRootTransform: if the given metadata does not have a root transform.
 		"""
 
-		root = meta.rootTransform
+		root = meta.root_transform()
 		if not root:
 			raise errors.CritMissingRootTransform(meta.fullPathName())
 
@@ -189,13 +197,13 @@ class ComponentsManager(object):
 
 		return new_component
 
-	def _load_descriptor_from_path(self, descriptor_path: str) -> dict | None:
+	def _load_descriptor_from_path(self, descriptor_path: str) -> Dict | None:
 		"""
 		Internal function that tries to load a component descriptor from given path.
 
 		:param str descriptor_path: absolute file path pointing to a descriptor file.
 		:return: descriptor contents or None if the descriptor is not valid.
-		:rtype: dict or None
+		:rtype: Dict or None
 		"""
 
 		try:

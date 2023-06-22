@@ -15,8 +15,10 @@ from tp.tools.rig.crit.builder.managers import components
 if typing.TYPE_CHECKING:
 	from tp.libs.rig.crit.maya.core.rig import Rig
 	from tp.libs.rig.crit.maya.core.component import Component
+	from tp.libs.rig.crit.maya.descriptors.component import ComponentDescriptor
 	from tp.libs.rig.crit.maya.core.managers import ComponentsManager
 	from tp.libs.rig.crit.maya.meta.rig import CritRig
+	from tp.tools.rig.crit.builder.ui import CritBuilderWindow
 	from tp.tools.rig.crit.builder.interface import CritUiInterface
 	from tp.tools.rig.crit.builder.managers.commands import UiCommandsManager
 	from tp.tools.rig.crit.builder.managers.editors import EditorsManager
@@ -47,6 +49,7 @@ class CritBuilderController(qt.QObject):
 	rigRenamed = qt.Signal()
 	rigDeleted = qt.Signal()
 	rigsChanged = qt.Signal()
+	componentAdded = qt.Signal()
 	currentRigContainerChanged = qt.Signal(str)
 
 	def __init__(
@@ -78,6 +81,16 @@ class CritBuilderController(qt.QObject):
 	@property
 	def components_models_manager(self) -> components.ComponentsModelManager:
 		return self._components_models_manager
+
+	def crit_builder(self) -> CritBuilderWindow | None:
+		"""
+		Returns CRIT Builder window instance.
+
+		:return: builder window instance.
+		:rtype: CritBuilderWindow or None
+		"""
+
+		return self._ui_interface.builder() if self._ui_interface else None
 
 	def current_rig_exists(self) -> bool:
 		"""
@@ -122,6 +135,36 @@ class CritBuilderController(qt.QObject):
 		self.rigAdded.emit()
 
 		return rig_model
+
+	def add_component(
+			self, component_type: str, component_name: str | None = None, side: str | None = None,
+			descriptor: ComponentDescriptor | None = None) -> component.ComponentModel | None:
+		"""
+		Creates a new component.
+
+		:param str component_type: type of the component to create.
+		:param str component_name: name of the component to create.
+		:param str side: side of the component to create.
+		:param ComponentDescriptor descriptor: optional component descriptor to use.
+		:return: newly created component model.
+		:rtype: component.ComponentModel or None
+		"""
+
+		if not self._current_rig_container:
+			return None
+
+		component_model, component_type = self._components_models_manager.find_component_model(component_type)
+		if not component_model:
+			return None
+
+		new_component = self.execute_ui_command(
+			'createComponent',
+			dict(component_type=component_type, name=component_name, side=side, descriptor=descriptor))
+		new_component_model = component_model(component=new_component, rig_model=self._current_rig_container.rig_model)
+		self._current_rig_container.add_component_model(new_component_model)
+		self.componentAdded.emit()
+
+		return new_component_model
 
 	def rig_by_name(self, name: str) -> Rig | None:
 		"""
@@ -357,11 +400,11 @@ class CritBuilderController(qt.QObject):
 
 class RigContainer:
 
-	def __init__(self, rig_model: rig.RigModel | None, component_models: List[component.ComponentModel] | None = None):
+	def __init__(self, rig_model: rig.RigModel | None, component_models: Dict[component.ComponentModel] | None = None):
 		super().__init__()
 
 		self._rig_model = rig_model
-		self._component_models = component_models
+		self._component_models = component_models or {}
 
 	@property
 	def rig_model(self) -> rig.RigModel:

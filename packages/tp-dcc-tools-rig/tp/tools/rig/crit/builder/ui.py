@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing
 from functools import partial
 
 from overrides import override
@@ -15,9 +14,6 @@ from tp.tools.rig.crit.builder.managers import commands, editors
 from tp.tools.rig.crit.builder.widgets import rigselector, loadingwidget
 from tp.tools.rig.crit.builder.views import createview
 
-if typing.TYPE_CHECKING:
-	from tp.libs.rig.crit.maya.core.managers import ComponentsManager
-
 
 class CritBuilderWindow(frameless.FramelessWindow):
 
@@ -29,17 +25,24 @@ class CritBuilderWindow(frameless.FramelessWindow):
 		self._ui_interface.set_builder(self)
 		self._crit_config = crit.Configuration()
 		self._editors_manager = editors.EditorsManager()
+		self._editors_manager.close_all_editors()
 		self._components_manager = self._crit_config.components_manager()
 		self._ui_commands_manager = commands.UiCommandsManager()
 		self._controller = controller.CritBuilderController(
 			components_manager=self._components_manager, editors_manager=self._editors_manager,
 			ui_commands_manager=self._ui_commands_manager, ui_interface=self._ui_interface)
+		self._controller.componentAdded.connect(self._on_component_added)
 
 		self._rig_selector = None				# type: rigselector.RigSelector
 		self._loading_widget = None				# type: loadingwidget.LoadingWidget
 		self._create_view = None				# type: createview.CreateView
 
 		super().__init__(name='CritBuilderWindow', title='CRIT Builder', width=580, height=600, save_window_pref=False)
+
+		self._editors_manager.invoke_editor_by_id(
+			'ComponentsLibrary', parent=self._main_window, create_view=self._create_view,
+			components_manager=self._controller.components_manager,
+			components_model_manager=self._controller.components_models_manager)
 
 		self.refresh_ui()
 
@@ -57,8 +60,11 @@ class CritBuilderWindow(frameless.FramelessWindow):
 		self._loading_widget = loadingwidget.LoadingWidget(parent=self.parent())
 
 		self._rig_selector = rigselector.RigSelector(crit_builder=self)
-		self.title_contents_layout.addWidget(self._rig_selector)
+		self.title_bar.title_layout.addSpacing(10)
+		self.title_bar.title_layout.addWidget(self._rig_selector)
+		self.title_bar.title_layout.addStretch()
 		self.title_contents_layout.setContentsMargins(*qt.margins_dpi_scale(0, 2, 0, 2))
+		self.title_bar.set_title_align(qt.Qt.AlignRight)
 
 		self._main_stack = qt.sliding_opacity_stacked_widget(parent=self)
 		main_layout.addWidget(self._main_stack)
@@ -74,15 +80,15 @@ class CritBuilderWindow(frameless.FramelessWindow):
 		self._outliners_widget = qt.QWidget(parent=self)
 		self._outliners_widget.setLayout(qt.vertical_layout())
 		self._menu_tab_widget = qt.LineTabWidget(alignment=qt.Qt.AlignLeft, parent=self)
-		self._create_view = createview.CreateView(parent=self)
-		self._menu_tab_widget.add_tab(self._create_view, {'text': 'Modules', 'image': 'puzzle'})
+		self._create_view = createview.CreateView(controller=self._controller, parent=self)
+		self._menu_tab_widget.add_tab(self._create_view, {'text': 'Modules', 'image': 'puzzle', 'checked': True})
 		self._outliners_widget.layout().addWidget(self._menu_tab_widget)
 
 		self._main_window_layout.addWidget(self._outliners_widget)
 
 		self._main_stack.addWidget(main_splitter)
 
-		self._menubar = CritBuilderMenuBar(self._controller, parent=self._main_window)
+		self._menubar = CritBuilderMenuBar(self._controller, self._create_view, parent=self._main_window)
 		self._main_window.setMenuBar(self._menubar)
 
 	@override
@@ -122,22 +128,22 @@ class CritBuilderWindow(frameless.FramelessWindow):
 		self._show_loading_widget()
 		try:
 			self._controller.refresh()
-		# 	rig_names = self._controller.rig_names()
-		# 	if not self._rig_selector:
-		# 		return
-		# 	current_text = self._rig_selector.update_list(rig_names, keep_same=True)
-		# 	if not current_text:
-		# 		self._rig_selector.set_current_index(0, update=False)
-		# 		current_text = self._rig_selector.current_text()
-		# 		self._create_view.clear_tree()
-		#
-		# 	rig_model = self._controller.rig_model_by_name(current_text)
-		# 	if rig_model is None:
-		# 		return
-		#
-		# 	self._controller.set_current_rig_container(rig_model)
-		# 	self._create_view.apply_rig(rig_model)
-		# 	self._create_view.update()
+			rig_names = self._controller.rig_names()
+			if not self._rig_selector:
+				return
+			current_text = self._rig_selector.update_list(rig_names, keep_same=True)
+			if not current_text:
+				self._rig_selector.set_current_index(0, update=False)
+				current_text = self._rig_selector.current_text()
+				self._create_view.clear_tree()
+
+			rig_model = self._controller.rig_model_by_name(current_text)
+			if rig_model is None:
+				return
+
+			self._controller.set_current_rig_container(rig_model)
+			self._create_view.apply_rig(rig_model)
+			self._create_view.update()
 		finally:
 			self._hide_loading_widget()
 
@@ -184,13 +190,23 @@ class CritBuilderWindow(frameless.FramelessWindow):
 		rig_model = self.controller.add_rig(set_current=True)
 		print(rig_model)
 
+	def _on_component_added(self):
+		"""
+		Internal callback function that is called each time a new component is added through the controller.
+		"""
+
+		self.update_rig_mode()
+
 
 class CritBuilderMenuBar(qt.QMenuBar):
-	def __init__(self, controller: controller.CritBuilderController,  parent: qt.QMainWindow | None = None):
+	def __init__(
+			self, controller: controller.CritBuilderController, create_view: createview.CreateView,
+			parent: qt.QMainWindow | None = None):
 		super().__init__(parent)
 
 		self._parent = parent
 		self._controller = controller
+		self._create_view = create_view
 
 		self._editors_menu = qt.get_or_create_menu(self, '&Editors')
 		self.addMenu(self._editors_menu)
@@ -209,9 +225,8 @@ class CritBuilderMenuBar(qt.QMenuBar):
 		kwargs = {}
 		if editor_id == 'ComponentsLibrary':
 			kwargs.update({
+				'create_view': self._create_view,
 				'components_manager': self._controller.components_manager,
 				'components_model_manager': self._controller.components_models_manager})
 
 		self._controller.editors_manager.invoke_editor_by_id(editor_id, parent=self._parent, **kwargs)
-
-

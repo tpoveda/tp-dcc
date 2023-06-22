@@ -117,15 +117,16 @@ def generate_connection_binding_guide(component: Component) -> tuple[dict, layer
 	return binding, child_layer
 
 
-
 class Component:
 	"""
 	Component class that encapsulates a single rigging component.
 	"""
 
 	ID = ''
+	ICON = 'tpdcc'
 	DOCUMENTATION = ''
 	REQUIRED_PLUGINS = list()
+	BETA_VERSION = False
 
 	def __init__(
 			self, rig: 'tp.libs.rig.crit.maya.core.rig.Rig', descriptor: component.ComponentDescriptor | None = None,

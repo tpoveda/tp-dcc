@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from tp.common.qt import api as qt
-from tp.common.qt.widgets import sliding
+from tp.common.qt.widgets import sliding, groupedtreewidget
 
 
 class TreeWidgetFrame(qt.QFrame):
@@ -41,9 +41,74 @@ class TreeWidgetFrame(qt.QFrame):
 		self.main_layout.addWidget(self._tree_widget)
 		self.setLayout(self.main_layout)
 
-	def _setup_toolbar(self):
+	def setup_signals(self):
 		"""
-		Intenral function that setup tree widget frame toolbar.
+		Setups tree widget frame UI signals.
 		"""
 
-		pass
+		self._search_edit.textChanged.connect(self._on_search_text_changed)
+
+	def refresh(self):
+		"""
+		Updates tree widget UI.
+		"""
+
+		if not self._tree_widget:
+			return
+
+		self._tree_widget.refresh()
+
+	def add_group(self, name: str = '', expanded: bool = True):
+		"""
+		Adds a new group into the tree widget.
+
+		:param str name: optional group name.
+		:param bool expanded: whether group should be expanded by default.
+		"""
+
+		if not self._tree_widget:
+			return
+
+		group_widget = groupedtreewidget.GroupedTreeWidget.GroupWidget(title=name, hide_title_frame=True)
+		group_widget.setFixedHeight(10)
+
+		return self._tree_widget.add_group(name, expanded=expanded, group_widget=group_widget)
+
+	def delete_group(self):
+		"""
+		Deletes group.
+		"""
+
+		raise NotImplementedError()
+
+	def _setup_toolbar(self) -> qt.QHBoxLayout:
+		"""
+		Intenral function that setup tree widget frame toolbar.
+
+		:return: toolbar layout.
+		:rtype: qt.QHBoxLayout
+		"""
+
+		self._search_edit.setMinimumSize(qt.size_by_dpi(qt.QSize(21, 20)))
+		self._sliding_widget.set_widgets(self._search_edit, self._title_label)
+		self._toolbar_layout.addWidget(self._sliding_widget)
+
+		line = qt.QFrame(parent=self)
+		line.setFrameShape(qt.QFrame.HLine)
+		line.setFrameShadow(qt.QFrame.Sunken)
+		self._toolbar_layout.addWidget(line)
+
+		return self._toolbar_layout
+
+	def _on_search_text_changed(self, text: str):
+		"""
+		Internal callback function that is called each time search text changes.
+
+		:param str text: search text.
+		"""
+
+		if not self._tree_widget:
+			return
+
+		self._tree_widget.filter(text)
+		self._tree_widget.refresh()
