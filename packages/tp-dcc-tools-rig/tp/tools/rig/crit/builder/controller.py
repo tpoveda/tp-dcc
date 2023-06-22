@@ -101,7 +101,7 @@ class CritBuilderController(qt.QObject):
 		:rtype: bool
 		"""
 
-		return self._current_rig_container is not None and self._current_rig_container.rig_exists()
+		return bool(self._current_rig_container is not None and self._current_rig_container.rig_exists())
 
 	def rig_names(self) -> List[str]:
 		"""

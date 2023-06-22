@@ -69,6 +69,10 @@ class GroupedTreeWidget(QTreeWidget):
 		def mouseReleaseEvent(self, ev: QMouseEvent) -> None:
 			ev.ignore()
 
+		@override
+		def text(self):
+			return self._name
+
 		def connect_event(self, func: Callable):
 			"""
 			Connects triggered signal with given function.
@@ -301,6 +305,17 @@ class GroupedTreeWidget(QTreeWidget):
 		self.takeTopLevelItem(0)
 		self.setUpdatesEnabled(True)
 
+	def filter(self, text: str):
+		"""
+		Hides anything that does not contain the filtered text.
+
+		:param str text: filter text.
+		"""
+
+		for tree_item in qtutils.safe_tree_widget_iterator(self):
+			name = self._item_name(tree_item)
+			tree_item.setHidden(text not in name.lower())
+
 	def _setup_ui(self):
 		"""
 		Internal function that setup grouped tree widget UI.
@@ -347,6 +362,39 @@ class GroupedTreeWidget(QTreeWidget):
 		"""
 
 		return tree_item.data(self.DATA_COLUMN, Qt.EditRole)
+
+	def _item_name(self, tree_item: QTreeWidgetItem) -> str:
+		"""
+		Returns the name of the given tree item.
+
+		:param QTreeWidgetItem tree_item: tree item to get name of.
+		:return: tree item name.
+		:rtype: str
+		"""
+
+		item_type = self._item_type(tree_item)
+		widget = self._item_widget(tree_item)
+		if item_type == self.ITEM_TYPE_WIDGET:
+			if isinstance(widget, GroupedTreeWidget.ItemWidgetLabel):
+				return widget.text()
+			try:
+				return widget.name
+			except AttributeError:
+				return tree_item.text(self.WIDGET_COLUMN)
+		elif item_type == self.ITEM_TYPE_GROUP:
+			return tree_item.text(self.WIDGET_COLUMN)
+
+	def _item_widget(self, tree_item: QTreeWidgetItem, column: int | None = None) -> QWidget:
+		"""
+		Returns the intenral tree item widget.
+
+		:param QTreeWidgetItem tree_item: tree item to get widget of.
+		:param int column: column to get widget for.
+		:return: tree item widget.
+		:rtype: QWidget
+		"""
+
+		return super().itemWidget(tree_item, column or self.WIDGET_COLUMN)
 
 	def _apply_flags(self):
 		"""

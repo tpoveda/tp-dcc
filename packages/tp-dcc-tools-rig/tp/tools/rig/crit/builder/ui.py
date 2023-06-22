@@ -136,7 +136,6 @@ class CritBuilderWindow(frameless.FramelessWindow):
 				self._rig_selector.set_current_index(0, update=False)
 				current_text = self._rig_selector.current_text()
 				self._create_view.clear_tree()
-
 			rig_model = self._controller.rig_model_by_name(current_text)
 			if rig_model is None:
 				return
