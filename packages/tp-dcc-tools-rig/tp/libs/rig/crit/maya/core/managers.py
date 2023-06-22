@@ -37,7 +37,7 @@ class ComponentsManager(object):
 		self._components = {}
 		self._descriptors = {}
 		self._manager = None										# type: PluginFactory
-		self._preferences_interface = crit.crit_Interface()
+		self._preferences_interface = crit.crit_interface()
 
 	@property
 	def components(self) -> Dict:

@@ -66,7 +66,7 @@ class Configuration:
 		self._selection_child_highlighting = False
 		self._auto_align_guides = True
 		self._delete_on_fail = False
-		self._preferences_interface = crit.crit_Interface()
+		self._preferences_interface = crit.crit_interface()
 		self._single_chain_hierarchy = True
 		self._guide_control_visibility = False
 		self._guide_pivot_visibility = True

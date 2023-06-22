@@ -336,7 +336,7 @@ class PresetsManager:
 		super().__init__()
 
 		# CRIT preference interface instance.
-		self._preferences_interface = crit.crit_Interface()
+		self._preferences_interface = crit.crit_interface()
 
 		# full list of preset instances
 		self._presets = list()									# type: list[Preset]

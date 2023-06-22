@@ -1,7 +1,7 @@
 from tp.preferences import manager
 
 
-def crit_Interface():
+def crit_interface():
 	"""
 	Returns the CRIT preference interface.
 

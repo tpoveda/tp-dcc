@@ -18,7 +18,7 @@ def startup(package_manager):
 	"""
 
 	logger.info('Loading tp-dcc-tools-rig package...')
-	crit_interface = crit.crit_Interface()
+	crit_interface = crit.crit_interface()
 	crit_interface.upgrade_preferences()
 	crit_interface.upgrade_assets()
 

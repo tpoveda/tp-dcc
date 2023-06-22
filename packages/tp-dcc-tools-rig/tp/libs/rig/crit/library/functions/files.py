@@ -23,7 +23,7 @@ def create_empty_scene(new_path: str):
 	if path.is_file(new_path):
 		return
 
-	crit_interface = crit.crit_Interface()
+	crit_interface = crit.crit_interface()
 	source_path = path.join_path(crit_interface.empty_scenes_path(), f'EmptyScene_Maya{dcc.version_name()}.ma')
 	logger.debug(f'Copying file "{source_path}" to "{new_path}"')
 	if not path.is_file(source_path):

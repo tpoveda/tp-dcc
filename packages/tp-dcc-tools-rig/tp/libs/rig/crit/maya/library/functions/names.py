@@ -17,7 +17,7 @@ def naming_template() -> str:
 	:rtype: str
 	"""
 
-	crit_preferences = crit.crit_Interface()
+	crit_preferences = crit.crit_interface()
 	all_templates = crit_preferences.naming_templates()
 	current_name = crit_preferences.current_naming_template()
 	return all_templates.get(current_name)
@@ -28,7 +28,7 @@ def generate_name(name, side, suffix, override_index=None):
 	if isinstance(name, (list, tuple)):
 		name = '_'.join(name)
 
-	crit_preferences = crit.crit_Interface()
+	crit_preferences = crit.crit_interface()
 	timeout = 300
 	template = naming_template()
 	index = crit_preferences.name_start_index()
