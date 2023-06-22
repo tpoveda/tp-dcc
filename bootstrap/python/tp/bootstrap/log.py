@@ -14,6 +14,7 @@ LOGGER_NAME = 'tp.dcc'
 BOOTSTRAP_LOGGER_NAME = 'tp.dcc.bootstrap'
 RIG_LOGGER_NAME = 'tp.dcc.rig'
 ANIM_LOGGER_NAME = 'tp.dcc.anim'
+MODEL_LOGGER_NAME = 'tp.dcc.modeling'
 LOG_LEVEL_ENV_NAME = 'TPDCC_LOG_LEVEL'
 
 
@@ -216,7 +217,8 @@ tpLogger = get_logger(LOGGER_NAME)
 bootstrapLogger = get_logger(BOOTSTRAP_LOGGER_NAME)
 rigLogger = get_logger(RIG_LOGGER_NAME)
 animLogger = get_logger(ANIM_LOGGER_NAME)
-for logger in [tpLogger, bootstrapLogger, rigLogger, animLogger]:
+modelLogger = get_logger(MODEL_LOGGER_NAME)
+for logger in [tpLogger, bootstrapLogger, rigLogger, animLogger, modelLogger]:
 	logger.propagate = False
 	handlers = logger.handlers
 	if not handlers:

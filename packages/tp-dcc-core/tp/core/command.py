@@ -144,14 +144,14 @@ class DccCommandInterface:
 
         return self.do(**self._arguments)
 
-    def resolve_arguments(self, arguments: Dict) -> Dict:
+    def resolve_arguments(self, arguments: Dict) -> Dict | None:
         """
         Function that is called before running the command. Useful to valid incoming command arguments before executing
         the command.
 
         :param Dict arguments: key, value pairs of commands being passed to the run command function
         :return: dictionary with the same key value pairs as the arguments param.
-        :rtype: Dict
+        :rtype: Dict or None
         """
 
         return arguments
@@ -244,6 +244,25 @@ class DccCommand(DccCommandInterface):
         """
 
         return self._warning
+
+    def display_warning(self, message: str):
+        """
+        Sets display warning message to show.
+
+        :param str message: warning message.
+        """
+
+        self._warning = message
+
+    def cancel(self, msg: str | None = None):
+        """
+        Raises user cancel error.
+
+        :param str or None msg: optional message to show.
+        :raises exceptions.CommandCancel: when cancelling command execution.
+        """
+
+        raise exceptions.CommandCancel(msg)
 
 
 class CommandStats:
