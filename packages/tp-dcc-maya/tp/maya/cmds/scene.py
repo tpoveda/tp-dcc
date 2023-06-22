@@ -67,8 +67,13 @@ def new_scene(force: bool = True, do_save: bool = True):
 		if res:
 			force = True
 
-	cmds.file(new=True, force=force)
-	cmds.flushIdleQueue()
+	try:
+		cmds.file(new=True, force=force)
+		cmds.flushIdleQueue()
+	except Exception:
+		raise
+
+	return True
 
 
 def import_scene(file_path: str, force: bool = True, do_save: bool = True):

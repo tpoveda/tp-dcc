@@ -65,7 +65,7 @@ class MayaCommandRunner(command.BaseCommandRunner):
 		command_to_run.stats = command.CommandStats(command_to_run)
 		try:
 			if command_to_run.is_undoable:
-				cmds.undoInfo(openChunk=True, chunkName=command_to_run.ID)
+				cmds.undoInfo(openChunk=True, chunkName=command_to_run.id)
 				self._undo_stack.append(command_to_run)
 			OpenMaya._TPDCC_COMMAND = command_to_run
 			cmds.tpDccUndo(id=command_to_run.id)

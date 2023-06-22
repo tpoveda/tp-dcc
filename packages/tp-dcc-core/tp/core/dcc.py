@@ -449,3 +449,57 @@ def register_resource_path(resources_path: str):
     """
 
     raise NotImplementedError()
+
+
+# =================================================================================================================
+# SCENE
+# =================================================================================================================
+
+@reroute
+def current_time() -> int:
+    """
+    Returns current scene time.
+
+    :return: scene time.
+    :rtype: int
+    """
+
+    raise NotImplementedError()
+
+
+@reroute
+def new_scene(force: bool = True, do_save: bool = True) -> bool:
+    """
+    Creates a new DCC scene.
+
+    :param bool force: True if we want to save the scene without any prompt dialog
+    :param bool do_save: True if you want to save the current scene before creating new scene
+    :return: True if new scene operation was completed successfully; False otherwise.
+    :rtype: bool
+    """
+
+    raise NotImplementedError()
+
+
+@reroute
+def scene_is_modified() -> bool:
+    """
+    Returns whether current opened DCC file has been modified by the user or not.
+
+    :return: True if current DCC file has been modified by the user; False otherwise
+    :rtype: bool
+    """
+
+    raise NotImplementedError()
+
+
+@reroute
+def scene_name() -> str:
+    """
+    Returns the name of the current scene.
+
+    :return: scene name.
+    :rtype: str
+    """
+
+    raise NotImplementedError()

@@ -17,7 +17,7 @@ from Qt.QtWidgets import QApplication, QMainWindow, QMenuBar
 
 from tp.core import dccs
 from tp.common.python import path, folder
-from tp.maya.cmds import helpers, gui
+from tp.maya.cmds import helpers, gui, scene
 
 
 def name() -> str:
@@ -183,3 +183,53 @@ def register_resource_path(resources_path: str):
             paths = os.environ['XBMLANGPATH'].split(os.pathsep)
             if resource_path not in paths and os.path.normpath(resource_path) not in paths:
                 os.environ['XBMLANGPATH'] = os.environ['XBMLANGPATH'] + os.pathsep + resource_path
+
+
+# =================================================================================================================
+# SCENE
+# =================================================================================================================
+
+def current_time() -> int:
+    """
+    Returns current scene time.
+
+    :return: scene time.
+    :rtype: int
+    """
+
+    return cmds.currentTime(query=True)
+
+
+def new_scene(force: bool = True, do_save: bool = True) -> bool:
+    """
+    Creates a new DCC scene.
+
+    :param bool force: True if we want to save the scene without any prompt dialog
+    :param bool do_save: True if you want to save the current scene before creating new scene
+    :return: True if new scene operation was completed successfully; False otherwise.
+    :rtype: bool
+    """
+
+    return scene.new_scene(force=force, do_save=do_save)
+
+
+def scene_is_modified() -> bool:
+    """
+    Returns whether current opened DCC file has been modified by the user or not.
+
+    :return: True if current DCC file has been modified by the user; False otherwise
+    :rtype: bool
+    """
+
+    return cmds.file(query=True, modified=True)
+
+
+def scene_name() -> str:
+    """
+    Returns the name of the current scene.
+
+    :return: scene name.
+    :rtype: str
+    """
+
+    return cmds.file(query=True, sceneName=True)
