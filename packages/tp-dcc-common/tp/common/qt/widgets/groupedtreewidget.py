@@ -1,11 +1,17 @@
 from __future__ import annotations
 
-from typing import Type
+from typing import List, Type, Callable
 
-from Qt.QtCore import Qt
-from Qt.QtWidgets import QWidget, QTreeWidget, QTreeWidgetItem, QAbstractItemView
+from overrides import override
+from Qt.QtCore import Qt, Signal
+from Qt.QtWidgets import (
+	QSizePolicy, QWidget, QHBoxLayout, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QToolButton, QSpacerItem, QLabel
+)
+from Qt.QtGui import QIcon, QMouseEvent
 
-from tp.common.qt import dpi, qtutils
+from tp.common.qt import consts, dpi, qtutils
+from tp.common.qt.widgets import layouts, frames, lineedits
+from tp.common.resources import api as resources
 
 
 class GroupedTreeWidget(QTreeWidget):
@@ -21,20 +27,165 @@ class GroupedTreeWidget(QTreeWidget):
 	DATA_COLUMN = 2
 
 	class TreeWidgetItem(QTreeWidgetItem):
-		def __init__(self, name: str, flags: Qt.ItemFlags, parent: QTreeWidgetItem, after: QTreeWidgetItem | None = None):
+		"""
+		Item widget used by grouped tree widget.
+		"""
+
+		def __init__(self, name: str, flags: Qt.ItemFlags, parent: GroupedTreeWidget, after: QTreeWidgetItem | None = None):
 			super().__init__(parent, after)
 
 			self.setText(GroupedTreeWidget.WIDGET_COLUMN, name)
 			self.setFlags(flags)
+
+	class ItemWidgetLabel(QLabel):
+
+		triggered = Signal()
+
+		def __init__(self, name: str, parent: QWidget | None = None):
+			super().__init__(name, parent=parent)
+
+			self._name = name
+			self._emit_target = None					# type: Callable
+
+			self._setup_ui()
+
+		@property
+		def name(self) -> str:
+			return self._name
+
+		@name.setter
+		def name(self, value: str):
+			self._name = value
+
+		@override
+		def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+			self.triggered.emit()
+
+		@override
+		def mousePressEvent(self, ev: QMouseEvent) -> None:
+			ev.ignore()
+
+		@override
+		def mouseReleaseEvent(self, ev: QMouseEvent) -> None:
+			ev.ignore()
+
+		def connect_event(self, func: Callable):
+			"""
+			Connects triggered signal with given function.
+
+			:param Callable func: function to call when item is triggered.
+			"""
+
+			self._emit_target = func
+			self.triggered.connect(func)
+
+		def copy(self) -> GroupedTreeWidget.ItemWidgetLabel:
+			"""
+			Creates a copy instance of this item widget.
+
+			:return: item widget copy instance.
+			:rtype: GroupedTreeWidget.ItemWidgetLabel
+			"""
+
+			current_type = type(self)
+			result = current_type(self.text())
+			result.name = self.name
+			result.setStyleSheet(self.styleSheet())
+			# _tooltip.copy_expanded_tooltips(self, result)
+
+			return result
+
+		def _setup_ui(self):
+			"""
+			Internal function that setups item wiget UI.
+			"""
+
+			pass
+
+	class GroupWidget(QWidget):
+		"""
+		Widget used for groups for grouped tree widget items.
+		"""
+
+		def __init__(
+				self, title: str = '', tree_item: GroupedTreeWidget.TreeWidgetItem | None = None,
+				hide_title_frame: bool = False, parent: QWidget | None = None):
+			super().__init__(parent)
+
+			self._tree_item = tree_item
+			self._collapsed = False
+			self._color = consts.Colors.DARK_BACKGROUND_COLOR
+
+			self._main_layout = layouts.horizontal_layout(parent=self)
+			self._main_layout.setContentsMargins(0, 0, 0, 0)
+
+			self._expand_toggle_button = QToolButton(parent=self)
+			self._folder_icon = QToolButton(parent=self)
+			self._title_frame = frames.BaseFrame(parent=self)
+			self._title_frame.setContentsMargins(1, 1, 4, 0)
+			self._horizontal_layout = layouts.horizontal_layout(parent=self._title_frame)
+			self._horizontal_layout.setContentsMargins(0, 0, 0, 0)
+			self._group_text_edit = lineedits.EditableLineEditOnClick(title, single=False, parent=self)
+			self._title_extras_layout = QHBoxLayout()
+			self._delete_button = QToolButton(parent=self)
+
+			if hide_title_frame:
+				self._title_frame.hide()
+
+			self._setup_ui()
+			self._setup_signals()
+
+		def _setup_ui(self):
+			"""
+			Internal function that setups group widget UI.
+			"""
+
+			self.setLayout(self._main_layout)
+			self._folder_icon.setIcon(resources.icon('open_folder'))
+			self._delete_button.setIcon(resources.icon('close'))
+
+			self._setup_title_frame()
+
+		def _setup_title_frame(self):
+			"""
+			Internal function that builds the title part of the group widget.
+			"""
+
+			self.layout().addWidget(self._title_frame)
+
+			self._title_frame.mousePressEvent = self.mousePressEvent
+			self._expand_toggle_button.setParent(self._title_frame)
+			if self._collapsed:
+				self._expand_toggle_button.setIcon(resources.icon('sort_closed'))
+			else:
+				self._expand_toggle_button.setIcon(resources.icon('sort_down'))
+			self._folder_icon.setAttribute(Qt.WA_TransparentForMouseEvents)
+			spacer_item = QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+			self._horizontal_layout.addWidget(self._expand_toggle_button)
+			self._horizontal_layout.addWidget(self._folder_icon)
+			self._horizontal_layout.addItem(spacer_item)
+			self.setMinimumSize(self._title_frame.sizeHint().width(), self._title_frame.sizeHint().height() + 3)
+			self._horizontal_layout.addWidget(self._group_text_edit)
+			self._horizontal_layout.addLayout(self._title_extras_layout)
+			self._horizontal_layout.addWidget(self._delete_button)
+			self._horizontal_layout.setStretchFactor(self._group_text_edit, 4)
+
+		def _setup_signals(self):
+			"""
+			Internal function that setups group widget signals.
+			"""
+
+			pass
 
 	def __init__(
 			self, locked: bool = False, allow_sub_groups: bool = True,
 			custom_tree_widget_item_class: Type = QTreeWidgetItem, parent: QWidget | None = None):
 		super().__init__(parent)
 
-		self._dropped_items = None
+		self._dropped_items = None													# type: List[GroupedTreeWidget.TreeWidgetItem]
 		self._drop_cancelled = False
-		self._dragged_items = None
+		self._dragged_items = None													# type: List[GroupedTreeWidget.TreeWidgetItem]
 		self._drop_target = None
 		self._header_item = None													# type: QTreeWidgetItem
 		self._allow_sub_groups = allow_sub_groups
@@ -69,6 +220,86 @@ class GroupedTreeWidget(QTreeWidget):
 			self._item_widget_flags = self._item_widget_flags | self._item_widget_unlocked_flags
 
 		self._apply_flags()
+
+	def set_drag_drop_enabled(self, flag: bool):
+		"""
+		Disables or enables drag and drop functionality for this tree widget.
+
+		:param bool flag: True to enable drag and drop; False to disable it.
+		"""
+
+		if flag:
+			self._item_widget_flags = self._item_widget_flags | Qt.ItemIsDragEnabled
+			self._item_widget_unlocked_flags = self._item_widget_unlocked_flags | Qt.ItemIsDragEnabled
+			self._group_unlocked_flags = self._group_flags | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
+		else:
+			self._item_widget_flags = self._item_widget_flags & ~Qt.ItemIsDragEnabled
+			self._item_widget_unlocked_flags = self._item_widget_unlocked_flags & ~Qt.ItemIsDragEnabled
+			self._group_unlocked_flags = self._group_flags & ~Qt.ItemIsDragEnabled & ~Qt.ItemIsDropEnabled
+
+		self._apply_flags()
+
+	def add_new_item(
+			self, name: str, widget: QWidget | None = None, item_type: str = ITEM_TYPE_WIDGET,
+			widget_info: str | int | None = None, icon: QIcon | None = None) -> GroupedTreeWidget.TreeWidgetItem:
+		"""
+		Adds a new item based on given type. Supported types are:
+			- 'WIDGET': tree widget item with customized widget. Cannot have children.
+			- 'GROUP': tree widget item without customized widget. Can have children.
+
+		:param str name: name for the item.
+		:param QWidget or None widget: optional widget to insert into the tree widget item.
+		:param str item_type: item type to create ('WIDGET' or 'GROUP').
+		:param str or int or None widget_info: optinal widget info data.
+		:param QIcon or None icon: optional tree widget item icon.
+		:return: newly created tree widget item.
+		:rtype: GroupedTreeWidget.TreeWidgetItem
+		"""
+
+		flags = self._item_widget_flags if item_type == self.ITEM_TYPE_WIDGET else self._group_flags
+		item = self.currentItem()
+		tree_parent = self if item is not None else None
+
+		new_tree_item = GroupedTreeWidget.TreeWidgetItem(name=name, flags=flags, after=item, parent=tree_parent)
+		new_tree_item.setData(GroupedTreeWidget.DATA_COLUMN, Qt.EditRole, item_type)
+		new_tree_item.setData(GroupedTreeWidget.ITEM_WIDGET_INFO_COLUMN, Qt.EditRole, widget_info)
+
+		if icon is not None:
+			new_tree_item.setIcon(GroupedTreeWidget.WIDGET_COLUMN, icon)
+
+		self.addTopLevelItem(new_tree_item)
+
+		if widget:
+			widget.setParent(self)
+			if self.updatesEnabled():
+				self.refresh()
+			self.setItemWidget(new_tree_item, GroupedTreeWidget.WIDGET_COLUMN, widget)
+			if hasattr(widget, 'toggleExpandRequested'):
+				widget.toggleExpandRequested.connect(self.refresh)
+				widget.toggleExpandRequested.connect(new_tree_item.setExpanded)
+
+		self.setCurrentItem(new_tree_item)
+
+		return new_tree_item
+
+	def refresh(self, delay: bool = False):
+		"""
+		Updates the tree widget so the row heights of the tree widget items matches the desired sizeHint.
+
+		:param bool delay: whether to refresh it with delay.
+		"""
+
+		self.setUpdatesEnabled(False)
+		if delay:
+			def _process():
+				qtutils.process_ui_events()
+				self.refresh(delay=False)
+			qtutils.single_shot_timer(_process)
+			return
+
+		self.insertTopLevelItem(0, QTreeWidgetItem())
+		self.takeTopLevelItem(0)
+		self.setUpdatesEnabled(True)
 
 	def _setup_ui(self):
 		"""

@@ -18,7 +18,8 @@ from tp.common.qt import dpi
 
 def label(
 		text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
-		elide_mode: Qt.TextElideMode = Qt.ElideNone, parent: QWidget | None = None) -> BaseLabel:
+		elide_mode: Qt.TextElideMode = Qt.ElideNone, min_width: int | None = None, max_width: int | None = None,
+		parent: QWidget | None = None) -> BaseLabel:
 	"""
 	Creates a new label widget.
 
@@ -27,110 +28,140 @@ def label(
 	:param bool upper: whether label text is forced to be uppercase.
 	:param bool bold: whether label font is bold.
 	:param Qt.TextElideMode elide_mode: whether label text should elide.
+	:param int or None min_width: optional minimum width for the label.
+	:param int or None max_width: optional maximum width for the label.
 	:param QWidget parent: parent widget.
 	:return: new label widget instance.
 	:rtype: BaseLabel
 	"""
 
-	return BaseLabel(text=text, tooltip=tooltip, bold=bold, upper=upper, elide_mode=elide_mode, parent=parent)
+	new_label = BaseLabel(text=text, tooltip=tooltip, bold=bold, upper=upper, elide_mode=elide_mode, parent=parent)
+	if min_width is not None:
+		new_label.setMinimumWidth(min_width)
+	if max_width is not None:
+		new_label.setMaximumWidth(max_width)
+
+	return new_label
 
 
 def h1_label(
 		text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
+		elide_mode: Qt.TextElideMode = Qt.ElideNone, min_width: int | None = None, max_width: int | None = None,
 		parent: QWidget | None = False) -> BaseLabel:
 	"""
-	Creates a new H1label widget.
+	Creates a new H1 label widget.
 
 	:param str text: label text.
 	:param str tooltip: label tooltip.
-	:param bool upper: whether or not label text is forced to be uppercase.
-	:param bool bold: whether or not label font is bold.
+	:param bool upper: whether label text is forced to be uppercase.
+	:param bool bold: whether label font is bold.
+	:param Qt.TextElideMode elide_mode: whether label text should elide.
+	:param int or None min_width: optional minimum width for the label.
+	:param int or None max_width: optional maximum width for the label.
 	:param QWidget parent: parent widget.
 	:return: new label widget instance.
 	:rtype: BaseLabel
 	"""
 
-	return label(text=text, tooltip=tooltip, upper=upper, bold=bold, parent=parent).h1()
+	return label(
+		text=text, tooltip=tooltip, upper=upper, bold=bold, elide_mode=elide_mode, min_width=min_width,
+		max_width=max_width, parent=parent).h1()
 
 
 def h2_label(
 		text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
+		elide_mode: Qt.TextElideMode = Qt.ElideNone, min_width: int | None = None, max_width: int | None = None,
 		parent: QWidget | None = False) -> BaseLabel:
 	"""
 	Creates a new H2 label widget.
 
 	:param str text: label text.
 	:param str tooltip: label tooltip.
-	:param bool upper: whether or not label text is forced to be uppercase.
-	:param bool bold: whether or not label font is bold.
+	:param bool upper: whether label text is forced to be uppercase.
+	:param bool bold: whether label font is bold.
+	:param Qt.TextElideMode elide_mode: whether label text should elide.
+	:param int or None min_width: optional minimum width for the label.
+	:param int or None max_width: optional maximum width for the label.
 	:param QWidget parent: parent widget.
 	:return: new label widget instance.
 	:rtype: BaseLabel
 	"""
 
-	new_label = label(text=text, tooltip=tooltip, upper=upper, bold=bold, parent=parent).h2()
-
-	return new_label
+	return label(
+		text=text, tooltip=tooltip, upper=upper, bold=bold, elide_mode=elide_mode, min_width=min_width,
+		max_width=max_width, parent=parent).h2()
 
 
 def h3_label(
 		text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
+		elide_mode: Qt.TextElideMode = Qt.ElideNone, min_width: int | None = None, max_width: int | None = None,
 		parent: QWidget | None = False) -> BaseLabel:
 	"""
 	Creates a new H3 label widget.
 
 	:param str text: label text.
 	:param str tooltip: label tooltip.
-	:param bool upper: whether or not label text is forced to be uppercase.
-	:param bool bold: whether or not label font is bold.
+	:param bool upper: whether label text is forced to be uppercase.
+	:param bool bold: whether label font is bold.
+	:param Qt.TextElideMode elide_mode: whether label text should elide.
+	:param int or None min_width: optional minimum width for the label.
+	:param int or None max_width: optional maximum width for the label.
 	:param QWidget parent: parent widget.
 	:return: new label widget instance.
 	:rtype: BaseLabel
 	"""
 
-	new_label = label(text=text, tooltip=tooltip, upper=upper, bold=bold, parent=parent).h3()
-
-	return new_label
+	return label(
+		text=text, tooltip=tooltip, upper=upper, bold=bold, elide_mode=elide_mode, min_width=min_width,
+		max_width=max_width, parent=parent).h3()
 
 
 def h4_label(
 		text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
+		elide_mode: Qt.TextElideMode = Qt.ElideNone, min_width: int | None = None, max_width: int | None = None,
 		parent: QWidget | None = False) -> BaseLabel:
 	"""
 	Creates a new H4 label widget.
 
 	:param str text: label text.
 	:param str tooltip: label tooltip.
-	:param bool upper: whether or not label text is forced to be uppercase.
-	:param bool bold: whether or not label font is bold.
+	:param bool upper: whether label text is forced to be uppercase.
+	:param bool bold: whether label font is bold.
+	:param Qt.TextElideMode elide_mode: whether label text should elide.
+	:param int or None min_width: optional minimum width for the label.
+	:param int or None max_width: optional maximum width for the label.
 	:param QWidget parent: parent widget.
 	:return: new label widget instance.
 	:rtype: BaseLabel
 	"""
 
-	new_label = label(text=text, tooltip=tooltip, upper=upper, bold=bold, parent=parent).h4()
-
-	return new_label
+	return label(
+		text=text, tooltip=tooltip, upper=upper, bold=bold, elide_mode=elide_mode, min_width=min_width,
+		max_width=max_width, parent=parent).h4()
 
 
 def h5_label(
 		text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
+		elide_mode: Qt.TextElideMode = Qt.ElideNone, min_width: int | None = None, max_width: int | None = None,
 		parent: QWidget | None = False) -> BaseLabel:
 	"""
 	Creates a new H5 label widget.
 
 	:param str text: label text.
 	:param str tooltip: label tooltip.
-	:param bool upper: whether or not label text is forced to be uppercase.
-	:param bool bold: whether or not label font is bold.
+	:param bool upper: whether label text is forced to be uppercase.
+	:param bool bold: whether label font is bold.
+	:param Qt.TextElideMode elide_mode: whether label text should elide.
+	:param int or None min_width: optional minimum width for the label.
+	:param int or None max_width: optional maximum width for the label.
 	:param QWidget parent: parent widget.
 	:return: new label widget instance.
 	:rtype: BaseLabel
 	"""
 
-	new_label = label(text=text, tooltip=tooltip, upper=upper, bold=bold, parent=parent).h5()
-
-	return new_label
+	return label(
+		text=text, tooltip=tooltip, upper=upper, bold=bold, elide_mode=elide_mode, min_width=min_width,
+		max_width=max_width, parent=parent).h5()
 
 
 def clipped_label(

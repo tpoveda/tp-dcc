@@ -6,5 +6,5 @@
 
 #include frameless.qss
 #include buttons.qss
-#include buttons.qss
+#include labels.qss
 #include linetabwidget.qss

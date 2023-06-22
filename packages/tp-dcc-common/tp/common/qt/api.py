@@ -51,7 +51,8 @@ from tp.common.qt.widgets.comboboxes import combobox, ComboBoxRegularWidget
 from tp.common.qt.widgets.lineedits import line_edit, text_browser, BaseLineEdit
 from tp.common.qt.widgets.dividers import divider, Divider, DividerLayout, LabelDivider
 from tp.common.qt.widgets.buttons import (
-	styled_button, base_button, regular_button, rounded_button, shadowed_button, tool_button, BaseButton, OkCancelButtons
+	styled_button, base_button, regular_button, rounded_button, shadowed_button, tool_button, BaseButton,
+	IconMenuButton, OkCancelButtons
 )
 from tp.common.qt.widgets.listviews import ExtendedListView
 from tp.common.qt.widgets.tableviews import BaseTableView, ExtendedTableView
@@ -61,7 +62,7 @@ from tp.common.qt.widgets.popups import show_warning
 from tp.common.qt.widgets.search import SearchLineEdit
 from tp.common.qt.widgets.groupedtreewidget import GroupedTreeWidget
 from tp.common.qt.widgets.linetabwidget import LineTabWidget
-
+from tp.common.qt.widgets.stack import sliding_opacity_stacked_widget, StackItem
 
 
 # from tp.common.qt.base import widget, frame, BaseWidget, BaseFrame, ScrollWidget
@@ -74,6 +75,5 @@ from tp.common.qt.widgets.linetabwidget import LineTabWidget
 # from tp.common.qt.widgets.comboboxes import (
 # 	combobox, searchable_combobox, combobox_widget, searchable_combobox_widget, bool_combobox
 # )
-from tp.common.qt.widgets.stack import sliding_opacity_stacked_widget
 # from tp.common.qt.widgets.search import search_widget
 # from tp.common.qt.widgets.accordion import AccordionWidget, AccordionStyle

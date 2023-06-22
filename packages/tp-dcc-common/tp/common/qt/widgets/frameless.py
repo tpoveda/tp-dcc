@@ -1041,10 +1041,6 @@ class FramelessWindow(QWidget):
 		self._always_show_all_title = always_show_all_title
 		self._saved_size = QSize()
 		self._filter = FramelessWindow.KeyboardModifierFilter()
-
-		if self.WINDOW_SETTINGS_PATH:
-			position = QPoint(*(init_pos or ()))
-			init_pos = position or self._settings.value('/'.join((self.WINDOW_SETTINGS_PATH, 'pos')))
 		self._init_pos = init_pos
 
 		title_bar_class = title_bar_class or TitleBar
@@ -1076,6 +1072,8 @@ class FramelessWindow(QWidget):
 		self.setup_signals()
 
 		self.set_title_style(TitleBar.TitleStyle.DEFAULT)
+
+		self.load_settings()
 
 		self._filter.modifierPressed.connect(self.show_overlay)
 		self.installEventFilter(self._filter)
@@ -1206,8 +1204,7 @@ class FramelessWindow(QWidget):
 		self.beginClosing.emit()
 		qtutils.process_ui_events()
 
-		if not self.is_docked() and self.WINDOW_SETTINGS_PATH and self._parent_container:
-			self._settings.setValue('/'.join((self.WINDOW_SETTINGS_PATH, 'pos')), self._parent_container.pos())
+		self.save_settings()
 
 		result = super().close()
 
@@ -1227,6 +1224,25 @@ class FramelessWindow(QWidget):
 			self._overlay.show()
 
 		return super().keyPressEvent(event)
+
+	def load_settings(self):
+		"""
+		Load settings located within window settings file path (if it exists).
+		"""
+
+		init_pos = self._init_pos
+		if self.WINDOW_SETTINGS_PATH:
+			position = QPoint(*(self._init_pos or ()))
+			init_pos = position or self._settings.value('/'.join((self.WINDOW_SETTINGS_PATH, 'pos')))
+		self._init_pos = init_pos
+
+	def save_settings(self):
+		"""
+		Saves settings into window settings file path.
+		"""
+
+		if not self.is_docked() and self.WINDOW_SETTINGS_PATH and self._parent_container:
+			self._settings.setValue('/'.join((self.WINDOW_SETTINGS_PATH, 'pos')), self._parent_container.pos())
 
 	def main_layout(self) -> QVBoxLayout | QHBoxLayout:
 		"""
@@ -2029,7 +2045,7 @@ class TitleBar(QFrame):
 			button.double_click_enabled = False
 
 		# Layout setup
-		self._main_right_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 5, 6 ,0))
+		self._main_right_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 5, 6, 0))
 		self._contents_layout.setContentsMargins(0, 0, 0, 0)
 		self._corner_contents_layout.setContentsMargins(0, 0, 0, 0)
 		self._right_contents.setLayout(self._corner_contents_layout)
@@ -2053,7 +2069,7 @@ class TitleBar(QFrame):
 		self._title_layout.setSpacing(0)
 		self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 2, 2, 6))
 		self._title_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding)
-		self._title_label.setMidLineWidth(1)
+		self._title_label.setMinimumWidth(1)
 
 		# Main Title Layout (Logo and Main Right Layout)
 		self._main_layout.setContentsMargins(*dpi.margins_dpi_scale(4, 0, 0, 0))

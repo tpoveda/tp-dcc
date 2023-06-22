@@ -474,13 +474,21 @@ class AbstractButton(QAbstractButton, dpi.DPIScaling):
 
 		grayscale = self._grayscale or not self.isEnabled()
 
+		# Setting the icon colors, causes our current default icons to be tinted with a solid color with an undersired
+		# result
+		# self._idle_icon = icon.colorize_layered_icon(
+		# 	icons=self._icon_names, size=self.iconSize().width(), scaling=self._icon_scaling,
+		# 	composition=self._tint_composition, colors=self._icon_colors, grayscale=grayscale)
+		# self._hover_icon = icon.colorize_layered_icon(
+		# 	icons=self._icon_names, size=self.iconSize().width(), scaling=self._icon_scaling,
+		# 	composition=self._tint_composition, colors=self._icon_colors, tint_color=hover_color, grayscale=grayscale)
+
 		self._idle_icon = icon.colorize_layered_icon(
 			icons=self._icon_names, size=self.iconSize().width(), scaling=self._icon_scaling,
-			composition=self._tint_composition, colors=self._icon_colors, grayscale=grayscale)
-
+			composition=self._tint_composition, grayscale=grayscale)
 		self._hover_icon = icon.colorize_layered_icon(
 			icons=self._icon_names, size=self.iconSize().width(), scaling=self._icon_scaling,
-			composition=self._tint_composition, colors=self._icon_colors, tint_color=hover_color, grayscale=grayscale)
+			composition=self._tint_composition, tint_color=hover_color, grayscale=grayscale)
 
 		self.setIcon(self._idle_icon)
 

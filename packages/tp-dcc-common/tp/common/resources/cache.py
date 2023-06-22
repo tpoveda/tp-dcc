@@ -14,7 +14,7 @@ from Qt.QtSvg import QSvgRenderer
 from tp.common.resources import icon
 
 
-class CacheResource(object):
+class CacheResource:
 
     _render = QSvgRenderer()
 
