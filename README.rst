@@ -19,6 +19,9 @@ tp-dcc-tools
 .. image:: https://img.shields.io/badge/Maya-2023-green?logo=autodesk
     :target: https://www.autodesk.com/
 
+.. image:: https://img.shields.io/badge/Maya-2024-green?logo=autodesk
+    :target: https://www.autodesk.com/
+
 .. image:: https://img.shields.io/badge/3dsMax-2022-orange?logo=autodesk
     :target: https://www.autodesk.com/
 
@@ -106,7 +109,7 @@ Requirements
             pip install virtualenv
 
 
-* Make **Git** client is installed : https://git-scm.com/
+* Make sure **Git** client is installed : https://git-scm.com/
 
 
 How to use
