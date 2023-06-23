@@ -1,16 +1,16 @@
-name: 'tp-dcc-tools-rig'
-version: '1.0.0'
+name: 'tp-dcc-tools-crit'
+version: '0.0.1'
 author: 'Tomas Poveda'
 authorEmail: 'tpovedatd@gmail.com'
-description: 'Rigging package for tp-dcc-tools framework'
-displayName: 'tp-dcc-tools-rig'
+description: 'CRIT Rigging package'
+displayName: 'tp-dcc-tools-crit'
 environment:
   PYTHONPATH:
     - '{self}'
+    - '{self}/preferences'
   TPDCC_BASE_PATHS:
     - '{self}'
   TPDCC_TOOL_DEFINITION_MODULES:
-    - '{self}/tp/tools/rig/rigscript/tool.py'
     - '{self}/tp/tools/rig/crit/maya/tool.py'
   TPDCC_META_PATHS:
     - '{self}/tp/libs/rig/crit/maya/meta'
@@ -29,4 +29,4 @@ environment:
   CRIT_UI_COMMANDS_PATHS:
     - "{self}/tp/tools/rig/crit/builder/commands"
 commands:
-  - '{self}/startup/rig.py'
+  - '{self}/startup/crit.py'
