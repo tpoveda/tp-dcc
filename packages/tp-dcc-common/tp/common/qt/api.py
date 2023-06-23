@@ -58,7 +58,7 @@ from tp.common.qt.widgets.listviews import ExtendedListView
 from tp.common.qt.widgets.tableviews import BaseTableView, ExtendedTableView
 from tp.common.qt.widgets.treeviews import BaseTreeView, ExtendedTreeView
 from tp.common.qt.widgets.menus import menu, searchable_menu, extended_menu
-from tp.common.qt.widgets.popups import show_warning
+from tp.common.qt.widgets.popups import show_question, show_warning, input_dialog
 from tp.common.qt.widgets.search import SearchLineEdit
 from tp.common.qt.widgets.groupedtreewidget import GroupedTreeWidget
 from tp.common.qt.widgets.linetabwidget import LineTabWidget

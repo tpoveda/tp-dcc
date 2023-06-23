@@ -1,12 +1,12 @@
 /*
  --------------------------------------------------------------------------
- tp-dcc custom style
+ tp-dcc extended style for following module:
+    - tp.common.qt.widgets.lineedits
  --------------------------------------------------------------------------
 */
 
-#include frameless.qss
-#include buttons.qss
-#include labels.qss
-#include linetabwidget.qss
-#include stack.qss
-#include lineedits.qss
+
+EditableLineEditOnClick
+{
+    background-color: transparent;
+}

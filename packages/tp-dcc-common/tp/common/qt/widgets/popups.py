@@ -5,7 +5,7 @@ from typing import Tuple, List
 
 from overrides import override
 from Qt.QtCore import Qt, QSize
-from Qt.QtWidgets import QWidget, QLabel, QToolButton, QSizePolicy
+from Qt.QtWidgets import QWidget, QLabel, QToolButton, QSizePolicy, QLineEdit
 from Qt.QtGui import QKeyEvent
 
 from tp.common.python import strings
@@ -13,6 +13,40 @@ from tp.common.resources import icon
 from tp.common.resources import api as resources
 from tp.common.qt import dpi, qtutils
 from tp.common.qt.widgets import layouts, frameless, buttons
+
+
+def show_question(
+		title: str = '', message: str = '', button_a: str | None = 'Continue', button_b: str | None = 'Cancel',
+		button_c: str | None = None, button_icon_a: str | None = None, button_icon_b: str | None = None,
+		button_icon_c: str | None = None, icon: str | None = None, default: int = 0,
+		parent: QWidget | None = None) -> str:
+	"""
+	Shows a question popup message box.
+
+	:param str title: message box title.
+	:param str message: message box message.
+	:param str or None button_a: optional first button text.
+	:param str or None button_b: optional second button text.
+	:param str or None button_c: optional third button text.
+	:param str or None button_icon_a: optional first button icon.
+	:param str or None button_icon_b: optional second button icon.
+	:param str or None button_icon_c: optional third button icon.
+	:param str or None icon: optional message box icon.
+	:param int or None default: default button index.
+	:param parent: optional message box parent widget.
+	:return: message box selected button ('A', 'B' or 'C').
+	:rtype: str
+	"""
+
+	new_message = MessageBoxBase(
+		title=title, message=message, button_a=button_a, button_b=button_b, button_c=button_c,
+		button_icon_a=button_icon_a or MessageBoxBase.OK_ICON, button_icon_b=button_icon_b or MessageBoxBase.CANCEL_ICON,
+		button_icon_c=button_icon_c, icon=icon or MessageBoxBase.QUESTION, default=default, parent=parent)
+	new_message.show()
+	while new_message.msg_closed is False:
+		qtutils.process_ui_events()
+
+	return new_message.result
 
 
 def show_warning(
@@ -47,6 +81,37 @@ def show_warning(
 		qtutils.process_ui_events()
 
 	return new_message.result
+
+
+def input_dialog(
+		title: str = 'Input', message: str = 'Input:', text: str = '', button_a: str | None = 'OK',
+		button_b: str | None = 'Cancel', button_c: str | None = None, button_icon_c: str | None = None,
+		icon: str | None = None, parent: QWidget | None = None) -> str | None:
+	"""
+	Shows an input dialog message box.
+
+	:param str title: message box title.
+	:param str message: message box message.
+	:param text: default input text.
+	:param str or None button_a: optional first button text.
+	:param str or None button_b: optional second button text.
+	:param str or None button_c: optional third button text.
+	:param str or None button_icon_c: optional third button icon.
+	:param str or None icon: optional message box icon.
+	:param parent: optional message box parent widget.
+	:return: input text or None if cancelled.
+	"""
+
+	new_input_dialog = InputDialog(
+		parent=parent, title=title, message=message, button_a=button_a, button_b=button_b, button_c=button_c,
+		button_icon_c=button_icon_c, icon=icon, text=text)
+	new_input_dialog.show()
+	while new_input_dialog.msg_closed is False:
+		qtutils.process_ui_events()
+	if new_input_dialog.result == 'A':
+		return new_input_dialog.input_text()
+
+	return None
 
 
 class MessageBoxBase(frameless.FramelessWindowThin):
@@ -201,3 +266,36 @@ class MessageBoxBase(frameless.FramelessWindowThin):
 
 		self.main_layout().addLayout(self._image_layout)
 		self.main_layout().addLayout(self._buttons_layout)
+
+
+class InputDialog(MessageBoxBase):
+	def __init__(
+			self, parent: QWidget, title: str = 'Input', message: str = 'Input:', icon: str | None = None,
+			button_a: str | None = 'OK', button_b: str | None = 'Cancel', button_c: str | None = None,
+			button_icon_c: str | None = None, width: int = 280, text: str = ''):
+		self._input_width = dpi.dpi_scale(width)
+		self._initial_text = text
+		super().__init__(
+			parent=parent, title=title, message=message, icon=icon, button_a=button_a, button_b=button_b,
+			button_c=button_c, button_icon_c=button_icon_c, key_presses=(Qt.Key_Enter, Qt.Key_Return))
+
+	@override
+	def _init(self):
+		super()._init()
+
+		self._input_edit = QLineEdit(parent=self)
+		self._input_edit.setMinimumWidth(self._input_width)
+		self._input_edit.setText(self._initial_text)
+		self._input_edit.selectAll()
+		self._message_layout.addSpacing(dpi.dpi_scale(5))
+		self._message_layout.addWidget(self._input_edit)
+
+	def input_text(self) -> str:
+		"""
+		Returns current input text
+
+		:return: input text.
+		:rtype: str
+		"""
+
+		return self._input_edit.text()

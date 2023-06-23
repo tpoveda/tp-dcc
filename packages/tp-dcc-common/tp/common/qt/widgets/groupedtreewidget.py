@@ -208,6 +208,10 @@ class GroupedTreeWidget(QTreeWidget):
 		self._setup_ui()
 		self._setup_signals()
 
+	@override(check_signature=False)
+	def itemWidget(self, item: QTreeWidgetItem, column: int | None = None) -> QWidget:
+		return self._item_widget(item, column)
+
 	def set_locked(self, flag: bool):
 		"""
 		Sets whether tree widget allows for drag and drop functionality.
@@ -242,6 +246,30 @@ class GroupedTreeWidget(QTreeWidget):
 			self._group_unlocked_flags = self._group_flags & ~Qt.ItemIsDragEnabled & ~Qt.ItemIsDropEnabled
 
 		self._apply_flags()
+
+	def item_widgets(
+			self, item_type: str | None = None, tree_item: GroupedTreeWidget.TreeWidgetItem | None = None) -> List[QWidget]:
+		"""
+		Returns list of widgets of all the tree items.
+
+		:param str or None item_type: optional item type to get widgets for.
+		:param GroupedTreeWidget.TreeWidgetItem or None tree_item: optional parent tree item to get widgets for.
+		:return: list of widgets found.
+		:rtype: List[QWidget]
+		"""
+
+		iterator_item = tree_item if tree_item is not None else self
+
+		widgets = []
+		for found_tree_item in qtutils.safe_tree_widget_iterator(iterator_item):
+			if found_tree_item is not None:
+				item_widget = self._item_widget(found_tree_item)
+				if item_widget is None:
+					continue
+				if (item_type is not None and self._item_type(found_tree_item) == item_type) or item_type is None:
+					widgets.append(item_widget)
+
+		return widgets
 
 	def add_new_item(
 			self, name: str, widget: QWidget | None = None, item_type: str = ITEM_TYPE_WIDGET,

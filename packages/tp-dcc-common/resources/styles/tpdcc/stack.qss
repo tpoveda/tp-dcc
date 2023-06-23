@@ -1,0 +1,33 @@
+/*
+ --------------------------------------------------------------------------
+ tp-dcc extended style for following module:
+    - tp.common.qt.widgets.stack
+ --------------------------------------------------------------------------
+*/
+
+StackItem.StackTitleFrame
+{
+    background-color: @STACK_ITEM_BACKGROUND_COLOR;
+    border-radius: @ONE_PIXELpx;
+}
+
+
+
+StackItem.StackTitleFrame#selected
+{
+    background-color: @PRIMARY_COLOR;
+    border-radius: @ONE_PIXELpx;
+}
+
+StackItem.StackHiderWidget
+{
+    background-color: @MAIN_BACKGROUND_COLOR;
+    border-radius: @ONE_PIXELpx;
+}
+
+StackItem.StackHiderWidget#selected
+{
+    border-color: transparent @PRIMARY_COLOR transparent tranparent;
+
+
+}
