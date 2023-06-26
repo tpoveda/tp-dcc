@@ -23,7 +23,7 @@ from Qt.QtGui import (
 	QPolygonF, QIntValidator, QDoubleValidator, QRegExpValidator, QTransform, QImageReader, QDrag, QMovie,
 	QContextMenuEvent, QShowEvent, QKeyEvent, QFocusEvent, QMoveEvent, QEnterEvent, QCloseEvent, QMouseEvent,
 	QPaintEvent, QExposeEvent, QHoverEvent, QHelpEvent, QHideEvent, QInputEvent, QWheelEvent, QDropEvent,
-	QDragMoveEvent, QDragEnterEvent, QResizeEvent, QActionEvent, QDesktopServices
+	QDragMoveEvent, QDragEnterEvent, QResizeEvent, QActionEvent, QDesktopServices, QTextCursor, QTextDocument
 )
 
 from tp.common.resources import api as resources

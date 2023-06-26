@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Type, Callable
+from typing import List, Type, Callable, Iterator
 
 from overrides import override
 from Qt.QtCore import Qt, Signal
@@ -246,6 +246,17 @@ class GroupedTreeWidget(QTreeWidget):
 			self._group_unlocked_flags = self._group_flags & ~Qt.ItemIsDragEnabled & ~Qt.ItemIsDropEnabled
 
 		self._apply_flags()
+
+	def iterator(self) -> Iterator[GroupedTreeWidget.TreeWidgetItem]:
+		"""
+		Generator function that iterates over all tree widget items.
+
+		:return: iterated tree widget items.
+		:rtype: Iterator[GroupedTreeWidget.TreeWidgetItem]
+		"""
+
+		for item in qtutils.safe_tree_widget_iterator(self):
+			yield item
 
 	def item_widgets(
 			self, item_type: str | None = None, tree_item: GroupedTreeWidget.TreeWidgetItem | None = None) -> List[QWidget]:
