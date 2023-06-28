@@ -87,7 +87,9 @@ class CritBuilderWindow(frameless.FramelessWindow):
 		self._outliners_widget = qt.QWidget(parent=self)
 		self._outliners_widget.setLayout(qt.vertical_layout())
 		self._menu_tab_widget = qt.LineTabWidget(alignment=qt.Qt.AlignLeft, parent=self)
-		self._create_view = createview.CreateView(controller=self._controller, parent=self)
+		self._create_view = createview.CreateView(
+			components_manager=self._components_manager, controller=self._controller, ui_interface=self._ui_interface,
+			parent=self)
 		self._menu_tab_widget.add_tab(self._create_view, {'text': 'Modules', 'image': 'puzzle', 'checked': True})
 		self._outliners_widget.layout().addWidget(self._menu_tab_widget)
 
@@ -148,12 +150,17 @@ class CritBuilderWindow(frameless.FramelessWindow):
 				self._create_view.clear_tree()
 			rig_model = self._controller.rig_model_by_name(current_text)
 			if rig_model is None:
+				self._update_rig_mode()
+				self._update_crit_settings()
 				return
 
 			self._controller.set_current_rig_container(rig_model)
 			self._create_view.apply_rig(rig_model)
 			self._create_view.update()
+			self._update_crit_settings()
+			self._update_rig_mode()
 		finally:
+			self._set_rig_polished_ui(False)
 			self._hide_loading_widget()
 
 	def set_rig(self, name: str, apply: bool = True):
@@ -303,6 +310,9 @@ class CritBuilderWindow(frameless.FramelessWindow):
 		"""
 
 		self._update_rig_mode()
+
+		# TEMP
+		self.refresh_ui()
 
 
 class CritBuilderMenuBar(qt.QMenuBar):

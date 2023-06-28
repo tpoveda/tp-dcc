@@ -64,11 +64,15 @@ class CritBuilderController(qt.QObject):
 		self._ui_interface.set_controller(self)
 
 		self._rig_containers = []											# type: List[RigContainer]
-		self._current_rig_container = None									# type: RigContainer or None
+		self._current_rig_container = None									# type: RigContainer
 		self._selection_model = selection.SelectionModel()
 
 		self._components_models_manager = components.ComponentsModelManager(self._components_manager)
 		self._components_models_manager.discover_components()
+
+	@property
+	def ui_interface(self) -> CritUiInterface:
+		return self._ui_interface
 
 	@property
 	def components_manager(self) -> ComponentsManager:
@@ -79,12 +83,20 @@ class CritBuilderController(qt.QObject):
 		return self._editors_manager
 
 	@property
+	def ui_commands_manager(self) -> UiCommandsManager:
+		return self._ui_commands_manager
+
+	@property
 	def components_models_manager(self) -> components.ComponentsModelManager:
 		return self._components_models_manager
 
 	@property
 	def current_rig_container(self) -> RigContainer | None:
 		return self._current_rig_container
+
+	@property
+	def selection_model(self) -> selection.SelectionModel:
+		return self._selection_model
 
 	def crit_builder(self) -> CritBuilderWindow | None:
 		"""
@@ -95,6 +107,19 @@ class CritBuilderController(qt.QObject):
 		"""
 
 		return self._ui_interface.builder() if self._ui_interface else None
+
+	def rig_mode(self) -> int | None:
+		"""
+		Returns current rig mode.
+
+		:return: rig mode.
+		:rtype: int or None
+		"""
+
+		if self._current_rig_container is None or not self._current_rig_container.rig_exists():
+			return
+
+		return self._current_rig_container.rig_model.rig.build_state()
 
 	def current_rig_exists(self) -> bool:
 		"""

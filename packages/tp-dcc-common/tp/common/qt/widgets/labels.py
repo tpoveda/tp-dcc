@@ -11,9 +11,10 @@ from overrides import override
 
 from Qt.QtCore import Qt, Property, Signal
 from Qt.QtWidgets import QWidget, QLabel, QSizePolicy, QStyleOption
-from Qt.QtGui import QPainter, QMouseEvent, QResizeEvent, QPaintEvent
+from Qt.QtGui import QIcon, QPainter, QMouseEvent, QResizeEvent, QPaintEvent
 
 from tp.common.qt import dpi
+from tp.common.qt.widgets import layouts
 
 
 def label(
@@ -180,6 +181,26 @@ def clipped_label(
 	"""
 
 	return ClippedLabel(text=text, width=width, elide=elide, always_show_all=always_show_all, parent=parent)
+
+
+def icon_label(
+		icon: QIcon, text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
+		enable_menu: bool = True, parent: QWidget | None = None) -> IconLabel:
+	"""
+	Creates a new widget with a horizontal layout with an icon and a label.
+
+	:param QIcon icon: label icon.
+	:param str text: label text.
+	:param str tooltip: label tooltip.
+	:param bool upper: whether label text is forced to be uppercase.
+	:param bool bold: whether label font is bold.
+	:param bool enable_menu: whether enable label menu.
+	:param QWidget parent: parent widget.
+	:return: new label widget instance.
+	:rtype: IconLabel
+	"""
+
+	return IconLabel(icon, text=text, tooltip=tooltip, upper=upper, bold=bold, enable_menu=enable_menu, parent=parent)
 
 
 class BaseLabel(QLabel, dpi.DPIScaling):
@@ -667,3 +688,33 @@ class ClippedLabel(BaseLabel):
 				self.style().drawItemText(
 					painter, rect, self.alignment(), option.palette, self.isEnabled(),
 					self.text(), self.foregroundRole())
+
+
+class IconLabel(QWidget):
+	"""
+	Custom widget that contains a horizontal layout with an icon and a label.
+	"""
+
+	def __init__(
+			self, icon: QIcon, text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
+			enable_menu: bool = True, parent: QWidget | None = None):
+		super().__init__(parent)
+
+		main_layout = layouts.horizontal_layout(
+			margins=(0, 0, 0, 0), spacing=dpi.dpi_scale(4), alignment=Qt.AlignLeft, parent=self)
+		self.setLayout(main_layout)
+
+		self._label = BaseLabel(
+			text=text, tooltip=tooltip, upper=upper, bold=bold, enable_menu=enable_menu, parent=parent)
+		icon_size = self._label.sizeHint().height()
+		self._icon_pixmap = icon.pixmap(icon_size, icon_size)
+		self._icon_label = QLabel(parent=self)
+		self._icon_label.setPixmap(self._icon_pixmap)
+
+		main_layout.addWidget(self._icon_label)
+		main_layout.addWidget(self._label)
+		main_layout.addStretch()
+
+	@property
+	def label(self) -> BaseLabel:
+		return self._label

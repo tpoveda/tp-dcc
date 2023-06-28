@@ -5,6 +5,7 @@ import typing
 if typing.TYPE_CHECKING:
 	from tp.tools.rig.crit.builder.ui import CritBuilderWindow
 	from tp.tools.rig.crit.builder.controller import CritBuilderController
+	from tp.tools.rig.crit.builder.views.componentstree import ComponentsTreeWidget
 
 
 class CritUiInterface:
@@ -13,13 +14,14 @@ class CritUiInterface:
 	different CRIT widgets.
 	"""
 
-	_INSTANCE = None				# type: CritUiInterface
+	_INSTANCE = None							# type: CritUiInterface
 
 	def __init__(self):
 		super().__init__()
 
-		self._crit_builder = None			# type: CritBuilderWindow
-		self._controller = None				# type: CritBuilderController
+		self._crit_builder = None				# type: CritBuilderWindow
+		self._controller = None					# type: CritBuilderController
+		self._components_tree = None			# type: ComponentsTreeWidget
 
 	@classmethod
 	def create(cls) -> CritUiInterface:
@@ -100,3 +102,22 @@ class CritUiInterface:
 		"""
 
 		self._controller = value
+
+	def components_tree(self) -> ComponentsTreeWidget | None:
+		"""
+		Returns the components tree view instance.
+
+		:return: components tree view.
+		:rtype: ComponentsTreeWidget or None
+		"""
+
+		return self._components_tree
+
+	def set_components_tree(self, value: ComponentsTreeWidget):
+		"""
+		Sets components tree view instance.
+
+		:param ComponentsTreeWidget value: components tree view.
+		"""
+
+		self._components_tree = value

@@ -4,11 +4,13 @@ import typing
 
 from tp.common.qt import api as qt
 
+from tp.tools.rig.crit.builder.managers import components
 from tp.tools.rig.crit.builder.views import componentstree
 
 if typing.TYPE_CHECKING:
 	from tp.libs.rig.crit.maya.core.managers import ComponentsManager
 	from tp.libs.rig.crit.maya.descriptors.component import ComponentDescriptor
+	from tp.tools.rig.crit.builder.interface import CritUiInterface
 	from tp.tools.rig.crit.builder.models.rig import RigModel
 	from tp.tools.rig.crit.builder.ui import CritBuilderWindow
 	from tp.tools.rig.crit.builder.controller import CritBuilderController
@@ -18,15 +20,20 @@ class CreateView(qt.QWidget):
 
 	def __init__(
 			self, components_manager: ComponentsManager, controller: CritBuilderController,
-			parent: CritBuilderWindow | None = None):
+			ui_interface: CritUiInterface, parent: CritBuilderWindow | None = None):
 		super().__init__(parent)
 
 		self._components_manager = components_manager
 		self._controller = controller
+		self._ui_interface = ui_interface
 		self._crit_builder = parent
+		self._components_model_manager = components.ComponentsModelManager(self._components_manager)
+		self._components_model_manager.discover_components()
 
 		self._components_tree_view = componentstree.ComponentsTreeView(
-			components_manager=components_manager, parent=self)
+			components_manager=components_manager, components_model_manager=self._components_model_manager,
+			controller=self._controller, parent=self)
+		self._ui_interface.set_components_tree(self._components_tree_view.tree_widget)
 
 		self._setup_ui()
 
@@ -69,7 +76,13 @@ class CreateView(qt.QWidget):
 		Internal function that setups create view UI.
 		"""
 
-		main_layout = qt.vertical_layout()
+		main_layout = qt.vertical_layout(margins=(0, 0, 0, 0))
 		self.setLayout(main_layout)
 
+		toolbar_layout = qt.horizontal_layout(margins=(0, 0, 0, 0))
+		splitter = qt.QSplitter(self.parent())
+		splitter.setHandleWidth(qt.dpi_scale(3))
+		toolbar_layout.addWidget(splitter)
+
+		main_layout.addLayout(toolbar_layout)
 		main_layout.addWidget(self._components_tree_view)

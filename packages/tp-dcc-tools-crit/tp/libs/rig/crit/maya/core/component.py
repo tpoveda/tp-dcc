@@ -782,7 +782,6 @@ class Component:
 			descriptor_to_save = component.load_descriptor(descriptor_to_save, self._original_descriptor)
 
 		self._descriptor = descriptor_to_save
-		self.logger.debug('Saving descriptor...')
 		self._meta.save_descriptor_data(descriptor_to_save.to_scene_data())
 
 	def iterate_children(self, depth_limit: int = 256) -> Iterator[Component]:
@@ -1129,6 +1128,34 @@ class Component:
 			raise ValueError('Binding connection for layer of type: {} is not supported!'.format(layer_type))
 
 		return constraints
+
+	def component_parent_guide(self) -> Tuple[Component | None, meta_nodes.Guide | None]:
+		"""
+		Returns the connected parent component guide node.
+
+		:return: tuple for the parent component and the connected parent guide node.
+		:rtype: Tuple[Component or None, meta_nodes.Guide or None]
+		"""
+
+		if not self.has_guide():
+			return None, None
+
+		guide_layer = self.guide_layer()
+		root_guide = guide_layer.guide('root')
+		if not root_guide:
+			return None, None
+
+		root_srt = root_guide.srt(0)
+		if not root_srt:
+			return None, None
+
+		for constraint in api.iterate_constraints(root_srt):
+			for _, target in constraint.drivers():
+				if target and meta_nodes.Guide.is_guide(target):
+					parent_component = self._rig.component_from_node(target)
+					return parent_component, meta_nodes.Guide(target.object())
+
+		return None, None
 
 	@profiler.fn_timer
 	def build_guide(self):

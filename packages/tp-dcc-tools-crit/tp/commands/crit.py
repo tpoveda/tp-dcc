@@ -78,3 +78,47 @@ def create_components(
 			return command.execute('crit.rig.create.components', **locals())
 
 	return command.execute('crit.rig.create.components', **locals())
+
+
+def duplicate_components(rig: Rig, components: List[Dict]):
+	"""
+	Duplicates given rig with the given component data.
+
+	:param Rig rig: rig we want to duplicate components of.
+	:param List[Dict] components: component data to duplicate. e.g:
+		[
+			{'component': Component, 'name': 'root', 'side': 'center'},
+			{'component': Component, 'name': 'arm', 'side': 'left'},
+		]
+	:return:
+	"""
+
+	if dcc.is_maya():
+		with contexts.disable_node_editor_add_node_context():
+			return command.execute('crit.component.duplicate', **locals())
+
+	return command.execute('crit.component.duplicate', **locals())
+
+
+def delete_components(rig: Rig, components: List[Component], children: bool = True):
+	"""
+	Deletes given components from rig.
+
+	:param Rig rig: rig we want to delete components of.
+	:param List[Component] components: list of component instances to delete.
+	:param bool children: whether recursively delete all connected child components.
+	:return:
+	"""
+
+	command_id = 'crit.component.delete'
+
+	def _repeat_delete_components():
+
+		selected_components = None
+
+	result = command.execute(command_id, rig=rig, components=components, children=children)
+	if dcc.is_maya():
+		from tp.maya.cmds import helpers
+		helpers.create_repeat_command_for_function(_repeat_delete_components)
+
+	return result

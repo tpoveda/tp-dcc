@@ -32,7 +32,7 @@ from tp.common.qt.contexts import block_signals
 from tp.common.qt.dpi import dpi_scale, dpi_scale_divide, dpi_multiplier, margins_dpi_scale, size_by_dpi, point_by_dpi
 from tp.common.qt.qtutils import (
 	get_widget_at_mouse, compat_ui_loader, clear_layout, to_qt_object, set_stylesheet_object_name, process_ui_events,
-	clear_focus_widgets, get_or_create_menu
+	clear_focus_widgets, get_or_create_menu, single_shot_timer
 )
 from tp.common.qt.models.datasources import BaseDataSource
 from tp.common.qt.models.listmodel import BaseListModel
@@ -43,7 +43,7 @@ from tp.common.qt.widgets.layouts import (
 	vertical_graphics_linear_layout, horizontal_graphics_linear_layout
 )
 from tp.common.qt.widgets.labels import (
-	label, clipped_label, h1_label, h2_label, h3_label, h4_label, h5_label
+	label, h1_label, h2_label, h3_label, h4_label, h5_label, clipped_label, icon_label
 )
 
 from tp.common.qt.widgets.frameless import FramelessWindow, FramelessWindowThin
@@ -63,6 +63,7 @@ from tp.common.qt.widgets.search import SearchLineEdit
 from tp.common.qt.widgets.groupedtreewidget import GroupedTreeWidget
 from tp.common.qt.widgets.linetabwidget import LineTabWidget
 from tp.common.qt.widgets.stack import sliding_opacity_stacked_widget, StackItem
+from tp.common.qt.widgets.checkboxes import checkbox_widget, BaseCheckBoxWidget
 
 
 # from tp.common.qt.base import widget, frame, BaseWidget, BaseFrame, ScrollWidget
@@ -70,7 +71,7 @@ from tp.common.qt.widgets.stack import sliding_opacity_stacked_widget, StackItem
 # 	button, base_button, base_push_button, regular_button, rounded_button, tool_button, axis_button, shadowed_button,
 # 	ButtonStyles
 # )
-# from tp.common.qt.widgets.checkboxes import checkbox, checkbox_widget
+# from tp.common.qt.widgets.checkboxes import checkbox
 # from tp.common.qt.widgets.directory import open_folder_widget, open_file_widget, save_file_widget, PathWidget
 # from tp.common.qt.widgets.comboboxes import (
 # 	combobox, searchable_combobox, combobox_widget, searchable_combobox_widget, bool_combobox

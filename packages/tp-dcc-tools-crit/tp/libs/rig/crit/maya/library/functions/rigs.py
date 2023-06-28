@@ -79,6 +79,26 @@ def root_by_rig_name(name: str, namespace: str | None = None) -> CritRig | None:
 	return found_meta_rig
 
 
+def parent_rig(meta_node: base.MetaBase) -> rig.Rig | None:
+	"""
+	Returns the meta node representing the parent rig of the given meta node instance.
+
+	:param base.MetaBase meta_node: meta base class to get rig of.
+	:return: rig instance found to be the parent of the given meta node instance.
+	:rtype: rig.Rig or None
+	"""
+
+	found_rig = None
+	for parent in meta_node.iterate_meta_parents(recursive=True):
+		crit_root_attr = parent.attribute(consts.CRIT_IS_ROOT_ATTR)
+		if crit_root_attr and crit_root_attr.value():
+			found_rig = rig.Rig(meta=parent)
+			found_rig.start_session()
+			break
+
+	return found_rig
+
+
 def rig_from_node(node: DGNode) -> rig.Rig | None:
 	"""
 	Returns rig from given node.
@@ -86,6 +106,14 @@ def rig_from_node(node: DGNode) -> rig.Rig | None:
 	:param DGNode node: scene node to find rig from.
 	:return: found rig.
 	:rtype: rig.Rig or None
+	:raises errors.CritMissingMetaNode: if given node is not attached to a meta node.
+	:raises errors.CritMissingMetaNode: if attached meta node is not a valid CRIT meta node instance.
 	"""
 
-	meta_nodes = base.
+	meta_nodes = base.connected_meta_nodes(node)
+	if not meta_nodes:
+		raise errors.CritMissingMetaNode(f'No meta node attached to node: {node}')
+	try:
+		return parent_rig(meta_nodes[0])
+	except AttributeError:
+		raise errors.CritMissingMetaNode(f'Attached meta node is not a valid CRIT node')

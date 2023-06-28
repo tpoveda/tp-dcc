@@ -75,12 +75,12 @@ class EditableLineEditOnClick(QLineEdit):
 		self.setProperty('clearFocus', True)
 
 		if single:
-			self.mousePressEveNT = self._edit_event
+			self.mousePressEveNT = self.edit_event
 		else:
 			if pass_through_clicks:
 				self.mousePressEvent = self.mouse_click_pass_through
 		if double:
-			self.mouseDoubleClickEvent = self._edit_event
+			self.mouseDoubleClickEvent = self.edit_event
 		else:
 			if pass_through_clicks:
 				self.mouseDoubleClickEvent = self.mouse_click_pass_through
@@ -106,7 +106,7 @@ class EditableLineEditOnClick(QLineEdit):
 	def mouseReleaseEvent(self, arg__1: QMouseEvent) -> None:
 		arg__1.ignore()
 
-	def _edit_event(self, event: QMouseEvent):
+	def edit_event(self, event: QMouseEvent):
 		"""
 		Internal function that overrides mouse press/release event behaviour.
 

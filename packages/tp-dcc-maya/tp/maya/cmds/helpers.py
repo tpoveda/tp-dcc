@@ -10,6 +10,8 @@ import sys
 import stat
 import shutil
 import platform
+from functools import partial
+from typing import Tuple, Dict, Callable, Any
 
 import maya.cmds as cmds
 import maya.mel as mel
@@ -816,3 +818,79 @@ def mel_global_variable_value(variable_name):
 
     return mel.eval('${} = ${};'.format(variable_name, variable_name))
 
+
+def create_repeat_command_for_function(fn: Callable, *args: Tuple, **kwargs: Dict):
+    """
+    Helper function that updates Maya repeat last command with the given function.
+
+    :param Callable fn: function to repeat.
+    :param Tuple args: tuple of positional arguments to pass to the function.
+    :param Dict kwargs: keyword arguments to pass to the function.
+    ..note:: only functions/staticmethods/classmethods are supported.
+    ..code-block:: python
+        def test_fn(first_arg, keyword_arg=None):
+            print(first_arg, keyword)
+
+        create_repeat_command_for_function(test_fn, 'hello world', keyword=0)
+    """
+
+    _RepeatCommandStorage.set_repeat_command(fn, args, kwargs)
+    command = f'python(\"import {__name__};{__name__}._RepeatCommandStorage.run_current_repeat_command()\");'
+    cmds.repeatLast(addCommand=command, addCommandLabel=fn.__name__)
+
+
+def create_repeat_last_command_decorator(fn: Callable) -> Any:
+    """
+    Decoratof function which updates Maya repeat command with the decorated function.
+
+    :param Callable fn: function to repeat.
+    :return: result output.
+    :rtype: Any
+    ..note:: all args/kwargs of the decorated function will be passed to the repeat command.
+    ..note:: only functions/staticmethods/classmethods are supported.
+    """
+
+    def _inner_function(*args: Tuple, **kwargs: Dict):
+        result = fn(*args, **kwargs)
+        create_repeat_command_for_function(fn, *args, **kwargs)
+        return result
+
+    return _inner_function
+
+
+class _RepeatCommandStorage:
+    """
+    Internal storage internal class for commands to repeat.
+    """
+
+    _FUNCTION_TO_REPEAT = None          # type: partial
+
+    @staticmethod
+    def run_current_repeat_command():
+        """
+        Executes the current repeat function if any.
+        """
+
+        fn = _RepeatCommandStorage._FUNCTION_TO_REPEAT
+        if fn is not None:
+            fn()
+
+    @staticmethod
+    def set_repeat_command(fn: Callable, args: Tuple, kwargs: Dict):
+        """
+        Sets the current repeat function.
+
+        :param Callable fn: repeat function.
+        :param Tuple args: arguments to pass to the repeat function when executing.
+        :param Dict kwargs: keyword arguments to pass to the repeat function when executing.
+        """
+
+        _RepeatCommandStorage._FUNCTION_TO_REPEAT = partial(fn, *args, **kwargs)
+
+    @staticmethod
+    def flush():
+        """
+        Clears out the current repeat function.
+        """
+
+        _RepeatCommandStorage._FUNCTION_TO_REPEAT = None

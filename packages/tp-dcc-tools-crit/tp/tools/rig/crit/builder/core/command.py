@@ -8,6 +8,7 @@ from typing import List, Dict, Any
 from tp.common.qt import api as qt
 from tp.common import plugin
 from tp.common.python import decorators
+from tp.common.resources import api as resources
 
 from tp.tools.rig.crit.builder import interface
 
@@ -26,6 +27,10 @@ class CritUiCommand(qt.QObject):
 
 	ID = ''
 	CREATOR = ''
+	UI_DATA = {
+		'icon': 'tpdcc', 'iconColor': (192, 192, 192), 'iconColorToggled': (192, 192, 192), 'tooltip': '', 'label': ''}
+
+	_ICON = None				# type: qt.QIcon
 
 	refreshRequested = qt.Signal(bool)
 
@@ -39,7 +44,11 @@ class CritUiCommand(qt.QObject):
 
 		self._rig_model = None						# type: RigModel
 		self._component_model = None				# type: ComponentModel
-		self._selected_models = []					# type: List[ComponentModel]
+		self._selected_component_models = []		# type: List[ComponentModel]
+		self._attached_widget = None				# type: qt.QWidget or None
+
+		self.UI_DATA['iconColor'] = self.UI_DATA.get('iconColor') or CritUiCommand.UI_DATA['iconColor']
+		self.UI_DATA['iconColorToggled'] = self.UI_DATA.get('iconColorToggled') or CritUiCommand.UI_DATA['iconColorToggled']
 
 	@property
 	def rig_model(self) -> RigModel | None:
@@ -57,6 +66,18 @@ class CritUiCommand(qt.QObject):
 	def component_model(self, value: ComponentModel):
 		self._component_model = value
 
+	@property
+	def selected_component_models(self) -> List[ComponentModel]:
+		return self._selected_component_models
+
+	@property
+	def attached_widget(self) -> qt.QWidget | None:
+		return self._attached_widget
+
+	@attached_widget.setter
+	def attached_widget(self, value: qt.QWidget):
+		self._attached_widget = value
+
 	@decorators.abstractmethod
 	def execute(self, **args) -> Any:
 		"""
@@ -69,6 +90,21 @@ class CritUiCommand(qt.QObject):
 		"""
 
 		pass
+
+	def icon(self, refresh: bool = False) -> qt.QIcon:
+		"""
+		Returns UI command icon name.
+
+		:param bool refresh: whether icon should be refreshed.
+		:return: UI command icon.
+		:rtype: qt.QIcon
+		"""
+
+		icon_color = self.UI_DATA.get('iconColor') or CritUiCommand.UI_DATA['iconColor']
+		if self._ICON is None or refresh:
+			self._ICON = resources.icon(self.UI_DATA['icon'], color=icon_color)
+
+		return self._ICON
 
 	def variants(self) -> List[Dict]:
 		"""
@@ -154,7 +190,7 @@ class CritUiCommand(qt.QObject):
 		:param SelectionModel selection_model: selection model instance.
 		"""
 
-		self._selected_models = selection_model.component_models
+		self._selected_component_models = selection_model.component_models
 		self._rig_model = selection_model.rig_model
 
 	def request_refresh(self, force: bool = False):
@@ -189,13 +225,13 @@ class CritUiCommand(qt.QObject):
 		"""
 
 		component_models = []
-		if self._component_model in self._selected_models:
-			component_models = list(set(self._selected_models + [self._component_model]))
+		if self._component_model in self._selected_component_models:
+			component_models = list(set(self._selected_component_models + [self._component_model]))
 		else:
 			if self._component_model is not None:
 				component_models = [self._component_model]
 			else:
-				if self._selected_models:
-					component_models = [self._selected_models[-1]]			# use lat selected if not target model
+				if self._selected_component_models:
+					component_models = [self._selected_component_models[-1]]			# use lat selected if not target model
 
 		return component_models

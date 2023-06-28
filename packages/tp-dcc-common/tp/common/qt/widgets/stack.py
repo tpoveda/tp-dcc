@@ -7,10 +7,13 @@ Module that contains custom QStackedWidget widgets.
 
 from __future__ import annotations
 
+from typing import Tuple
+
 from Qt.QtCore import Qt, Signal, QPoint, QPropertyAnimation, QEasingCurve
 from Qt.QtWidgets import (
 	QSizePolicy, QWidget, QFrame, QStackedWidget, QGraphicsOpacityEffect, QVBoxLayout, QHBoxLayout, QSpacerItem
 )
+from Qt.QtGui import QColor, QMouseEvent
 
 from tp.preferences.interfaces import core
 from tp.common.qt import dpi, consts
@@ -94,6 +97,11 @@ class StackItem(QFrame):
 
 	minimized = Signal()
 	maximized = Signal()
+	toggleExpandRequested = Signal(bool)
+	shiftUpPressed = Signal()
+	shiftDownPressed = Signal()
+	updateRequested = Signal()
+	deletePressed = Signal()
 
 	_BORDER_WIDTH = None
 
@@ -109,8 +117,16 @@ class StackItem(QFrame):
 		Stack item title frame widget
 		"""
 
+		minimized = Signal()
+		maximized = Signal()
+		toggleExpandRequested = Signal()
+		shiftUpPressed = Signal()
+		shiftDownPressed = Signal()
+		updateRequested = Signal()
+		deletePressed = Signal()
+
 		_ITEM_ICON = 'stream'
-		_DELETE_ICON = 'trash'
+		_DELETE_ICON = 'multiply'
 		_COLLAPSED_ICON = 'sort_closed'
 		_EXPAND_ICON = 'sort_down'
 		_UP_ICON = 'arrow_up'
@@ -156,6 +172,26 @@ class StackItem(QFrame):
 			self.setup_ui()
 			self.setup_signals()
 
+		@property
+		def line_edit(self) -> lineedits.EditableLineEditOnClick:
+			return self._line_edit
+
+		@property
+		def horizontal_layout(self) -> QHBoxLayout:
+			return self._horizontal_layout
+
+		@property
+		def extras_layout(self) -> QHBoxLayout:
+			return self._extras_layout
+
+		@property
+		def delete_button(self) -> buttons.BaseButton:
+			return self._delete_button
+
+		def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+			if self._title_editable:
+				self._line_edit.edit_event(event)
+
 		def setup_ui(self):
 			"""
 			Function that setup stack title frame UI.
@@ -200,7 +236,38 @@ class StackItem(QFrame):
 			Function that setup stack title frame signal connections.
 			"""
 
-			pass
+			self._line_edit.textChanged.connect(self._on_line_edit_text_changed)
+			self._line_edit.selectionChanged.connect(self._on_line_edit_selection_changed)
+			self._shift_up_button.leftClicked.connect(self._on_shift_up_button_left_clicked)
+			self._shift_down_button.leftClicked.connect(self._on_shift_down_button_left_clicked)
+			self._delete_button.leftClicked.connect(self._on_delete_button_left_clicked)
+			self._expand_toggle_button.leftClicked.connect(self._on_expand_toggle_button_left_clicked)
+
+		def _on_line_edit_text_changed(self):
+			"""
+			Internal callback function that is called each time, line edit text changes.
+			Remove underscores from line edit if necessary.
+			"""
+
+			if not self._spaces_to_underscore:
+				return
+
+			text = self._line_edit.text()
+			pos = self._line_edit.cursorPosition()
+			text = text.replace(' ', '_')
+			self._line_edit.blockSignals(True)
+			self._line_edit.setText(text)
+			self._line_edit.blockSignals(False)
+			self._line_edit.setCursorPosition(pos)
+
+		def _on_line_edit_selection_changed(self):
+			"""
+			Internal callback function that is called each time, line edit selection changes.
+			Forces line edit text deselection if title is not editable.
+			"""
+
+			if not self._title_editable:
+				self._line_edit.deselect()
 
 		def set_delete_button_icon(self, icon_name: str):
 			"""
@@ -226,11 +293,62 @@ class StackItem(QFrame):
 
 			self._expand_toggle_button.set_icon(self._EXPAND_ICON)
 
+		def set_item_icon_color(self, color: QColor | Tuple[int, int, int]):
+			"""
+			Sets item icon color.
+
+			:param QColor or Tuple[int, int, int] color: item icon color.
+			"""
+
+			self._item_icon.set_icon_color(color)
+
+		def set_item_icon(self, name: str):
+			"""
+			Sets item icon.
+
+			:param str name: name of the icon to set.
+			"""
+
+			self._item_icon.set_icon(name)
+
+		def _on_shift_up_button_left_clicked(self):
+			"""
+			Internal callback function that is called when Shift Up button is left-clicked by the user.
+			Emits shiftUpPressed signal.
+			"""
+
+			self.shiftUpPressed.emit()
+
+		def _on_shift_down_button_left_clicked(self):
+			"""
+			Internal callback function that is called when Shift Down button is left-clicked by the user.
+			Emits shiftDownPressed signal.
+			"""
+
+			self.shiftDownPressed.emit()
+
+		def _on_delete_button_left_clicked(self):
+			"""
+			Internal callback function that is called when Delete button is left-clicked by the user.
+			Emits deletePressed signal.
+			"""
+
+			self.deletePressed.emit()
+
+		def _on_expand_toggle_button_left_clicked(self):
+			"""
+			Internal callback function that is called when Expand Toggle button is left-clicked by the user.
+			Emits toggleExpandRequested signal.
+			"""
+
+			self.toggleExpandRequested.emit()
+
 	def __init__(
 			self, title: str, parent: QWidget, collapsed: bool = False, collapsable: bool = True,
 			icon: str | None = None, start_hidden: bool = False, shift_arrows_enabled: bool = True,
 			delete_button_enabled: bool = True, title_editable: bool = True, item_icon_size: int = 12,
 			title_frame: StackTitleFrame | None = None, title_upper: bool = False):
+
 		super().__init__(parent)
 
 		if start_hidden:
@@ -271,6 +389,10 @@ class StackItem(QFrame):
 
 		self.collapse() if self._collapsed else self.expand()
 
+	@property
+	def contents_layout(self) -> QVBoxLayout:
+		return self._contents_layout
+
 	def setup_ui(self):
 		"""
 		Function that setup stack UI.
@@ -287,7 +409,32 @@ class StackItem(QFrame):
 		Function that setup stack title frame signal connections.
 		"""
 
-		pass
+		self._title_frame.maximized.connect(self.maximized.emit)
+		self._title_frame.minimized.connect(self.minimized.emit)
+		self._title_frame.shiftUpPressed.connect(self.shiftUpPressed.emit)
+		self._title_frame.shiftDownPressed.connect(self.shiftDownPressed.emit)
+		self._title_frame.updateRequested.connect(self.updateRequested.emit)
+		self._title_frame.deletePressed.connect(self.deletePressed.emit)
+		self._title_frame.toggleExpandRequested.connect(self._on_title_frame_toggle_expand_requested)
+
+	def title(self) -> str:
+		"""
+		Returns title text.
+
+		:return: title text.
+		:rtype: str
+		"""
+
+		return self._title_frame.line_edit.text()
+
+	def set_title(self, title: str):
+		"""
+		Sets title text.
+
+		:param str title: title text.
+		"""
+
+		self._title_frame.line_edit.setText(title)
 
 	def expand(self, emit: bool = True):
 		"""
@@ -315,6 +462,30 @@ class StackItem(QFrame):
 			self.minimized.emit()
 		self._collapsed = True
 
+	def toggle_contents(self, emit: bool = True) -> bool | None:
+		"""
+		Shows and hides the hide widget that contains the layout which holds the custom contents specified by the user.
+
+		:param bool emit: whether to emit expand or collapsed signals.
+		:return: whether widget is collapsed after toggle contents. None if widget is not collapsable.
+		:rtype: bool or None
+		"""
+
+		if not self._collapsable:
+			return None
+
+		self.toggleExpandRequested.emit(not self._collapsed)
+
+		if self._collapsed:
+			self.expand(emit=emit)
+			self._update_size()
+			return not self._collapsed
+
+		self.collapse(emit=emit)
+		self._update_size()
+
+		return self._collapsed
+
 	def _init(self):
 		"""
 		Internal function that initializes stack item widget.
@@ -334,3 +505,17 @@ class StackItem(QFrame):
 		self._contents_layout.setSpacing(self._content_spacing)
 		self._widget_hider.setHidden(self._collapsed)
 		self._widget_hider.setObjectName('stackbody')
+
+	def _update_size(self):
+		"""
+		Internal function that updates the size of the widget.
+		"""
+
+		self.updateRequested.emit()
+
+	def _on_title_frame_toggle_expand_requested(self):
+		"""
+		Internal callback function that is called each time title frame toggle expand requested signal is emitted.
+		"""
+
+		self.toggle_contents()

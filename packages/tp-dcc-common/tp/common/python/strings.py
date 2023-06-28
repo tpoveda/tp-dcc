@@ -598,3 +598,21 @@ def new_lines(text: str) -> int:
     """
 
     return text.count('\n')
+
+
+def title_case(input_string: str) -> str:
+    """
+    Returns given string as title case.
+
+    :param str input_string: input string.
+    :return: title case string.
+    :rtype: str
+    """
+
+    if not input_string:
+        return ''
+
+    splitted = re.sub('(?!^)([A-Z][a-z]+)', r' \1', input_string).split()
+    result = ' '.join(splitted)
+
+    return result.replace('_', ' ').title()

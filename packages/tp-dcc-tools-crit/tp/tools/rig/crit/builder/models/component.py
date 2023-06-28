@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import typing
+from typing import List
 
 from tp.common.qt import api as qt
+from tp.commands import crit
+
+from tp.tools.rig.crit.builder.views import componentstree
 
 if typing.TYPE_CHECKING:
 	from tp.libs.rig.crit.maya.core.component import Component
@@ -32,13 +36,35 @@ class ComponentModel(qt.QObject):
 	def name(self) -> str:
 		return self._component.name()
 
+	@name.setter
+	def name(self, value: str):
+		if self._component.name() == str(value):
+			return
+		crit.rename_component(self._component, value)
+
 	@property
 	def side(self) -> str:
 		return self._component.side()
 
+	@side.setter
+	def side(self, value: str):
+		if self._component.side() == str(value):
+			return
+		crit.set_component_side(self._component, value)
+
 	@property
 	def icon(self) -> str:
 		return self._component.ICON
+
+	def display_name(self) -> str:
+		"""
+		Returns component model display name.
+
+		:return: display name.
+		:rtype: str
+		"""
+
+		return ' '.join((self.name, self.side))
 
 	def is_hidden(self) -> bool:
 		"""
@@ -49,3 +75,55 @@ class ComponentModel(qt.QObject):
 		"""
 
 		return self._component.is_hidden()
+
+	def has_guide(self) -> bool:
+		"""
+		Returns whether this component guides are built.
+
+		:return: True if component guides are built; False otherwise.
+		:rtype: bool
+		"""
+
+		return self._component.has_guide()
+
+	def has_rig(self) -> bool:
+		"""
+		Returns whether this component rig is built.
+
+		:return: True if component rig is built; False otherwise.
+		:rtype: bool
+		"""
+
+		return self._component.has_rig()
+
+	def menu_actions(self) -> List[str]:
+		"""
+		Returns a list of command UI action IDs that will be added into the component widget context menu.
+
+		:return: list of command UI IDs.
+		:rtype: List[str]
+		"""
+
+		return [
+			'selectInScene', '---',
+			'toggleBlackToggle', '---',
+			'toggleLra', '---',
+			'duplicateComponent',
+			'mirrorComponents',
+			'applySymmetry', '---',
+			'deleteComponent']
+
+	def create_widget(
+			self, component_widget: componentstree.ComponentsTreeWidget.ComponentWidget,
+			parent_widget: qt.QWidget) -> componentstree.ComponentsTreeWidget.ComponentWidget.ComponentSettingWidget:
+		"""
+		Creates a new settings widget for this component.
+
+		:param componentstree.ComponentsTreeWidget.ComponentWidget component_widget: component widget this settings will
+			be added to.
+		:param qt.QWidget parent_widget: parent widget instance.
+		:return: componentstree.ComponentsTreeWidget.ComponentWidget.ComponentSettingWidget
+		"""
+
+		return componentstree.ComponentsTreeWidget.ComponentWidget.ComponentSettingWidget(
+			component_widget, component_model=self, parent=parent_widget)

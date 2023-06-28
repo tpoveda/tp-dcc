@@ -73,3 +73,48 @@ class CreateComponentUiCommand(command.CritUiCommand):
 		self.request_refresh(False)
 
 		return components[0] if components else None
+
+
+class DuplicateComponentsUiCommand(command.CritUiCommand):
+
+	ID = 'duplicateComponents'
+	UI_DATA = {'icon': 'clone', 'label': 'Duplicate Selected Components'}
+
+	def execute(self):
+		"""
+		Duplicates components that are currently selected within components tree widget.
+		"""
+
+		if not self._rig_model:
+			return
+
+		component_info = []
+		for selected_component_model in self._selected_component_models:
+			selected_component = selected_component_model.component
+			component_info.append(
+				{'component': selected_component, 'name': selected_component.name(), 'side': selected_component.side()})
+
+		current_rig = self._rig_model.rig
+		current_rig.clear_components_cache()
+		crit.duplicate_components(current_rig, sources=component_info)
+
+		self.request_refresh(False)
+
+
+class DeleteAllComponentsUiCommand(command.CritUiCommand):
+
+	ID = 'deleteAllComponents'
+	UI_DATA = {'icon': 'trash', 'label': 'Delete All Components'}
+
+	def execute(self):
+		"""
+		Deletes all components of current active rig.
+		"""
+
+		current_rig = self._rig_model.rig
+		current_rig.clear_components_cache()
+		components = self._rig_model.rig.components()
+		if not components:
+			return
+
+		crit.delete_components(current_rig, components)

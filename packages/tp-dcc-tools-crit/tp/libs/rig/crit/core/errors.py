@@ -85,3 +85,8 @@ class CritInvalidOutputNodeMetaData(CritError):
 class CritMissingControlError(CritError):
 
 	MSG = 'Missing control by ID: {}'
+
+
+class CritMissingRigForNode(CritError):
+
+	MSG = 'Node is not attached to a rig'

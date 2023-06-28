@@ -3,11 +3,14 @@ from __future__ import annotations
 import json
 import copy
 import pprint
+import typing
+from typing import Dict, Any
 
 from tp.common.python import helpers
 
 from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.maya.descriptors import layers
+
 
 SCENE_LAYER_ATTR_TO_DESCRIPTOR = {
 	consts.INPUT_LAYER_DESCRIPTOR_KEY: [
@@ -43,12 +46,12 @@ SCENE_LAYER_ATTR_TO_DESCRIPTOR = {
 }
 
 
-def load_descriptor(descriptor_data: dict, original_descriptor: dict, path: str | None = None) -> 'ComponentDescriptor':
+def load_descriptor(descriptor_data: Dict, original_descriptor: Dict, path: str | None = None) -> ComponentDescriptor:
 	"""
 	Loads descriptor instance from given data.
 
-	:param dict descriptor_data: descriptor data.
-	:param dict original_descriptor: original descriptor.
+	:param Dict descriptor_data: descriptor data.
+	:param Dict original_descriptor: original descriptor.
 	:param str or None path: optional descriptor path.
 	:return: component descriptor instance.
 	:rtype: ComponentDescriptor
@@ -58,14 +61,14 @@ def load_descriptor(descriptor_data: dict, original_descriptor: dict, path: str 
 	return ComponentDescriptor(data=latest_data, original_descriptor=copy.deepcopy(original_descriptor), path=path)
 
 
-def migrate_to_latest_version(descriptor_data: dict, original_descriptor: dict | None = None):
+def migrate_to_latest_version(descriptor_data: Dict, original_descriptor: Dict | None = None):
 	"""
 	Migrates descriptor schema from an old version to the latest one.
 
-	:param dict descriptor_data: descriptor data as a raw dictionary.
-	:param dict original_descriptor: original descriptor.
+	:param Dict descriptor_data: descriptor data as a raw dictionary.
+	:param Dict original_descriptor: original descriptor.
 	:return: translated descriptor data to the latest schema.
-	:rtype: dict
+	:rtype: Dict
 	"""
 
 	# expect rig layer to come from the base descriptor not the scene, so keep original rig data
@@ -76,14 +79,14 @@ def migrate_to_latest_version(descriptor_data: dict, original_descriptor: dict |
 	return descriptor_data
 
 
-def parse_raw_descriptor(descriptor_data: dict) -> dict:
+def parse_raw_descriptor(descriptor_data: Dict) -> Dict:
 	"""
 	Function that parses the given descriptor data by transforming strings into dictionaries and by removing
 	all descriptor keys that are empty.
 
-	:param dict descriptor_data: descriptor data usually retrieved from current scene.
+	:param Dict descriptor_data: descriptor data usually retrieved from current scene.
 	:return: cleanup descriptor data.
-	:rtype: dict
+	:rtype: Dict
 	"""
 
 	translated_data = dict()
@@ -95,7 +98,7 @@ def parse_raw_descriptor(descriptor_data: dict) -> dict:
 			translated_data.update(json.loads(v))
 			continue
 		elif k == consts.SPACE_SWITCH_DESCRIPTOR_KEY:
-			translated_data[consts.SETTINGS_DESCRIPTOR_KEY] = json.loads(v)
+			translated_data[consts.SPACE_SWITCH_DESCRIPTOR_KEY] = json.loads(v)
 			continue
 		dag, settings, metadata = (
 			v[consts.DAG_DESCRIPTOR_KEY] or '[]',
@@ -108,7 +111,7 @@ def parse_raw_descriptor(descriptor_data: dict) -> dict:
 			consts.METADATA_DESCRIPTOR_KEY: json.loads(metadata)
 		}
 
-		return translated_data
+	return translated_data
 
 
 class ComponentDescriptor(helpers.ObjectDict):
@@ -118,7 +121,7 @@ class ComponentDescriptor(helpers.ObjectDict):
 
 	VERSION = '1.0'
 
-	def __init__(self, data=None, original_descriptor=None, path=None):
+	def __init__(self, data: Dict | None = None, original_descriptor: Dict | None = None, path: str | None = None):
 		super().__init__(data)
 
 		data = data or dict()
@@ -142,10 +145,10 @@ class ComponentDescriptor(helpers.ObjectDict):
 		self.path = path or ''
 		self.original_descriptor = ComponentDescriptor(original_descriptor) if original_descriptor is not None else dict()
 
-	def __repr__(self):
+	def __repr__(self) -> str:
 		return f'<{self.__class__.__name__}> {self.name}'
 
-	def __getattr__(self, item):
+	def __getattr__(self, item: str) -> Any:
 		try:
 			return self[item]
 		except KeyError:
@@ -156,12 +159,16 @@ class ComponentDescriptor(helpers.ObjectDict):
 
 		return super(ComponentDescriptor, self).__getattribute__(item)
 
-	def serialize(self) -> dict:
+	@property
+	def guide_layer(self) -> layers.GuideLayerDescriptor | None:
+		return self[consts.GUIDE_LAYER_DESCRIPTOR_KEY]
+
+	def serialize(self) -> Dict:
 		"""
 		Serializes the contents of the descriptor.
 
 		:return: serialized descriptor.
-		:rtype: dict
+		:rtype: Dict
 		"""
 
 		data = dict()
@@ -193,6 +200,7 @@ class ComponentDescriptor(helpers.ObjectDict):
 		"""
 
 		serialized_data = self.serialize()
+
 		output_data = dict()
 
 		for layer_key, [dag_layer_attr_name, settings_attr_name, metadata_attr_name, dg_attr_name] in SCENE_LAYER_ATTR_TO_DESCRIPTOR.items():

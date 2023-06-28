@@ -128,6 +128,10 @@ class ComboBoxAbstractWidget(QWidget):
         def prev_data(self) -> Any:
             return self._parent.item_data(self._previous_index)
 
+        @property
+        def index(self) -> int:
+            return self._index
+
     itemChanged = Signal(ComboItemChangedEvent)
 
     PREV_INDEX = None
@@ -237,6 +241,18 @@ class ComboBoxAbstractWidget(QWidget):
 
         return self._box.currentText()
 
+    def set_to_text(self, text: str, flags: Qt.MatchFlags = Qt.MatchFixedString):
+        """
+        Sets the index based on given text.
+
+        :param str text: text to search and switch the combo box to.
+        :param Qt.MatchFlags flags: optional match flags.
+        """
+
+        index = self._box.findText(text, flags)
+        if index >= 0:
+            self.setCurrentIndex(index)
+
     def item_data(self, index: int, role: Qt.ItemDataRole = Qt.UserRole) -> Any:
         """
         Returns the data of the combo box item located at given index and with given data role.
@@ -287,7 +303,7 @@ class ComboBoxRegularWidget(ComboBoxAbstractWidget):
     """
 
     def __init__(
-            self, label: str = '', items: set = (), label_ratio: int | None = None, box_ratio: int | None = None,
+            self, label: str = '', items: Iterable = (), label_ratio: int | None = None, box_ratio: int | None = None,
             tooltip: str = '', set_index: int = 0, sort_alphabetically: bool = False,
             margins: set[int, int, int, int] = (0, 0, 0, 0), spacing: int = consts.SMALL_SPACING,
             box_min_width: int | None = None, item_data: set = (), support_middle_mouse_scroll: bool = True,

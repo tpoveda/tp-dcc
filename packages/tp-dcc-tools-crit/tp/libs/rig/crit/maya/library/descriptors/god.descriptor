@@ -140,6 +140,8 @@ guideLayer:
       locked: true
       type: 12
       value: 0
+      enums:
+        - Display
     - name: godNodeVis
       default: false
       isDynamic: true
@@ -154,6 +156,8 @@ guideLayer:
       keyable: false
       locked: false
       channelBox: true
+      type: 0
+      value: false
 inputLayer:
   dag:
     - id: godnode

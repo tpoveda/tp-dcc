@@ -165,9 +165,29 @@ class CreateComponentsCommand(command.MayaCommand):
 				created_components.append(new_component)
 
 		if build_guides:
-			pass
+			self._rig.build_guides(created_components)
+			root_guides = []
+			for created_component in created_components:
+				layer = created_component.guide_layer()
+				root_guide = layer.guide_root()
+				if root_guide is not None:
+					root_guides.append(root_guide)
+			if self._parent_node:
+				parent_translation = self._parent_node.translation()
+				for created_component in created_components:
+					root_guide = created_component.guide_layer().guide_root()
+					if root_guide:
+						root_guide.setTranslation(parent_translation, space=api.kWorldSpace)
+			if root_guides:
+				api.select(root_guides)
 
 		if build_rigs:
-			pass
+			self._rig.build_rigs(created_components)
 
 		return created_components
+
+	@override
+	def undo(self):
+		if self._rig.exists():
+			for component in self._components:
+				self._rig.delete_component(component['name'], component['side'])

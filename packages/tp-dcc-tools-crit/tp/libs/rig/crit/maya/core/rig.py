@@ -15,7 +15,7 @@ from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.core import errors, naming
 from tp.libs.rig.crit.maya.core import config, component
 from tp.libs.rig.crit.maya.meta import rig
-from tp.libs.rig.crit.maya.library.functions import rigs
+from tp.libs.rig.crit.maya.library.functions import rigs, components
 
 if typing.TYPE_CHECKING:
 	from tp.common.naming.manager import NameManager
@@ -356,6 +356,23 @@ class Rig:
 
 		return False
 
+	def component_from_node(self, node: api.DGNode) -> Component | None:
+		"""
+		Returns the component for the given node if it is part of this rig.
+
+		:param api.DGNode node: node to search for the component.
+		:return: found component instance.
+		:rtype: Component or None
+		:raises errors.CritMissingMetaNode: if given node is not attached to any meta node.
+		"""
+
+		meta_node = components.component_meta_node_from_node(node)
+		if not meta_node:
+			raise errors.CritMissingMetaNode(node)
+
+		return self.component(
+			meta_node.attribute(consts.CRIT_NAME_ATTR). value(), meta_node.attribute(consts.CRIT_SIDE_ATTR).value())
+
 	def components(self) -> list[component.Component]:
 		"""
 		Returns a list of all component instances initialized within current scene for this rig.
@@ -443,6 +460,34 @@ class Rig:
 				return components_manager.from_meta_node(rig=self, meta=component_metanode)
 
 		return None
+
+	def clear_components_cache(self):
+		"""
+		Clears the components cache which stores component class instances on this rig instance.
+		"""
+
+		self._components_cache.clear()
+
+	def build_state(self) -> int:
+		"""
+		Returns the current build state which is determined by the very first component.
+
+		:return: build state constant.
+		:rtype: int
+		"""
+
+		for found_component in self.iterate_components():
+			if found_component.has_polished():
+				return consts.POLISH_STATE
+			elif found_component.has_rig():
+				return consts.RIG_STATE
+			elif found_component.has_skeleton():
+				return consts.SKELETON_STATE
+			elif found_component.has_guide():
+				return consts.GUIDES_STATE
+			break
+
+		return consts.NOT_BUILT_STATE
 
 	@contextlib.contextmanager
 	def build_script_context(self, build_script_type: str, **kwargs):
@@ -556,11 +601,11 @@ class Rig:
 				guide_layer.set_guides_visible(guide_value, include_root=include_root)
 		modifier.doIt()
 
-	def serialize_from_scene(self, components: List[Component] | None = None) -> Dict:
+	def serialize_from_scene(self, rig_components: List[Component] | None = None) -> Dict:
 		"""
 		Runs through all current initialized rig components and serializes them.
 
-		:param List[Component] or None components: optional list of components to serialize. If not given, all rig
+		:param List[Component] or None rig_components: optional list of components to serialize. If not given, all rig
 			components will be serialized.
 		:return: serialized rig.
 		:rtype: Dict
