@@ -1,0 +1,12 @@
+name: 'tp-dcc-toolbox'
+version: '1.0.0'
+required: True
+author: 'Tomas Poveda'
+authorEmail: 'tpovedatd@gmail.com'
+description: 'Package that contains functionality to develop DCC tools'
+displayName: 'tp-dcc Toolbox'
+environment:
+  PYTHONPATH:
+    - '{self}'
+commands:
+  - '{self}/startup/toolbox.py'
