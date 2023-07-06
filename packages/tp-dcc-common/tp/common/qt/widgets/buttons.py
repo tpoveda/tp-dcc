@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Tuple, List, Iterable, Callable, Any
+from typing import Tuple, List, Dict, Iterable, Callable, Any
 
 from overrides import override
 from Qt.QtCore import Qt, Signal, Property, QPoint, QSize, QTimer, QEvent
@@ -334,6 +334,42 @@ def tool_button(text: str = '', icon: str = '', tooltip: str = '', parent: QWidg
 		new_tool_button.setToolTip(tooltip)
 
 	return new_tool_button
+
+
+def left_aligned_button(
+		text: str, icon: str = '', tooltip: str = '', icon_size_override: int | None = None,
+		transparent_background: bool = False, padding_override: Tuple[int, int, int, int] | None = None,
+		aligment: str = 'left', show_left_click_menu_indicator: bool = False,
+		parent: QWidget | None = None) -> LeftAlignedButton:
+	"""
+	Creates a left aligned button.
+
+	:param str text:
+	:param str icon:
+	:param str tooltip:
+	:param int or None icon_size_override:
+	:param bool transparent_background:
+	:param Tuple[int, int, int, int] or None padding_override:
+	:param str aligment:
+	:param bool show_left_click_menu_indicator:
+	:param QWidget or None parent:
+	:return: left aligned button instance.
+	:rtype: LeftAlignedButton
+	"""
+
+	icon_size = dpi.dpi_scale(icon_size_override if icon_size_override else 24 if ':' in icon else 16)
+	padding = padding_override if padding_override else dpi.margins_dpi_scale([4, 0, 0, 0] if ':' in icon else [7, 4, 4, 4])
+	alignment_text = f'text-align: {aligment};'
+	padding_text = f'padding-left: {padding[0]}px; padding-top: {padding[1]}px; padding-right: {padding[2]}px; padding-bottom: {padding[3]}px'
+	menu_indicator = '' if show_left_click_menu_indicator else 'QPushButton::menu-indicator{image: none;};'
+	transparency = '' if not transparent_background else 'background-color: transparent;'
+	icon_obj = QIcon(QPixmap(f'{icon}.png')) if ':' in icon else resources.icon(icon, size=icon_size) if icon else None
+	new_button = LeftAlignedButton(text, icon=icon_obj, tooltip=tooltip, parent=parent)
+	new_button.setIconSize(QSize(icon_size, icon_size))
+	new_button.setStyleSheet("QPushButton {} {} {} {} {} \n{}".format(
+		"{", alignment_text, padding_text, transparency, "}", menu_indicator))
+
+	return new_button
 
 
 class AbstractButton(QAbstractButton, dpi.DPIScaling):
@@ -1739,3 +1775,92 @@ class BaseToolButton(QToolButton):
 			self.setFixedSize(self._theme_size, self._theme_size)
 
 	theme_size = Property(int, _get_theme_size, _set_theme_size)
+
+
+class LeftAlignedButton(QPushButton):
+	"""
+	Custom button that is left aligned with text and icon.
+	"""
+
+	def __init__(
+			self, text: str = '', icon: QIcon | None = None, tooltip: str | None = None, parent: QWidget | None = None):
+		text = f' {text}' if text else text
+		super().__init__(text, parent)
+
+		self._mouse_buttons = {}			# type: Dict[Qt.MouseButton, QMenu]
+
+		if icon is not None:
+			self.setIcon(icon)
+		if tooltip:
+			self.setToolTip(tooltip)
+
+		self.setStyleSheet(
+			"QPushButton {} text-align: left; padding-left: {}px; {}".format("{", str(dpi.dpi_scale(7)), "}"))
+
+	def menu(self, mouse_button: Qt.MouseButton = Qt.LeftButton) -> QMenu | None:
+		"""
+		Returns the menu associated to the given mouse button.
+
+		:param Qt.MouseButton mouse_button: mouse button.
+		:return: menu for the given menu.
+		:rtype: QMenu or None
+		"""
+
+		return self._mouse_buttons.get(mouse_button, None)
+
+	def set_menu(self, menu: QMenu, mouse_button: Qt.MouseButton):
+		"""
+		Sets the given menu to the given mouse button.
+
+		:param QMenu menu: menu to set to mouse button.
+		:param Qt.MouseButton mouse_button: mouse button.
+		"""
+
+		assert mouse_button in (Qt.LeftButton, Qt.RightButton), f'Unsupported mouse button: {mouse_button}'
+		menu.setParent(self)
+		self._mouse_buttons[mouse_button] = menu
+		if mouse_button == Qt.RightButton:
+			self.setContextMenuPolicy(Qt.CustomContextMenu)
+			self.customContextMenuRequested.connect(self._on_custom_context_menu_requested)
+		elif mouse_button == Qt.LeftButton:
+			super().setMenu(menu)
+	
+	def create_menu_item(
+			self, text: str = '', icon: str = '', connection: Callable | None = None,
+			mouse_button: Qt.MouseButton = Qt.RightButton) -> QAction:
+		"""
+		Creates a menu item to the specific mouse menu. If menu at given mouse button does not exists, it will be
+		created.
+
+		:param str text:  menu item text label.
+		:param str icon: menu item icon.
+		:param Callable or None connection: optional function that should be called when item is clicked by the user.
+		:param Qt.MouseButton mouse_click: mouse button to create the menu item for.
+		:return: menu item as an action instance.
+		:rtype: QAction
+		"""
+
+		menu = self.menu(mouse_button)
+		if not menu:
+			menu = QMenu(self)
+			self.set_menu(menu, mouse_button)
+
+		action = menu.addAction(text)
+		icon_obj = QIcon(f'{icon}.png') if ':' in icon else resources.icon(icon) if icon else None
+		if icon_obj:
+			action.setIcon(icon_obj)
+
+		if connection:
+			action.triggered.connect(connection)
+
+		return action
+
+	def _on_custom_context_menu_requested(self, pos: QPoint):
+		"""
+		Internal callback function that is called when button custom context menu is requested.
+
+		:param QPoint pos: the position to show the context menu at.
+		"""
+
+		menu = self._mouse_buttons[Qt.RightButton]
+		menu.exec_(self.mapToGlobal(pos))

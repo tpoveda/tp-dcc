@@ -42,6 +42,7 @@ from tp.common.qt.widgets.layouts import (
 	vertical_layout, horizontal_layout, grid_layout, form_layout, box_layout, flow_layout, graphics_linear_layout,
 	vertical_graphics_linear_layout, horizontal_graphics_linear_layout
 )
+from tp.common.qt.widgets.frames import CollapsableFrame, CollapsableFrameThin
 from tp.common.qt.widgets.labels import (
 	label, h1_label, h2_label, h3_label, h4_label, h5_label, clipped_label, icon_label
 )
