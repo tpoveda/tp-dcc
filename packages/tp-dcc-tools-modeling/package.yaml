@@ -12,5 +12,6 @@ environment:
     - '{self}'
   TPDCC_TOOL_DEFINITION_MODULES:
     - '{self}/tp/tools/modelchecker/tool.py'
+    - '{self}/tp/tools/objectstoolbox/tool.py'
   MODEL_CHECKER_MODULES_PATHS:
     - '{self}/tp/tools/modelchecker/{app}/commands.py'
