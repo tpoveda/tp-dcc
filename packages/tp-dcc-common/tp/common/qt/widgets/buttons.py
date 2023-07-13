@@ -363,7 +363,7 @@ def left_aligned_button(
 	padding_text = f'padding-left: {padding[0]}px; padding-top: {padding[1]}px; padding-right: {padding[2]}px; padding-bottom: {padding[3]}px'
 	menu_indicator = '' if show_left_click_menu_indicator else 'QPushButton::menu-indicator{image: none;};'
 	transparency = '' if not transparent_background else 'background-color: transparent;'
-	icon_obj = QIcon(QPixmap(f'{icon}.png')) if ':' in icon else resources.icon(icon, size=icon_size) if icon else None
+	icon_obj = QIcon(QPixmap(f'{icon}.png')) if ':' in icon else resources.icon(icon) if icon else None
 	new_button = LeftAlignedButton(text, icon=icon_obj, tooltip=tooltip, parent=parent)
 	new_button.setIconSize(QSize(icon_size, icon_size))
 	new_button.setStyleSheet("QPushButton {} {} {} {} {} \n{}".format(

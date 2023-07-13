@@ -13,7 +13,7 @@
       "name": "componentName",
       "creator": "Tomi Poveda",
       "description": "The rule for component names which includes the side.",
-      "expression": "{component}_{side}",
+      "expression": "{componentName}_{side}",
       "exampleFields": {"componentName":  "arm",  "side":  "L"}
     },
     {

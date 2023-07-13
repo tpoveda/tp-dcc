@@ -185,6 +185,14 @@ class StackItem(QFrame):
 			return self._extras_layout
 
 		@property
+		def expand_toggle_button(self) -> buttons.BaseButton:
+			return self._expand_toggle_button
+
+		@property
+		def item_icon(self) -> buttons.BaseButton:
+			return self._item_icon
+
+		@property
 		def delete_button(self) -> buttons.BaseButton:
 			return self._delete_button
 
@@ -243,32 +251,6 @@ class StackItem(QFrame):
 			self._delete_button.leftClicked.connect(self._on_delete_button_left_clicked)
 			self._expand_toggle_button.leftClicked.connect(self._on_expand_toggle_button_left_clicked)
 
-		def _on_line_edit_text_changed(self):
-			"""
-			Internal callback function that is called each time, line edit text changes.
-			Remove underscores from line edit if necessary.
-			"""
-
-			if not self._spaces_to_underscore:
-				return
-
-			text = self._line_edit.text()
-			pos = self._line_edit.cursorPosition()
-			text = text.replace(' ', '_')
-			self._line_edit.blockSignals(True)
-			self._line_edit.setText(text)
-			self._line_edit.blockSignals(False)
-			self._line_edit.setCursorPosition(pos)
-
-		def _on_line_edit_selection_changed(self):
-			"""
-			Internal callback function that is called each time, line edit selection changes.
-			Forces line edit text deselection if title is not editable.
-			"""
-
-			if not self._title_editable:
-				self._line_edit.deselect()
-
 		def set_delete_button_icon(self, icon_name: str):
 			"""
 			Sets the icon for the delete icon.
@@ -310,6 +292,32 @@ class StackItem(QFrame):
 			"""
 
 			self._item_icon.set_icon(name)
+
+		def _on_line_edit_text_changed(self):
+			"""
+			Internal callback function that is called each time, line edit text changes.
+			Remove underscores from line edit if necessary.
+			"""
+
+			if not self._spaces_to_underscore:
+				return
+
+			text = self._line_edit.text()
+			pos = self._line_edit.cursorPosition()
+			text = text.replace(' ', '_')
+			self._line_edit.blockSignals(True)
+			self._line_edit.setText(text)
+			self._line_edit.blockSignals(False)
+			self._line_edit.setCursorPosition(pos)
+
+		def _on_line_edit_selection_changed(self):
+			"""
+			Internal callback function that is called each time, line edit selection changes.
+			Forces line edit text deselection if title is not editable.
+			"""
+
+			if not self._title_editable:
+				self._line_edit.deselect()
 
 		def _on_shift_up_button_left_clicked(self):
 			"""
@@ -393,6 +401,18 @@ class StackItem(QFrame):
 	def contents_layout(self) -> QVBoxLayout:
 		return self._contents_layout
 
+	@property
+	def title_frame(self) -> StackItem.StackTitleFrame:
+		return self._title_frame
+
+	@property
+	def hider_widget(self) -> StackItem.StackHiderWidget:
+		return self._widget_hider
+
+	@property
+	def collapsed(self) -> bool:
+		return self._collapsed
+
 	def setup_ui(self):
 		"""
 		Function that setup stack UI.
@@ -435,6 +455,42 @@ class StackItem(QFrame):
 		"""
 
 		self._title_frame.line_edit.setText(title)
+
+	def set_item_icon(self, name: str):
+		"""
+		Sets the item icon.
+
+		:param str name: name of the icon to set.
+		"""
+
+		self._title_frame.set_item_Icon(name)
+
+	def set_item_icon_color(self, color: Tuple[int, int, int]):
+		"""
+		Sets item icon color.
+
+		:param Tuple[int, int, int] color: color of the icon to set.
+		"""
+
+		self._title_frame.set_item_icon_color(color)
+
+	def set_title_text_mouse_transparent(self, flag: bool):
+		"""
+		Sets whether title text is ignored by mouse events.
+
+		:param bool flag: True to ignore mouse events; False otherwise.
+		"""
+
+		self._title_frame.line_edit.setAttribute(Qt.WA_TransparentForMouseEvents, flag)
+
+	def show_expand_indicator(self, flag: bool):
+		"""
+		Sets whether expand/toggle button is visible.
+
+		:param bool flag: True to show expand/toggle button; False to hide it.
+		"""
+
+		self._title_frame.expand_toggle_button.setVisible(flag)
 
 	def expand(self, emit: bool = True):
 		"""
@@ -485,6 +541,16 @@ class StackItem(QFrame):
 		self._update_size()
 
 		return self._collapsed
+
+	def title_text_widget(self) -> lineedits.EditableLineEditOnClick:
+		"""
+		Returns title text widget instance.
+
+		:return: title text widget instance.
+		:rtype: lineedits.EditableLineEditOnClick
+		"""
+
+		return self._title_frame.line_edit
 
 	def _init(self):
 		"""

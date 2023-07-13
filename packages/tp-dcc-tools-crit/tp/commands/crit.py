@@ -100,6 +100,28 @@ def duplicate_components(rig: Rig, components: List[Dict]):
 	return command.execute('crit.component.duplicate', **locals())
 
 
+def rename_component(component: Component, name: str):
+	"""
+	Renames given component with the new name, exluding the side label.
+
+	:param Component component: component instance to rename.
+	:param str name: new component name.
+	"""
+
+	command.execute('crit.component.rename', **locals())
+
+
+def set_component_side(component: Component, side: str):
+	"""
+	Sets the given component instance side.
+
+	:param Component component: component instance to set side of.
+	:param str side: new component side.
+	"""
+
+	command.execute('crit.component.rename.side', **locals())
+
+
 def delete_components(rig: Rig, components: List[Component], children: bool = True):
 	"""
 	Deletes given components from rig.

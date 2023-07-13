@@ -15,7 +15,7 @@ from overrides import override
 from Qt.QtCore import Qt, Signal, QObject, QPoint, QSize, QTimer, QEvent, QSettings
 from Qt.QtWidgets import (
 	QApplication, QSizePolicy, QWidget, QFrame, QToolButton, QGridLayout, QVBoxLayout, QHBoxLayout, QMainWindow,
-	QTabWidget, QSpacerItem, QAction, QSplitter
+	QTabWidget, QSpacerItem, QAction, QSplitter, QLayout
 )
 from Qt.QtGui import (
 	QCursor, QColor, QPainter, QResizeEvent, QShowEvent, QCloseEvent, QMoveEvent, QMouseEvent, QKeyEvent
@@ -446,7 +446,7 @@ class FramelessOverlay(overlay.OverlayWidget):
 	RESIZE_BUTTON = Qt.RightButton
 
 	def __init__(
-			self, parent: FramelessWindow, title_bar: TitleBar, top_left: CornerResizer | None = None,
+			self, parent: FramelessWindow, title_bar: FramelessWindow.TitleBar, top_left: CornerResizer | None = None,
 			top_right: CornerResizer | None = None, bottom_left: CornerResizer | None = None,
 			bottom_right: CornerResizer | None = None, resizable: bool = True):
 		super().__init__(parent=parent)
@@ -1006,6 +1006,461 @@ class FramelessWindow(QWidget):
 
 			return super().eventFilter(watched, event)
 
+	class TitleBar(QFrame):
+		"""
+		Title bar for frameless window that allows to click-drag this windget to move the window widget.
+		"""
+
+		doubleClicked = Signal()
+		moving = Signal(object, object)
+
+		class TitleStyle:
+			DEFAULT = 'DEFAULT'
+			THIN = 'THIN'
+
+		class TitleLabel(labels.ClippedLabel):
+			"""
+			Custom label implementation with elided functionality used for the title bar title
+			Used for CSS purposes.
+			"""
+
+			def __init__(
+					self, text: str = '', width: int = 0, elide: bool = True, always_show_all: bool = False,
+					parent: QWidget | None = None):
+				super().__init__(
+					text=text, width=width, elide=elide, always_show_all=always_show_all, parent=parent)
+
+				self.setAttribute(Qt.WA_TransparentForMouseEvents)
+				# self.setAlignment(Qt.AlignRight)
+
+		def __init__(self, show_title: bool = True, always_show_all: bool = False, parent: FramelessWindow | None = None):
+			super().__init__(parent)
+
+			self._title_bar_height = 30
+			self._pressed_at = None
+			self._frameless_window = parent
+			self._mouse_pos = None
+			self._widget_mouse_pos = None
+			self._mouse_press_pos = None
+			self._theme_preference = core_interfaces.theme_preference_interface()
+			self._toggle = True
+			self._icon_size = 13
+			self._move_enabled = True
+			self._move_threshold = 5
+
+			self._main_layout = layouts.horizontal_layout(parent=self)
+			self._left_contents = QFrame(parent=self)
+			self._right_contents = QWidget(parent=self)
+
+			self._main_right_layout = layouts.horizontal_layout()
+			self._contents_layout = layouts.horizontal_layout()
+			self._corner_contents_layout = layouts.horizontal_layout()
+			self._title_layout = layouts.horizontal_layout()
+			self._title_style = self.TitleStyle.DEFAULT
+			self._window_buttons_layout = layouts.horizontal_layout()
+			self._split_layout = layouts.horizontal_layout()
+
+			self._logo_button = SpawnerIcon(window=parent, parent=self)
+			self._close_button = buttons.BaseButton(theme_updates=False, parent=self)
+			self._minimize_button = buttons.BaseButton(theme_updates=False, parent=self)
+			self._maximize_button = buttons.BaseButton(theme_updates=False, parent=self)
+			self._help_button = buttons.BaseButton(theme_updates=False, parent=self)
+			self._title_label = FramelessWindow.TitleBar.TitleLabel(always_show_all=always_show_all, parent=self)
+
+			if not show_title:
+				self._title_label.hide()
+
+			self.setup_ui()
+			self.setup_signals()
+
+		@property
+		def move_enabled(self) -> bool:
+			return self._move_enabled
+
+		@move_enabled.setter
+		def move_enabled(self, flag: bool):
+			self._move_enabled = bool(flag)
+
+		@property
+		def logo_button(self) -> SpawnerIcon:
+			return self._logo_button
+
+		@property
+		def title_label(self) -> TitleLabel:
+			return self._title_label
+
+		@property
+		def close_button(self) -> buttons.BaseButton:
+			return self._close_button
+
+		@property
+		def right_contents(self) -> QWidget:
+			return self._right_contents
+
+		@property
+		def left_contents(self) -> QFrame:
+			return self._left_contents
+
+		@property
+		def title_layout(self) -> QHBoxLayout:
+			return self._title_layout
+
+		@property
+		def contents_layout(self) -> QHBoxLayout:
+			return self._contents_layout
+
+		@property
+		def main_right_layout(self) -> QHBoxLayout:
+			return self._main_right_layout
+
+		@property
+		def corner_contents_layout(self) -> QHBoxLayout:
+			return self._corner_contents_layout
+
+		@property
+		def window_buttons_layout(self) -> QHBoxLayout:
+			return self._window_buttons_layout
+
+		def setup_ui(self):
+			"""
+			Initializes title UI.
+			"""
+
+			self.setFixedHeight(dpi.dpi_scale(self._title_bar_height))
+			self.setLayout(self._main_layout)
+
+			color = self._theme_preference.FRAMELESS_TITLE_LABEL_COLOR
+			self._close_button.set_icon(resources.icon(
+				'close', theme='window'), colors=color, size=self._icon_size, color_offset=80)
+			self._minimize_button.set_icon(resources.icon(
+				'minimize', theme='window'), colors=color, size=self._icon_size, color_offset=80)
+			self._maximize_button.set_icon(resources.icon(
+				'maximize', theme='window'), colors=color, size=self._icon_size, color_offset=80)
+			self._help_button.set_icon(resources.icon('question'), colors=color, size=self._icon_size, color_offset=80)
+
+			# Button Setup
+			for button in [self._help_button, self._close_button, self._minimize_button, self._maximize_button]:
+				button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+				button.double_click_enabled = False
+
+			# Layout setup
+			self._main_right_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 5, 6, 0))
+			self._contents_layout.setContentsMargins(0, 0, 0, 0)
+			self._corner_contents_layout.setContentsMargins(0, 0, 0, 0)
+			self._right_contents.setLayout(self._corner_contents_layout)
+
+			# Window buttons
+			self._window_buttons_layout.setContentsMargins(0, 0, 0, 0)
+			self._window_buttons_layout.addWidget(self._help_button)
+			self._window_buttons_layout.addWidget(self._minimize_button)
+			self._window_buttons_layout.addWidget(self._maximize_button)
+			self._window_buttons_layout.addWidget(self._close_button)
+
+			# Split Layout
+			self._split_layout.addWidget(self._left_contents)
+			self._split_layout.addLayout(self._title_layout, 1)
+			self._split_layout.addWidget(self._right_contents)
+
+			# Title Layout
+			self._left_contents.setLayout(self._contents_layout)
+			self._contents_layout.setSpacing(0)
+			self._title_layout.addWidget(self._title_label)
+			self._title_layout.setSpacing(0)
+			self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 2, 2, 6))
+			self._title_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding)
+			self._title_label.setMinimumWidth(1)
+
+			# Main Title Layout (Logo and Main Right Layout)
+			self._main_layout.setContentsMargins(*dpi.margins_dpi_scale(4, 0, 0, 0))
+			self._main_layout.setSpacing(0)
+			self._spacing_item = QSpacerItem(8, 8)
+			self._spacing_item_2 = QSpacerItem(6, 6)
+			self._main_layout.addSpacerItem(self._spacing_item)
+			self._main_layout.addWidget(self._logo_button)
+			self._main_layout.addSpacerItem(self._spacing_item_2)
+			self._main_layout.addLayout(self._main_right_layout)
+			self._main_right_layout.addLayout(self._split_layout)
+			self._main_right_layout.addLayout(self._window_buttons_layout)
+			self._main_right_layout.setAlignment(Qt.AlignVCenter)
+			self._window_buttons_layout.setAlignment(Qt.AlignVCenter)
+			self._main_right_layout.setStretch(0, 1)
+
+			QTimer.singleShot(0, self.refresh)
+
+			self.set_title_spacing(False)
+
+			if not self._frameless_window.HELP_URL:
+				self._help_button.hide()
+
+		@override
+		def mousePressEvent(self, event: QMouseEvent) -> None:
+			"""
+			Overrides base mousePressEvent function to cache the drag positions.
+
+			:param QMouseEvent event: Qt mouse event.
+			"""
+
+			if event.buttons() & Qt.LeftButton:
+				self._mouse_press_pos = event.globalPos()
+				self.start_move()
+
+			event.ignore()
+
+		def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+			"""
+			Overrides mouseDoubleClickEvent function to maximize/minimize window (if possible).
+
+			:param QMouseEvent event: Qt mouse event.
+			"""
+
+			super().mouseDoubleClickEvent(event)
+			self.doubleClicked.emit()
+
+		def mouseMoveEvent(self, event: QMouseEvent) -> None:
+			"""
+			Overrides base mouseMoveEvent function to cache the drag positions.
+
+			:param QMouseEvent event: Qt mouse event.
+			"""
+
+			if self._widget_mouse_pos is None or not self._move_enabled:
+				return
+
+			moved = event.globalPos() - self._mouse_press_pos
+			if moved.manhattanLength() < self._move_threshold:
+				return
+
+			pos = QCursor.pos()
+			new_pos = pos
+			new_pos.setX(pos.x() - self._widget_mouse_pos.x())
+			new_pos.setY(pos.y() - self._widget_mouse_pos.y())
+			delta = new_pos - self.window().pos()
+			self.moving.emit(new_pos, delta)
+			self.window().move(new_pos)
+
+		def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+			"""
+			Overrides base mouseReleaseEvent function to cache the drag positions.
+
+			:param QMouseEvent event: Qt mouse event.
+			"""
+
+			if self._mouse_press_pos is not None:
+				moved = event.globalPos() - self._mouse_press_pos
+				if moved.manhattanLength() > self._move_threshold:
+					event.ignore()
+				self._mouse_press_pos = None
+				self.end_move()
+
+		def start_move(self):
+			"""
+			Starts the movement of the title bar parent window.
+			"""
+
+			if self._move_enabled:
+				self._widget_mouse_pos = self._frameless_window.mapFromGlobal(QCursor.pos())
+
+		def end_move(self):
+			"""
+			Ends the movement of the title bar parent window.
+			"""
+
+			if self._move_enabled:
+				self._widget_mouse_pos = None
+
+		def refresh(self):
+			"""
+			Refreshes title bar.
+			"""
+
+			QApplication.processEvents()
+			self.updateGeometry()
+			self.update()
+
+		def set_title_text(self, title: str):
+			"""
+			Sets the title of the title bar.
+
+			:param str title: title
+			"""
+
+			self._title_label.setText(title.upper())
+
+		def set_title_spacing(self, spacing: bool):
+			"""
+			Set title spacing.
+
+			:param bool spacing: whether spacing should be applied.
+			"""
+
+			_spacing = consts.Sizes.INDICATOR_WIDTH * 2
+			if spacing:
+				self._spacing_item.changeSize(_spacing, _spacing)
+				self._spacing_item_2.changeSize(_spacing - 2, _spacing - 2)
+			else:
+				self._spacing_item.changeSize(0, 0)
+				self._spacing_item_2.changeSize(0, 0)
+				self._split_layout.setSpacing(0)
+
+		def set_title_align(self, align: Qt.AlignmentFlag):
+			"""
+			Sets title align.
+
+			:param Qt.AlignmentFlag align: alignment.
+			"""
+
+			if align == Qt.AlignCenter:
+				self._split_layout.setStretch(1, 0)
+			else:
+				self._split_layout.setStretch(1, 1)
+
+		def title_style(self) -> str:
+			"""
+			Returns title style.
+
+			:return: title style.
+			:rtype: str
+			"""
+
+			return self._title_style
+
+		def set_title_style(self, style: str):
+			"""
+			Sets the title style.
+
+			:param str style: title style.
+			"""
+
+			self._title_style = style
+
+			if style == self.TitleStyle.DEFAULT:
+				qtutils.set_stylesheet_object_name(self, '')
+				qtutils.set_stylesheet_object_name(self._title_label, '')
+				self.setFixedHeight(dpi.dpi_scale(self._title_bar_height))
+				self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 2, 2, 6))
+				# self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 5, 0, 7))
+				self._main_right_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 5, 6, 0))
+				self._logo_button.setIconSize(QSize(16, 16))
+				self._logo_button.setFixedSize(QSize(30, 24))
+				self._minimize_button.setFixedSize(QSize(28, 24))
+				self._minimize_button.setIconSize(QSize(24, 24))
+				self._maximize_button.setFixedSize(QSize(24, 24))
+				self._maximize_button.setIconSize(QSize(24, 24))
+				self._close_button.setFixedSize(QSize(24, 24))
+				self._close_button.setIconSize(QSize(16, 16))
+				self._window_buttons_layout.setSpacing(6)
+				if self._frameless_window.HELP_URL:
+					self._help_button.show()
+				self._window_buttons_layout.setSpacing(dpi.dpi_scale(6))
+			elif style == self.TitleStyle.THIN:
+				self.setFixedHeight(dpi.dpi_scale(int(self._title_bar_height / 2)))
+				# self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 3, 15, 7))
+				self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 0, 0, 6))
+				self._main_right_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 0, 6, 0))
+				self._logo_button.setIconSize(QSize(12, 12))
+				self._logo_button.setFixedSize(QSize(14, 16))
+				self._minimize_button.setFixedSize(QSize(14, 14))
+				self._maximize_button.setFixedSize(QSize(14, 14))
+				self._close_button.setFixedSize(QSize(14, 14))
+				self._title_label.setFixedHeight(dpi.dpi_scale(16))
+				self._window_buttons_layout.setSpacing(dpi.dpi_scale(6))
+				self._help_button.hide()
+				qtutils.set_stylesheet_object_name(self, 'Minimized')
+				qtutils.set_stylesheet_object_name(self._title_label, 'Minimized')
+			else:
+				logger.error(
+					'{} style does not exists for {}!'.format(style, self._frameless_window.__class__.__name__))
+
+		def set_minimize_button_visible(self, flag: bool):
+			"""
+			Sets whether dragger shows minimize button or not.
+
+			:param bool flag: True to enable minimize; False otherwise.
+			"""
+
+			self._minimize_button.setVisible(flag)
+
+		def set_maximize_button_visible(self, flag: bool):
+			"""
+			Sets whether dragger shows maximize button or not.
+
+			:param bool flag: True to enable maximize; False otherwise.
+			"""
+
+			self._maximize_button.setVisible(flag)
+
+		def set_logo_highlight(self, flag: bool):
+			"""
+			Sets whether logo can be highlighted.
+
+			:param bool flag: True to enable icon highlight; False otherwise.
+			"""
+
+			self._logo_button.set_logo_highlight(flag)
+
+		def toggle_contents(self):
+			"""
+			Shows or hides the additional contents of the title bar.
+			"""
+
+			if self._contents_layout.count() > 0:
+				for i in range(self._contents_layout.count()):
+					widget = self._contents_layout.itemAt(i).widget()
+					widget.show() if widget.isHidden() else widget.hide()
+
+		def close_window(self):
+			"""
+			Closes title bar parent window.
+			"""
+
+			self._frameless_window.close()
+
+		def open_help(self):
+			"""
+			Opens help URL
+			"""
+
+			if self._frameless_window.HELP_URL:
+				webbrowser.open(self._frameless_window.HELP_URL)
+
+		def setup_signals(self):
+			"""
+			Creates title signals.
+			"""
+
+			self._close_button.leftClicked.connect(self._on_close_button_clicked)
+			self._minimize_button.leftClicked.connect(self._on_minimize_button_clicked)
+			self._maximize_button.leftClicked.connect(self._on_maximize_button_clicked)
+			self._help_button.leftClicked.connect(self._on_help_button_clicked)
+
+		def _on_close_button_clicked(self):
+			"""
+			Internal callback function that is called when close button is left-clicked by the user.
+			"""
+
+			self.close_window()
+
+		def _on_maximize_button_clicked(self):
+			"""
+			Internal callback function that is called when maximize button is left-clicked by the user.
+			"""
+
+			self._frameless_window.maximize()
+
+		def _on_minimize_button_clicked(self):
+			"""
+			Internal callback function that is called when minimize button is left-clicked by the user.
+			"""
+
+			self._frameless_window.minimize()
+
+		def _on_help_button_clicked(self):
+			"""
+			Internal callback function that is called when help button is left-clicked by the user.
+			"""
+
+			self.open_help()
+
 	WINDOW_SETTINGS_PATH = ''				# Window settings registry path (e.g: tp/dcc/window)
 	HELP_URL = ''							# Web URL to use when displaying the help documentation for this window
 	MINIMIZED_WIDTH = 390
@@ -1043,7 +1498,7 @@ class FramelessWindow(QWidget):
 		self._filter = FramelessWindow.KeyboardModifierFilter()
 		self._init_pos = init_pos
 
-		title_bar_class = title_bar_class or TitleBar
+		title_bar_class = title_bar_class or FramelessWindow.TitleBar
 		self._title_bar = title_bar_class(always_show_all=always_show_all_title, parent=self)
 
 		self._setup_ui()
@@ -1071,7 +1526,7 @@ class FramelessWindow(QWidget):
 		self.setup_ui()
 		self.setup_signals()
 
-		self.set_title_style(TitleBar.TitleStyle.DEFAULT)
+		self.set_title_style(FramelessWindow.TitleBar.TitleStyle.DEFAULT)
 
 		self.load_settings()
 
@@ -1244,12 +1699,12 @@ class FramelessWindow(QWidget):
 		if not self.is_docked() and self.WINDOW_SETTINGS_PATH and self._parent_container:
 			self._settings.setValue('/'.join((self.WINDOW_SETTINGS_PATH, 'pos')), self._parent_container.pos())
 
-	def main_layout(self) -> QVBoxLayout | QHBoxLayout:
+	def main_layout(self) -> QVBoxLayout | QHBoxLayout | QLayout:
 		"""
 		Returns window main content layouts instance.
 
 		:return: contents layout.
-		:rtype: QVBoxLayout or QHBoxLayout
+		:rtype: QVBoxLayout or QHBoxLayout or QLayout
 		..note:: if not layout exists, a new one will be created.
 		"""
 
@@ -1579,7 +2034,7 @@ class FramelessWindow(QWidget):
 			if not self._minimize_enabled:
 				return
 			self._prev_style = self.title_style()
-			self.set_title_style(TitleBar.TitleStyle.THIN)
+			self.set_title_style(FramelessWindow.TitleBar.TitleStyle.THIN)
 			self._main_contents.hide()
 			self._title_bar.left_contents.hide()
 			self._title_bar.right_contents.hide()
@@ -1652,7 +2107,7 @@ class FramelessWindowThin(FramelessWindow):
 	def _setup_frameless_layout(self):
 		super()._setup_frameless_layout()
 
-		self.set_title_style(TitleBar.TitleStyle.THIN)
+		self.set_title_style(FramelessWindow.TitleBar.TitleStyle.THIN)
 		self._title_bar.set_title_align(Qt.AlignCenter)
 
 
@@ -1908,455 +2363,3 @@ class SpawnerIcon(buttons.IconMenuButton):
 			return
 
 		tooltips.set_tooltip_state(tagged_action.isChecked())
-
-
-class TitleLabel(labels.ClippedLabel):
-	"""
-	Custom label implementation with elided functionality used for the title bar title
-	Used for CSS purposes.
-	"""
-
-	def __init__(
-			self, text: str = '', width: int = 0, elide: bool = True, always_show_all: bool = False,
-			parent: QWidget | None = None):
-		super().__init__(
-			text=text, width=width, elide=elide, always_show_all=always_show_all, parent=parent)
-
-		self.setAttribute(Qt.WA_TransparentForMouseEvents)
-		# self.setAlignment(Qt.AlignRight)
-
-
-class TitleBar(QFrame):
-	"""
-	Title bar for frameless window that allows to click-drag this windget to move the window widget.
-	"""
-
-	doubleClicked = Signal()
-	moving = Signal(object, object)
-
-	class TitleStyle:
-		DEFAULT = 'DEFAULT'
-		THIN = 'THIN'
-
-	def __init__(self, show_title: bool = True, always_show_all: bool = False, parent: FramelessWindow | None = None):
-		super().__init__(parent)
-
-		self._title_bar_height = 30
-		self._pressed_at = None
-		self._frameless_window = parent
-		self._mouse_pos = None
-		self._widget_mouse_pos = None
-		self._mouse_press_pos = None
-		self._theme_preference = core_interfaces.theme_preference_interface()
-		self._toggle = True
-		self._icon_size = 13
-		self._move_enabled = True
-		self._move_threshold = 5
-
-		self._main_layout = layouts.horizontal_layout(parent=self)
-		self._left_contents = QFrame(parent=self)
-		self._right_contents = QWidget(parent=self)
-
-		self._main_right_layout = layouts.horizontal_layout()
-		self._contents_layout = layouts.horizontal_layout()
-		self._corner_contents_layout = layouts.horizontal_layout()
-		self._title_layout = layouts.horizontal_layout()
-		self._title_style = self.TitleStyle.DEFAULT
-		self._window_buttons_layout = layouts.horizontal_layout()
-		self._split_layout = layouts.horizontal_layout()
-
-		self._logo_button = SpawnerIcon(window=parent, parent=self)
-		self._close_button = buttons.BaseButton(theme_updates=False, parent=self)
-		self._minimize_button = buttons.BaseButton(theme_updates=False, parent=self)
-		self._maximize_button = buttons.BaseButton(theme_updates=False, parent=self)
-		self._help_button = buttons.BaseButton(theme_updates=False, parent=self)
-		self._title_label = TitleLabel(always_show_all=always_show_all, parent=self)
-
-		if not show_title:
-			self._title_label.hide()
-
-		self.setup_ui()
-		self.setup_signals()
-
-	@property
-	def move_enabled(self) -> bool:
-		return self._move_enabled
-
-	@move_enabled.setter
-	def move_enabled(self, flag: bool):
-		self._move_enabled = bool(flag)
-
-	@property
-	def logo_button(self) -> SpawnerIcon:
-		return self._logo_button
-
-	@property
-	def title_label(self) -> TitleLabel:
-		return self._title_label
-
-	@property
-	def close_button(self) -> buttons.BaseButton:
-		return self._close_button
-
-	@property
-	def right_contents(self) -> QWidget:
-		return self._right_contents
-
-	@property
-	def left_contents(self) -> QFrame:
-		return self._left_contents
-
-	@property
-	def title_layout(self) -> QHBoxLayout:
-		return self._title_layout
-
-	@property
-	def contents_layout(self) -> QHBoxLayout:
-		return self._contents_layout
-
-	@property
-	def main_right_layout(self) -> QHBoxLayout:
-		return self._main_right_layout
-
-	@property
-	def corner_contents_layout(self) -> QHBoxLayout:
-		return self._corner_contents_layout
-
-	def setup_ui(self):
-		"""
-		Initializes title UI.
-		"""
-
-		self.setFixedHeight(dpi.dpi_scale(self._title_bar_height))
-		self.setLayout(self._main_layout)
-
-		color = self._theme_preference.FRAMELESS_TITLE_LABEL_COLOR
-		self._close_button.set_icon(resources.icon(
-			'close', theme='window'), colors=color, size=self._icon_size, color_offset=80)
-		self._minimize_button.set_icon(resources.icon(
-			'minimize', theme='window'), colors=color, size=self._icon_size, color_offset=80)
-		self._maximize_button.set_icon(resources.icon(
-			'maximize', theme='window'), colors=color, size=self._icon_size, color_offset=80)
-		self._help_button.set_icon(resources.icon('question'), colors=color, size=self._icon_size, color_offset=80)
-
-		# Button Setup
-		for button in [self._help_button, self._close_button, self._minimize_button, self._maximize_button]:
-			button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-			button.double_click_enabled = False
-
-		# Layout setup
-		self._main_right_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 5, 6, 0))
-		self._contents_layout.setContentsMargins(0, 0, 0, 0)
-		self._corner_contents_layout.setContentsMargins(0, 0, 0, 0)
-		self._right_contents.setLayout(self._corner_contents_layout)
-
-		# Window buttons
-		self._window_buttons_layout.setContentsMargins(0, 0, 0, 0)
-		self._window_buttons_layout.addWidget(self._help_button)
-		self._window_buttons_layout.addWidget(self._minimize_button)
-		self._window_buttons_layout.addWidget(self._maximize_button)
-		self._window_buttons_layout.addWidget(self._close_button)
-
-		# Split Layout
-		self._split_layout.addWidget(self._left_contents)
-		self._split_layout.addLayout(self._title_layout, 1)
-		self._split_layout.addWidget(self._right_contents)
-
-		# Title Layout
-		self._left_contents.setLayout(self._contents_layout)
-		self._contents_layout.setSpacing(0)
-		self._title_layout.addWidget(self._title_label)
-		self._title_layout.setSpacing(0)
-		self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 2, 2, 6))
-		self._title_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding)
-		self._title_label.setMinimumWidth(1)
-
-		# Main Title Layout (Logo and Main Right Layout)
-		self._main_layout.setContentsMargins(*dpi.margins_dpi_scale(4, 0, 0, 0))
-		self._main_layout.setSpacing(0)
-		self._spacing_item = QSpacerItem(8, 8)
-		self._spacing_item_2 = QSpacerItem(6, 6)
-		self._main_layout.addSpacerItem(self._spacing_item)
-		self._main_layout.addWidget(self._logo_button)
-		self._main_layout.addSpacerItem(self._spacing_item_2)
-		self._main_layout.addLayout(self._main_right_layout)
-		self._main_right_layout.addLayout(self._split_layout)
-		self._main_right_layout.addLayout(self._window_buttons_layout)
-		self._main_right_layout.setAlignment(Qt.AlignVCenter)
-		self._window_buttons_layout.setAlignment(Qt.AlignVCenter)
-		self._main_right_layout.setStretch(0, 1)
-
-		QTimer.singleShot(0, self.refresh)
-
-		self.set_title_spacing(False)
-
-		if not self._frameless_window.HELP_URL:
-			self._help_button.hide()
-
-	@override
-	def mousePressEvent(self, event: QMouseEvent) -> None:
-		"""
-		Overrides base mousePressEvent function to cache the drag positions.
-
-		:param QMouseEvent event: Qt mouse event.
-		"""
-
-		if event.buttons() & Qt.LeftButton:
-			self._mouse_press_pos = event.globalPos()
-			self.start_move()
-
-		event.ignore()
-
-	def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
-		"""
-		Overrides mouseDoubleClickEvent function to maximize/minimize window (if possible).
-
-		:param QMouseEvent event: Qt mouse event.
-		"""
-
-		super().mouseDoubleClickEvent(event)
-		self.doubleClicked.emit()
-
-	def mouseMoveEvent(self, event: QMouseEvent) -> None:
-		"""
-		Overrides base mouseMoveEvent function to cache the drag positions.
-
-		:param QMouseEvent event: Qt mouse event.
-		"""
-
-		if self._widget_mouse_pos is None or not self._move_enabled:
-			return
-
-		moved = event.globalPos() - self._mouse_press_pos
-		if moved.manhattanLength() < self._move_threshold:
-			return
-
-		pos = QCursor.pos()
-		new_pos = pos
-		new_pos.setX(pos.x() - self._widget_mouse_pos.x())
-		new_pos.setY(pos.y() - self._widget_mouse_pos.y())
-		delta = new_pos - self.window().pos()
-		self.moving.emit(new_pos, delta)
-		self.window().move(new_pos)
-
-	def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-		"""
-		Overrides base mouseReleaseEvent function to cache the drag positions.
-
-		:param QMouseEvent event: Qt mouse event.
-		"""
-
-		if self._mouse_press_pos is not None:
-			moved = event.globalPos() - self._mouse_press_pos
-			if moved.manhattanLength() > self._move_threshold:
-				event.ignore()
-			self._mouse_press_pos = None
-			self.end_move()
-
-	def start_move(self):
-		"""
-		Starts the movement of the title bar parent window.
-		"""
-
-		if self._move_enabled:
-			self._widget_mouse_pos = self._frameless_window.mapFromGlobal(QCursor.pos())
-
-	def end_move(self):
-		"""
-		Ends the movement of the title bar parent window.
-		"""
-
-		if self._move_enabled:
-			self._widget_mouse_pos = None
-
-	def refresh(self):
-		"""
-		Refreshes title bar.
-		"""
-
-		QApplication.processEvents()
-		self.updateGeometry()
-		self.update()
-
-	def set_title_text(self, title: str):
-		"""
-		Sets the title of the title bar.
-
-		:param str title: title
-		"""
-
-		self._title_label.setText(title.upper())
-
-	def set_title_spacing(self, spacing: bool):
-		"""
-		Set title spacing.
-
-		:param bool spacing: whether spacing should be applied.
-		"""
-
-		_spacing = consts.Sizes.INDICATOR_WIDTH * 2
-		if spacing:
-			self._spacing_item.changeSize(_spacing, _spacing)
-			self._spacing_item_2.changeSize(_spacing - 2, _spacing - 2)
-		else:
-			self._spacing_item.changeSize(0, 0)
-			self._spacing_item_2.changeSize(0, 0)
-			self._split_layout.setSpacing(0)
-
-	def set_title_align(self, align: Qt.AlignmentFlag):
-		"""
-		Sets title align.
-
-		:param Qt.AlignmentFlag align: alignment.
-		"""
-
-		if align == Qt.AlignCenter:
-			self._split_layout.setStretch(1, 0)
-		else:
-			self._split_layout.setStretch(1, 1)
-
-	def title_style(self) -> str:
-		"""
-		Returns title style.
-
-		:return: title style.
-		:rtype: str
-		"""
-
-		return self._title_style
-
-	def set_title_style(self, style: str):
-		"""
-		Sets the title style.
-
-		:param str style: title style.
-		"""
-
-		self._title_style = style
-
-		if style == self.TitleStyle.DEFAULT:
-			qtutils.set_stylesheet_object_name(self, '')
-			qtutils.set_stylesheet_object_name(self._title_label, '')
-			self.setFixedHeight(dpi.dpi_scale(self._title_bar_height))
-			self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 2, 2, 6))
-			# self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 5, 0, 7))
-			self._main_right_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 5, 6, 0))
-			self._logo_button.setIconSize(QSize(16, 16))
-			self._logo_button.setFixedSize(QSize(30, 24))
-			self._minimize_button.setFixedSize(QSize(28, 24))
-			self._minimize_button.setIconSize(QSize(24, 24))
-			self._maximize_button.setFixedSize(QSize(24, 24))
-			self._maximize_button.setIconSize(QSize(24, 24))
-			self._close_button.setFixedSize(QSize(24, 24))
-			self._close_button.setIconSize(QSize(16, 16))
-			self._window_buttons_layout.setSpacing(6)
-			if self._frameless_window.HELP_URL:
-				self._help_button.show()
-			self._window_buttons_layout.setSpacing(dpi.dpi_scale(6))
-		elif style == self.TitleStyle.THIN:
-			self.setFixedHeight(dpi.dpi_scale(int(self._title_bar_height / 2)))
-			# self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 3, 15, 7))
-			self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 0, 0, 6))
-			self._main_right_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 0, 6, 0))
-			self._logo_button.setIconSize(QSize(12, 12))
-			self._logo_button.setFixedSize(QSize(14, 16))
-			self._minimize_button.setFixedSize(QSize(14, 14))
-			self._maximize_button.setFixedSize(QSize(14, 14))
-			self._close_button.setFixedSize(QSize(14, 14))
-			self._title_label.setFixedHeight(dpi.dpi_scale(16))
-			self._window_buttons_layout.setSpacing(dpi.dpi_scale(6))
-			self._help_button.hide()
-			qtutils.set_stylesheet_object_name(self, 'Minimized')
-			qtutils.set_stylesheet_object_name(self._title_label, 'Minimized')
-		else:
-			logger.error('{} style does not exists for {}!'.format(style, self._frameless_window.__class__.__name__))
-
-	def set_minimize_button_visible(self, flag: bool):
-		"""
-		Sets whether dragger shows minimize button or not.
-
-		:param bool flag: True to enable minimize; False otherwise.
-		"""
-
-		self._minimize_button.setVisible(flag)
-
-	def set_maximize_button_visible(self, flag: bool):
-		"""
-		Sets whether dragger shows maximize button or not.
-
-		:param bool flag: True to enable maximize; False otherwise.
-		"""
-
-		self._maximize_button.setVisible(flag)
-
-	def set_logo_highlight(self, flag: bool):
-		"""
-		Sets whether logo can be highlighted.
-
-		:param bool flag: True to enable icon highlight; False otherwise.
-		"""
-
-		self._logo_button.set_logo_highlight(flag)
-
-	def toggle_contents(self):
-		"""
-		Shows or hides the additional contents of the title bar.
-		"""
-
-		if self._contents_layout.count() > 0:
-			for i in range(self._contents_layout.count()):
-				widget = self._contents_layout.itemAt(i).widget()
-				widget.show() if widget.isHidden() else widget.hide()
-
-	def close_window(self):
-		"""
-		Closes title bar parent window.
-		"""
-
-		self._frameless_window.close()
-
-	def open_help(self):
-		"""
-		Opens help URL
-		"""
-
-		if self._frameless_window.HELP_URL:
-			webbrowser.open(self._frameless_window.HELP_URL)
-
-	def setup_signals(self):
-		"""
-		Creates title signals.
-		"""
-
-		self._close_button.leftClicked.connect(self._on_close_button_clicked)
-		self._minimize_button.leftClicked.connect(self._on_minimize_button_clicked)
-		self._maximize_button.leftClicked.connect(self._on_maximize_button_clicked)
-		self._help_button.leftClicked.connect(self._on_help_button_clicked)
-
-	def _on_close_button_clicked(self):
-		"""
-		Internal callback function that is called when close button is left-clicked by the user.
-		"""
-
-		self.close_window()
-
-	def _on_maximize_button_clicked(self):
-		"""
-		Internal callback function that is called when maximize button is left-clicked by the user.
-		"""
-
-		self._frameless_window.maximize()
-
-	def _on_minimize_button_clicked(self):
-		"""
-		Internal callback function that is called when minimize button is left-clicked by the user.
-		"""
-
-		self._frameless_window.minimize()
-
-	def _on_help_button_clicked(self):
-		"""
-		Internal callback function that is called when help button is left-clicked by the user.
-		"""
-
-		self.open_help()

@@ -4,6 +4,7 @@ import os
 import inspect
 
 from tp.core import dcc, tool
+from tp.common.qt import api as qt
 
 from tp.tools.objectstoolbox import view
 
@@ -30,9 +31,10 @@ class ObjectsToolbox(tool.Tool):
 
 		win = None
 		if dcc.is_maya():
-			from tp.tools.modelchecker.maya import controller
-			win = view.ObjectsToolboxView(
-				controller=controller.MayaObjecstToolboxController(commands_data, command_module_paths))
+			from tp.tools.objectstoolbox.maya import controller
+			toolbox_view = view.ObjectsToolboxView(controller=controller.MayaObjectsToolboxController())
+			win = qt.FramelessWindow()
+			win.main_layout().addWidget(toolbox_view)
 			win.show()
 
 		return win

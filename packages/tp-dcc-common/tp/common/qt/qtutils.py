@@ -1279,11 +1279,11 @@ def find_coordinates_inside_screen(x, y, width, height, padding=0):
     return x, y
 
 
-def update_widget_style(widget):
+def update_widget_style(widget: QWidget):
     """
-    Updates object widget style
-    Should be called for example when n style name changes
-    :param widget: QWidget
+    Updates object widget style. Should be called for example when a style name changes.
+
+    :param QWidget widget: widget to update style of.
     """
 
     widget.setStyle(widget.style())

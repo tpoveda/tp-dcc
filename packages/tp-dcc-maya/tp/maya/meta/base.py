@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import inspect
-from typing import Tuple, List, Dict, Iterator, Type
+from typing import Set, Tuple, List, Dict, Iterator, Type
 
 from overrides import override
 
@@ -791,6 +791,25 @@ class MetaBase(base.DGNode):
 					yield child_meta
 			for sub_child in child_meta.iterate_meta_children(depth_limit=depth_limit - 1):
 				yield sub_child
+
+	def iterate_children(
+			self, filter_types: Set | None = None, include_meta: bool = False) -> Iterator[base.DGNode | base.DagNode]:
+		"""
+		Generator function that iterates over all children nodes.
+
+		:param Set or None filter_types: optional lister of node filter types.
+		:param bool include_meta: whether to include children meta nodes.
+		:return: iterated DG/Dag nodes.
+		:rtype: Iterator[base.DGNode | base.DagNode]
+		"""
+
+		filter_types = filter_types or ()
+		for _, destination in self.iterateConnections(False, True):
+			dest_node = destination.node()
+			if not filter_types or any(dest_node.hasFn(i) for i in filter_types):
+				if not include_meta and is_meta_node(dest_node):
+					continue
+				yield dest_node
 
 	def find_children_by_class_type(self, class_type: str, depth_limit: int = 1) -> List[MetaBase]:
 		"""

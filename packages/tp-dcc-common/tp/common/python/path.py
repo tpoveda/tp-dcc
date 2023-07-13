@@ -5,7 +5,10 @@
 Utility methods related to string paths
 """
 
+from __future__ import annotations
+
 import os
+import uuid
 import stat
 import time
 import string
@@ -13,6 +16,7 @@ import shutil
 import tempfile
 import traceback
 import contextlib
+from typing import Tuple, List, Dict, Iterator
 
 from tp.core import log
 from tp.common.python import name, folder, osplatform, helpers, win32
@@ -32,7 +36,7 @@ logger = log.tpLogger
 
 
 @contextlib.contextmanager
-def cd(new_dir, cleanup=lambda: True):
+def cd(new_dir: dir, cleanup: bool = lambda: True):
     prev_dir = os.getcwd()
     os.chdir(os.path.expanduser(new_dir))
     try:
@@ -52,27 +56,31 @@ def temp_dir():
         yield dir_path
 
 
-def normalize_path(path):
+def normalize_path(path: str) -> str:
     """
-    Normalizes a path to make sure that path only contains forward slashes
-    :param path: str, path to normalize
-    :return: str, normalized path
+    Normalizes a path to make sure that path only contains forward slashes.
+
+    :param str path: path to normalize.
+    :return: normalized path.
+    :rtype: str
     """
 
     return path.replace(BAD_SEPARATOR, SEPARATOR).replace(PATH_SEPARATOR, SEPARATOR).rstrip('/')
 
 
-def normalize_paths(paths):
+def normalize_paths(paths: List[str]) -> List[str]:
     """
-    Normalize all the given paths into a consistent format
-    :param paths: list(str)
-    :return: list(str)
+    Normalize all the given paths into a consistent format.
+
+    :param List[str] paths: paths to normalize.
+    :return: list of normalized paths.
+    :rtype: List[str]
     """
 
     return [normalize_path(path) for path in paths]
 
 
-def clean_path(path):
+def clean_path(path: str) -> str:
     """
     Cleans a path. Useful to resolve problems with slashes.
 
@@ -104,7 +112,7 @@ def clean_path(path):
     return path
 
 
-def touhc_path(path, remove=False):
+def touch_path(path: str, remove: bool = False):
     """
     Makes ssure given file or directory is valid to use. This will mark files as writable, and validate
     the directory exists to write to if the file does not exist.
@@ -124,25 +132,25 @@ def touhc_path(path, remove=False):
         os.makedirs(directory_path)
 
 
-def real_path(path):
+def real_path(path: str) -> str:
     """
-    Returns the given path removing any symbolic link
-    :param path: str
-    :return: str
-    """
+    Returns the canonical path of the given path and resolves any symbolic link.
 
-    path = os.path.realpath(path)
-    path = os.path.expanduser(path)
-
-    return normalize_path(path)
-
-
-def join_path(*args):
-    """
-    Appends given directories.
-
-    :return: combined directory path
+    :param str path: returns the real path of the given one.
+    :return: canonic path with resolved symbolic links.
     :rtype: str
+    """
+
+    return normalize_path(os.path.expanduser(os.path.realpath(path)))
+
+
+def join_path(*args: str) -> str | None:
+    """
+    Appends given paths together.
+
+    :param str args: tuple with paths to join.
+    :return: joined path.
+    :rtype: str or None
     """
 
     if not args:
@@ -157,11 +165,13 @@ def join_path(*args):
     return joined_path
 
 
-def set_windows_slashes(directory):
+def set_windows_slashes(directory: str) -> str:
     """
-    Set all the slashes in a name so they use Windows slashes (\)
-    :param directory: str
-    :return: str
+    Set all the slashes in a name, so they use Windows slashes (\).
+
+    :param str directory: directory path to set Windows slashes to.
+    :return: path with Windows slashes.
+    :rtype: str
     """
 
     return directory.replace('/', '\\').replace('//', '\\')
@@ -692,6 +702,40 @@ def get_user_data_dir(appname=None, appauthor=None, version=None, roaming=False)
     return path
 
 
+def iterate_parent_path(child_path: str) -> Iterator[str]:
+    """
+    Generator function that walks up directory structure starting at the child path.
+
+    :param str child_path: child path directory.
+    :return: list of parent path directories.
+    :rtype: Iterator[str]
+    """
+
+    current_path = child_path
+    while os.path.split(current_path)[1]:
+        current_path = os.path.split(current_path)[0]
+        yield current_path
+
+
+def find_parent_directory(child_path: str, parent_folder_name: str) -> str | None:
+    """
+    Recursively walks up the directory structure and returns the first instance of the given parent folder.
+
+    :param str child_path: child path directory.
+    :param str parent_folder_name: folder name to find.
+    :return: first instance of the folder once found.
+    :rtype: str or None
+    """
+
+    found_path = None
+    for parent_path in iterate_parent_path(child_path):
+        if os.path.split(parent_path)[-1] == parent_folder_name:
+            found_path = parent_path
+            break
+
+    return found_path
+
+
 class FindUniquePath(name.FindUniqueString, object):
     def __init__(self, directory):
         if not directory:
@@ -711,3 +755,39 @@ class FindUniquePath(name.FindUniqueString, object):
 
     def _get_parent_path(self, directory):
         return dirname(directory)
+
+
+class DirectoryPath(helpers.ObjectDict):
+
+    def __init__(
+            self, path: str | None = None, id: str | None = None, alias: str | None = None, pref : Dict | None = None):
+
+        kwargs = {}
+        if pref:
+            kwargs = pref
+        else:
+            kwargs['id'] = id or str(uuid.uuid4())[:6]
+            kwargs['path'] = normalize_path(path)
+            kwargs['alias'] = alias or basename(path)
+        if not kwargs['path'] and kwargs['pref'] is None:
+            raise Exception('"pref" or "path" must be set for DirectoryPath')
+
+        super().__init__(**kwargs)
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return normalize_path(other) == normalize_path(self.path)
+        if isinstance(other, DirectoryPath):
+            return normalize_path(other.path) == normalize_path(self.path)
+
+        return super().__eq__(other)
+
+    def serialize(self) -> Dict:
+        """
+        Returns serialized data.
+
+        :return: serialized data.
+        :rtype: Dict
+        """
+
+        return self

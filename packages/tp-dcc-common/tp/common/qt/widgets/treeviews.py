@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import List
 
+from Qt import QtCompat
 from Qt.QtCore import Qt, Signal, QPoint, QSize, QModelIndex, QItemSelectionModel, QItemSelection
-from Qt.QtWidgets import QApplication, QWidget, QFrame, QTreeView, QMenu, QAction
+from Qt.QtWidgets import QApplication, QWidget, QFrame, QTreeView, QMenu, QAction, QAbstractItemView
 from Qt.QtGui import QMouseEvent
 
 from tp.common.qt import dpi, qtutils
@@ -90,6 +91,10 @@ class ExtendedTreeView(QFrame):
 		return self._model
 
 	@property
+	def proxy_search(self) -> sortmodel.LeafTreeFilterProxyModel:
+		return self._proxy_search
+
+	@property
 	def tree_view(self) -> BaseTreeView:
 		return self._tree_view
 
@@ -138,6 +143,45 @@ class ExtendedTreeView(QFrame):
 		qtutils.set_stylesheet_object_name(self._tree_view, '' if flag else 'disableAlternatingColor')
 		self._tree_view.setAlternatingRowColors(flag)
 
+	def set_toolbar_visible(self, flag: bool):
+		"""
+		Sets whether toolbar is visible.
+
+		:param bool flag: True to make the toolbar visible; False otherwise.
+		"""
+
+		self._sliding_widget.setVisible(flag)
+
+	def set_searchable(self, flag: bool):
+		"""
+		Sets whether tree view searching feature is enabled.
+
+		:param bool flag: True to enable searchable feature; False to disable it.
+		"""
+
+		self._search_edit.setVisible(flag)
+
+	def set_show_title_label(self, flag: bool):
+		"""
+		Sets whether title label should be visible.
+
+		:param bool flag: True to show title label; False to hide it.
+		"""
+
+		self._title_label.setVisible(flag)
+
+	def set_drag_drop_mode(self, mode: QAbstractItemView.DragDropMode):
+		"""
+		Sets tree view drag drop mode.
+
+		:param QAbstractItemView.DragDropMode mode: drag drop mode.
+		"""
+
+		self._tree_view.setDragDropMode(mode)
+		self._tree_view.setDragEnabled(True)
+		self._tree_view.setDropIndicatorShown(True)
+		self._tree_view.setAcceptDrops(True)
+
 	def expand_all(self):
 		"""
 		Expands all tree view contents.
@@ -151,6 +195,14 @@ class ExtendedTreeView(QFrame):
 		"""
 
 		self._tree_view.collapseAll()
+
+	def resize_to_contents(self):
+		"""
+		Resizes tree view header to fit contents.
+		"""
+
+		header = self._tree_view.header()
+		QtCompat.setSectionResizeMode(header, header.ResizeMode.ResizeToContents)
 
 	def selected_indices(self) -> List[QModelIndex]:
 		"""

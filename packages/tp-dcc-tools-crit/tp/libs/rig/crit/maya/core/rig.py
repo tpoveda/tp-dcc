@@ -4,7 +4,7 @@ import json
 import typing
 import contextlib
 import collections
-from typing import List, Dict
+from typing import Set, List, Dict
 
 from tp.bootstrap import api as bootstrap
 from tp.core import log
@@ -36,7 +36,7 @@ class Rig:
 		super().__init__()
 
 		self._meta = meta
-		self._components_cache = set()					# type: set[component.Component]
+		self._components_cache = set()					# type: Set[component.Component]
 		self._config = rig_config or config.MayaConfiguration()
 		self._crit_version = ''
 
@@ -448,7 +448,7 @@ class Rig:
 			if component_found.name() == name and component_found.side() == side:
 				return component_found
 
-		components_layer = self.get_or_create_components_layer()
+		components_layer = self.components_layer()
 		if components_layer is None:
 			return None
 
@@ -654,6 +654,32 @@ class Rig:
 		self._components_cache = set()
 
 	@profiler.fn_timer
+	def delete_component(self, name: str, side: str) -> bool:
+		"""
+		Deletes component with given name and side from this rig.
+
+		:param str name: name of the component to delete.
+		:param str side: side of the component to delete.
+		:return: True if the component deletion operation was successful; False otherwise.
+		:rtype: bool
+		"""
+
+		found_component = self.component(name, side)
+		if not found_component:
+			logger.warning(f'No component found by the name: {":".join((name, side))}')
+			return False
+
+		with self.build_script_context(consts.DELETE_COMPONENT_FUNCTION_TYPE, component=found_component):
+			self._cleanup_space_switches(found_component)
+			found_component.delete()
+			try:
+				self._components_cache.remove(found_component)
+			except KeyError:
+				return False
+
+			return True
+
+	@profiler.fn_timer
 	def delete(self) -> bool:
 		"""
 		Deletes full rig from the scene.
@@ -725,3 +751,12 @@ class Rig:
 				return False
 
 		return True
+
+	def _cleanup_space_switches(self, component: Component):
+		"""
+		Internal function that removes all space switch drivers which use the given component as a driver.
+
+		:param Component component: component instance which will be deleted.
+		"""
+
+		pass

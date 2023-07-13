@@ -5,10 +5,12 @@
 Module that contains functions and classes related with transforms
 """
 
+from __future__ import annotations
+
 import random
 
-import maya.cmds
-import maya.api.OpenMaya
+import maya.cmds as cmds
+import maya.api.OpenMaya as OpenMaya
 
 from tp.core import log, dcc
 from tp.common.python import helpers, name
@@ -52,459 +54,31 @@ ALL_TRANSFORM_TRACKER_ATTRIBUTE_NAMES = [
 ]
 
 
-class PinTransform(object):
+def check_transform(node_name: str):
     """
-    Class that allows to pin a transform so its parent and children are not affected by any edits
-    """
-
-    def __init__(self, transform_name):
-        self.transform = transform_name
-        self.delete_later = list()
-        self.lock_state = dict()
-
-    def pin(self):
-        """
-        Creates the pin constraints on parent and children
-        """
-
-        from tp.maya.cmds import name
-
-        self.lock_state = dict()
-        parent = maya.cmds.listRelatives(self.transform, p=True, f=True)
-        if parent:
-            parent = parent[0]
-            pin = maya.cmds.duplicate(parent, po=True, n=name.find_unique_name('pin1'))[0]
-            pin_parent = maya.cmds.listRelatives(pin, p=True)
-            if pin_parent:
-                maya.cmds.parent(pin, w=True)
-
-            cns = maya.cmds.parentConstraint(pin, parent, mo=True)[0]
-            self.delete_later.append(cns)
-            self.delete_later.append(pin)
-
-        children = maya.cmds.listRelatives(self.transform, f=True)
-        if not children:
-            return
-
-        for child in children:
-            if not is_transform(child):
-                continue
-
-            pin = maya.cmds.duplicate(child, po=True, n=name.find_unique_name('pin1'))[0]
-
-            try:
-                maya.cmds.parent(pin, w=True)
-            except Exception:
-                pass
-
-            lock_state_inst = attribute.LockAttributesState(node=child)
-            self.lock_state[child] = lock_state_inst
-            lock_state_inst.unlock()
-
-            cns = maya.cmds.parentConstraint(pin, child, mo=True)[0]
-            self.delete_later.append(cns)
-            self.delete_later.append(pin)
-
-    def unpin(self):
-        """
-        Removes the pin
-        :return:
-        """
-
-        if self.delete_later:
-            maya.cmds.delete(self.delete_later)
-            for lock_state in self.lock_state:
-                self.lock_state[lock_state].restore_initial()
-
-    def get_pin_nodes(self):
-        """
-        Returns list of nodes involved in the pinning (constraints and empty groups)
-        :return: list<str>
-        """
-
-        return self.delete_later
-
-
-class MatchTransform(object):
-    """
-    Class used to match transformations between two transform nodes
+    Checks if a node is a valid transform and raise and exception if the transform is not valid.
+    
+    :param str node_name: Name of the node to be checked.
+    :raises exceptions.TransformException: if given node name is not a valid transform node.
     """
 
-    def __init__(self, source_transform, target_transform):
-        """
-        Constructor
-        :param source_transform: source transform node
-        :param target_transform: transform node we want to match to source
-        """
-        self.source = source_transform
-        self.target = target_transform
-
-    def translation(self):
-        """
-        Matches target translation to source one
-        """
-
-        self._set_translation()
-        self._set_scale_pivot()
-        self._set_rotate_pivot()
-
-    def rotation(self):
-        """
-        Matches target rotation to source one
-        """
-
-        self._set_rotation()
-
-    def translation_rotation(self):
-        """
-        Matches target translation and rotation to source ones
-        """
-
-        self._set_translation()
-        self._set_scale_pivot()
-        self._set_rotate_pivot()
-        self._set_rotation()
-
-    def translation_to_rotate_pivot(self):
-        """
-        Matches target translation to the source transform rotate pivot
-        """
-
-        translate_vector = self._get_world_rotate_pivot()
-        self._set_translation(translate_vector)
-
-    def rotate_scale_pivot_to_translation(self):
-        """
-        Matches the rotation and scale pivot of target transform to the translation of source
-        """
-
-        match_rotate_scale_pivot_to_translation(target=self.target, source=self.source)
-
-    def pivots(self):
-        """
-        Matches the pivots of target transform to the source transform ones in object space
-        """
-
-        self._set_rotate_pivot()
-        self._set_scale_pivot()
-
-    def world_pivots(self):
-        """
-        Matches the pivots of target transform  to the source transform ones in world space
-        """
-
-        self._set_world_rotate_pivot()
-        self._set_world_scale_pivot()
-
-    def scale(self):
-        """
-        Matches target transform scale to source transform scale
-        """
-
-        match_scale(target=self.target, source=self.source)
-
-    def _get_translation(self):
-        """
-        Return the translation in world space of the source transform
-        :return: list<float, float, float>
-        """
-
-        return get_translation(transform_name=self.source, world_space=True)
-
-    def _get_rotation(self):
-        """
-        Returns rotation in world space of the source transform
-        :return: list<float, float, float>
-        """
-
-        return get_rotation(transform_name=self.source, world_space=True)
-
-    def _get_rotate_pivot(self):
-        """
-        Get rotate pivot in object space of the source transform
-        :return: list<float, float, float>
-        """
-
-        return get_rotate_pivot(transform_name=self.source, world_space=False)
-
-    def _get_scale_pivot(self):
-        """
-        Returns scale pivot in object space of the source transform
-        :return: list<float, float, float>
-        """
-
-        return get_scale_pivot(transform_name=self.source, world_space=False)
-
-    def _get_world_rotate_pivot(self):
-        """
-        Get rotate pivot in world space of the source transform
-        :return: list<float, float, float>
-        """
-
-        return get_rotate_pivot(transform_name=self.source, world_space=True)
-
-    def _get_world_scale_pivot(self):
-        """
-        Returns scale pivot in world space of the source transform
-        :return: list<float, float, float>
-        """
-
-        return get_scale_pivot(transform_name=self.source, world_space=True)
-
-    def _set_translation(self, translate_vector=None):
-        """
-        Set the target transform position in world space
-        :param translate_vector: list<float, float, float>, translation vector to apply to target
-        transform in world space. If not given, target will be match to source position
-        """
-
-        if not translate_vector:
-            translate_vector = self._get_translation()
-
-        set_translation(transform_name=self.target, translate_vector=translate_vector, world_space=True)
-
-    def _set_rotation(self, rotation_vector=None):
-        """
-        Set the target transform rotation in world space
-        :param rotation_vector: list<float, float, float>, rotation vector to apply to target
-        transform in world space. If not given, target will be match to source rotation
-        """
-
-        if not rotation_vector:
-            rotation_vector = self._get_rotation()
-
-        set_rotation(transform_name=self.target, rotation_vector=rotation_vector, world_space=True)
-
-    def _set_rotate_pivot(self, rotate_pivot_vector=None):
-        """
-        Set the target transform rotation pivot in object space
-        :param rotate_pivot_vector: list<float, float, float>, rotation pivot vector to apply to target
-        transform rotation pivot in object space. If not given, target will be match to source rotation pivot
-        """
-
-        if not rotate_pivot_vector:
-            rotate_pivot_vector = self._get_rotate_pivot()
-
-        set_rotate_pivot(transform_name=self.target, rotate_pivot_vector=rotate_pivot_vector, world_space=False)
-
-    def _set_scale_pivot(self, scale_pivot_vector=None):
-        """
-        Set the target transform scale pivot in object space
-        :param scale_pivot_vector: list<float, float, float>, scale pivot vector to apply to target
-        transform scale pivot in object space. If not given, target will be match to source scale pivot
-        """
-
-        if not scale_pivot_vector:
-            scale_pivot_vector = self._get_scale_pivot()
-
-        set_scale_pivot(transform_name=self.target, scale_pivot_vector=scale_pivot_vector, world_space=False)
-
-    def _set_world_rotate_pivot(self, rotate_pivot_vector=None):
-        """
-        Set the target transform rotation pivot in world space
-        :param rotate_pivot_vector: list<float, float, float>, rotation pivot vector to apply to target
-        transform rotation pivot in world space. If not given, target will be match to source rotation pivot
-        """
-
-        if not rotate_pivot_vector:
-            rotate_pivot_vector = self._get_rotate_pivot()
-
-        set_rotate_pivot(transform_name=self.target, rotate_pivot_vector=rotate_pivot_vector, world_space=True)
-
-    def _set_world_scale_pivot(self, scale_pivot_vector=None):
-        """
-        Set the target transform scale pivot in world space
-        :param scale_pivot_vector: list<float, float, float>, scale pivot vector to apply to target
-        transform scale pivot in world space. If not given, target will be match to source scale pivot
-        """
-
-        if not scale_pivot_vector:
-            scale_pivot_vector = self._get_scale_pivot()
-
-        set_scale_pivot(transform_name=self.target, scale_pivot_vector=scale_pivot_vector, world_space=True)
+    if not is_transform(node_name):
+        raise exceptions.TransformException(node_name)
 
 
-class BoundingBox(bbox.BoundingBox, object):
+def is_transform(node_name: str) -> bool:
     """
-    Util class to work with bounding box
+    Check whether the specified object is a valid transform node.
+
+    :param str node_name: object to check as a transform node
+    :return: True if given node name is a transform node; False otherwise.
+    :rtype: bool
     """
 
-    def __init__(self, transform_node=None):
-        """
-        Constructor
-        :param transform_node: str, name of a transform in Maya. If given, bounding box is automatically created from it
-        """
-
-        self._node = transform_node
-
-        x_min, y_min, z_min, x_max, y_max, z_max = maya.cmds.exactWorldBoundingBox(transform_node)
-        super(BoundingBox, self).__init__([x_min, y_min, z_min], [x_max, y_max, z_max])
-
-    def get_shapes_bounding_box(self):
-        """
-        Returns bounding box of the transform shapes
-        :return: BoundingBox
-        """
-
-        from tp.maya.cmds import shape as shape_lib
-        shapes = shape_lib.get_shapes(self._node, intermediates=False, full_path=True)
-        if shapes:
-            x_min, y_min, z_min, x_max, y_max, z_max = maya.cmds.exactWorldBoundingBox(shapes)
-            return bbox.BoundingBox([x_min, y_min, z_min], [x_max, y_max, z_max])
-
-        return None
-
-
-class DuplicateHierarchy(object):
-    """
-    Duplicate the hierarchy of a transform
-    """
-
-    def __init__(self, transform_name):
-        """
-        Constructor
-        :param transform_name:  str
-        """
-        self._top_transform = transform_name
-        self._duplicates = list()
-        self._replace_old = None
-        self._replace_new = None
-        self._stop = False
-        self._stop_at_transform = None
-        self._only_these_transform = None
-        self._only_joints = False
-
-    def create(self):
-        """
-        Creates the duplicate hierarchy
-        """
-
-        maya.cmds.refresh()
-        self._duplicate_hierarchy(self._top_transform)
-
-        return self._duplicates
-
-    def only_these(self, list_of_transforms):
-        """
-        Only transforms of the given list will be duplicated
-        :param list_of_transforms: list<str>
-        """
-
-        self._only_joints = list_of_transforms
-
-    def stop_at(self, xform):
-        """
-        Hierarchy duplication will be stop at the given transform
-        :param xform: str
-        """
-
-        relative = maya.cmds.listRelatives(xform, type='transform')
-        if relative:
-            self._stop_at_transform = relative[0]
-
-    def set_replace(self, old, new):
-        """
-        Replace the naming in the duplicate
-        :param old: str, string in the duplicate name to replace
-        :param new: str, string in the duplicate to replace with
-        """
-
-        self._replace_old = old
-        self._replace_new = new
-
-    def _get_children(self, xform):
-        """
-        Internal function used to return all children of the given transforms
-        Without taking into account constraint nodes
-        :param xform: str
-        :return: list<str>
-        """
-
-        children = maya.cmds.listRelatives(xform, children=True, type='transform')
-        found = list()
-        if children:
-            for child in children:
-                if maya.cmds.nodeType(child).find('Constraint') > - 1:
-                    continue
-                found.append(child)
-
-        return found
-
-    def _duplicate(self, xform):
-        new_name = xform
-        if self._replace_old and self._replace_new:
-            replace_old = helpers.force_list(self._replace_old)
-            replace_new = helpers.force_list(self._replace_new)
-            for old_name, replace_name in zip(replace_old, replace_new):
-                if old_name in new_name:
-                    new_name = xform.replace(old_name, replace_name)
-                    break
-                else:
-                    if new_name == xform:
-                        new_name = '{}_{}'.format(xform, replace_name)
-            new_name = name_utils.get_basename(new_name)
-
-        duplicate = maya.cmds.duplicate(xform, po=True)[0]
-        attribute.remove_user_defined_attributes(duplicate)
-        duplicate = maya.cmds.rename(duplicate, name_utils.find_unique_name(new_name))
-        self._duplicates.append(duplicate)
-
-        return duplicate
-
-    def _duplicate_hierarchy(self, xform):
-        if xform == self._stop_at_transform:
-            self._stop = True
-        if self._stop:
-            return
-
-        top_duplicate = self._duplicate(xform)
-        children = self._get_children(xform)
-        if children:
-            duplicates = list()
-            for child in children:
-                if self._only_these_transform and child not in self._only_these_transform:
-                    continue
-                if self._only_joints:
-                    if not maya.cmds.nodeType(child) == 'joint':
-                        continue
-                duplicate = self._duplicate_hierarchy(child)
-                if not duplicate:
-                    break
-                duplicates.append(duplicate)
-
-                if maya.cmds.nodeType(top_duplicate) == 'joint' and maya.cmds.nodeType(duplicate) == 'joint':
-                    if maya.cmds.isConnected('{}.scale'.format(xform), '{}.inverseScale'.format(duplicate)):
-                        maya.cmds.disconnectAttr('{}.scale'.format(xform), '{}.inverseScale'.format(duplicate))
-                        maya.cmds.connectAttr('{}.scale'.format(top_duplicate), '{}.inverseScale'.format(duplicate))
-
-            if duplicates:
-                maya.cmds.parent(duplicates, top_duplicate)
-
-        return top_duplicate
-
-
-def check_transform(transform_name):
-    """
-    Checks if a node is a valid transform and raise and exception if the transform is not valid
-    :param transform_name: str, name of the node to be checked
-    :return: bool, True if the given node is a shape node
-    """
-
-    if not is_transform(transform_name):
-        raise exceptions.TransformException(transform_name)
-
-
-def is_transform(transform_name):
-    """
-    Check if the specified object is a valid transform node
-    :param transform_name: str, object to check as a transform node
-    :return: bool
-    """
-
-    if not maya.cmds.objExists(transform_name):
+    if not cmds.objExists(node_name):
         return False
 
-    if not maya.cmds.objectType(transform_name, isAType='transform'):
+    if not cmds.objectType(node_name, isAType='transform'):
         return False
 
     return True
@@ -2341,3 +1915,434 @@ def is_axis_mirrored(source_transform, target_transform, axis, mirror_plane):
         return False
 
     return True
+
+
+class PinTransform:
+    """
+    Class that allows to pin a transform so its parent and children are not affected by any edits
+    """
+
+    def __init__(self, transform_name):
+        self.transform = transform_name
+        self.delete_later = list()
+        self.lock_state = dict()
+
+    def pin(self):
+        """
+        Creates the pin constraints on parent and children
+        """
+
+        from tp.maya.cmds import name
+
+        self.lock_state = dict()
+        parent = maya.cmds.listRelatives(self.transform, p=True, f=True)
+        if parent:
+            parent = parent[0]
+            pin = maya.cmds.duplicate(parent, po=True, n=name.find_unique_name('pin1'))[0]
+            pin_parent = maya.cmds.listRelatives(pin, p=True)
+            if pin_parent:
+                maya.cmds.parent(pin, w=True)
+
+            cns = maya.cmds.parentConstraint(pin, parent, mo=True)[0]
+            self.delete_later.append(cns)
+            self.delete_later.append(pin)
+
+        children = maya.cmds.listRelatives(self.transform, f=True)
+        if not children:
+            return
+
+        for child in children:
+            if not is_transform(child):
+                continue
+
+            pin = maya.cmds.duplicate(child, po=True, n=name.find_unique_name('pin1'))[0]
+
+            try:
+                maya.cmds.parent(pin, w=True)
+            except Exception:
+                pass
+
+            lock_state_inst = attribute.LockAttributesState(node=child)
+            self.lock_state[child] = lock_state_inst
+            lock_state_inst.unlock()
+
+            cns = maya.cmds.parentConstraint(pin, child, mo=True)[0]
+            self.delete_later.append(cns)
+            self.delete_later.append(pin)
+
+    def unpin(self):
+        """
+        Removes the pin
+        :return:
+        """
+
+        if self.delete_later:
+            maya.cmds.delete(self.delete_later)
+            for lock_state in self.lock_state:
+                self.lock_state[lock_state].restore_initial()
+
+    def get_pin_nodes(self):
+        """
+        Returns list of nodes involved in the pinning (constraints and empty groups)
+        :return: list<str>
+        """
+
+        return self.delete_later
+
+
+class MatchTransform:
+    """
+    Class used to match transformations between two transform nodes
+    """
+
+    def __init__(self, source_transform, target_transform):
+        """
+        Constructor
+        :param source_transform: source transform node
+        :param target_transform: transform node we want to match to source
+        """
+        self.source = source_transform
+        self.target = target_transform
+
+    def translation(self):
+        """
+        Matches target translation to source one
+        """
+
+        self._set_translation()
+        self._set_scale_pivot()
+        self._set_rotate_pivot()
+
+    def rotation(self):
+        """
+        Matches target rotation to source one
+        """
+
+        self._set_rotation()
+
+    def translation_rotation(self):
+        """
+        Matches target translation and rotation to source ones
+        """
+
+        self._set_translation()
+        self._set_scale_pivot()
+        self._set_rotate_pivot()
+        self._set_rotation()
+
+    def translation_to_rotate_pivot(self):
+        """
+        Matches target translation to the source transform rotate pivot
+        """
+
+        translate_vector = self._get_world_rotate_pivot()
+        self._set_translation(translate_vector)
+
+    def rotate_scale_pivot_to_translation(self):
+        """
+        Matches the rotation and scale pivot of target transform to the translation of source
+        """
+
+        match_rotate_scale_pivot_to_translation(target=self.target, source=self.source)
+
+    def pivots(self):
+        """
+        Matches the pivots of target transform to the source transform ones in object space
+        """
+
+        self._set_rotate_pivot()
+        self._set_scale_pivot()
+
+    def world_pivots(self):
+        """
+        Matches the pivots of target transform  to the source transform ones in world space
+        """
+
+        self._set_world_rotate_pivot()
+        self._set_world_scale_pivot()
+
+    def scale(self):
+        """
+        Matches target transform scale to source transform scale
+        """
+
+        match_scale(target=self.target, source=self.source)
+
+    def _get_translation(self):
+        """
+        Return the translation in world space of the source transform
+        :return: list<float, float, float>
+        """
+
+        return get_translation(transform_name=self.source, world_space=True)
+
+    def _get_rotation(self):
+        """
+        Returns rotation in world space of the source transform
+        :return: list<float, float, float>
+        """
+
+        return get_rotation(transform_name=self.source, world_space=True)
+
+    def _get_rotate_pivot(self):
+        """
+        Get rotate pivot in object space of the source transform
+        :return: list<float, float, float>
+        """
+
+        return get_rotate_pivot(transform_name=self.source, world_space=False)
+
+    def _get_scale_pivot(self):
+        """
+        Returns scale pivot in object space of the source transform
+        :return: list<float, float, float>
+        """
+
+        return get_scale_pivot(transform_name=self.source, world_space=False)
+
+    def _get_world_rotate_pivot(self):
+        """
+        Get rotate pivot in world space of the source transform
+        :return: list<float, float, float>
+        """
+
+        return get_rotate_pivot(transform_name=self.source, world_space=True)
+
+    def _get_world_scale_pivot(self):
+        """
+        Returns scale pivot in world space of the source transform
+        :return: list<float, float, float>
+        """
+
+        return get_scale_pivot(transform_name=self.source, world_space=True)
+
+    def _set_translation(self, translate_vector=None):
+        """
+        Set the target transform position in world space
+        :param translate_vector: list<float, float, float>, translation vector to apply to target
+        transform in world space. If not given, target will be match to source position
+        """
+
+        if not translate_vector:
+            translate_vector = self._get_translation()
+
+        set_translation(transform_name=self.target, translate_vector=translate_vector, world_space=True)
+
+    def _set_rotation(self, rotation_vector=None):
+        """
+        Set the target transform rotation in world space
+        :param rotation_vector: list<float, float, float>, rotation vector to apply to target
+        transform in world space. If not given, target will be match to source rotation
+        """
+
+        if not rotation_vector:
+            rotation_vector = self._get_rotation()
+
+        set_rotation(transform_name=self.target, rotation_vector=rotation_vector, world_space=True)
+
+    def _set_rotate_pivot(self, rotate_pivot_vector=None):
+        """
+        Set the target transform rotation pivot in object space
+        :param rotate_pivot_vector: list<float, float, float>, rotation pivot vector to apply to target
+        transform rotation pivot in object space. If not given, target will be match to source rotation pivot
+        """
+
+        if not rotate_pivot_vector:
+            rotate_pivot_vector = self._get_rotate_pivot()
+
+        set_rotate_pivot(transform_name=self.target, rotate_pivot_vector=rotate_pivot_vector, world_space=False)
+
+    def _set_scale_pivot(self, scale_pivot_vector=None):
+        """
+        Set the target transform scale pivot in object space
+        :param scale_pivot_vector: list<float, float, float>, scale pivot vector to apply to target
+        transform scale pivot in object space. If not given, target will be match to source scale pivot
+        """
+
+        if not scale_pivot_vector:
+            scale_pivot_vector = self._get_scale_pivot()
+
+        set_scale_pivot(transform_name=self.target, scale_pivot_vector=scale_pivot_vector, world_space=False)
+
+    def _set_world_rotate_pivot(self, rotate_pivot_vector=None):
+        """
+        Set the target transform rotation pivot in world space
+        :param rotate_pivot_vector: list<float, float, float>, rotation pivot vector to apply to target
+        transform rotation pivot in world space. If not given, target will be match to source rotation pivot
+        """
+
+        if not rotate_pivot_vector:
+            rotate_pivot_vector = self._get_rotate_pivot()
+
+        set_rotate_pivot(transform_name=self.target, rotate_pivot_vector=rotate_pivot_vector, world_space=True)
+
+    def _set_world_scale_pivot(self, scale_pivot_vector=None):
+        """
+        Set the target transform scale pivot in world space
+        :param scale_pivot_vector: list<float, float, float>, scale pivot vector to apply to target
+        transform scale pivot in world space. If not given, target will be match to source scale pivot
+        """
+
+        if not scale_pivot_vector:
+            scale_pivot_vector = self._get_scale_pivot()
+
+        set_scale_pivot(transform_name=self.target, scale_pivot_vector=scale_pivot_vector, world_space=True)
+
+
+class BoundingBox(bbox.BoundingBox):
+    """
+    Util class to work with bounding box
+    """
+
+    def __init__(self, transform_node=None):
+        """
+        Constructor
+        :param transform_node: str, name of a transform in Maya. If given, bounding box is automatically created from it
+        """
+
+        self._node = transform_node
+
+        x_min, y_min, z_min, x_max, y_max, z_max = maya.cmds.exactWorldBoundingBox(transform_node)
+        super(BoundingBox, self).__init__([x_min, y_min, z_min], [x_max, y_max, z_max])
+
+    def get_shapes_bounding_box(self):
+        """
+        Returns bounding box of the transform shapes
+        :return: BoundingBox
+        """
+
+        from tp.maya.cmds import shape as shape_lib
+        shapes = shape_lib.get_shapes(self._node, intermediates=False, full_path=True)
+        if shapes:
+            x_min, y_min, z_min, x_max, y_max, z_max = maya.cmds.exactWorldBoundingBox(shapes)
+            return bbox.BoundingBox([x_min, y_min, z_min], [x_max, y_max, z_max])
+
+        return None
+
+
+class DuplicateHierarchy:
+    """
+    Duplicate the hierarchy of a transform
+    """
+
+    def __init__(self, transform_name):
+        """
+        Constructor
+        :param transform_name:  str
+        """
+        self._top_transform = transform_name
+        self._duplicates = list()
+        self._replace_old = None
+        self._replace_new = None
+        self._stop = False
+        self._stop_at_transform = None
+        self._only_these_transform = None
+        self._only_joints = False
+
+    def create(self):
+        """
+        Creates the duplicate hierarchy
+        """
+
+        maya.cmds.refresh()
+        self._duplicate_hierarchy(self._top_transform)
+
+        return self._duplicates
+
+    def only_these(self, list_of_transforms):
+        """
+        Only transforms of the given list will be duplicated
+        :param list_of_transforms: list<str>
+        """
+
+        self._only_joints = list_of_transforms
+
+    def stop_at(self, xform):
+        """
+        Hierarchy duplication will be stop at the given transform
+        :param xform: str
+        """
+
+        relative = maya.cmds.listRelatives(xform, type='transform')
+        if relative:
+            self._stop_at_transform = relative[0]
+
+    def set_replace(self, old, new):
+        """
+        Replace the naming in the duplicate
+        :param old: str, string in the duplicate name to replace
+        :param new: str, string in the duplicate to replace with
+        """
+
+        self._replace_old = old
+        self._replace_new = new
+
+    def _get_children(self, xform):
+        """
+        Internal function used to return all children of the given transforms
+        Without taking into account constraint nodes
+        :param xform: str
+        :return: list<str>
+        """
+
+        children = maya.cmds.listRelatives(xform, children=True, type='transform')
+        found = list()
+        if children:
+            for child in children:
+                if maya.cmds.nodeType(child).find('Constraint') > - 1:
+                    continue
+                found.append(child)
+
+        return found
+
+    def _duplicate(self, xform):
+        new_name = xform
+        if self._replace_old and self._replace_new:
+            replace_old = helpers.force_list(self._replace_old)
+            replace_new = helpers.force_list(self._replace_new)
+            for old_name, replace_name in zip(replace_old, replace_new):
+                if old_name in new_name:
+                    new_name = xform.replace(old_name, replace_name)
+                    break
+                else:
+                    if new_name == xform:
+                        new_name = '{}_{}'.format(xform, replace_name)
+            new_name = name_utils.get_basename(new_name)
+
+        duplicate = maya.cmds.duplicate(xform, po=True)[0]
+        attribute.remove_user_defined_attributes(duplicate)
+        duplicate = maya.cmds.rename(duplicate, name_utils.find_unique_name(new_name))
+        self._duplicates.append(duplicate)
+
+        return duplicate
+
+    def _duplicate_hierarchy(self, xform):
+        if xform == self._stop_at_transform:
+            self._stop = True
+        if self._stop:
+            return
+
+        top_duplicate = self._duplicate(xform)
+        children = self._get_children(xform)
+        if children:
+            duplicates = list()
+            for child in children:
+                if self._only_these_transform and child not in self._only_these_transform:
+                    continue
+                if self._only_joints:
+                    if not maya.cmds.nodeType(child) == 'joint':
+                        continue
+                duplicate = self._duplicate_hierarchy(child)
+                if not duplicate:
+                    break
+                duplicates.append(duplicate)
+
+                if maya.cmds.nodeType(top_duplicate) == 'joint' and maya.cmds.nodeType(duplicate) == 'joint':
+                    if maya.cmds.isConnected('{}.scale'.format(xform), '{}.inverseScale'.format(duplicate)):
+                        maya.cmds.disconnectAttr('{}.scale'.format(xform), '{}.inverseScale'.format(duplicate))
+                        maya.cmds.connectAttr('{}.scale'.format(top_duplicate), '{}.inverseScale'.format(duplicate))
+
+            if duplicates:
+                maya.cmds.parent(duplicates, top_duplicate)
+
+        return top_duplicate

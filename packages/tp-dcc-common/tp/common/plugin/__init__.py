@@ -451,7 +451,7 @@ class PluginFactory:
                         matching_plugins.append(plugin)
 
         if not matching_plugins:
-            self._logger.warning('No plugin with id "{}" found in package "{}"'.format(plugin_id, package_name))
+            # self._logger.warning('No plugin with id "{}" found in package "{}"'.format(plugin_id, package_name))
             return None
 
         if not self._version_identifier:

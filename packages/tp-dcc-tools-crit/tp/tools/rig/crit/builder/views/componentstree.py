@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 from functools import partial
-from typing import Tuple, List, Dict, Callable
+from typing import Tuple, List, Dict, Callable, Iterator
 
 from overrides import override
 
@@ -214,7 +214,7 @@ class ComponentsTreeWidget(qt.GroupedTreeWidget):
 		Stacked widget that represents a component within Components tree widget.
 		"""
 
-		syncRequested = qt.Signal()
+		syncRequested = qt.Signal(bool)
 		componentRenamed = qt.Signal(str, str)
 
 		class SideNameWidget(qt.QWidget):
@@ -672,7 +672,7 @@ class ComponentsTreeWidget(qt.GroupedTreeWidget):
 
 			logger.debug('Syncing UI with the scene')
 			self._widget_hide(self._model.is_hidden())
-			# self._tree.update_selection_colors()
+			self._tree._update_selection_colors()
 			self._update_ui_command_icons()
 			if self._collapsed:
 				return
@@ -819,16 +819,15 @@ class ComponentsTreeWidget(qt.GroupedTreeWidget):
 			self._controller.execute_ui_command(
 				'setComponentSide', args={'component_model': self._model, 'side': new_side})
 
-		def _on_line_edit_editing_finished(self, text: str):
+		def _on_line_edit_editing_finished(self):
 			"""
 			Internal callback function that is called when component name line edit is edited.
-
-			:param str text: line edit text.
 			"""
 
 			before = self._model.name
-			self._model.name = text
-			self.componentRenamed.emit(before, text)
+			after = str(self.sender().text())
+			self._model.name = after
+			self.componentRenamed.emit(before, after)
 
 		def _on_ui_command_action_triggered(self, ui_command: CritUiCommand, variant_id: str | None = None):
 			"""
@@ -856,6 +855,28 @@ class ComponentsTreeWidget(qt.GroupedTreeWidget):
 		self._header_item = qt.QTreeWidgetItem(['Component'])
 
 		super().__init__(allow_sub_groups=True, parent=parent)
+
+	@override
+	def setItemWidget(self, item: qt.QTreeWidgetItem, column: int, widget: qt.QWidget) -> None:
+
+		if isinstance(widget, ComponentsTreeWidget.ComponentWidget):
+			self._setup_component_widget_connections(widget, item)
+
+		super().setItemWidget(item, column, widget)
+
+	@override
+	def _on_tree_selection_changed(self):
+
+		super()._on_tree_selection_changed()
+
+		component_models = []
+		for it in self.selectedItems():
+			item_widget = self._item_widget(it)
+			if self._item_type(it) == self.ITEM_TYPE_WIDGET and item_widget is not None:
+				component_models.append(item_widget.model)
+
+		self._update_selection_colors()
+		self._controller.set_selected_components(component_models)
 
 	def sync(self):
 		"""
@@ -945,3 +966,73 @@ class ComponentsTreeWidget(qt.GroupedTreeWidget):
 
 		if group is not None:
 			self.add_to_group(new_tree_item, group)
+
+	def component_widget_by_model(self, component_model: ComponentModel) -> ComponentWidget | None:
+		"""
+		Returns component widget instance that matches given component model.
+
+		:param ComponentModel component_model: compoennt model instance.
+		:return: component widget that matches given component model.
+		:rtype: ComponentWidget or None
+		"""
+
+		found_component_widget = None
+		for component_widget in self.iterate_component_widgets():
+			if component_widget.model == component_model:
+				found_component_widget = component_widget
+				break
+
+		return found_component_widget
+
+	def iterate_component_widgets(self) -> Iterator[ComponentWidget]:
+		"""
+		Generator function that iterates over all component widgets within tree.
+
+		:return: iterated component widgets.
+		:rtype: Iterator[ComponentWidget]
+		"""
+
+		for it in self.iterator():
+			widget = self._item_widget(it)
+			if widget:
+				yield widget
+
+	def _update_selection_colors(self):
+		"""
+		Internal function that loops through each component widget and set the colors based on selection.
+		"""
+
+		for i in range(self.invisibleRootItem().childCount()):
+			tree_item = self.invisibleRootItem().child(i)
+			item_widget = self._item_widget(tree_item)
+			if item_widget is not None:
+				update_targets = []
+				if self._item_type(tree_item) == self.ITEM_TYPE_WIDGET:
+					update_targets = [item_widget.title_frame, item_widget.hider_widget]
+				elif self._item_type(tree_item) == self.ITEM_TYPE_GROUP:
+					update_targets = [item_widget.title_frame]
+				if tree_item.isSelected():
+					[qt.set_stylesheet_object_name(t, 'selected') for t in update_targets]
+				else:
+					[qt.set_stylesheet_object_name(t, '') for t in update_targets]
+
+	def _setup_component_widget_connections(self, widget: ComponentsTreeWidget.ComponentWidget, item: qt.QTreeWidgetItem):
+		"""
+		Internal function that setup signal connections of the given component widget.
+
+		:param ComponentsTreeWidget.ComponentWidget widget: components widget instance.
+		:param qt.QTreeWidgetItem item: tree widget item instance.
+		"""
+
+		widget.minimized.connect(self.refresh)
+		widget.maximized.connect(self.refresh)
+		widget.componentRenamed.connect(self._on_component_widget_renamed)
+
+	def _on_component_widget_renamed(self):
+		"""
+		Internal callback function that is called each time a component widget componentRenamed signal is emitted.
+		Forces the refreshing of the component widget UI.
+		"""
+
+		for widget in self.iterate_component_widgets():
+			print(widget)

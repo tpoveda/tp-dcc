@@ -193,6 +193,29 @@ class CritUiCommand(qt.QObject):
 		self._selected_component_models = selection_model.component_models
 		self._rig_model = selection_model.rig_model
 
+	def refresh_components(self, component_models: List[ComponentModel]):
+		"""
+		Refreshes given component models.
+
+		:param List[ComponentModel] component_models: list of component models to refresh.
+		"""
+
+		self._ui_interface.builder().soft_refresh_components(component_models)
+
+	def refresh_selected_components(self):
+		"""
+		Refreshes selected component models.
+		"""
+
+		self.refresh_components(self.selected_components())
+
+	def refresh_all(self):
+		"""
+		Refreshes UI.
+		"""
+
+		self._ui_interface.refresh_ui()
+
 	def request_refresh(self, force: bool = False):
 		"""
 		Request a refresh in the UI.

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 from functools import wraps
+from typing import Tuple, List, Iterator
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
@@ -767,19 +768,19 @@ class DGNode(object):
 
 		return False
 
-	def lock(self, state, mod=None, apply=True):
+	def lock(self, state: bool, mod: OpenMaya.MDGModifier | None = None, apply: bool = True):
 		"""
 		Sets the lock state for this node.
 
 		:param bool state: lock state to change to.
-		:param DGModifier mod: optional Maya modifier to apply; if None, one will be created.
+		:param OpenMaya.MDGModifier mod: optional Maya modifier to apply; if None, one will be created.
 		:param bool apply: whether to apply modifier immediately.
 		:return: created Maya modifier.
 		:rtype: DGModifier
 		"""
 
 		if self.isLocked != state:
-			modifier = mod or types.DGModifier()
+			modifier = mod or OpenMaya.MDGModifier()
 			modifier.setNodeLockState(self.object(), state)
 			if apply:
 				modifier.doIt()
@@ -1057,36 +1058,36 @@ class DGNode(object):
 
 		return False
 
-	def iterateConnections(self, source=True, destination=True):
+	def iterateConnections(self, source: bool = True, destination: bool = True) -> Iterator[Tuple[Plug, Plug], ...]:
 		"""
 		Generator function that iterates over node connections.
 
 		:param bool source: whether to iterate source connections.
 		:param bool destination: whether to iterate destination connections.
 		:return: generator with the first element is the plug instance and the second the connected plug.
-		:rtype: generator(tuple(Plug, Plug))
+		:rtype: Iterator[Tuple[Plug, Plug], ...]
 		"""
 
 		for source_plug, destination_plug in nodes.iterate_connections(self.object(), source, destination):
 			yield Plug(self, source_plug), Plug(node_by_object(destination_plug.node()), destination_plug)
 
-	def sources(self):
+	def sources(self) -> Iterator[Tuple[Plug, Plug], ...]:
 		"""
 		Generator function that iterates over source plugs.
 
 		:return: generator with the first element is the plug instance and the second the connected plug.
-		:rtype: generator(tuple(Plug, Plug))
+		:rtype: Iterator[Tuple[Plug, Plug], ...]
 		"""
 
 		for source, destination in nodes.iterate_connections(self.object(), source=True, destination=False):
 			yield Plug(self, source), Plug(self, destination)
 
-	def destinations(self):
+	def destinations(self) -> Iterator[Tuple[Plug, Plug], ...]:
 		"""
 		Generator function that iterates over destination plugs.
 
 		:return: generator with the first element is the plug instance and the second the connected plug.
-		:rtype: generator(tuple(Plug, Plug))
+		:rtype: Iterator[Tuple[Plug, Plug], ...]
 		"""
 
 		for source, destination in nodes.iterate_connections(self.object(), source=False, destination=True):
@@ -2704,12 +2705,12 @@ class ContainerAsset(DGNode):
 				continue
 			cmds.container(container_path, edit=True, addNode=node_to_add.fullPathName(), includeHierarchyBelow=True)
 
-	def publishedAttributes(self):
+	def publishedAttributes(self) -> List[Plug]:
 		"""
 		Returns all published attributes in this contdainer.
 
 		:return: list of published attributes.
-		:rtype: list(Plug)
+		:rtype: List(Plug)
 		"""
 
 		results = cmds.container(self.fullPathName(), query=True, bindAttr=True)

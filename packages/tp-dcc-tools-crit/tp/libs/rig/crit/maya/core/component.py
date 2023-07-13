@@ -4,7 +4,7 @@ import copy
 import json
 import typing
 import contextlib
-from typing import Tuple, List, Dict, Iterator
+from typing import Tuple, List, Dict, Iterator, Iterable
 
 from tp.bootstrap import log
 from tp.common.python import profiler
@@ -380,6 +380,26 @@ class Component:
 
 		return self.exists() and self._meta.root_transform().isHidden()
 
+	def is_enabled(self) -> bool:
+		"""
+		Returns whether component is enabled.
+
+		:return: True if component is enabled; False otherwise.
+		:rtype: bool
+		"""
+
+		if self.exists():
+			enabled = self._meta.attribute(consts.CRIT_IS_ENABLED_ATTR).asBool()
+			if enabled:
+				parent = self.parent()
+				while parent:
+					_enabled = parent.is_enabled()
+					if not _enabled:
+						return False
+					parent = parent.parent()
+
+		return self.descriptor.get(consts.ENABLED_DESCRIPTOR_KEY, True)
+
 	def name(self) -> str:
 		"""
 		Returns the name of the component from its descriptor.
@@ -400,6 +420,30 @@ class Component:
 
 		return names.deconstruct_name(self.meta.fullPathName()).indexed_name if self.exists() else ''
 
+	def rename(self, name: str):
+		"""
+		Renames the component by setting the meta and descriptor name attribute and its namespace.
+
+		:param str name: new component name.
+		"""
+
+		old_name, side = self.name(), self.side()
+		self.descriptor.name = name
+		if self._meta is None:
+			return
+
+		naming_manager = self.naming_manager()
+		old_name = naming_manager.resolve('componentName', {'componentName': old_name, 'side': side})
+		new_name = naming_manager.resolve('componentName', {'componentName': name, 'side': side})
+
+		for component_node in self.iterate_nodes():
+			component_node.rename(component_node.name().replace(old_name, new_name))
+
+		self._meta.attribute(consts.CRIT_NAME_ATTR).set(name)
+		self._meta.attribute(consts.CRIT_ID_ATTR).set(name)
+		self.save_descriptor(self.descriptor)
+		self._update_space_switch_component_dependencies(name, side)
+
 	def side(self) -> str:
 		"""
 		Returns the side of the component from its descriptor.
@@ -409,6 +453,29 @@ class Component:
 		"""
 
 		return self.descriptor.side if self.descriptor else names.deconstruct_name(self.meta.fullPathName()).side
+
+	def set_side(self, side: str):
+		"""
+		Sets the components side.
+
+		:param str side: new component side.
+		"""
+
+		name, old_side = self.name(), self.side()
+		self.descriptor.side = side
+		if self._meta is None:
+			return
+
+		naming_manager = self.naming_manager()
+		old_name = naming_manager.resolve('componentName', {'componentName': name, 'side': old_side})
+		new_name = naming_manager.resolve('componentName', {'componentName': name, 'side': side})
+
+		for component_node in self.iterate_nodes():
+			component_node.rename(component_node.name().replace(old_name, new_name))
+
+		self._meta.attribute(consts.CRIT_SIDE_ATTR).set(side)
+		self.save_descriptor(self.descriptor)
+		self._update_space_switch_component_dependencies(self.name(), side)
 
 	def root_transform(self) -> api.DagNode | None:
 		"""
@@ -916,6 +983,35 @@ class Component:
 
 		return root.layer(consts.GEOMETRY_LAYER_TYPE)
 
+	def iterate_nodes(self) -> Iterator[api.DGNode | api.DagNode]:
+		"""
+		Generator function that iterates over all node linked to this component.
+
+		:return: iterated linked component nodes.
+		:rtype: Iterator[api.DGNode | api.DagNode]
+		"""
+
+		container = self.container()
+		if container is not None:
+			yield container
+
+		meta = self.meta
+		if meta is not None:
+			yield meta
+
+		transform = self.root_transform()
+		if transform is not None:
+			yield transform
+
+		for i in self._meta.layers_by_id((
+				consts.GUIDE_LAYER_TYPE, consts.RIG_LAYER_TYPE, consts.INPUT_LAYER_TYPE, consts.OUTPUT_LAYER_TYPE,
+				consts.SKELETON_LAYER_TYPE, consts.XGROUP_LAYER_TYPE)).values():
+			if not i:
+				continue
+			yield i
+			for child in i.iterate_children():
+				yield child
+
 	# def control_panel(self):
 	# 	"""
 	# 	Returns control panel instance for this rig layer instance.
@@ -1003,12 +1099,12 @@ class Component:
 			for source_guide_element in guide_compound_plug.child(4):
 				source_guide_element.child(0).disconnectAll()
 
-	def pin(self) -> dict:
+	def pin(self) -> Dict:
 		"""
 		Pins the current component guides in place.
 
 		:return: serialized pin connections data.
-		:rtype: dict
+		:rtype: Dict
 		..info:: this work by serializing all upstream connections on the guide layer meta node instance, then we
 			disconnect while maintaining parenting (metadata).
 		"""
@@ -1027,7 +1123,7 @@ class Component:
 
 		return connection
 
-	def unpin(self):
+	def unpin(self) -> bool:
 		"""
 		Unpins the current component guides.
 
@@ -1099,6 +1195,33 @@ class Component:
 		"""
 
 		return self._remap_connections(layer_type)
+
+	@profiler.fn_timer
+	def serialize_from_scene(self, layer_ids: Iterable[str] | None = None) -> component.ComponentDescriptor:
+		"""
+		Serializes the component from the root transform down using the individual layers.
+
+		:param Iterable[str] layer_ids: optional iterable of CRIT layer IDs that should be serialized.
+		:return: component descriptor.
+		:rtype: component.ComponentDescriptor
+		"""
+
+		if not self.has_guide() and not self.has_skeleton() and not self.has_rig():
+			try:
+				self._descriptor.update(component.parse_raw_descriptor(self._meta.raw_descriptor_data()))
+			except ValueError:
+				self.logger.warning('Descriptor in scene is not valid, skipping descriptor update!')
+			return self._descriptor
+
+		descriptor = self._meta.serializeFromScene(layer_ids)
+		data = self.serialize_component_guide_connections()
+		descriptor['connections'] = data
+		parent_component = self.parent()
+		descriptor['parent'] = ':'.join([parent_component.name(), parent_component.side()]) if parent_component else ''
+		self._descriptor.update(descriptor)
+		self.save_descriptor(self._descriptor)
+
+		return self._descriptor
 
 	def _remap_connections(self, layer_type: str = consts.GUIDE_LAYER_TYPE) -> Tuple[List, Dict]:
 		"""
@@ -1348,6 +1471,95 @@ class Component:
 		if nodes_to_publish and container is not None:
 			container.publishNodes(nodes_to_publish)
 
+	@profiler.fn_timer
+	def delete(self) -> bool:
+		"""
+		Deletes the entire component from current scene.
+		If this component has children, those children meta nodes will be re-parented to the rig components layer.
+
+		:return: True if component deletion operation was successful; False otherwise.
+		:rtype: bool
+		"""
+
+		container = self.container()
+		current_children = list(self.iterate_children())
+		for child in current_children:
+			child.meta.add_meta_parent(rig.components_layer())
+		self.logger.debug('Starting componetn deletion operation')
+		self.delete_rig()
+		self.delete_skeleton()
+		self.delete_guide()
+		if self._meta.exists():
+			self._meta.delete()
+		if container is not None:
+			self.logger.debug('Deleting container')
+			container.delete()
+		self._meta = None
+
+		return True
+
+	@profiler.fn_timer
+	def delete_guide(self):
+		"""
+		Deletes component guides.
+		"""
+
+		self.logger.debug(f'Deleting component guides: "{self}"')
+		container = self.container()
+		guides_layer = self.guide_layer()
+		if not guides_layer:
+			self._set_has_guide(False)
+			return True
+
+		to_delete = []
+		self.logger.debug('Start guides layer deletion process...')
+		child_components = list(self.iterate_children())
+		if child_components:
+			self.logger.debug('Child component exists, removing guide connections...')
+			guides = guides_layer.iterate_guides()
+			for child in child_components:
+				child_guide_layer = child.guide_layer()
+				if child_guide_layer is None:
+					continue
+				to_delete.extend([connector for connector in child.guide_layer().iterate_connectors() if connector.end_node() in guides])
+
+		if container is not None:
+			container.lock(False)
+			guide_settings = guides_layer.setting_node(consts.GUIDE_LAYER_TYPE)
+			if guide_settings:
+				self.logger.debug('Purging published guide container settings')
+				for i in container.publishedAttributes():
+					try:
+						plug_name = i.partialName(include_node_name=False)
+					except RuntimeError:
+						self.logger.warning(f'Object does not exist: {i}')
+						continue
+					if guide_settings.hasAttribute(plug_name):
+						container.unPublishAttribute(plug_name)
+
+		modifier = api.DagModifier()
+		[i.delete(mod=modifier, apply=False) for i in to_delete if i.exists()]
+		guides_layer.delete(mod=modifier, apply=True)
+		self._set_has_guide(False)
+
+		return True
+
+	@profiler.fn_timer
+	def delete_skeleton(self):
+		"""
+		Deletes component skeleton.
+		"""
+
+		pass
+
+	@profiler.fn_timer
+	def delete_rig(self):
+		"""
+		Deletes component rig.
+		"""
+
+		pass
+
 	def _descriptor_from_scene(self) -> component.ComponentDescriptor | None:
 		"""
 		Internal function that tries to retrieve the descriptor from this component meta node instance.
@@ -1569,3 +1781,14 @@ class Component:
 			break
 
 		return constraints
+
+	def _update_space_switch_component_dependencies(self, new_name: str, new_side: str):
+		"""
+		Internal function that updates any component space switches which contains this component current name as a
+		driver and updates it to the new name.
+
+		:param str new_name: new name for this component which all component space switches will be updated with.
+		:param str new_side: new side for this component which all component space switches will be updated with.
+		"""
+
+		pass

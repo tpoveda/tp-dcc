@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Iterable
+
 from overrides import override
 
 from tp.core import log
@@ -8,6 +10,7 @@ from tp.maya.meta import base
 
 from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.maya.meta import layers
+from tp.libs.rig.crit.maya.descriptors import component
 
 logger = log.rigLogger
 
@@ -41,6 +44,7 @@ class CritComponent(base.DependentNode):
 				dict(name=consts.CRIT_SIDE_ATTR, type=api.kMFnDataString),
 				dict(name=consts.CRIT_VERSION_ATTR, type=api.kMFnDataString),
 				dict(name=consts.CRIT_COMPONENT_TYPE_ATTR, type=api.kMFnDataString),
+				dict(name=consts.CRIT_IS_ENABLED_ATTR, value=True, type=api.kMFnNumericBoolean),
 				dict(name=consts.CRIT_HAS_GUIDE_ATTR, value=False, type=api.kMFnNumericBoolean),
 				dict(name=consts.CRIT_HAS_SKELETON_ATTR, value=False, type=api.kMFnNumericBoolean),
 				dict(name=consts.CRIT_HAS_RIG_ATTR, value=False, type=api.kMFnNumericBoolean),
@@ -56,6 +60,43 @@ class CritComponent(base.DependentNode):
 		)
 
 		return attrs
+
+	@override(check_signature=False)
+	def serializeFromScene(self, layer_ids: Iterable[str] | None = None):
+
+		data = {
+			'name': self.attribute(consts.CRIT_NAME_ATTR).asString(),
+			'side': self.attribute(consts.CRIT_SIDE_ATTR).asString(),
+			'type': self.attribute(consts.CRIT_COMPONENT_TYPE_ATTR).asString(),
+			'enabled': self.attribute(consts.CRIT_IS_ENABLED_ATTR).asBool(),
+		}
+
+		if not self.attribute(consts.CRIT_HAS_GUIDE_ATTR).asBool():
+			raw = self.raw_descriptor_data()
+			return component.parse_raw_descriptor(raw)
+		if layer_ids:
+			for layer_id, layer_node in self.layer_id_mapping().items():
+				if layer_id in layer_ids:
+					data.update(layer_node.serializeFromScene())
+		else:
+			for i in iter(self.layers()):
+				data.update(i.serializeFromScene())
+
+		return data
+
+	@override(check_signature=False)
+	def delete(self, mod: api.OpenMaya.MDGModifier | None = None) -> bool:
+
+		root = self.root_transform()
+		print('gogoggoogoggo')
+		print(root.isLocked)
+		if root:
+			print('trying to unlock ....')
+			root.lock(False)
+			print(root.isLocked)
+			root.delete()
+
+		return super().delete(mod=mod)
 
 	def root_transform(self) -> api.DagNode | None:
 		"""

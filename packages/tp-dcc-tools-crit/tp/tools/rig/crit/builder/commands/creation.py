@@ -38,6 +38,26 @@ class CreateRigUiCommand(command.CritUiCommand):
 		return new_rig
 
 
+class DeleteRigCommand(command.CritUiCommand):
+
+	ID = 'deleteRig'
+	UI_DATA = {'icon': 'trash', 'label': 'Delete rig instance'}
+
+	@override(check_signature=False)
+	def execute(self, rig: Rig | None = None):
+		"""
+		Deletes given rig instance.
+
+		:param Rig or None rig: rig instance to delete.
+		"""
+
+		if not self._rig_model:
+			return
+
+		crit.delete_rig(rig=rig or self.rig_model.rig)
+		self.request_refresh(False)
+
+
 class CreateComponentUiCommand(command.CritUiCommand):
 
 	ID = 'createComponent'
@@ -80,6 +100,7 @@ class DuplicateComponentsUiCommand(command.CritUiCommand):
 	ID = 'duplicateComponents'
 	UI_DATA = {'icon': 'clone', 'label': 'Duplicate Selected Components'}
 
+	@override(check_signature=False)
 	def execute(self):
 		"""
 		Duplicates components that are currently selected within components tree widget.
@@ -101,11 +122,36 @@ class DuplicateComponentsUiCommand(command.CritUiCommand):
 		self.request_refresh(False)
 
 
+class DeleteComponentUiCommand(command.CritUiCommand):
+
+	ID = 'deleteComponent'
+	UI_DATA = {'icon': 'trash', 'label': 'Delete Components'}
+
+	@override(check_signature=False)
+	def execute(self):
+		"""
+		Deletes current selected components.
+		"""
+
+		if not self._rig_model:
+			return
+
+		selection = self.selected_component_models
+		if not selection:
+			return
+
+		current_rig = self._rig_model.rig
+		current_rig.clear_components_cache()
+		crit.delete_components(current_rig, [component_model.component for component_model in selection])
+		self.request_refresh(False)
+
+
 class DeleteAllComponentsUiCommand(command.CritUiCommand):
 
 	ID = 'deleteAllComponents'
 	UI_DATA = {'icon': 'trash', 'label': 'Delete All Components'}
 
+	@override(check_signature=False)
 	def execute(self):
 		"""
 		Deletes all components of current active rig.

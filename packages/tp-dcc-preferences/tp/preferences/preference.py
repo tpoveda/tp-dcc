@@ -5,17 +5,24 @@
 Module that contains base class to handle tpDcc Tools framework preference files and preferences data
 """
 
+from __future__ import annotations
+
 import os
 import copy
+import typing
+from typing import Dict, Any
 
 from tp.core import consts, exceptions
 from tp.common.python import helpers
+
+if typing.TYPE_CHECKING:
+	from tp.preferences.manager import PreferenceObject, PreferencesManager
 
 # maximum levels of supported expansions
 EXPAND_LIMIT = 5
 
 
-class PreferenceInterface(object):
+class PreferenceInterface:
 	"""
 	Base class that is responsible for interfacing to '.pref files withing tpDcc Tools framework.
 	Interfaces are a useful concept because allow us to properly handle configuration data when a change on the data
@@ -24,27 +31,20 @@ class PreferenceInterface(object):
 
 	ID = ''
 	_RELATIVE_PATH = ''
+	_EXPAND_ENTRIES = []
 	_SETTINGS = None
 
-	def __init__(self, preferences_manager):
+	def __init__(self, preferences_manager: PreferencesManager):
 		super(PreferenceInterface, self).__init__()
 
 		self._manager = preferences_manager
-		self._revert_settings = None
-
-	# =================================================================================================================
-	# PROPERTIES
-	# =================================================================================================================
+		self._revert_settings = None						# type: Dict
 
 	@property
-	def manager(self):
+	def manager(self) -> PreferencesManager:
 		return self._manager
 
-	# =================================================================================================================
-	# BASE
-	# =================================================================================================================
-
-	def are_settings_valid(self):
+	def are_settings_valid(self) -> bool:
 		"""
 		Returns whether stored settings are valid.
 
@@ -54,7 +54,9 @@ class PreferenceInterface(object):
 
 		return self.settings().is_valid()
 
-	def settings(self, relative_path=None, root=None, name=None, refresh=False):
+	def settings(
+			self, relative_path: str | None = None, root: str | None = None, name: str | None = None,
+			refresh: bool = False) -> PreferenceObject or Dict:
 		"""
 		Returns the settings stored within the preference interface.
 
@@ -63,7 +65,7 @@ class PreferenceInterface(object):
 		:param str name: name of the root to search.
 		:param bool refresh: whether to re-cache the queried settings back on this interface instance.
 		:return: settings value
-		:rtype: PreferenceObject or object
+		:rtype: PreferenceObject or Dict
 		"""
 
 		relative_path = relative_path or self._RELATIVE_PATH
@@ -89,7 +91,19 @@ class PreferenceInterface(object):
 
 		self.settings(refresh=True)
 
-	def find_setting(self, name, root=None, extension=None, expand_num=0):
+	def find_setting(
+			self, name: str, root: str | None = None, extension: str | None = None, expand_num: int = 0) -> Any:
+		"""
+		Find setting with given name.
+
+		:param str name: setting name to find.
+		:param str or None root: root name to search, if None all roots will be searched.
+		:param str or None extension: optional setting extension.
+		:param int expand_num: expand token value.
+		:return: setting value.
+		:rtype: Any
+		"""
+
 		name = str(name)
 		if name in os.environ:
 			result = os.environ[name]
@@ -100,11 +114,19 @@ class PreferenceInterface(object):
 
 		return result
 
-	def _expand_tokens(self, value, expand_num):
+	def _expand_tokens(self, value: Any, expand_num: int) -> Any:
+		"""
+		Internal function that expands token values for a setting.
+
+		:param Any value: token value to expand.
+		:param int expand_num: expand token value.
+		:return: expanded tokens.
+		"""
+
 		if helpers.is_string(value):
 			result = self._expand_value(value, expand_num=expand_num)
 		elif isinstance(value, list):
-			result = list()
+			result = []
 			for v in value:
 				v = self._expand_value(v, expand_num=expand_num)
 				result.append(v)
@@ -113,7 +135,15 @@ class PreferenceInterface(object):
 
 		return result
 
-	def _expand_value(self, value, expand_num):
+	def _expand_value(self, value: Any, expand_num: int):
+		"""
+		Internal function that expands token value for a setting.
+
+		:param Any value: token value to expand.
+		:param int expand_num: expand token value.
+		:return: expanded values.
+		"""
+
 		result = value
 		for name in self._EXPAND_ENTRIES:
 			key = '${' + name + '}'
@@ -123,7 +153,7 @@ class PreferenceInterface(object):
 
 		return result
 
-	def save_settings(self, indent=True, sort=False):
+	def save_settings(self, indent: bool = True, sort: bool = False):
 		"""
 		Save settings into disk.
 
@@ -145,10 +175,6 @@ class PreferenceInterface(object):
 		self._SETTINGS.clear()
 		self._SETTINGS.update(self._revert_settings)
 		self.save_settings()
-
-	# =================================================================================================================
-	# INTERNAL
-	# =================================================================================================================
 
 	def _setup_revert(self):
 		"""

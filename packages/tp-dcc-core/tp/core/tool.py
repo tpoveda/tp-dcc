@@ -5,14 +5,19 @@
 Module that contains classes to define Dcc tools
 """
 
+from __future__ import annotations
+
 import sys
 import abc
+import typing
 import traceback
 
 from tp.core import log
 from tp.common.python import decorators
 from tp.common import plugin
 
+if typing.TYPE_CHECKING:
+    from tp.core.managers.tools import ToolsManager
 
 logger = log.tpLogger
 
@@ -29,7 +34,7 @@ class Tool(plugin.Plugin):
         'tooltip': ''
     }
 
-    def __init__(self, factory: plugin.PluginFactory, tools_manager: 'tp.core.managers.tools.ToolsManager'):
+    def __init__(self, factory: plugin.PluginFactory, tools_manager: ToolsManager):
         super(Tool, self).__init__(factory=factory)
 
         self._tools = list()

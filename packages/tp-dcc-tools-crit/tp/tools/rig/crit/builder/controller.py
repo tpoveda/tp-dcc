@@ -228,6 +228,15 @@ class CritBuilderController(qt.QObject):
 
 		return new_component_model
 
+	def set_selected_components(self, component_models: List[component.ComponentModel]):
+		"""
+		Sets currently selected component models.
+
+		:param List[component.ComponentModel] component_models: list of selected component models.
+		"""
+
+		self._selection_model.component_models = component_models
+
 	def rig_by_name(self, name: str) -> Rig | None:
 		"""
 		Returns rig instance that matches given name.

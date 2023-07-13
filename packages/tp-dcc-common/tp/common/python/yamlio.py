@@ -5,7 +5,11 @@
 Utility methods related to write/read YAML files
 """
 
+from __future__ import annotations
+
 import os
+from typing import Dict
+
 import yaml
 
 from tp.core import log
@@ -14,11 +18,11 @@ from tp.common.python import yamlordereddictloader
 logger = log.tpLogger
 
 
-def validate_yaml(dictionary):
+def validate_yaml(dictionary: Dict) -> bool:
     """
     Validates whether the given dictionary can be dumped into a YAML file.
 
-    :param dict dictionary: dictionary to store.
+    :param Dict dictionary: dictionary to store.
     :return: True if the dictionary is valid; False otherwise.
     :rtype: bool
     """
@@ -30,13 +34,13 @@ def validate_yaml(dictionary):
         return False
 
 
-def write_to_file(data, filename, **kwargs):
+def write_to_file(data: Dict, filename: str, **kwargs: Dict) -> str:
     """
     Writes data to YAML file.
 
-    :param dict, data: data to store into YAML file.
+    :param Dict data: data to store into YAML file.
     :param str filename: name of the YAML file we want to store data into.
-    :param dict, kwargs:
+    :param Dict kwargs: keyword arguments.
     :return: file name of the stored file.
     :rtype: str
     """
@@ -64,14 +68,14 @@ def write_to_file(data, filename, **kwargs):
     return filename
 
 
-def read_file(filename, maintain_order=False):
+def read_file(filename: str, maintain_order: bool = False) -> Dict | None:
     """
     Returns data from YAML file.
 
     :param str filename: name of YAML file we want to read data from.
     :param bool maintain_order: whether to maintain the order of the returned dictionary or not.
     :return: data read from YAML file as dictionary.
-    :return: dict
+    :return: Dict or None
     """
 
     if os.stat(filename).st_size == 0:

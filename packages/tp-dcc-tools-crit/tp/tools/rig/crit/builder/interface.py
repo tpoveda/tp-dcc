@@ -5,7 +5,7 @@ import typing
 if typing.TYPE_CHECKING:
 	from tp.tools.rig.crit.builder.ui import CritBuilderWindow
 	from tp.tools.rig.crit.builder.controller import CritBuilderController
-	from tp.tools.rig.crit.builder.views.componentstree import ComponentsTreeWidget
+	from tp.tools.rig.crit.builder.views.componentsoutliner import ComponentsTreeWidget
 
 
 class CritUiInterface:

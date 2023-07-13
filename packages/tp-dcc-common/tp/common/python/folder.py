@@ -5,6 +5,8 @@
 Utility methods related to folders
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import time
@@ -14,6 +16,7 @@ import fnmatch
 import tempfile
 import traceback
 import subprocess
+from typing import Tuple, Dict
 from distutils.dir_util import copy_tree
 
 from tp.core import log
@@ -167,14 +170,17 @@ def move_folder(source_directory, target_directory, only_contents=False):
     return True
 
 
-def copy_directory_contents(path1, path2, *args, **kwargs):
+def copy_directory_contents(path1: str, path2: str, *args: Tuple, **kwargs: Dict) -> bool:
     """
-    Copies all the contents of the given path1 to the folder path2. If path2 directory does not exists, it will be created
-    :param path1: str
-    :param path2: str
-    :param args:
-    :param kwargs:
-    :return:
+    Copies all the contents of the given path1 to the folder path2. If path2 directory does not exist, it will be
+    created.
+
+    :param str path1: source directory path.
+    :param str path2: destination path.
+    :param Tuple args: tuple of positional arguments.
+    :param Dict kwargs: keyword arguments.
+    :return: True if copy directory operation was successful; False otherwise.
+    :rtype: bool
     """
 
     try:
@@ -186,7 +192,7 @@ def copy_directory_contents(path1, path2, *args, **kwargs):
     return True
 
 
-def copy_directory_contents_safe(source, target, skip_exists=True, overwrite_modified=False):
+def copy_directory_contents_safe(source: str, target: str, skip_exists: bool = True, overwrite_modified: bool = False):
     """
     Copies the contents of one directory to another including sub-folders. Destination folder will be created if it
     does not exist.

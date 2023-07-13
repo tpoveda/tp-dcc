@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import List
 
 from Qt import QtCompat
-from Qt.QtCore import Qt, Signal, QPoint, QModelIndex, QItemSelectionModel
+from Qt.QtCore import Qt, Signal, QPoint, QItemSelectionModel
 from Qt.QtWidgets import QWidget, QFrame, QHeaderView, QTableView, QMenu
 
 from tp.common.qt.widgets import layouts, search

@@ -5,22 +5,30 @@
 Module that contains custom extra layout implementations
 """
 
-from Qt.QtCore import Qt, QPoint, QRect, QSize
+from __future__ import annotations
+
+from typing import Optional, Union, Tuple, List
+
+from overrides import override
+from Qt.QtCore import Qt, QObject, QPoint, QRect, QSize
 from Qt.QtWidgets import (
-    QLayout, QBoxLayout, QHBoxLayout, QVBoxLayout, QGridLayout, QFormLayout, QGraphicsLinearLayout, QWidget, QWidgetItem
+    QLayout, QBoxLayout, QHBoxLayout, QVBoxLayout, QGridLayout, QFormLayout, QGraphicsLinearLayout, QWidget,
+    QWidgetItem, QLayoutItem
 )
 
 from tp.common.qt import consts, dpi, qtutils
 
 
-def vertical_layout(spacing=consts.DEFAULT_SPACING, margins=(0, 0, 0, 0), alignment=None, parent=None):
+def vertical_layout(
+        spacing: int = consts.DEFAULT_SPACING, margins: Tuple[int, int, int, int] = (0, 0, 0, 0),
+        alignment: Qt.AlignmentFlag | None = None, parent: QWidget | None = None) -> QVBoxLayout:
     """
     Returns a new vertical layout that automatically handles DPI stuff.
 
     :param int spacing: layout spacing
-    :param tuple(int, int, int, int) margins: layout margins.
+    :param Tuple[int, int, int, int] margins: layout margins.
     :param Qt.AlignmentFlag or None alignment: optional layout alignment.
-    :param QtWidgets.QWidget or None parent: optional layout parent.
+    :param QWidget or None parent: optional layout parent.
     :return: new vertical layout instance.
     :rtype: QVBoxLayout
     """
@@ -34,14 +42,16 @@ def vertical_layout(spacing=consts.DEFAULT_SPACING, margins=(0, 0, 0, 0), alignm
     return new_layout
 
 
-def horizontal_layout(spacing=consts.DEFAULT_SPACING, margins=(0, 0, 0, 0), alignment=None, parent=None):
+def horizontal_layout(
+        spacing: int = consts.DEFAULT_SPACING, margins: Tuple[int, int, int, int] = (0, 0, 0, 0),
+        alignment: Qt.AlignmentFlag | None = None, parent: QWidget | None = None) -> QHBoxLayout:
     """
     Returns a new horizontal layout that automatically handles DPI stuff.
 
     :param int spacing: layout spacing
-    :param tuple(int, int, int, int) margins: layout margins.
+    :param Tuple[int, int, int, int] margins: layout margins.
     :param Qt.AlignmentFlag or None alignment: optional layout alignment.
-    :param QtWidgets.QWidget or None parent: optional layout parent.
+    :param QWidget or None parent: optional layout parent.
     :return: new horizontal layout instance.
     :rtype: QHBoxLayout
     """
@@ -56,13 +66,15 @@ def horizontal_layout(spacing=consts.DEFAULT_SPACING, margins=(0, 0, 0, 0), alig
 
 
 def grid_layout(
-        spacing=consts.DEFAULT_SPACING, margins=(0, 0, 0, 0), column_min_width=None, column_min_width_b=None,
-        vertical_spacing=None, horizontal_spacing=None, parent=None):
+        spacing: int = consts.DEFAULT_SPACING, margins: Tuple[int, int, int, int] = (0, 0, 0, 0),
+        column_min_width: int | None = None, column_min_width_b: int | None = None,
+        vertical_spacing: int | None = None, horizontal_spacing: int | None = None,
+        parent: QWidget | None = None) -> QGridLayout:
     """
     Returns a new grid layout that automatically handles DPI stuff.
 
     :param int spacing: layout spacing
-    :param tuple(int, int, int, int) margins: layout margins.
+    :param Tuple[int, int, int, int] margins: layout margins.
     :param int or None column_min_width: optional colum minimum width.
     :param int or None column_min_width_b: optional colum secondary minimum width.
     :param int or None vertical_spacing: optional vertical spacing.
@@ -95,12 +107,14 @@ def grid_layout(
     return new_layout
 
 
-def form_layout(spacing=consts.DEFAULT_SPACING, margins=(0, 0, 0, 0), parent=None):
+def form_layout(
+        spacing: int = consts.DEFAULT_SPACING, margins: Tuple[int, int, int, int] = (0, 0, 0, 0),
+        parent: QWidget | None = None) -> QFormLayout:
     """
     Returns a new form layout that automatically handles DPI stuff.
 
     :param int spacing: layout spacing
-    :param tuple(int, int, int, int) margins: layout margins.
+    :param Tuple[int, int, int, int] margins: layout margins.
     :param QtWidgets.QWidget or None parent: optional layout parent.
     :return: new form layout instance.
     :rtype: QFormLayout
@@ -113,12 +127,14 @@ def form_layout(spacing=consts.DEFAULT_SPACING, margins=(0, 0, 0, 0), parent=Non
     return new_layout
 
 
-def box_layout(spacing=consts.DEFAULT_SPACING, margins=(0, 0, 0, 0), orientation=Qt.Horizontal, parent=None):
+def box_layout(
+        spacing: int = consts.DEFAULT_SPACING, margins: Tuple[int, int, int, int] = (0, 0, 0, 0),
+        orientation: Qt.AlignmentFlag = Qt.Horizontal, parent: QWidget | None = None) -> QBoxLayout:
     """
     Returns a new form layout that automatically handles DPI stuff.
 
     :param int spacing: layout spacing
-    :param tuple(int, int, int, int) margins: layout margins.
+    :param Tuple[int, int, int, int] margins: layout margins.
     :param Qt.Orientation orientation: layout orientation.
     :param QtWidgets.QWidget or None parent: optional layout parent.
     :return: new box layout instance.
@@ -133,7 +149,7 @@ def box_layout(spacing=consts.DEFAULT_SPACING, margins=(0, 0, 0, 0), orientation
     return new_layout
 
 
-def flow_layout(spacing=consts.DEFAULT_SPACING, parent=None):
+def flow_layout(spacing: int = consts.DEFAULT_SPACING, parent: QWidget | None = None) -> FlowLayout:
     """
     Returns a new flow layout.
 
@@ -145,12 +161,14 @@ def flow_layout(spacing=consts.DEFAULT_SPACING, parent=None):
     return FlowLayout(spacing_x=spacing, spacing_y=spacing, parent=parent)
 
 
-def graphics_linear_layout(margins=(0, 0, 0, 0), spacing=0, orientation=Qt.Vertical, parent=None):
+def graphics_linear_layout(
+        spacing: int = 0, margins: Tuple[int, int, int, int] = (0, 0, 0, 0),
+        orientation: Qt.AlignmentFlag = Qt.Vertical, parent: QWidget | None =None) -> QGraphicsLinearLayout:
     """
-    Returs a new vertical graphics linear layout that autmoatically handles DPI stuff.
+    Returs a new vertical graphics linear layout that automatically handles DPI stuff.
 
     :param int spacing: layout spacing
-    :param tuple(int, int, int, int) margins: layout margins.
+    :param Tuple[int, int, int, int] margins: layout margins.
     :param Qt.Orientation orientation: layout orientation.
     :return: new vertical graphics linear layout instance.
     :param QtWidgets.QWidget or None parent: optional layout parent.
@@ -163,7 +181,9 @@ def graphics_linear_layout(margins=(0, 0, 0, 0), spacing=0, orientation=Qt.Verti
         return horizontal_graphics_linear_layout(margins=margins, spacing=spacing, parent=parent)
 
 
-def vertical_graphics_linear_layout(margins=(0, 0, 0, 0), spacing=0, parent=None):
+def vertical_graphics_linear_layout(
+        spacing: int = 0, margins: Tuple[int, int, int, int] = (0, 0, 0, 0),
+        parent: QWidget | None =None) -> QGraphicsLinearLayout:
     """
     Returs a new vertical graphics linear layout that automatically handles DPI stuff.
 
@@ -182,7 +202,9 @@ def vertical_graphics_linear_layout(margins=(0, 0, 0, 0), spacing=0, parent=None
     return new_layout
 
 
-def horizontal_graphics_linear_layout(margins=(0, 0, 0, 0), spacing=0, parent=None):
+def horizontal_graphics_linear_layout(
+        spacing: int = 0, margins: Tuple[int, int, int, int] = (0, 0, 0, 0),
+        parent: QWidget | None =None) -> QGraphicsLinearLayout:
     """
     Returs a new vertical graphics linear layout that automatically handles DPI stuff.
 
@@ -201,13 +223,13 @@ def horizontal_graphics_linear_layout(margins=(0, 0, 0, 0), spacing=0, parent=No
     return new_layout
 
 
-class FlowLayout(QLayout, object):
+class FlowLayout(QLayout):
     """
     Layout that automatically adjust widgets position depending on the available space
     """
 
-    def __init__(self, spacing_x=2, spacing_y=2, margin=0, parent=None):
-        super(FlowLayout, self).__init__(parent)
+    def __init__(self, spacing_x: int = 2, spacing_y: int = 2, margin: int = 0, parent: QWidget | None = None):
+        super().__init__(parent)
 
         if parent is not None:
             self.setMargin(margin)
@@ -215,7 +237,7 @@ class FlowLayout(QLayout, object):
         self._spacing_x = 0                                     # spacing in X axis
         self._spacing_y = 0                                     # spacing in Y axis
         self._orientation = Qt.Horizontal                       # layout orientation.
-        self._item_list = list()                                # list of items in the layout
+        self._item_list = []                                    # list of items in the layout
         self._overflow = None                                   # whether to allow or not overflow
         self._size_hint_layout = self.minimumSize()             # size hint layout
 
@@ -225,139 +247,66 @@ class FlowLayout(QLayout, object):
     def __del__(self):
         self.clear()
 
-    # =================================================================================================================
-    # PROPERTIES
-    # =================================================================================================================
-
     @property
-    def spacing_x(self):
+    def spacing_x(self) -> int:
         return self._spacing_x
 
     @property
-    def spacing_y(self):
+    def spacing_y(self) -> int:
         return self._spacing_y
 
     @property
-    def items_list(self):
+    def items_list(self) -> List[QObject]:
         return self._item_list
 
-    # =================================================================================================================
-    # OVERRIDES
-    # =================================================================================================================
+    @override
+    def addItem(self, arg__1: QLayoutItem) -> None:
+        self._item_list.append(arg__1)
 
-    def addItem(self, item):
-        """
-        Overrides base QLayout addItem function to add the item into our list of items.
-
-        :param QObject item: item to add into the flow layout.
-        """
-
-        self._item_list.append(item)
-
-    def count(self):
-        """
-        Overrides baes QLayout count function to return the total number of items from our list of items.
-
-        :return: total list of items in the layout.
-        :rtype: int
-        """
-
+    @override
+    def count(self) -> int:
         return len(self._item_list)
 
-    def itemAt(self, index):
-        """
-        Overrides base QLayout itemAt function to retrieve the item from our list of items.
-
-        :param int index: index in the list where the item we are looking for is located.
-        :return: Widget located at the given index in our list of items.
-        :rtype: QWidget or None
-        """
-
+    @override
+    def itemAt(self, index: int) -> Optional[QLayoutItem]:
         if 0 <= index < len(self._item_list):
             return self._item_list[index]
 
         return None
 
-    def takeAt(self, index):
-        """
-        Overrides base QLayout takeAt function to retrieve the item from our list of items.
-
-        :param int index: index in the list where the item we are looking for is located.
-        :return: Widget located at the given index in our list of items.
-        :rtype: QWidget or None
-        """
-
+    @override
+    def takeAt(self, index: int) -> Optional[QLayoutItem]:
         if 0 <= index < len(self._item_list):
             return self._item_list.pop(index)
 
         return None
 
-    def expandingDirections(self):
-        """
-        Sets whether this layout grows only in horizontal or vertical dimension.
-        Overrides base QLayout expandingDirections function to use the orientation defined in the flow layout.
-
-        :return: flow layout orientation.
-        :rtype: Qt.Orientation
-        """
-
+    @override
+    def expandingDirections(self) -> Union[Qt.Orientations, Qt.Orientation]:
         return Qt.Orientations(self.orientation())
 
-    def hasHeightForWidth(self):
-        """
-        Sets whether layout's preferred height depends on its width or not.
-        Overrides base QLayout hasHeightForWidth function.
-
-        :return: Whethr or not the current orientatin is horizontal.
-        :rtype: bool
-        """
-
+    @override
+    def hasHeightForWidth(self) -> bool:
         return self.orientation() == Qt.Horizontal
 
-    def heightForWidth(self, width):
-        """
-        Returns the preferred heights a layout item with given width.
-        Overrides base QLayout heightForWidth function.
-
-        :param int width: desired width.
-        :return: height based on the given width.
-        :rtype: int
-        """
-
-        height = self._generate_layout(QRect(0, 0, width, 0), True)
-        self._size_hint_layout = QSize(width, height)
+    @override
+    def heightForWidth(self, arg__1: int) -> int:
+        height = self._generate_layout(QRect(0, 0, arg__1, 0), True)
+        self._size_hint_layout = QSize(arg__1, height)
 
         return height
 
-    def setGeometry(self, rect):
-        """
-        Overrides base QLayout setGeometry function to reposition all items inside the flow layout based on the rect.
+    @override
+    def setGeometry(self, arg__1: QRect) -> None:
+        super().setGeometry(arg__1)
+        self._generate_layout(arg__1, False)
 
-        :param QRect rect: new geomtry rectangle.
-        """
-
-        super(FlowLayout, self).setGeometry(rect)
-        self._generate_layout(rect, False)
-
-    def sizeHint(self):
-        """
-        Returns the preferred size of this layout.
-        Overrides base QLayout sizeHint function.
-
-        :return: desired size to fit all items in the layout.
-        :rtype: QSize
-        """
-
+    @override
+    def sizeHint(self) -> QSize:
         return self._size_hint_layout
 
-    def minimumSize(self):
-        """
-        Returns the minimum size for this layout.
-        Overrides base minimumSize function.
-
-        :return: layout minimum size.
-        :rtype: QSize
-        """
+    @override
+    def minimumSize(self) -> QSize:
 
         size = QSize()
         for item in self._item_list:
@@ -366,16 +315,12 @@ class FlowLayout(QLayout, object):
 
         return size
 
-    # =================================================================================================================
-    # BASE
-    # =================================================================================================================
-
-    def items(self):
+    def items(self) -> List[QObject]:
         """
         Returns all items in the layout.
 
         :return: layout items.
-        :rtype: list(QObject)
+        :rtype: List[QObject]
         """
 
         remove = list()
@@ -386,27 +331,27 @@ class FlowLayout(QLayout, object):
         [self._item_list.remove(r) for r in remove]
         return self._item_list
 
-    def set_spacing_x(self, spacing):
+    def set_spacing_x(self, spacing: int):
         """
         Sets the X spacing for each item.
 
-        :param float spacing: spacing between items in X axis.
+        :param int spacing: spacing between items in X axis.
         """
 
         self._spacing_x = dpi.dpi_scale(spacing)
 
-    def set_spacing_y(self, spacing):
+    def set_spacing_y(self, spacing: int):
         """
         Sets the Y spacing for each item.
 
-        :param float spacing: spacing between items in Y axis.
+        :param int spacing: spacing between items in Y axis.
         """
 
         self._spacing_y = dpi.dpi_scale(spacing)
 
     def clear(self):
         """
-        Clears all the widgest in the layout.
+        Clears all the widgets in the layout.
         """
 
         item = self.takeAt(0)
@@ -416,26 +361,26 @@ class FlowLayout(QLayout, object):
                 widget.deleteLater()
             item = self.takeAt(0)
 
-    def orientation(self):
+    def orientation(self) -> Qt.Orientation:
         """
         Returns flow layout orientation.
 
         :return: flow layout orientation.
-        :rtype: Qt.Horizontal or Qt.Vertical
+        :rtype: Qt.Orientation
         """
 
         return self._orientation
 
-    def set_orientation(self, orientation):
+    def set_orientation(self, orientation: Qt.Orientation):
         """
         Sets how widgets will be laid out (horizontally or vertically).
 
-        :param Qt.Horizontal or Qt.Vertical orientation: flow layout orientation.
+        :param Qt.Orientation orientation: flow layout orientation.
         """
 
         self._orientation = orientation
 
-    def add_spacing(self, spacing):
+    def add_spacing(self, spacing: int):
         """
         Adds new spacing into the widget.
 
@@ -446,7 +391,7 @@ class FlowLayout(QLayout, object):
         space_widget.setFixedSize(dpi.size_by_dpi(QSize(spacing, spacing)))
         self.addWidget(space_widget)
 
-    def insert_widget(self, index, widget):
+    def insert_widget(self, index: int, widget: QWidget):
         """
         Inserts a new widget into the given index.
 
@@ -457,7 +402,7 @@ class FlowLayout(QLayout, object):
         item = QWidgetItem(widget)
         self._item_list.insert(index, item)
 
-    def remove_at(self, index):
+    def remove_at(self, index: int):
         """
         Removes widget at given index.
 
@@ -475,20 +420,16 @@ class FlowLayout(QLayout, object):
 
         return True
 
-    def allow_overflow(self, flag):
+    def allow_overflow(self, flag: bool):
         """
-        Sets whether or not alllow layouts to overflow, rather than go onto the next line.
+        Sets whether to allow layouts to overflow, rather than go onto the next line.
 
-        :param bool flag: whether or not to allow overflow.
+        :param bool flag: whether to allow overflow.
         """
 
         self._overflow = flag
 
-    # =================================================================================================================
-    # INTERNAL
-    # =================================================================================================================
-
-    def _generate_layout(self, rect, test_only=True):
+    def _generate_layout(self, rect: QRect, test_only: bool = True):
         """
         Internal function that generates layout with proper flow.
 

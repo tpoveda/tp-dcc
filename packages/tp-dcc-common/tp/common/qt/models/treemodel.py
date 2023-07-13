@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from typing import Union, Any
+import pickle
+from typing import Union, List, Any
 
 from overrides import override
 from Qt import QtCompat
-from Qt.QtCore import Qt, QObject, QModelIndex, QAbstractItemModel
+from Qt.QtCore import Qt, QObject, QModelIndex, QAbstractItemModel, QMimeData
 
 from tp.common.qt.models import consts, datasources
 
 
 class BaseTreeModel(QAbstractItemModel):
-	def __init__(self, root: datasources.BaseDataSource, parent: QObject | None):
+	def __init__(self, root: datasources.BaseDataSource | None, parent: QObject | None):
 		super().__init__(parent)
 
 		self._root = root
@@ -21,16 +22,37 @@ class BaseTreeModel(QAbstractItemModel):
 	def root(self) -> datasources.BaseDataSource:
 		return self._root
 
-	@override
-	def rowCount(self, parent: QModelIndex = ...) -> int:
+	@staticmethod
+	def print_item_tree(item: datasources.BaseDataSource):
+		"""
+		Prints item tree.
+
+		:param datasources.BaseDataSource item: item to print.
+		"""
+
+		def _print(_prefix: str = '', _last: bool = True):
+			tree_sep = '`- ' if _last else '|- '
+			values = [_prefix, tree_sep] + [item.data(0) if not item.is_root() else 'root']
+			msg = ''.join(values)
+			print(msg)
+			_prefix += '   ' if _last else '|  '
+			child_count = item.row_count()
+			for i, child in enumerate(item.children):
+				_last = i == (child_count - 1)
+				_print(_prefix, _last)
+
+		_print()
+
+	@override(check_signature=False)
+	def rowCount(self, parent: QModelIndex) -> int:
 		return 0 if self.root is None else self.item_from_index(parent).row_count()
 
-	@override
-	def columnCount(self, parent: QModelIndex = ...) -> int:
+	@override(check_signature=False)
+	def columnCount(self, parent: QModelIndex) -> int:
 		return 0 if self.root is None else self.item_from_index(parent).column_count()
 
-	@override
-	def index(self, row: int, column: int, parent: QModelIndex = ...) -> QModelIndex:
+	@override(check_signature=False)
+	def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
 		if not self.hasIndex(row, column, parent):
 			return QModelIndex()
 
@@ -53,8 +75,8 @@ class BaseTreeModel(QAbstractItemModel):
 
 		return self.createIndex(parent_item.index(), 0, parent_item)
 
-	@override
-	def hasChildren(self, parent: QModelIndex = ...) -> bool:
+	@override(check_signature=False)
+	def hasChildren(self, parent: QModelIndex) -> bool:
 		if not parent.isValid():
 			return super().hasChildren(parent)
 
@@ -87,8 +109,8 @@ class BaseTreeModel(QAbstractItemModel):
 	def supportedDropActions(self) -> Union[Qt.DropActions, Qt.DropAction]:
 		return Qt.CopyAction | Qt.MoveAction
 
-	@override
-	def headerData(self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole = ...) -> Any:
+	@override(check_signature=False)
+	def headerData(self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole) -> Any:
 		if orientation == Qt.Horizontal:
 			if role == Qt.DisplayRole:
 				return self.root.header_text(section)
@@ -98,8 +120,8 @@ class BaseTreeModel(QAbstractItemModel):
 
 		return None
 
-	@override
-	def data(self, index: QModelIndex, role: Qt.ItemDataRole = ...) -> Any:
+	@override(check_signature=False)
+	def data(self, index: QModelIndex, role: Qt.ItemDataRole) -> Any:
 		if not index.isValid():
 			return None
 		item = index.internalPointer()			# type: datasources.BaseDataSource
@@ -134,8 +156,8 @@ class BaseTreeModel(QAbstractItemModel):
 		elif role in item.custom_roles(column):
 			return item.data_by_role(column, role)
 
-	@override
-	def setData(self, index: QModelIndex, value: Any, role: Qt.ItemDataRole = ...) -> bool:
+	@override(check_signature=False)
+	def setData(self, index: QModelIndex, value: Any, role: Qt.ItemDataRole) -> bool:
 		if not index.isValid():
 			return False
 		item = index.internalPointer()		# type: datasources.BaseDataSource
@@ -173,6 +195,104 @@ class BaseTreeModel(QAbstractItemModel):
 			return None
 
 		item.fetch_more()
+
+	@override(check_signature=False)
+	def insertRow(self, row: int, parent: QModelIndex = QModelIndex(), **kwargs) -> bool:
+		parent_item = self.item_from_index(parent)
+		position = max(0, min(parent_item.row_count(), row))
+		self.beginInsertRows(parent, position, position)
+		parent_item.insert_row_data_source(position, **kwargs)
+		self.endInsertRows()
+
+		return True
+
+	@override(check_signature=False)
+	def insertRows(self, row: int, count: int, parent: QModelIndex = QModelIndex(), **kwargs) -> bool:
+		parent_item = self.item_from_index(parent)
+		position = max(0, min(parent_item.row_count(), row))
+		last_row = max(0, position + count - 1)
+		self.beginInsertRows(parent, position, last_row)
+		parent_item.insert_row_data_sources(int(position), int(count), **kwargs)
+		self.endInsertRows()
+
+		return True
+
+	@override(check_signature=False)
+	def moveRow(
+			self, source_parent: QModelIndex, source_row: int, destination_parent: QModelIndex,
+			destination_child: int) -> bool:
+		return self.moveRows(source_parent,  source_row, 1, destination_parent, destination_child)
+
+	@override(check_signature=False)
+	def moveRows(
+			self, source_parent: QModelIndex, source_row: int, count: int, destination_parent: QModelIndex,
+			destination_child: int) -> bool:
+		indices = []
+		for i in range(source_row, source_row + count):
+			child_index = self.index(i, 0, parent=source_parent)
+			if child_index.isValid():
+				indices.append(child_index)
+		mime_data = self.mimeData(indices)
+		self.removeRows(source_row, count, parent=source_parent)
+		self.dropMimeData(mime_data, Qt.MoveAction, destination_child, 0, destination_parent)
+
+	@override(check_signature=False)
+	def removeRow(self, row: int, parent: QModelIndex = QModelIndex()) -> bool:
+		return self.removeRows(row, 1, parent=parent)
+
+	@override(check_signature=False)
+	def removeRows(self, row: int, count: int, parent: QModelIndex = QModelIndex(), **kwargs) -> bool:
+		parent_item = self.item_from_index(parent)
+		position = max(0, min(parent_item.row_count(), row))
+		last_row = max(0, position + count - 1)
+		self.beginRemoveRows(parent, position, last_row)
+		result = parent_item.remove_row_data_sources(int(position), int(count), **kwargs)
+		self.endRemoveRows()
+
+		return result
+
+	def mimeTypes(self) -> List[str]:
+		return ['application/x-datasource']
+
+	@override
+	def mimeData(self, indexes: List[QModelIndex]) -> QMimeData:
+		data = []
+		for index in indexes:
+			item = self.item_from_index(index)
+			pickle_data = item.mime_data(index)
+			if pickle_data:
+				data.append(pickle_data)
+
+		mime_data = QMimeData()
+		if data:
+			mime_data.setData('application/x-datasource', pickle.dumps(data))
+
+		return mime_data
+
+	@override
+	def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
+		if action == Qt.IgnoreAction:
+			return False
+		if not data.hasFormat('application/x-datasource'):
+			return super().dropMimeData(data, action, row, column, parent)
+
+		data = bytes(data.data('application/x-datasource'))
+		items = pickle.loads(data)
+		if not items:
+			return False
+
+		drop_parent = self.item_from_index(parent)
+		return_kwargs = drop_parent.drop_mime_data(items, action)
+		if not return_kwargs:
+			return False
+
+		self.insertRows(row, len(items), parent, **return_kwargs)
+
+		# do not delete, just copy over
+		if action == Qt.CopyAction:
+			return False
+
+		return True
 
 	def set_root(self, root: datasources.BaseDataSource | None, refresh: bool = False):
 		"""

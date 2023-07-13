@@ -5,8 +5,11 @@
 Module that contains tp-dcc-maya startup functionality
 """
 
+from __future__ import annotations
+
 import os
 import sys
+import typing
 import inspect
 import logging
 
@@ -18,17 +21,23 @@ from tp.bootstrap import log
 from tp.bootstrap.utils import env, profile
 from tp.bootstrap.core import manager, exceptions as bootstrap_exceptions
 from tp.common.python import path
+from tp.common.resources import api as resources
 from tp.maya.meta import base
 from tp.maya.plugins import loader
 
+if typing.TYPE_CHECKING:
+	from tp.bootstrap.core.package import Package
+
+ORIGINAL_FORMAT_EXCEPTION = None
+
 
 @profile.profile
-def startup(package_manager):
+def startup(package: Package):
 	"""
 	This function is automatically called by tpDcc packages Manager when environment setup is initialized.
 
-	:param package_manager: current tpDcc packages Manager instance.
-	:return: tpDccPackagesManager
+	:param Package package: package instance.
+	:return: Package
 	"""
 
 	root_file_path = path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -41,6 +50,7 @@ def startup(package_manager):
 	logger.info('Loading tp-dcc DCC Package: Maya')
 
 	resources_path = path.join_path(os.path.dirname(root_file_path), 'resources')
+	resources.register_resource(resources_path)
 	dcc.register_resource_path(resources_path)
 
 	try:
@@ -48,7 +58,7 @@ def startup(package_manager):
 			logger.debug('Not in maya.exe, skipping tp-dcc-tools menu loading...')
 		else:
 			from tp.core.managers import tools
-			tools.load(application_name='maya')
+			tools.ToolsManager.load(application_name='maya')
 			logger.debug('Finished loading tp-dcc-tools framework Maya tools!')
 	except Exception:
 		logger.error('Failed to load tp-dcc-tools framework Maya tools due to unknown error', exc_info=True)
@@ -60,14 +70,15 @@ def startup(package_manager):
 	base.MetaRegistry()
 
 
-def shutdown(package_manager):
+def shutdown(package: Package):
 	"""
 	Shutdown function that is called during tpDcc framework shutdown.
 	This function is called at the end of tpDcc framework shutdown.
+
+	:param Package package: package instance.
+	:return: Package
 	"""
 
-	root_file_path = path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-	package = manager.package_from_path(root_file_path)
 	if not package:
 		raise bootstrap_exceptions.MissingPackage(package)
 
@@ -80,7 +91,7 @@ def shutdown(package_manager):
 	if env.is_maya():
 		from tp.core.managers import tools
 		try:
-			tools.close()
+			tools.ToolsManager.close()
 		except Exception:
 			logger.error('Failed to shutdown currently loaded tools', exc_info=True)
 
@@ -97,6 +108,7 @@ def setup_logging():
 	log.tpLogger.addHandler(handler)
 	log.rigLogger.addHandler(handler)
 	log.animLogger.addHandler(handler)
+	log.modelLogger.addHandler(handler)
 
 	return log.tpLogger
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing
+from typing import List
 from functools import partial
 
 from overrides import override
@@ -18,6 +19,7 @@ from tp.tools.rig.crit.builder.views import createview
 
 if typing.TYPE_CHECKING:
 	from tp.tools.rig.crit.builder.models.rig import RigModel
+	from tp.tools.rig.crit.builder.models.component import ComponentModel
 
 logger = log.rigLogger
 
@@ -162,6 +164,23 @@ class CritBuilderWindow(frameless.FramelessWindow):
 		finally:
 			self._set_rig_polished_ui(False)
 			self._hide_loading_widget()
+
+	def soft_refresh_components(self, component_models: List[ComponentModel]):
+		"""
+		Cheap refresh function that updates the component widgets within components tree that matches given
+		component models.
+
+		:param List[ComponentModel] component_models: list of component models to refresh UI of.
+		"""
+
+		components_tree = self._ui_interface.components_tree()
+		logger.debug(f'Soft refreshing components: "{component_models}"')
+
+		for component_model in component_models:
+			component_widget = components_tree.component_widget_by_model(component_model)
+			if not component_widget:
+				continue
+			component_widget.refresh_ui()
 
 	def set_rig(self, name: str, apply: bool = True):
 		"""

@@ -8,7 +8,13 @@ displayName: 'tp-dcc-tools General Utility Tools'
 environment:
   PYTHONPATH:
     - '{self}'
+    - '{self}/preferences'
   TPDCC_BASE_PATHS:
     - '{self}'
   TPDCC_TOOL_DEFINITION_MODULES:
     - '{self}/tp/tools/renamer/tool.py'
+    - '{self}/tp/tools/scenesbrowser/tool.py'
+  TPDCC_TOOL_UI_PATHS:
+    - '{self}/tp/tools/scenesbrowser/tool.py'
+  TPDCC_TOOL_UI_TOOLBOX_PATHS:
+    - '{self}/tp/configs/{app}/tp_dcc_tools_utility.toolbox'

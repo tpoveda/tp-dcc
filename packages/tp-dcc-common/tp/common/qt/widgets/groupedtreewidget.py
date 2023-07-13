@@ -378,7 +378,7 @@ class GroupedTreeWidget(QTreeWidget):
 		Internal function that setups grouped tree widget signals.
 		"""
 
-		pass
+		self.itemSelectionChanged.connect(self._on_tree_selection_changed)
 
 	def _setup_drag_drop(self):
 		"""
@@ -445,3 +445,10 @@ class GroupedTreeWidget(QTreeWidget):
 				tree_item.setFlags(self._item_widget_flags)
 			elif self._item_type(tree_item) == self.ITEM_TYPE_GROUP:
 				tree_item.setFlags(self._group_flags)
+
+	def _on_tree_selection_changed(self):
+		"""
+		Internal callback function that is called each time tree item selection changes.
+		"""
+
+		pass

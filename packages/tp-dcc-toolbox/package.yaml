@@ -8,5 +8,7 @@ displayName: 'tp-dcc Toolbox'
 environment:
   PYTHONPATH:
     - '{self}'
+  TPDCC_TOOL_DEFINITION_MODULES:
+    - '{self}/tp/tools/toolbox/tool.py'
 commands:
   - '{self}/startup/toolbox.py'

@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import copy
 import pprint
-import typing
 from typing import Dict, Any
 
 from tp.common.python import helpers
@@ -124,20 +123,22 @@ class ComponentDescriptor(helpers.ObjectDict):
 	def __init__(self, data: Dict | None = None, original_descriptor: Dict | None = None, path: str | None = None):
 		super().__init__(data)
 
-		data = data or dict()
+		print(data)
+
+		data = data or {}
 		data[consts.VERSION_DESCRIPTOR_KEY] = self.VERSION
 		# data[consts.INPUT_LAYER_DESCRIPTOR_KEY] = layers.InputLayerDescriptor.from_data(
 		# 	data.get(consts.INPUT_LAYER_DESCRIPTOR_KEY, dict()))
 		# data[consts.OUTPUT_LAYER_DESCRIPTOR_KEY] = layers.OutputLayerDescriptor.from_data(
 		# 	data.get(consts.OUTPUT_LAYER_DESCRIPTOR_KEY, dict()))
 		data[consts.GUIDE_LAYER_DESCRIPTOR_KEY] = layers.GuideLayerDescriptor.from_data(
-			data.get(consts.GUIDE_LAYER_DESCRIPTOR_KEY, dict()))
+			data.get(consts.GUIDE_LAYER_DESCRIPTOR_KEY, {}))
 		# data[consts.SKELETON_LAYER_DESCRIPTOR_KEY] = layers.SkeletonLayerDescriptor.from_data(
 		# 	data.get(consts.SKELETON_LAYER_DESCRIPTOR_KEY, dict()))
 		# data[consts.RIG_LAYER_DESCRIPTOR_KEY] = layers.RigLayerDescriptor.from_data(
 		# 	data.get(consts.RIG_LAYER_DESCRIPTOR_KEY, dict()))
-		data[consts.PARENT_DESCRIPTOR_KEY] = data.get(consts.PARENT_DESCRIPTOR_KEY, list())
-		data[consts.CONNECTIONS_DESCRIPTOR_KEY] = data.get(consts.CONNECTIONS_DESCRIPTOR_KEY, dict())
+		data[consts.PARENT_DESCRIPTOR_KEY] = data.get(consts.PARENT_DESCRIPTOR_KEY, [])
+		data[consts.CONNECTIONS_DESCRIPTOR_KEY] = data.get(consts.CONNECTIONS_DESCRIPTOR_KEY, {})
 		# data[consts.SPACE_SWITCH_DESCRIPTOR_KEY] = [spaceswitch.SpaceSwitchDescriptor(i) for i in data.get(consts.SPACE_SWITCH_DESCRIPTOR_KEY, list())]
 
 		super(ComponentDescriptor, self).__init__(data)

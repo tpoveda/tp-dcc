@@ -51,8 +51,11 @@ AXISES_COLORS = {
 	'z': [0, 0, 255]
 }
 
+# EXTENSIONS
+QT_SUPPORTED_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "bmp", "pbm", "pgm", "ppm", "xbm", "xpm"]
 
-class Sizes(object):
+
+class Sizes:
 	"""
 	Class that contains default sizes that can be used within UIs.
 	"""
@@ -85,7 +88,7 @@ class Sizes(object):
 	WINDOW_BOTTOM_PADDING = 6
 
 
-class Colors(object):
+class Colors:
 	"""
 	Class that contains default colors
 	"""

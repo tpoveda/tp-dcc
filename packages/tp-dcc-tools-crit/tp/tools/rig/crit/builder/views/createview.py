@@ -5,7 +5,7 @@ import typing
 from tp.common.qt import api as qt
 
 from tp.tools.rig.crit.builder.managers import components
-from tp.tools.rig.crit.builder.views import componentstree
+from tp.tools.rig.crit.builder.views import componentstree, componentsoutliner
 
 if typing.TYPE_CHECKING:
 	from tp.libs.rig.crit.maya.core.managers import ComponentsManager
@@ -30,10 +30,13 @@ class CreateView(qt.QWidget):
 		self._components_model_manager = components.ComponentsModelManager(self._components_manager)
 		self._components_model_manager.discover_components()
 
-		self._components_tree_view = componentstree.ComponentsTreeView(
-			components_manager=components_manager, components_model_manager=self._components_model_manager,
-			controller=self._controller, parent=self)
-		self._ui_interface.set_components_tree(self._components_tree_view.tree_widget)
+		# self._components_tree_view = componentstree.ComponentsTreeView(
+		# 	components_manager=components_manager, components_model_manager=self._components_model_manager,
+		# 	controller=self._controller, parent=self)
+		# self._ui_interface.set_components_tree(self._components_tree_view.tree_widget)
+
+		self._components_outliner = componentsoutliner.ComponentsOutliner(controller=controller, parent=self)
+		self._ui_interface.set_components_tree(self._components_outliner.tree_widget)
 
 		self._setup_ui()
 
@@ -44,16 +47,18 @@ class CreateView(qt.QWidget):
 		:param RigModel rig_model: rig model instance.
 		"""
 
-		self._components_tree_view.clear()
-		self._components_tree_view.apply_rig(rig_model)
-		self._components_tree_view.sync()
+		self._components_outliner.clear()
+		self._components_outliner.apply_rig(rig_model)
+		# Sync is already handled within apply_rig function.
+		# self._components_outliner.sync()
 
 	def clear_tree(self):
 		"""
 		Clears all the tree nodes in the tree widget.
 		"""
 
-		self._components_tree_view.tree_widget.clear()
+		pass
+		# self._components_tree_view.tree_widget.clear()
 
 	def create_component(self, component_id: str, descriptor: ComponentDescriptor | None = None):
 		"""
@@ -85,4 +90,4 @@ class CreateView(qt.QWidget):
 		toolbar_layout.addWidget(splitter)
 
 		main_layout.addLayout(toolbar_layout)
-		main_layout.addWidget(self._components_tree_view)
+		main_layout.addWidget(self._components_outliner)

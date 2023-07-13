@@ -37,7 +37,7 @@ def colorize_icon(icon, size=None, color=(255, 255, 255), overlay_icon=None, ove
     """
     Colorizes the given icon.
 
-    :param str or QIcon icon: icon to colorize.
+    :param QIcon icon: icon to colorize.
     :param int size: icon size. If not given first available icon size will be used.
     :param tuple(int, int, int) color: RGB color in 0 to 255 range.
     :param QIcon or None overlay_icon: optional icon to overlay.

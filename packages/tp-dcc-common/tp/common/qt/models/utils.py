@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Tuple
+
 from Qt.QtCore import QModelIndex, QAbstractItemModel, QAbstractProxyModel
 
 
@@ -24,13 +26,13 @@ def data_model_from_proxy_model(model: QAbstractProxyModel) -> QAbstractItemMode
 	return current_model
 
 
-def data_model_index_from_index(model_index: QModelIndex) -> QModelIndex | tuple[QModelIndex, QAbstractItemModel]:
+def data_model_index_from_index(model_index: QModelIndex) -> Tuple[QModelIndex, QAbstractItemModel]:
 	"""
 	Returns the index from the root data model by walking the proxy model stack if present.
 
 	:param QModelIndex model_index: Qt model index from the proxy model.
 	:return: model index from the root data.
-	:rtype: QModelIndex or tuple[QModelIndex, QAbstractItemModel]
+	:rtype: Tuple[QModelIndex, QAbstractItemModel]
 	"""
 
 	data_model = model_index.model()

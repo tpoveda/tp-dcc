@@ -1,12 +1,11 @@
 from overrides import override
 
 from tp.core import dcc, tool
-from tp.tools.renamer import consts
 
 
 class RenamerTool(tool.Tool):
 
-	id = consts.TOOL_ID
+	id = 'tp.utility.renamer'
 	creator = 'Tomi Poveda'
 	tags = ['name', 'rename']
 

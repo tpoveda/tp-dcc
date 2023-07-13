@@ -56,6 +56,14 @@ class ComponentModel(qt.QObject):
 	def icon(self) -> str:
 		return self._component.ICON
 
+	@property
+	def enabled(self) -> bool:
+		return self._component.is_enabled()
+
+	@enabled.setter
+	def enabled(self, flag: bool):
+		pass
+
 	def display_name(self) -> str:
 		"""
 		Returns component model display name.
@@ -75,6 +83,16 @@ class ComponentModel(qt.QObject):
 		"""
 
 		return self._component.is_hidden()
+
+	def has_children(self) -> bool:
+		"""
+		Returns whether this component has children components attached to it.
+
+		:return: True if component has children; False otherwise.
+		:rtype: bool
+		"""
+
+		return bool(list(self._component.iterate_children()))
 
 	def has_guide(self) -> bool:
 		"""

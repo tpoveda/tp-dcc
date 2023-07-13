@@ -14,14 +14,14 @@ from tp.common.resources import api as resources
 
 class BaseFrame(QFrame):
 	"""
-	Extended QFrame that expnads following functionality:
+	Extended QFrame that expands following functionality:
 		- Exposes a mouseReleased signal that is called when mouse is released
 	"""
 
-	mouseReleased = Signal(object)
+	mouseReleased = Signal(QMouseEvent)
 
 	def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-		self.mouseReleased.emit()
+		self.mouseReleased.emit(event)
 		return super().mouseReleaseEvent(event)
 
 
@@ -62,7 +62,7 @@ class CollapsableFrame(QWidget):
 		self._content_margins = content_margins
 		self._content_spacing = content_spacing
 
-		self._title_frame = None						# type: QFrame
+		self._title_frame = None						# type: BaseFrame
 		self._horizontal_layout = None					# type: QHBoxLayout
 		self._icon_button = None						# type: QToolButton
 		self._title_label = None						# type: labels.BaseLabel
@@ -71,14 +71,18 @@ class CollapsableFrame(QWidget):
 		self._hider_layout = None						# type: QVBoxLayout
 
 		if CollapsableFrame._COLLAPSED_ICON is None:
-			CollapsableFrame._COLLAPSED_ICON = resources.icon('sort_closed', size=dpi.dpi_scale(12))
+			CollapsableFrame._COLLAPSED_ICON = resources.icon('sort_closed')
 		if CollapsableFrame._EXPAND_ICON is None:
-			CollapsableFrame._EXPAND_ICON = resources.icon('sort_down', size=dpi.dpi_scale(12))
+			CollapsableFrame._EXPAND_ICON = resources.icon('sort_down')
 
 		self._main_layout = layouts.vertical_layout(spacing=0, margins=(0, 0, 0, 0), parent=self)
 
 		self._setup_ui()
 		self._setup_signals()
+
+	@property
+	def hider_layout(self) -> QVBoxLayout:
+		return self._hider_layout
 
 	def add_widget(self, widget: QWidget):
 		"""
@@ -151,7 +155,7 @@ class CollapsableFrame(QWidget):
 		Internal function that builds the title part of the layout with a QFrame widget.
 		"""
 
-		self._title_frame = QFrame(parent=self)
+		self._title_frame = BaseFrame(parent=self)
 		self._title_frame.setContentsMargins(0, 0, 0, 0)
 		self._horizontal_layout = layouts.horizontal_layout(margins=(0, 0, 0, 0), parent=self._title_frame)
 		self._icon_button = QToolButton(parent=self)
