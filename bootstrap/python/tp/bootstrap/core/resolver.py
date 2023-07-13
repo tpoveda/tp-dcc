@@ -5,16 +5,24 @@
 Module that contains tpDcc tools package resolver environment implementation
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import glob
 import timeit
+import typing
 import traceback
 from importlib import reload
+from typing import Set, List, Dict, Callable
 
 from tp.bootstrap import log, consts
 from tp.bootstrap.utils import fileio
 from tp.bootstrap.core import exceptions, package
+
+if typing.TYPE_CHECKING:
+    from tp.bootstrap.core.descriptors import Descriptor
+    from tp.bootstrap.core.manager import PackagesManager
 
 logger = log.bootstrapLogger
 
@@ -24,23 +32,25 @@ class Environment:
     Class that represents tp-dcc-tools framework environment.
     """
 
-    def __init__(self, package_manager):
+    def __init__(self, package_manager: PackagesManager):
         super().__init__()
 
         self._manager = package_manager
-        self._cache = dict()
+        self._cache = {}                            # type: Dict[str, package.Package]
+        self._callbacks = {}                        # type: Dict[str, List[Callable]]
 
     @property
-    def cache(self):
+    def cache(self) -> Dict[package.Package]:
         return self._cache
 
-    def resolve_from_path(self, path, override=True, **kwargs):
+    def resolve_from_path(self, path: str, override: bool = True, apply: bool = True, run_command_scripts: bool = True):
         """
         Resolves environment based on given path.
 
         :param str path: root path to resolve environment from.
         :param bool override: whether to resolve environment from override file.
-        :param kwargs:
+        :param bool apply: whether to initialize environment packages.
+        :param bool run_command_scripts: whether to run package commmand scripts.
         :return:
         """
 
@@ -63,9 +73,9 @@ class Environment:
             if override_data:
                 requests.update(override_data)
 
-        return self.resolve(requests, **kwargs)
+        return self.resolve(requests, apply=apply, run_command_scripts=run_command_scripts)
 
-    def resolve(self, request_data, apply=True, run_command_scripts=True):
+    def resolve(self, request_data: Dict, apply: bool = True, run_command_scripts: bool = True) -> Set:
         """
         Resolves environment from given data.
 
@@ -73,7 +83,7 @@ class Environment:
         :param bool apply: whether to initialize environment packages.
         :param bool run_command_scripts: whether to run package commmand scripts.
         :return: set of resolved packages.
-        :rtype: set
+        :rtype: Set
         """
 
         resolved = set()
@@ -120,6 +130,8 @@ class Environment:
         if site_packages_folder and os.path.isdir(site_packages_folder) and site_packages_folder not in sys.path:
             sys.path.append(site_packages_folder)
 
+        self._run_callbacks('preStartupCommands')
+
         start_time = timeit.default_timer()
         visited = set()
         for pkg_name, pkg in self._cache.items():
@@ -146,36 +158,37 @@ class Environment:
 
         return resolved
 
-    def environment_path(self):
+    def environment_path(self) -> str:
         """
         Returns the environment config path on disk.
 
         :return: package_version.config file path
         :rtype: str
+        :raises exceptions.MissingEnvironmentPathError: if environment config file does not exist at expected location.
         """
 
         config_path = self._environment_path()
         if os.path.isfile(config_path):
             return config_path
         raise exceptions.MissingEnvironmentPathError(
-            f'Environment config file does not exists at location: {config_path}')
+            f'Environment config file does not exist at location: {config_path}')
 
-    def override_environment_path(self):
+    def override_environment_path(self) -> str:
         """
         Returns the environment override config path on disk.
 
         :return: package_version.override file path.
-        :rtype: sr
+        :rtype: str
         """
 
         return self._override_environment_path()
 
-    def load_environment_file(self):
+    def load_environment_file(self) -> Dict:
         """
         Loads the environment file.
 
         :return: dictionary data from the environment file.
-        :rtype: dict
+        :rtype: Dict
         """
 
         env_path = self.environment_path()
@@ -199,25 +212,29 @@ class Environment:
 
         return env_data
 
-    def existing_package(self, pkg):
+    def existing_package(self, pkg: package.Package) -> package.Package | None:
         """
         Returns existing package if exists, otherwise a new Package instance will be created.
 
         :param Package pkg: package instance.
         :return: existing package instance
-        :rtype: Package
+        :rtype: Package or None
         """
 
         cached_package = self._cache.get(str(pkg))
         if cached_package is not None:
             return cached_package
-        package_locations = self._search_for_package(pkg.name, pkg.version)
-        if package_locations:
-            pkg = package.Package(package_locations[0])
-            self._cache[str(pkg)] = pkg
-            return pkg
 
-    def package_by_name(self, package_name):
+        package_locations = self._search_for_package(pkg.name, pkg.version)
+        if not package_locations:
+            return None
+
+        pkg = package.Package(package_locations[0])
+        self._cache[str(pkg)] = pkg
+
+        return pkg
+
+    def package_by_name(self, package_name: str) -> package.Package | None:
         """
         Returns the package with given name from the cache.
 
@@ -226,50 +243,57 @@ class Environment:
         :rtype: Package or None
         """
 
+        found_package = None
         for _, pkg in self._cache.items():
             if pkg.name == package_name:
-                return pkg
+                found_package = pkg
+                break
 
-        return None
+        return found_package
 
-    def package_from_path(self, path):
+    def package_from_path(self, path: str) -> package.Package:
         """
         Returns a package instance from the given path.
 
         :param str path: the director yor the TPDCC_package.yaml absolute path.
         :return: package instance.
-        :rtype: Package
+        :rtype: package.Package
 
-        ..note:: the path can either be the directory containing the package or the TPDCC_package.yaml file.
+        ..note:: the path can either be the directory containing the package or the package.yaml file.
         """
 
         if path.endswith(consts.PACKAGE_NAME):
             return package.Package(path)
+
         package_yaml = os.path.join(path, consts.PACKAGE_NAME)
+
         return package.Package(package_yaml)
 
-    def package_for_descriptor(self, descriptor):
+    def package_for_descriptor(self, descriptor: Descriptor) -> package.Package | None:
         """
         Returns a package manager instance from the given descriptor.
 
-        :param Descriptor descriptor: descripto to retrieve package manager from.
-        :return: tpDcc tools packages manager instance.
-        :rtype: tpDccPackagesManager
+        :param Descriptor descriptor: descriptor to retrieve package manager from.
+        :return: tp-dcc-tools package instance for given descriptor.
+        :rtype: package.Package or None
         """
 
         if descriptor.is_descriptor_of_type(descriptor.LOCAL_PATH):
             paths = [os.path.join(descriptor.path, consts.PACKAGE_NAME)]
         else:
             paths = self._search_for_package(descriptor.name, descriptor.version)
-        if paths:
-            pkg = package.Package(paths[0])
-            return self._cache.get(str(pkg), pkg)
+        if not paths:
+            return None
 
-    def create_environment_file(self, env=None):
+        pkg = package.Package(paths[0])
+
+        return self._cache.get(str(pkg), pkg)
+
+    def create_environment_file(self, env: Dict | None = None) -> bool:
         """
         Creates an environment file with the given package data if the file does not already exist.
 
-        :param dict env: package data.
+        :param Dict or None env: package data.
         :return: True if the environment was created successfully; False otherwise.
         :rtype: bool
 
@@ -285,11 +309,11 @@ class Environment:
 
         return False
 
-    def update_environment_descriptor_from_dict(self, descriptor):
+    def update_environment_descriptor_from_dict(self, descriptor: Dict):
         """
         Updates the currently loaded environment with the provided descriptor dictionary.
 
-        :param dict descriptor: the descriptor dictionary in the same format as the environment data.
+        :param Dict descriptor: the descriptor dictionary in the same format as the environment data.
         """
 
         desc = dict(descriptor)
@@ -307,12 +331,12 @@ class Environment:
         logger.debug(f'Updating environment: {env_path} with: {descriptor}')
         fileio.save_yaml(env_data, str(env_path), default_flow_style=False, sort_keys=False)
 
-    def remove_descriptor_from_environment(self, descriptor):
+    def remove_descriptor_from_environment(self, descriptor: Descriptor) -> bool:
         """
         Removes the given descriptor instance from the currently loaded environment.
 
         :param Descriptor descriptor: descriptor instance to delete.
-        :return: True if the deletion of the descriptor was successfull; False otherwise.
+        :return: True if the deletion of the descriptor was successful; False otherwise.
         :rtype: bool
         """
 
@@ -337,24 +361,26 @@ class Environment:
         visited = set()
 
         logger.debug(f'Shutting down packages resolver: {self} with the following cached packages')
-        for k, v in self._cache.items():
-            logger.debug(f'\t{k}: {v}')
 
         for package_name, pkg in self._cache.items():
+            if not pkg.resolved:
+                continue
             dependencies = pkg.requirements
             for dependency in dependencies:
                 dependency_pkg = self.package_by_name(dependency)
                 if dependency_pkg and str(dependency_pkg) not in visited:
                     dependency.shutdown()
                     visited.add(str(dependency_pkg))
-            if str(pkg) not in visited:
-                try:
-                    pkg.shutdown()
-                except Exception:
-                    logger.error(f'Exception while unloading package: {package_name}', exc_info=True)
-                visited.add(str(pkg))
+            if str(pkg) in visited:
+                continue
 
-    def _environment_path(self):
+            try:
+                pkg.shutdown()
+            except Exception:
+                logger.error(f'Exception while unloading package: {package_name}', exc_info=True)
+            visited.add(str(pkg))
+
+    def _environment_path(self) -> str:
         """
         Internal function that handles the discovery of the environment path for tpDcc configuration.
 
@@ -363,21 +389,26 @@ class Environment:
         """
 
         defined_path = os.path.expandvars(os.path.expanduser(os.getenv(consts.TPDCC_PACKAGE_VERSION_PATH, '')))
+        if os.path.isfile(defined_path):
+            logger.debug(f'Loading package environment configuration from "{defined_path}"')
+            return defined_path
+
         config_file = os.getenv(consts.TPDCC_PACKAGE_VERSION_FILE, 'package_version.config')
-        default_path = os.path.join(self._manager.config_path, 'env', config_file)
+        defined_path = os.path.join(self._manager.config_path, 'env', config_file)
         if os.path.isfile(defined_path):
             logger.debug(f'Loading pacakge environment configuration from: {defined_path}')
             return defined_path
 
         logger.debug(f'Loading pacakge environment configuration from: {default_path}')
-        return default_path
 
-    def _override_environment_path(self):
+        return defined_path
+
+    def _override_environment_path(self) -> str | None:
         """
         Internal function that handles the discovery of the override environment path for tpDcc configuration.
 
         :return: path representing absolute path.
-        :rtype: str
+        :rtype: str or None
         """
 
         defined_path = os.getenv(consts.TPDCC_PACKAGE_OVERRIDE_VERSION_PATH, '')
@@ -389,14 +420,16 @@ class Environment:
         if os.path.exists(env_path):
             return env_path
 
-    def _search_for_package(self, package_name, package_version):
+        return None
+
+    def _search_for_package(self, package_name: str, package_version: str) -> List[str]:
         """
         Internal function that searches for a specific package with a given name and version.
 
-        :param str package_name: package name
-        :param str package_version: package version
-        :return: list of packages found
-        :rtype: list(Package)
+        :param str package_name: package name.
+        :param str package_version: package version.
+        :return: list of package paths found.
+        :rtype: List[str]
         """
 
         is_dev = self._manager.is_dev()
@@ -434,3 +467,13 @@ class Environment:
 
         import tp
         reload(tp)
+
+    def _run_callbacks(self, name: str):
+        """
+        Internal function that loads all callbacks of the given name ('preStartupCommands', ...).
+
+        :param str name: callbacks name to execute.
+        """
+
+        for callback in self._callbacks.get(name, []):
+            callback()

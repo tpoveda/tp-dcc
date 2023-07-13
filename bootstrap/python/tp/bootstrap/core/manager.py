@@ -34,11 +34,11 @@ def package_manager_from_path(path, dev=False):
     :param str path: root path to initialize tpDcc Tools package manager from.
     :param bool dev: whether package manager will run in development mode.
     :return: tpDcc package manager instance.
-    :rtype: tpDccPackagesManager
+    :rtype: PackagesManager
     """
 
     assert os.path.exists(path), f'Path does not exists: {path}'
-    tp_dcc_instance = tpDccPackagesManager(path, dev=dev)
+    tp_dcc_instance = PackagesManager(path, dev=dev)
     set_current_package_manager(tp_dcc_instance)
 
     return tp_dcc_instance
@@ -49,7 +49,7 @@ def current_package_manager():
     Returns current global cached tpDcc Tools package manager instance.
 
     :return: currently initialized tpDcc Tools pacage manager instance..
-    :rtype: tpDccPackagesManager or None
+    :rtype: PackagesManager or None
     """
 
     global _TPDCC_MANAGER_CACHE
@@ -60,7 +60,7 @@ def set_current_package_manager(package_manager):
     """
     Sets the tpDcc tools global package manager instance.
 
-    :param tpDccPackagesManager or None package_manager: global tpDcc  tools packages manager instance to set.
+    :param PackagesManager or None package_manager: global tpDcc  tools packages manager instance to set.
     """
 
     global _TPDCC_MANAGER_CACHE
@@ -145,7 +145,7 @@ def package_from_class(class_type, max_iterations=20):
     return package_from_path(class_file, max_iterations=max_iterations)
 
 
-class tpDccPackagesManager:
+class PackagesManager:
     """
     Class that acts as the main entry points to work with tp-dcc-tools framework packages.
     """
@@ -416,7 +416,7 @@ class tpDccPackagesManager:
         Reloads all tp-dcc-tools framework packages, libraries and environment variables.
 
         :return: new tp-dcc-tools framework package manager instance.
-        :rtype: tpDccPackagesManager
+        :rtype: PackagesManager
         """
 
         root = self._root_path

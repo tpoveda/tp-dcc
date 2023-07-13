@@ -5,6 +5,8 @@
 Module that contains tpDcc tools package manager package implementation
 """
 
+from __future__ import annotations
+
 import os
 import re
 import sys
@@ -12,7 +14,8 @@ import copy
 import shutil
 import platform
 import tempfile
-from distutils import version
+from typing import Dict, Any, Callable
+from distutils.version import LooseVersion
 
 import six
 
@@ -23,7 +26,7 @@ from tp.bootstrap.utils import fileio, env, modules
 logger = log.bootstrapLogger
 
 
-def is_package_directory(directory):
+def is_package_directory(directory: str) -> bool:
     """
     Returns whether given directory contains a package.
 
@@ -40,31 +43,31 @@ class Package:
     Class that represents a tp-dcc-tools framework package
     """
 
-    def __init__(self, package_path=None):
+    def __init__(self, package_path: str | None = None):
         super().__init__()
 
         self._path = package_path or ''
         self._root = ''
-        self._environ = dict()
-        self._cache = dict()
+        self._environ = {}
+        self._cache = {}
         self._enabled = True
         self._required = False
-        self._version = version.LooseVersion()
+        self._version = LooseVersion()
         self._name = ''
         self._display_name = ''
         self._description = ''
         self._author = ''
         self._author_email = ''
-        self._tokens = dict()
+        self._tokens = {}
         self._requirements = requirements.RequirementsList()
         self._requirements_path = ''
         self._pip_requirements = requirements.RequirementsList()
-        self._tests = list()
-        self._documentation = dict()
-        self._resolved = False
-        self._command_paths = list()
-        self._resolved_env = dict()
-        self._dccs = dict()
+        self._tests = []
+        self._documentation = {}
+        self._resolved = False                      # whether this package has been loaded into the current environment.
+        self._command_paths = []
+        self._resolved_env = {}
+        self._dccs = {}
 
         if package_path is not None and os.path.exists(package_path):
             self._process_file(package_path=package_path)
@@ -72,47 +75,51 @@ class Package:
     def __hash__(self):
         return hash(id(self))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.search_str()
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if other is None or not isinstance(other, Package):
             return False
         return self.name == other.name and self.version == other.version
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
     @property
-    def path(self):
+    def path(self) -> str:
         return self._path
 
     @property
-    def root(self):
+    def root(self) -> str:
         return self._root
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @name.setter
-    def name(self, value):
+    def name(self, value: str):
         self._name = value
 
     @property
-    def version(self):
+    def version(self) -> LooseVersion:
         return self._version
 
     @version.setter
-    def version(self, value):
+    def version(self, value: LooseVersion):
         self._version = value
 
     @property
-    def requirements(self):
+    def requirements(self) -> requirements.RequirementsList:
         return self._requirements
 
     @property
-    def required(self):
+    def resolved(self) -> bool:
+        return self._resolved
+
+    @property
+    def required(self) -> bool:
         return self._required
 
     @property
@@ -120,7 +127,7 @@ class Package:
         return self._dccs
 
     @staticmethod
-    def name_from_package_name_and_version(package_name, package_version):
+    def name_from_package_name_and_version(package_name: str, package_version: str) -> str:
         """
         Returns full package name nad version based on given name and version.
 
@@ -133,14 +140,17 @@ class Package:
         return '-'.join([package_name, package_version])
 
     @staticmethod
-    def copy_to(package, destination, ignore=shutil.ignore_patterns(*consts.FILE_FILTER_EXCLUDE)):
+    def copy_to(
+            package: Package, destination: str,
+            ignore: Callable = shutil.ignore_patterns(*consts.FILE_FILTER_EXCLUDE)) -> Package:
         """
         Copies given package instance to given directory.
 
         :param Package package: package to copy.
         :param str destination: directory to move package into.
-        :param list[str] ignore: list of files to skip from moving.
-        :return:
+        :param Callable ignore: list of files to skip from moving.
+        :return: copied package instance.
+        :rtype: Package
         :raises FileNotFoundError: if destination directory already exists.
         """
 
@@ -152,11 +162,11 @@ class Package:
         return Package(os.path.join(destination, consts.PACKAGE_NAME))
 
     @classmethod
-    def from_data(cls, data):
+    def from_data(cls, data: Dict) -> Package:
         """
         Instantiates a new Package based on given data.
 
-        :param dict data: package data.
+        :param Dict data: package data.
         :return: new package instance.
         :rtype: Package
         """
@@ -166,9 +176,9 @@ class Package:
 
         return new_package
 
-    def exists(self):
+    def exists(self) -> bool:
         """
-        Returns whehter this package exists in disk.
+        Returns whether this package exists in disk.
 
         :return: True if package exists in disk; False otherwise.
         :rtype: bool
@@ -176,7 +186,7 @@ class Package:
 
         return os.path.exists(self._path)
 
-    def dirname(self):
+    def dirname(self) -> str:
         """
         Returns package directory name.
 
@@ -186,7 +196,7 @@ class Package:
 
         return os.path.dirname(self._path)
 
-    def search_str(self):
+    def search_str(self) -> str:
         """
         Returns the package name properly formatted.
 
@@ -199,7 +209,7 @@ class Package:
         except AttributeError:
             return self.path + '- (Fail)'
 
-    def set_name(self, name):
+    def set_name(self, name: str):
         """
         Sets package name.
 
@@ -209,7 +219,7 @@ class Package:
         self._name = name
         self.save()
 
-    def set_path(self, path):
+    def set_path(self, path: str):
         """
         Sets package path.
 
@@ -219,17 +229,17 @@ class Package:
         self._path = os.path.normpath(path)
         self._root = os.path.dirname(path)
 
-    def set_version(self, version_str):
+    def set_version(self, version_str: str):
         """
         Sets package version.
 
         :param str version_str: new package version as string.
         """
 
-        self._version = version.LooseVersion(version_str)
+        self._version = LooseVersion(version_str)
         self._cache['version'] = str(self._version)
 
-    def set_enabled(self, flag):
+    def set_enabled(self, flag: bool):
         """
         Sets whether this package is enabled.
 
@@ -238,12 +248,14 @@ class Package:
 
         self._enabled = flag
 
-    def resolve(self, apply_environment=True):
+    def resolve(self, apply_environment: bool = True) -> bool:
         """
         Resolves package internal data and environment variables.
 
-        :param bool apply_environment: whether to update sys.path environment variable based on package PYTHONPATH
+        :param bool apply_environment: whether to update "sys.path" environment variable based on package "PYTHONPATH"
             defined environment variables.
+        :return: True if package was resolved successfully; False otherwise.
+        :rtype: bool
         """
 
         environ = self._environ
@@ -430,7 +442,7 @@ class Package:
 
         self._environ = data.get('environment', dict())
         self._cache = copy.deepcopy(data)
-        self._version = version.LooseVersion(data.get('version', ''))
+        self._version = LooseVersion(data.get('version', ''))
         self._required = data.get('required', False)
         self._name = data.get('name', 'NO_NAME')
         self._display_name = data.get('displayName', 'NO_NAME')

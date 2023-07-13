@@ -212,6 +212,43 @@ class LogsManager:
 
 		return handler
 
+	def add_handler(self, logger_name, handler):
+		"""
+		Adds a new log handler to the log with given name.
+
+		:param str logger_name:
+		:param logging.StreamHandler handler: handler to add.
+		:return: added handler.
+		:rtype: logging.StreamHandler or None
+		"""
+
+		log = self._logs.get(logger_name)
+		if log is None:
+			return None
+
+		formatter = logging.Formatter(self.shell_formatter)
+		handler.setFormatter(formatter)
+		log.addHandler(handler)
+
+		return handler
+
+	def remove_handlers(self, logger_name: str):
+		"""
+		Removes all handlers from the log with given name.
+
+		:param str logger_name: name of the log whose handlers we want to delete.
+		:return: True if handlers were removed successfully; False otherwise.
+		:rtype: bool
+		"""
+
+		log = self._logs.get(logger_name)
+		if log is None:
+			return False
+
+		log.handlers = []
+
+		return True
+
 
 tpLogger = get_logger(LOGGER_NAME)
 bootstrapLogger = get_logger(BOOTSTRAP_LOGGER_NAME)
