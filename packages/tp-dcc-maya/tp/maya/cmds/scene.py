@@ -17,6 +17,7 @@ import maya.cmds as cmds
 
 from tp.core import log
 from tp.common.python import path as path_utils
+from tp.maya.cmds import workspace
 
 logger = log.tpLogger
 
@@ -50,6 +51,24 @@ def scene_file(directory: bool = False) -> str:
 		scene_path = path_utils.dirname(scene_path)
 
 	return scene_path
+
+
+def scene_file_type() -> str | None:
+	"""
+	Returns the current scene file type.
+
+	:return: scene file type.
+	:rtype: str or None
+	"""
+
+	maya_type = None
+	scene_path = cmds.file(query=True, l=True)[0]
+	if scene_path.lower().endswith('.ma'):
+		maya_type = 'mayaAscii'
+	elif scene_path.lower().endswith('.mb'):
+		maya_type = 'mayaBinary'
+
+	return maya_type
 
 
 def new_scene(force: bool = True, do_save: bool = True):
@@ -124,6 +143,17 @@ def reference_scene(file_path: str, namespace: str | None = None):
 	cmds.file(file_path, reference=True, mergeNamespacesOnClash=False, namespace=namespace)
 
 
+def current_scene_is_modified() -> bool:
+	"""
+	Returns whether current scene has been modified.
+
+	:return: True if scene is modified; False otherwise.
+	:rtype: bool
+	"""
+
+	return cmds.file(query=True, modified=True)
+
+
 def save() -> bool:
 	"""
 	Saves current scene in current Maya file.
@@ -182,6 +212,69 @@ def save_as(file_path: str) -> bool:
 		logger.warning('Scene not saved: {}'.format(file_path))
 
 	return saved
+
+
+def save_as_dialog(window_caption: str = 'Save File?', directory: str = '', ok_caption: str = 'OK'):
+	"""
+	Shows a save file dialog and saves it to the new path and returns the name of the file.
+
+	:param str window_caption: title of the save window.
+	:param str directory: default directory.
+	:param str ok_caption: ok button text.
+	:return: path of the file saved.
+	:rtype: str
+	"""
+
+	if not directory:
+		current_file_path = cmds.file(query=True, sceneName=True, shortName=False)
+		if not current_file_path:
+			directory = workspace.project_sub_directory(sub_directory='scenes')
+		else:
+			directory = os.path.split(current_file_path)[0]
+
+	maya_files_filter = 'Maya Files (*.ma *.mb);;Maya ASCII (*.ma);;Maya Binary (*.mb)'
+	file_path = cmds.fileDialog2(
+		fileFilter=maya_files_filter, caption=window_caption, startingDirectory=directory, okCaption=ok_caption)
+	if not file_path:
+		return file_path
+	file_path = file_path[0]
+	if file_path.split('.')[-1] == 'ma':
+		cmds.file(rename=file_path)
+		cmds.file(force=True, type='mayaAscii', save=True)
+	if file_path.split('.')[-1] == 'mb':
+		cmds.file(rename=file_path)
+		cmds.file(force=True, type='mayaBinary', save=True)
+	logger.info(f'File save success: "{file_path}"')
+
+	return file_path
+
+
+def scene_modified_dialogue() -> str:
+	"""
+	Checks whether current file has already been saved and retunrs 'save', 'discard' or 'cancel'.
+	If not saved, opens 'save', 'discard' or 'cancel' window and returns the pressed button.
+	If 'save' is clicked it will try to save current file.
+
+	:return: clicked button.
+	:rtype: str
+	"""
+
+	# import here to avoid cyclic imports
+	from tp.common.qt.widgets import popups
+
+	scene_modified = current_scene_is_modified()
+	if not scene_modified:
+		cmds.file(newFile=True, force=True)
+		return 'save'
+
+	button_pressed = popups.show_save(title='Save File', message='Creating a new scene, save the current file?')
+	if button_pressed == 'save':
+		if save_as_dialog():
+			return 'save'
+		else:
+			return 'cancel'
+
+	return button_pressed
 
 
 def find_texture_node_pairs() -> Set[Tuple[str, str]]:
@@ -405,6 +498,28 @@ def sets() -> List[str]:
 			top_sets.append(obj_set)
 
 	return top_sets
+
+
+def has_unknown_nodes() -> bool:
+	"""
+	Returns whether there are unknown nodes within current scene.
+
+	:return: True current scene contains unknown nodes; False otherwise.
+	:rtype: bool
+	"""
+
+	return cmds.ls(type='unknown') is not None
+
+
+def has_unknown_plugins() -> bool:
+	"""
+	Returns whether there are unknown plugins within current scene.
+
+	:return: True current scene contains unknown plugins; False otherwise.
+	:rtype: bool
+	"""
+
+	return cmds.unknownPlugin(query=True, list=True) is not None
 
 
 def delete_unknown_nodes():

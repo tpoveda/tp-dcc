@@ -816,7 +816,7 @@ class BaseButton(QPushButton, AbstractButton):
 			self, name: str, mouse_menu: Qt.MouseButton = Qt.LeftButton, connect: Callable = None,
 			checkable: bool = False, checked: bool = True, action: QAction | None = None,
 			action_icon: QIcon | str | None = None, data: Any = None, icon_text: str | None = None,
-			icon_color: Tuple[int, int, int] | None = None, icon_size=16, tooltip: str | None = None) -> QAction:
+			icon_color: Tuple[int, int, int] | None = None, icon_size=16, tooltip: str | None = None) -> QAction | None:
 		"""
 		Adds a new menu item through an action.
 
@@ -833,7 +833,7 @@ class BaseButton(QPushButton, AbstractButton):
 		:param int icon_size: size of the icon.
 		:param str tooltip: new menu item tooltip.
 		:return: newly created action.
-		:rtype: SearchableTaggedAction
+		:rtype: QAction or None
 		"""
 
 		args = helpers.get_args(locals())
@@ -842,7 +842,7 @@ class BaseButton(QPushButton, AbstractButton):
 
 		if action is not None:
 			found_menu.addAction(action)
-			return
+			return None
 
 		args.pop('action', None)
 		new_action = self.new_action(**args)
@@ -858,7 +858,7 @@ class BaseButton(QPushButton, AbstractButton):
 		Creates a new menu item through an action.
 
 		:param str name: text for the new menu item.
-		:param Qt.LeftButton or Qt.RightButton or Qt.MidButton mouse_menu: mouse button.
+		:param Qt.MouseButton mouse_menu: mouse button.
 		:param callable or None connect: function to connect when the menu item is pressed.
 		:param bool checkable: whether menu item is checkable.
 		:param bool checked: if checkable is True, whether menu item is checked by default.
@@ -872,7 +872,7 @@ class BaseButton(QPushButton, AbstractButton):
 		:rtype: SearchableTaggedAction
 		"""
 
-		found_menu = self.menu(mouse_menu, searchable=False)			# type: menus.SearchableMenu
+		found_menu = self.menu(mouse_menu, searchable=False)
 
 		new_action = menus.SearchableMenu.SearchableTaggedAction(name, parent=found_menu)
 		new_action.setCheckable(checkable)
@@ -900,6 +900,47 @@ class BaseButton(QPushButton, AbstractButton):
 
 		return new_action
 
+	def insert_action_index(
+			self, index: int, name: str, mouse_menu: Qt.MouseButton = Qt.LeftButton,
+			action: QAction | None = None, connect: Callable = None, checkable: bool = False, checked: bool = True,
+			action_icon: QIcon | str | None = None, data: Any = None, icon_text: str | None = None,
+			icon_color: QColor | None = None, icon_size: int = 16, tooltip: str | None = None) -> QAction | None:
+		"""
+		Inserts action at given index.
+
+		:param int index: index to insert action into.
+		:param str name: text for the new menu item.
+		:param Qt.Button mouse_menu: mouse button.
+		:param QAction or None action: action to insert.
+		:param callable or None connect: function to connect when the menu item is pressed.
+		:param bool checkable: whether menu item is checkable.
+		:param bool checked: if checkable is True, whether menu item is checked by default.
+		:param QIcon or str action_icon: icon for the menu item.
+		:param object data: custom data to store within the action.
+		:param str icon_text: text for the icon.
+		:param tuple(int, int, int) icon_color: color of the menu item in 0-255 range.
+		:param int icon_size: size of the icon.
+		:param str tooltip: new menu item tooltip.
+		:return: inserted action.
+		:rtype: QAction or None
+		"""
+
+		menu = self.menu(mouse_menu, searchable=False)
+		actions = self.actions(mouse_menu)
+		before = actions[index]
+
+		if action:
+			menu.insertAction(before, action)
+			return None
+
+		new_action = self.new_action(
+			name=name, mouse_menu=mouse_menu, connect=connect, checkable=checkable, checked=checked,
+			action_icon=action_icon, data=data, icon_text=icon_text, icon_color=icon_color, icon_size=icon_size,
+			tooltip=tooltip)
+		menu.insertAction(before, new_action)
+
+		return new_action
+
 	def add_separator(self, mouse_menu: Qt.MouseButton = Qt.LeftButton):
 		"""
 		Adds a new separator into the menu.
@@ -909,6 +950,23 @@ class BaseButton(QPushButton, AbstractButton):
 
 		found_menu = self.menu(mouse_menu)
 		found_menu.addSeparator()
+
+	def insert_separator_index(self, index: int, mouse_menu: Qt.MouseButton | Qt.LeftButton, after_index: bool = False):
+		"""
+		Inserts separator at given index.
+
+		:param int index: index to insert separator into.
+		:param Qt.MouseButton mouse_menu: mouse button.
+		:param bool after_index: whether to insert separator after given index.
+		"""
+
+		actions = self.actions(mouse_menu)
+		menu = self.menu(mouse_menu, searchable=False)
+		if after_index:
+			index += 1
+		before = actions[index]
+		if before:
+			menu.insertSeparator(before)
 
 	def is_searchable(self, mouse_menu: Qt.MouseButton = Qt.LeftButton):
 		"""

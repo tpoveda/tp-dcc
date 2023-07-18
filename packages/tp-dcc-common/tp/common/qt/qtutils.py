@@ -639,6 +639,21 @@ def is_valid_widget(widget):
     return True
 
 
+def is_widget_visible(widget: QWidget) -> bool:
+    """
+    Returns whether given widget is visible.
+
+    :param QWidget widget: widget to check visibility of.
+    :return: True if widget is visible; False otherwise.
+    :rtype: bool
+    """
+
+    if not widget.visibleRegion().isEmpty():
+        return True
+
+    return False
+
+
 def close_and_cleanup(widget):
     """
     Call close and deleteLater on a widget safely

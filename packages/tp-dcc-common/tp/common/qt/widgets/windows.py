@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import sys
+from typing import Tuple
 from multiprocessing import Process
 
 from overrides import override
 from Qt.QtCore import QEvent
-from Qt.QtWidgets import QApplication, QWidget
+from Qt.QtWidgets import QApplication, QWidget, QFrame, QPushButton, QLabel, QVBoxLayout, QHBoxLayout
 
 from tp.core.abstract import window
 from tp.common.python import decorators, win32
-from tp.common.qt import qtutils
+from tp.common.qt import consts, dpi, qtutils
+from tp.common.qt.widgets import layouts
 
 
 class StandaloneWindow(window.AbstractWindow):
@@ -168,3 +170,50 @@ class StandaloneWindow(window.AbstractWindow):
 					return
 
 		super(StandaloneWindow, self).set_window_palette(name, version=version, style=style)
+
+
+class EmbeddedWindow(QFrame):
+	"""
+	QFrame that appears like a window inside another UI.
+	"""
+
+	def __init__(
+			self, title: str = '', default_visibility: bool = True, uppercaese: bool = False,
+			close_button: QPushButton | None = None, margins: Tuple[int, int, int, int] = (0, 0, 0, 0),
+			resize_target: QWidget | None = None, parent: QWidget | None = None):
+		super().__init__(parent)
+
+		self._title = title
+		self._uppercase = uppercaese
+		self._margins = margins
+		self._parent_widget = parent
+		self._resize_target = None					# type: QWidget
+		self._target_saved_height = None			# type: int
+		self._inner_frame = None					# type: QFrame
+		self._outer_layout = None					# type: QHBoxLayout
+		self._properties_layout = None				# type: QVBoxLayout
+		self._properties_label = None				# type: QLabel
+
+		self._setup_ui()
+		self._setup_signals()
+
+	def _setup_ui(self):
+		"""
+		Internal function that setup widgets.
+		"""
+
+		self._inner_frame = QFrame(parent=self)
+		self._inner_frame.setFrameStyle(QFrame.Box | QFrame.Plain)
+		self._outer_layout = layouts.horizontal_layout(margins=(dpi.margins_dpi_scale(*self._margins)), parent=self)
+		qtutils.set_stylesheet_object_name(self._inner_frame, 'embededWindowBG')
+		self._outer_layout.addWidget(self._inner_frame)
+		self._properties_layout = layouts.vertical_layout(
+			margins=(consts.WINDOW_SIDE_PADDING, 4, consts.WINDOW_SIDE_PADDING, consts.WINDOW_TOP_PADDING),
+			spacing=consts.DEFAULT_SPACING)
+
+	def _setup_signals(self):
+		"""
+		Internal function that setup widget connection signals.
+		"""
+
+		pass

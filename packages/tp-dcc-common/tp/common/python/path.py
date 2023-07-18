@@ -11,6 +11,7 @@ import os
 import uuid
 import stat
 import time
+import glob
 import string
 import shutil
 import tempfile
@@ -19,7 +20,7 @@ import contextlib
 from typing import Tuple, List, Dict, Iterator
 
 from tp.core import log
-from tp.common.python import name, folder, osplatform, helpers, win32
+from tp.common.python import name, folder, osplatform, helpers, win32, strings
 
 SEPARATOR = '/'
 BAD_SEPARATOR = '\\'
@@ -177,15 +178,20 @@ def set_windows_slashes(directory: str) -> str:
     return directory.replace('/', '\\').replace('//', '\\')
 
 
-def split_path(path):
+def split_path(path: str, remove_extension_dot: bool = False) -> Tuple[str, str, str]:
     """
-    Split the given path into directory, basename and extension
-    :param path:
-    :return: list(str)
+    Split the given path into directory, basename and extension.
+
+    :param str path: path to split.
+    :param bool remove_extension_dot: whether to remove the start dot from the extension.
+    :return: tuple containing the directory path, file path and extension.
+    :rtype: Tuple[str, str, str]
     """
 
     path = normalize_path(path)
     filename, extension = os.path.splitext(path)
+    if remove_extension_dot:
+        extension = extension[1:]
 
     return os.path.dirname(filename), os.path.basename(filename), extension
 
@@ -314,6 +320,29 @@ def get_extension(path):
     return os.path.splitext(path)[1][1:]
 
 
+def shorten_path(path: str, length: int = 50) -> str:
+    """
+    Truncates the inner path first depending on length.
+
+    :param str path: path to truncate.
+    :param int length: path lenght.
+    :return: truncated path.
+    :rtype: str
+    """
+
+    _split_path = os.path.normpath(path).split(os.sep)
+    ellipsis_len = 3
+    result_len = len(_split_path[0]) + 1 + len(_split_path[-1]) + 1
+    mid_str = os.sep.join(_split_path[1:-1])
+    if len(mid_str) + result_len < length:
+        return path
+
+    result_len += ellipsis_len
+    result = _split_path[0] + os.sep + '...' + mid_str[result_len + len(mid_str) - length:] + os.sep + _split_path[-1]
+
+    return os.path.normpath(result)
+
+
 def exists(directory):
     """
     Returns true if the given path exists
@@ -345,71 +374,129 @@ def has_extension(path, file_extension):
     return True if get_extension(path=path) == file_extension else False
 
 
-def get_files(root, file_extension=None, recursive=False, full_path=False, stdout=False):
+def files(
+        root: str, file_extension: str | None = None, recursive: bool = False, full_path: bool = False,
+        stdout: bool = False) -> List[str] | None:
     """
-    Get all files from a given directory
-    :param root: str, path to get directories from
-    :param file_extension: str, file extension of files to search for
-    :param recursive: bool, True if the function will search deeper than one level of files
-    :param full_path: str, the output of the path will be the full path if True
-    :param stdout: print results in Python output if True
-    :return: list<str>, list of files
+    Returns all files from a given directory.
+
+    :param str root: path to get directories from.
+    :param str file_extension: file extension of files to search for.
+    :param bool recursive: True if the function will search deeper than one level of files.
+    :param str full_path: the output of the path will be the full path if True.
+    :param stdout: print results in Python output if True.
+    :return: list of files.
+    :rtype: List[str] or None
     """
 
-    def out(data):
+    def _out(data):
         for i in data:
             print(i)
             print('Found {0} files'.format(len(data)))
 
     if len(root):
         root = clean_path(root)
-        directories = [d for d in os.listdir(root) if is_dir(root, d)]
+        found_directories = [d for d in os.listdir(root) if is_dir(root, d)]
         if file_extension:
             if full_path:
-                files = [clean_path(os.path.abspath(os.path.join(root, f))) for
+                found_files = [clean_path(os.path.abspath(os.path.join(root, f))) for
                          f in os.listdir(root) if is_file(root, f) and has_extension(f, file_extension)]
             else:
-                files = [f for f in os.listdir(root) if is_file(root, f) and has_extension(f, file_extension)]
+                found_files = [f for f in os.listdir(root) if is_file(root, f) and has_extension(f, file_extension)]
         else:
             if full_path:
-                files = [
+                found_files = [
                     clean_path(os.path.abspath(os.path.join(root, f))) for f in os.listdir(root) if is_file(root, f)]
             else:
-                files = [f for f in os.listdir(root) if is_file(root, f)]
+                found_files = [f for f in os.listdir(root) if is_file(root, f)]
 
-        if len(directories) and recursive:
-            more_files = [get_files(os.path.join(root, d), file_extension, recursive, full_path) for d in directories]
+        if len(found_directories) and recursive:
+            more_files = [files(os.path.join(root, d), file_extension, recursive, full_path) for d in found_directories]
             if len(more_files):
                 for chunk in more_files:
-                    files.extend(chunk)
+                    found_files.extend(chunk)
 
-        output = [clean_path(p) for p in files]
+        output = [clean_path(p) for p in found_files]
         if stdout:
-            out(output)
+            _out(output)
 
         return output
+
     return None
 
 
-def get_folders_from_path(path):
+def file_name_no_extension(file_path: str) -> str:
     """
-    Gets a list of sub folders in the given path
-    :param path: str
-    :return: list<str>
+    Returns file name without extension.
+
+    :param str file_path: file path with extension.
+    :return: file name without extension.
+    :rtype: str
     """
 
-    folders = list()
-    while True:
-        path, folder = os.path.split(path)
-        if folder != '':
-            folders.append(folder)
-        else:
-            if path != '':
-                folders.append(path)
-            break
-    folders.reverse()
+    return os.path.splitext(os.path.basename(file_path))[0]
 
-    return folders
+
+def files_in_directory(directory: str, include_extension: bool = True) -> List[str]:
+    """
+    Returns all files in the given directory.
+
+    :param str directory: director to search files from.
+    :param bool include_extension: whether to include extensions.
+    :return: list of file paths.
+    :rtype: List[str]
+    """
+
+    found_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+
+    return found_files if include_extension else [file_name_no_extension(f) for f in found_files]
+
+
+def files_by_extension(directory: str, extensions: List[str], sort: bool = True):
+    """
+    Returns lal the files include in the given directory that matches the given extensions list.
+
+    :param str directory: directory to search and return file names from.
+    :param List[str] extensions: list of extensions to search without the fullstop ('json', 'yaml', 'fbx', ...).
+    :param bool sort: whether sort files by name.
+    :return: list of files.
+    :rtype: List[str]
+    """
+
+    found_files = []
+    if not os.path.isdir(directory):
+        return found_files
+
+    for extension in extensions:
+        for file_path in glob.glob(os.path.join(directory, f'*.{extension}')):
+            found_files.append(os.path.basename(file_path))
+
+    if sort:
+        found_files.sort()
+
+    return found_files
+
+
+def directories(directory: str, absolute: bool = False, sort: bool = True) -> List[str]:
+    """
+    Reutns all directors in the given directory.
+
+    :param str directory: directory to look into.
+    :param bool absolute: whether to return the full path or just the directory names.
+    :param bool sort: whether to sort directories by name.
+    :return: list of directory names or paths.
+    :rtype: List[str]
+    """
+
+    result = []
+    for directory_name in os.listdir(directory):
+        if os.path.isdir(os.path.join(directory, directory_name)):
+            result.append(directory_name if not absolute else os.path.join(directory, directory_name))
+
+    if sort:
+        result.sort()
+
+    return result
 
 
 def basename(directory, with_extension=True):
@@ -463,6 +550,26 @@ def unique_path_name(directory, padding=0):
     unique_path.set_padding(padding)
 
     return unique_path.get()
+
+
+def unique_file_name(file_path: str, count_limit: str = 500) -> str:
+    """
+    Returns a unique file name if a name already exists by adding a number to the end of the file.
+
+    :param str file_path: full path to a file name with an extension.
+    :param int count_limit: limit number of loops to try finding a unique file name.
+    :return: unique file path.
+    :rtype: str
+    """
+
+    count = 0
+
+    while os.path.exists(file_path):
+        directory_path = os.path.dirname(file_path)
+        file_name = os.path.basename(file_path)
+        file_name_no_ext = os.path.splitext(file_name)[0]
+        file_extension = os.path.splitext(file_name)[-1]
+        name_numberless, number, padding = strings.trailing_number()
 
 
 def get_common_path(path1, path2):

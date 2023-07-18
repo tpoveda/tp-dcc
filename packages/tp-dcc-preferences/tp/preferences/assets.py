@@ -21,6 +21,8 @@ logger = log.tpLogger
 
 class AssetPreference:
 
+	_DEFAULT_ITEMS = None				# type: List[str]
+
 	def __init__(self, asset_folder: str, preference_interface: PreferenceInterface):
 		super().__init__()
 
@@ -112,6 +114,26 @@ class AssetPreference:
 
 		package_path = self.current_package_path()
 		return path.join_path(package_path, 'preferences', 'assets', self._asset_folder)
+
+	def default_asset_items(self, refresh: bool = False) -> List[str]:
+		"""
+		Returns the default items from the default directory.
+
+		:param bool refresh: whether to refresh cached items.
+		:return: lsit of default asset items.
+		:rtype: List[str]
+		"""
+
+		if not refresh and self._DEFAULT_ITEMS is not None:
+			return self._DEFAULT_ITEMS
+
+		default_path = self.default_assets_path()
+		if not path.exists(default_path):
+			return
+
+		self._DEFAULT_ITEMS = path.files_in_directory(default_path, include_extension=False)
+
+		return self._DEFAULT_ITEMS
 
 	def copy_default_assets(self, target_path: str) -> str | None:
 		"""

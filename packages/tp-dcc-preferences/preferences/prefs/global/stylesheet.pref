@@ -33,6 +33,8 @@ settings:
         GRAY_WHITE_COLOR: "C0C0C0"
         BLUE_DENIM_COLOR: "0664C3"
         BLUE_BRIGHT_COLOR: "0070E0"
+        ICON_PRIMARY_COLOR: "C5C5C5"
+        ICON_HOVER_COLOR: "FDFDFD"
 
         # Buttons
         BUTTON_BACKGROUND_COLOR: "454545"

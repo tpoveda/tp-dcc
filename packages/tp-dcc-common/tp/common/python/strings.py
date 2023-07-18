@@ -5,15 +5,16 @@
 Module that contains utility functions related with strings
 """
 
+from __future__ import annotations
 
 import re
 import os
 import random
+from typing import Tuple
 from string import ascii_letters
 from distutils.util import strtobool
 
 from tp.core import log
-from tp.common.python import helpers
 
 iters = [list, tuple, set, frozenset]
 
@@ -310,13 +311,15 @@ def snake_to_camel_case(snake_text):
     return components[0] + ''.join(x.title() for x in components[1:])
 
 
-def get_trailing_number(input_string, as_string=False, number_count=-1):
+def trailing_number(input_string: str, as_string: bool = False, number_count: int = -1) -> str | int | None:
     """
-    Get the number at the very end of a string. If number not at the end of the string return None
-    :param input_string: str
-    :param as_string: bool
-    :param number_count: int
-    :return: varianht, str || None
+    Returns the number at the very end of a string. If number not at the end of the string return None.
+
+    :param str input_string: string to trail.
+    :param bool as_string: whether to return trailing number as an integer or as an string.
+    :param int number_count: number count.
+    :return: trailing string.
+    :rtype: str or int or None
     """
 
     if not input_string:
@@ -333,6 +336,25 @@ def get_trailing_number(input_string, as_string=False, number_count=-1):
             return number
         else:
             return int(number)
+
+
+def trailing_number_tuple(input_string: str) -> Tuple[str, int | None, int]:
+    """
+    Returns the trailing number of a string, the name with the number removed and the padding of the number.
+
+    :param str input_string: string to trail.
+    :return: tuple with the number of a string, the name without the number and the padding of the number.
+    :rtype: Tuple[str, int | None, int]
+    """
+
+    m = re.search(r'\d+$', input_string)
+    if m:
+        number_as_string = m.group()
+        name_numberless = input_string[:-len(number_as_string)]
+        padding = len(number_as_string)
+        return name_numberless, int(number_as_string), padding
+
+    return input_string, None, 0
 
 
 def get_string_index(index, padding=2):
@@ -535,6 +557,9 @@ def flatten_array(array):
     :return: str
     """
 
+    # import here to avoid cyclic imports
+    from tp.common.python import helpers
+
     out_array = ''
     array = helpers.force_list(array)
     for obj in array:
@@ -554,6 +579,9 @@ def flatten_array_colon(array):
     :param array: list(str)
     :return: str
     """
+
+    # import here to avoid cyclic imports
+    from tp.common.python import helpers
 
     out_array = ''
     array = helpers.force_list(array)
@@ -616,3 +644,17 @@ def title_case(input_string: str) -> str:
     result = ' '.join(splitted)
 
     return result.replace('_', ' ').title()
+
+
+def file_safe_name(text: str, space_to: str = ' ', keep: Tuple[str] = (' ', '_', '-')) -> str:
+    """
+    Returns a file safe name from the given string.
+
+    :param str text: string to convert to a valid file name.
+    :param str space_to: convert spaces to given character.
+    :param Tuple[str] keep: characters to keep in the name.
+    :return: file safe name.
+    :rtype: str
+    """
+
+    return ''.join([c for c in text if c.isalnum() or c in keep]).rstrip().replace(' ', space_to)

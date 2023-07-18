@@ -111,11 +111,14 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
 		:param QEvent event: Qt event.
 		"""
 
-		if event.type() == QEvent.EnabledChange:
-			enabled = self.isEnabled()
-			self._search_button.setEnabled(enabled)
-			self._search_line.setEnabled(enabled)
-			self._clear_button.setEnabled(enabled)
+		try:
+			if event.type() == QEvent.EnabledChange:
+				enabled = self.isEnabled()
+				self._search_button.setEnabled(enabled)
+				self._search_line.setEnabled(enabled)
+				self._clear_button.setEnabled(enabled)
+		except AttributeError:
+			pass
 	# 	super().changeEvent(event)
 
 	@override
