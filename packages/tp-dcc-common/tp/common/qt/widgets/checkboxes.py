@@ -12,6 +12,26 @@ from tp.common.qt import contexts
 from tp.common.qt.widgets import layouts, menus
 
 
+def checkbox(text: str = '', flag: bool = False, tooltip: str = '', parent: QWidget | None = None) -> QCheckBox:
+	"""
+	Creates a basic QCheckBox widget.
+
+	:param str text: checkbox text.
+	:param bool flag: true to check by default; False otherwise.
+	:param str tooltip: checkbox tooltip.
+	:param QWidget parent: parent widget.
+	:return: newly created combo box.
+	:rtype: QCheckBox
+	"""
+
+	new_checkbox = QCheckBox(text=text, parent=parent)
+	new_checkbox.setChecked(flag)
+	if tooltip:
+		new_checkbox.setToolTip(tooltip)
+
+	return new_checkbox
+
+
 def checkbox_widget(
 		text: str = '', checked: bool = False, tooltip: str = '', enable_menu: bool = True, right: bool = False,
 		label_ratio: int = 0, box_ratio: int = 0, parent: QWidget | None = None) -> BaseCheckBoxWidget:

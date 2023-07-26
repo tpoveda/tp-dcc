@@ -15,7 +15,7 @@ from Qt.QtWidgets import (
 	QMainWindow, QStatusBar, QTextEdit, QTextBrowser, QTableWidgetItem, QCheckBox, QCompleter, QGraphicsObject,
 	QGraphicsScene, QGraphicsView, QStackedWidget, QMessageBox, QInputDialog, QProgressBar, QGroupBox, QFileSystemModel,
 	QGraphicsProxyWidget, QMdiArea, QMdiSubWindow, QGraphicsColorizeEffect, QTabWidget, QTabBar, QRadioButton, QSpinBox,
-	QDoubleSpinBox, QSlider, QLayout, QStyleOptionViewItem
+	QDoubleSpinBox, QSlider, QLayout, QStyleOptionViewItem, QHeaderView
 )
 from Qt.QtGui import (
 	QCursor, QKeySequence, QFont, QFontMetrics, QFontMetricsF, QColor, QIcon, QPixmap, QImage, QPen, QBrush, QPainter,
@@ -67,7 +67,7 @@ from tp.common.qt.widgets.search import SearchLineEdit
 from tp.common.qt.widgets.groupedtreewidget import GroupedTreeWidget
 from tp.common.qt.widgets.linetabwidget import LineTabWidget
 from tp.common.qt.widgets.stack import sliding_opacity_stacked_widget, StackItem
-from tp.common.qt.widgets.checkboxes import checkbox_widget, BaseCheckBoxWidget
+from tp.common.qt.widgets.checkboxes import checkbox, checkbox_widget, BaseCheckBoxWidget
 from tp.common.qt.widgets.toolbars import FlowToolBar
 
 

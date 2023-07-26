@@ -20,12 +20,13 @@ class CreateView(qt.QWidget):
 
 	def __init__(
 			self, components_manager: ComponentsManager, controller: CritBuilderController,
-			ui_interface: CritUiInterface, parent: CritBuilderWindow | None = None):
+			ui_interface: CritUiInterface, theme_prefs, parent: CritBuilderWindow | None = None):
 		super().__init__(parent)
 
 		self._components_manager = components_manager
 		self._controller = controller
 		self._ui_interface = ui_interface
+		self._theme_prefs = theme_prefs
 		self._crit_builder = parent
 		self._components_model_manager = components.ComponentsModelManager(self._components_manager)
 		self._components_model_manager.discover_components()

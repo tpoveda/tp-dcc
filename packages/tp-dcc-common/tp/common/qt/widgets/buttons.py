@@ -1006,7 +1006,7 @@ class BaseButton(QPushButton, AbstractButton):
 		found_menu = self.menu(mouse_menu, searchable=self.is_searchable(mouse_menu))
 		found_menu.setTearOffEnabled(tearoff)
 
-	def update_theme(self, event: 'ThemeUpdateEvent'):
+	def update_theme(self, event):
 		"""
 		Updates theme.
 		:param ThemeUpdateEvent event: theme update event.
@@ -1523,7 +1523,7 @@ class ShadowedButton(BaseButton):
 		return super().mouseDoubleClickEvent(event)
 
 	@override
-	def update_theme(self, event: 'ThemeUpdateEvent'):
+	def update_theme(self, event):
 		if self._theme_updates_color:
 			self._icon_color_theme = self._icon_color_theme or '$BUTTON_ICON_COLOR'
 

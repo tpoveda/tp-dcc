@@ -2193,7 +2193,7 @@ class SpawnerIcon(buttons.IconMenuButton):
 		frameless.close()
 
 	@override(check_signature=False)
-	def update_theme(self, event: 'ThemeUpdateEvent'):
+	def update_theme(self, event):
 		"""
 		Overrides base update_theme function to ignore it.
 

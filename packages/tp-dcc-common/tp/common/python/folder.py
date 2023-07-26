@@ -11,6 +11,7 @@ import os
 import sys
 import time
 import errno
+import ctypes
 import shutil
 import fnmatch
 import tempfile
@@ -545,7 +546,7 @@ def open_folder(path=None):
             pass
 
 
-def get_user_folder(absolute=True):
+def user_folder(absolute: bool = True):
     """
     Get path to the user folder
     :return: str, path to the user folder
@@ -557,6 +558,40 @@ def get_user_folder(absolute=True):
         return path.clean_path(os.path.abspath(os.path.expanduser('~')))
     else:
         return path.clean_path(os.path.expanduser('~'))
+
+
+def documents_folder(absolute: bool = True):
+    """
+    Returns the path to the user folder.
+
+    :return: path to the user folder.
+    :rtype: str
+    """
+
+    from tp.common.python import path
+
+    CSIDL_PERSONAL = 5       # My Documents
+    SHGFP_TYPE_CURRENT = 0   # Get current, not default value
+
+    buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
+    ctypes.windll.shell32.SHGetFolderPathW(None, CSIDL_PERSONAL, None, SHGFP_TYPE_CURRENT, buf)
+
+    documents_folder = path.clean_path(os.path.abspath(buf.value) if absolute else buf.value)
+    return documents_folder
+
+
+def get_desktop_folder():
+    """
+    Returns path to the Desktop folder.
+
+    :return: path to the user desktop folder.
+    :rtype: str
+    """
+
+    from tp.common.python import path
+
+    # NOTE: This only works in Windows
+    return path.join_path(os.environ['USERPROFILE'], 'Desktop')
 
 
 def get_temp_folder():

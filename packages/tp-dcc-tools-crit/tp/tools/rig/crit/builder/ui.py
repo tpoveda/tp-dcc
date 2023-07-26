@@ -7,6 +7,7 @@ from functools import partial
 from overrides import override
 
 from tp.core import log
+from tp.preferences.interfaces import core
 from tp.common.python import profiler
 from tp.common.qt import api as qt
 from tp.common.qt.widgets import frameless
@@ -41,6 +42,7 @@ class CritBuilderWindow(frameless.FramelessWindow):
 			components_manager=self._components_manager, editors_manager=self._editors_manager,
 			ui_commands_manager=self._ui_commands_manager, ui_interface=self._ui_interface)
 		self._controller.componentAdded.connect(self._on_component_added)
+		self._theme_prefs = core.theme_preference_interface()
 
 		self._rig_selector = None				# type: rigselector.RigSelector
 		self._loading_widget = None				# type: loadingwidget.LoadingWidget
@@ -91,7 +93,7 @@ class CritBuilderWindow(frameless.FramelessWindow):
 		self._menu_tab_widget = qt.LineTabWidget(alignment=qt.Qt.AlignLeft, parent=self)
 		self._create_view = createview.CreateView(
 			components_manager=self._components_manager, controller=self._controller, ui_interface=self._ui_interface,
-			parent=self)
+			theme_prefs=self._theme_prefs, hparent=self)
 		self._menu_tab_widget.add_tab(self._create_view, {'text': 'Modules', 'image': 'puzzle', 'checked': True})
 		self._outliners_widget.layout().addWidget(self._menu_tab_widget)
 
