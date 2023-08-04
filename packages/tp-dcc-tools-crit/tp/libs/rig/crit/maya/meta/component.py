@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Iterable
+import typing
+from typing import Tuple, List, Iterable, Dict
 
 from overrides import override
 
@@ -11,6 +12,13 @@ from tp.maya.meta import base
 from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.maya.meta import layers
 from tp.libs.rig.crit.maya.descriptors import component
+
+if typing.TYPE_CHECKING:
+	from tp.libs.rig.crit.maya.meta.layers import (
+		CritLayer, CritSkeletonLayer, CritGeometryLayer, CritRigLayer, CritOutputLayer, CritInputLayer,
+		CritGuideLayer, CritXGroupLayer
+	)
+
 
 logger = log.rigLogger
 
@@ -86,14 +94,9 @@ class CritComponent(base.DependentNode):
 
 	@override(check_signature=False)
 	def delete(self, mod: api.OpenMaya.MDGModifier | None = None) -> bool:
-
 		root = self.root_transform()
-		print('gogoggoogoggo')
-		print(root.isLocked)
 		if root:
-			print('trying to unlock ....')
 			root.lock(False)
-			print(root.isLocked)
 			root.delete()
 
 		return super().delete(mod=mod)
@@ -166,7 +169,7 @@ class CritComponent(base.DependentNode):
 			attr = self.attribute(attr_name)
 			attr.setString(str_data)
 
-	def layer(self, layer_type: str) -> layers.CritLayer | None:
+	def layer(self, layer_type: str) -> CritLayer | None:
 		"""
 		Returns the layer of give ntype attached to this rig.
 
@@ -186,12 +189,12 @@ class CritComponent(base.DependentNode):
 
 		return root
 
-	def layers(self) -> list[layers.CritLayer]:
+	def layers(self) -> List[CritLayer]:
 		"""
 		Returns a list with all layers linked to this component meta node.
 
 		:return: list of layer meta node instances.
-		:rtype: list[meta_layer.CritLayer]
+		:rtype: List[meta_layer.CritLayer]
 		"""
 
 		layer_types = (
@@ -214,13 +217,13 @@ class CritComponent(base.DependentNode):
 
 		return self.layers_by_id(layer_types)
 
-	def layers_by_id(self, layer_ids: tuple) -> dict:
+	def layers_by_id(self, layer_ids: Tuple) -> Dict[str, CritLayer]:
 		"""
 		Returns a dictionary mapping each given layer ID with the layer meta node instance found.
 
 		:param list[str] layer_ids: list layer IDs to retrieve.
 		:return: mapping of layer ids with layer meta node instances.
-		:rtype: dict[str, layers.CritLayer]
+		:rtype: Dict[str, CritLayer]
 		"""
 
 		layers_map = {layer_id: None for layer_id in layer_ids}
@@ -231,7 +234,7 @@ class CritComponent(base.DependentNode):
 
 	def create_layer(
 			self, layer_type: str, hierarchy_name: str, meta_name: str,
-			parent: api.OpenMaya.MObject | api.DagNode | None = None) -> layers.CritLayer:
+			parent: api.OpenMaya.MObject | api.DagNode | None = None) -> CritSkeletonLayer:
 		"""
 		Creates a new layer based on the given type. If the layer of given type already exists, creation will be
 		skipped.
@@ -241,7 +244,7 @@ class CritComponent(base.DependentNode):
 		:param str meta_name: name for the layer meta node.
 		:param OpenMaya.MObject or api.DagNode or None parent: optional new parent for the root.
 		:return: newly created Layer instance.
-		:rtype: layers.CritLayer
+		:rtype: CritLayer
 		"""
 
 		existing_layer = self.layer(layer_type)
@@ -250,79 +253,79 @@ class CritComponent(base.DependentNode):
 
 		return self._create_layer(layer_type, hierarchy_name, meta_name, parent)
 
-	def guide_layer(self) -> layers.CritGuideLayer:
+	def guide_layer(self) -> CritGuideLayer | None:
 		"""
 		Returns guide layer class instance from the meta node instance attached to this root.
 
 		:return: guide's layer instance.
-		:rtype: layers.CritGuideLayer
+		:rtype: CritGuideLayer or None
 		"""
 
 		return self.layer(consts.GUIDE_LAYER_TYPE)
 
-	def input_layer(self) -> layers.CritInputLayer:
+	def input_layer(self) -> CritInputLayer | None:
 		"""
 		Returns input layer class instance from the meta node instance attached to this root.
 
 		:return: input layer instance.
-		:rtype: layers.CritInputLayer
+		:rtype: CritInputLayer or None
 		"""
 
 		return self.layer(consts.INPUT_LAYER_TYPE)
 
-	def output_layer(self) -> layers.CritOutputLayer:
+	def output_layer(self) -> CritOutputLayer | None:
 		"""
 		Returns output layer class instance from the meta node instance attached to this root.
 
 		:return: output layer instance.
-		:rtype: layers.CritOutputLayer
+		:rtype: CritOutputLayer or None
 		"""
 
 		return self.layer(consts.OUTPUT_LAYER_TYPE)
 
-	def skeleton_layer(self) -> layers.CritSkeletonLayer:
+	def skeleton_layer(self) -> CritSkeletonLayer | None:
 		"""
 		Returns skeleton layer class instance from the meta node instance attached to this root.
 
 		:return: skeleton layer instance.
-		:rtype: layers.CritSkeletonLayer
+		:rtype: CritSkeletonLayer or None
 		"""
 
 		return self.layer(consts.SKELETON_LAYER_TYPE)
 
-	def rig_layer(self) -> layers.CritRigLayer:
+	def rig_layer(self) -> CritRigLayer | None:
 		"""
 		Returns rig layer class instance from the meta node instance attached to this root.
 
 		:return: rig layer instance.
-		:rtype: layers.CritRigLayer
+		:rtype: CritRigLayer or None
 		"""
 
 		return self.layer(consts.RIG_LAYER_TYPE)
 
-	def xgroup_layer(self) -> layers.CritXGroupLayer:
+	def xgroup_layer(self) -> CritXGroupLayer | None:
 		"""
 		Returns xgroup layer class instance from the meta node instance attached to this root.
 
 		:return: xgroup layer instance.
-		:rtype: layers.CritXGroupLayer
+		:rtype: CritXGroupLayer or None
 		"""
 
 		return self.layer(consts.XGROUP_LAYER_TYPE)
 
-	def geometry_layer(self) -> layers.CritGeometryLayer:
+	def geometry_layer(self) -> CritGeometryLayer | None:
 		"""
 		Returns geometry layer class instance from the meta node instance attached to this root.
 
 		:return: geometry layer instance.
-		:rtype: layers.CritGeometryLayer
+		:rtype: CritGeometryLayer or None
 		"""
 
 		return self.layer(consts.GEOMETRY_LAYER_TYPE)
 
 	def _create_layer(
 			self, layer_type: str, hierarchy_name: str, meta_name: str,
-			parent: api.OpenMaya.MObject | api.DagNode | None = None) -> layers.CritLayer:
+			parent: api.OpenMaya.MObject | api.DagNode | None = None) -> CritLayer | None:
 		"""
 		Internal function that creates a new layer based on the given type.
 
@@ -331,7 +334,7 @@ class CritComponent(base.DependentNode):
 		:param str meta_name: name for the layer meta node.
 		:param OpenMaya.MObject or None parent: optional new parent for the root.
 		:return: newly created Layer instance.
-		:rtype: layers.CritLayer
+		:rtype: CritLayer or None
 		"""
 
 		new_layer_meta = base.create_meta_node_by_type(layer_type, name=meta_name)

@@ -8,18 +8,18 @@ if dcc.is_maya():
 # MetaClasses Types
 # ======================================================================================================================
 
-RIG_TYPE = 'CritRig'
-COMPONENT_TYPE = 'CritComponent'
-ANIM_COMPONENT_TYPE = 'CritAnimComponent'
-COMPONENTS_LAYER_TYPE = 'CritComponentsLayer'
-GUIDE_LAYER_TYPE = 'CritGuideLayer'
-INPUT_LAYER_TYPE = 'CritInputLayer'
-OUTPUT_LAYER_TYPE = 'CritOutputLayer'
-REGIONS_LAYER_TYPE = 'CritRegionsLayer'
-SKELETON_LAYER_TYPE = 'CritSkeletonLayer'
-RIG_LAYER_TYPE = 'CritRigLayer'
-XGROUP_LAYER_TYPE = 'CritXGroupLayer'
-GEOMETRY_LAYER_TYPE = 'CritGeometryLayer'
+RIG_TYPE = 'critRig'
+COMPONENT_TYPE = 'critComponent'
+ANIM_COMPONENT_TYPE = 'critAnimComponent'
+COMPONENTS_LAYER_TYPE = 'critComponentsLayer'
+GUIDE_LAYER_TYPE = 'critGuideLayer'
+INPUT_LAYER_TYPE = 'critInputLayer'
+OUTPUT_LAYER_TYPE = 'critOutputLayer'
+REGIONS_LAYER_TYPE = 'critRegionsLayer'
+SKELETON_LAYER_TYPE = 'critSkeletonLayer'
+RIG_LAYER_TYPE = 'critRigLayer'
+XGROUP_LAYER_TYPE = 'critXGroupLayer'
+GEOMETRY_LAYER_TYPE = 'critGeometryLayer'
 LAYER_TYPES = (
 	COMPONENTS_LAYER_TYPE,
 	INPUT_LAYER_TYPE,
@@ -55,6 +55,7 @@ CRIT_RIG_CONFIG_ATTR = 'critConfig'
 CRIT_CONTROL_DISPLAY_LAYER_ATTR = 'critControlDisplayLayer'
 CRIT_ROOT_SELECTION_SET_ATTR = 'critRootSelectionSet'
 CRIT_CONTROL_SELECTION_SET_ATTR = 'critControlSelectionSet'
+CRIT_JOINT_SELECTION_SET_ATTR = 'critJointSelectionSet'
 CRIT_SKELETON_SELECTION_SET_ATTR = 'critSkeletonSelectionSet'
 CRIT_BUILD_SCRIPT_CONFIG_ATTR = 'critBuildScriptConfig'
 CRIT_EXTRA_NODES_ATTR = 'critExtraNodes'
@@ -239,12 +240,22 @@ GUIDE_MARKING_MENU_DESCRIPTOR_KEY = 'markingMenuGuide'
 SKELETON_MARKING_MENU_DESCRIPTOR_KEY = 'markingMenuSkeleton'
 RIG_MARKING_MENU_DESCRIPTOR_KYE = 'markingMenuRig'
 ANIM_MARKING_MENU_DESCRIPTOR_KEY = 'markingMenuAnim'
+DEFAULT_GUIDE_MARKING_MENU = 'critDefaultGuideMenu'
+DEFAULT_SKELETON_MARKING_MENU = 'critDefaultSkeletonMenu'
 LAYER_DESCRIPTOR_KEYS = (
 	INPUT_LAYER_DESCRIPTOR_KEY,
 	OUTPUT_LAYER_DESCRIPTOR_KEY,
 	GUIDE_LAYER_DESCRIPTOR_KEY,
 	RIG_LAYER_DESCRIPTOR_KEY,
 	SKELETON_LAYER_DESCRIPTOR_KEY
+)
+DESCRIPTOR_KEYS_TO_SKIP_UPDATE = (
+	GUIDE_LAYER_DESCRIPTOR_KEY,
+	INPUT_LAYER_DESCRIPTOR_KEY,
+	OUTPUT_LAYER_DESCRIPTOR_KEY,
+	SKELETON_LAYER_DESCRIPTOR_KEY,
+	RIG_LAYER_DESCRIPTOR_KEY,
+	SPACE_SWITCH_DESCRIPTOR_KEY
 )
 
 # ======================================================================================================================
@@ -292,22 +303,22 @@ POLISH_STATE = 4
 # ======================================================================================================================
 
 GUIDE_FUNCTION_TYPE = 0
-DEFORM_FUNCTION_TYPE = 1
+SKELETON_FUNCTION_TYPE = 1
 RIG_FUNCTION_TYPE = 2
 POLISH_FUNCTION_TYPE = 3
 DELETE_GUIDE_LAYER_FUNCTION_TYPE = 4
-DELETE_DEFORM_LAYER_FUNCTION_TYPE = 5
+DELETE_SKELETON_LAYER_FUNCTION_TYPE = 5
 DELETE_RIG_LAYER_FUNCTION_TYPE = 6
 DELETE_COMPONENT_FUNCTION_TYPE = 7
 DELETE_COMPONENTS_FUNCTION_TYPE = 8
 DELETE_RIG_FUNCTION_TYPE = 9
 BUILD_SCRIPT_FUNCTIONS_MAPPING = {
 	GUIDE_FUNCTION_TYPE: ('pre_guide_build', 'post_guide_build'),
-	DEFORM_FUNCTION_TYPE: ('pre_skeleton_build', 'post_skeleton_build'),
+	SKELETON_FUNCTION_TYPE: ('pre_skeleton_build', 'post_skeleton_build'),
 	RIG_FUNCTION_TYPE: ('pre_rig_build', 'post_rig_build'),
 	POLISH_FUNCTION_TYPE: ('pre_polish', 'post_polish_build'),
 	DELETE_GUIDE_LAYER_FUNCTION_TYPE: ('pre_delete_guide_layer', None),
-	DELETE_DEFORM_LAYER_FUNCTION_TYPE: ('pre_delete_skeleton_layer', None),
+	DELETE_SKELETON_LAYER_FUNCTION_TYPE: ('pre_delete_skeleton_layer', None),
 	DELETE_RIG_LAYER_FUNCTION_TYPE: ('pre_delete_rig_layer', None),
 	DELETE_COMPONENT_FUNCTION_TYPE: ('pre_delete_component', None),
 	DELETE_COMPONENTS_FUNCTION_TYPE: ('pre_delete_components', None),

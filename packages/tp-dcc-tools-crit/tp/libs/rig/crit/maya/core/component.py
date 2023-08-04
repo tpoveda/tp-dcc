@@ -14,7 +14,7 @@ from tp.maya.cmds import helpers
 from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.core import errors, naming
 from tp.libs.rig.crit.maya.descriptors import component
-from tp.libs.rig.crit.maya.library.functions import names
+from tp.libs.rig.crit.maya.library.functions import names, components
 from tp.libs.rig.crit.maya.meta import layers, nodes as meta_nodes, component as meta_component
 
 if typing.TYPE_CHECKING:
@@ -24,6 +24,7 @@ if typing.TYPE_CHECKING:
 	from tp.libs.rig.crit.core.namingpresets import Preset
 	from tp.libs.rig.crit.maya.core.config import MayaConfiguration
 	from tp.libs.rig.crit.maya.descriptors.layers import GuideLayerDescriptor
+	from tp.libs.rig.crit.maya.descriptors.nodes import GuideDescriptor, InputDescriptor, OutputDescriptor
 
 logger = log.tpLogger
 
@@ -66,14 +67,14 @@ def reset_joint_transforms(
 	"""
 
 	descriptor_id_map = id_mapping[consts.SKELETON_LAYER_TYPE]
-	joint_mapping = {v: k for k, v  in descriptor_id_map.items()}
+	joint_mapping = {v: k for k, v in descriptor_id_map.items()}
 	guide_descriptors = {i.id: i for i in guide_layer_descriptor.find_guides(*descriptor_id_map.keys()) if i is not None}
 	for joint in skeleton_layer.iterate_joints():
 		guide_id = joint_mapping.get(joint.id())
 		if not guide_id:
 			continue
-		guide_descriptor = guide_descriptors.get(guide_id)
-		world_matrix = guide_descriptor.transformationMatrix(scale=False)
+		guide_descriptor = guide_descriptors.get(guide_id)							# type: GuideDescriptor
+		world_matrix = guide_descriptor.transformation_matrix(scale=False)
 		world_matrix.setScale((1, 1, 1), api.kWorldSpace)
 		joint.resetTransform()
 		joint.setWorldMatrix(world_matrix.asMatrix())
@@ -765,7 +766,7 @@ class Component:
 			if consts.GUIDE_LAYER_TYPE in layer_types and self.has_guide():
 				self._set_guide_naming(name_manager, mod)
 			if consts.SKELETON_LAYER_TYPE in layer_types and self.has_skeleton():
-				self._set_deform_naming(name_manager, mod)
+				self._set_skeleton_naming(name_manager, mod)
 			for node_to_lock in nodes_to_lock:
 				node_to_lock.lock(True, mod=mod, apply=False)
 			if apply:
@@ -1026,7 +1027,7 @@ class Component:
 	#
 	# 	return rig_layer.setting_node(consts.CONTROL_PANEL_TYPE)
 
-	def id_mapping(self) -> dict:
+	def id_mapping(self) -> Dict:
 		"""
 		Returns the guide ID -> layer node ID mapping acting as a lookup table.
 
@@ -1035,18 +1036,38 @@ class Component:
 		guide does not exist anymore.
 
 		:return: layer ids mapping.
-		:rtype: dict
+		:rtype: Dict
 
 		..note:: this method can be overriden in subclasses, by default it maps the guide id as 1-1.
 		"""
 
-		ids = {k.id: k.id for k in self.descriptor.guideLayer.iterate_guides(include_root=False)}
+		ids = {k.id: k.id for k in self.descriptor.guide_layer.iterate_guides(include_root=False)}
 		return {
 			consts.SKELETON_LAYER_TYPE: ids,
 			consts.INPUT_LAYER_TYPE: ids,
 			consts.OUTPUT_LAYER_TYPE: ids,
 			consts.RIG_LAYER_TYPE: ids
 		}
+
+	@profiler.fn_timer
+	def align_guides(self) -> bool:
+		"""
+		Automatically handles guide alignment for this component based on the 3 CRIT guide properties:
+			1. autoAlign: defines whether guide requires auto-alignment.
+			2. autoAlignAimVector: defines the primary axis which to align on.
+			3. autoAlignUpVector: defines the local up vector for the guide.
+
+		:return: True if auto align operation was successful; False otherwise.
+		:rtype: bool
+		"""
+
+		if not self.has_guide():
+			return False
+
+		guide_layer = self.guide_layer()
+		guide_layer.align_guides()
+
+		return True
 
 	def disconnect(self, component_to_disconnect: Component):
 		"""
@@ -1281,20 +1302,23 @@ class Component:
 		return None, None
 
 	@profiler.fn_timer
-	def build_guide(self):
+	def build_guide(self) -> bool:
 		"""
 		Builds the guide system for this component. This method handles:
 			- Creation of the guide system.
 			- Setting up guide layer metadata.
 
+		:return: True if build guide operation was successful; False otherwise.
+		:rtype: bool
 		:raises errors.CritComponentDoesNotExistError: if the component does not exist.
 		:raises errors.CritBuildComponentGuideUnknownError: if an unknown error occurs while building the guide system.
 		"""
 
 		if not self.exists():
-			raise errors.CritComponentDoesNotExistError
+			raise errors.CritComponentDoesNotExistError(self.descriptor.name)
 
 		self._generate_objects_cache()
+
 		if self.has_guide():
 			self.guide_layer().root_transform().show()
 		if self.has_polished():
@@ -1305,6 +1329,7 @@ class Component:
 
 		self.logger.info('Building guide: {}'.format(self.name()))
 		self._is_building_guide = True
+
 		container = self.container()
 		if container is None:
 			container = self.create_container()
@@ -1319,7 +1344,7 @@ class Component:
 				self.naming_manager(), self.name(), self.side(), consts.GUIDE_LAYER_TYPE)
 			guide_layer = self._meta.create_layer(
 				consts.GUIDE_LAYER_TYPE, hierarchy_name, meta_name, parent=self._meta.root_transform())
-			guide_layer.update_metadata(self.descriptor.guideLayer.get(consts.METADATA_DESCRIPTOR_KEY, list()))
+			guide_layer.update_metadata(self.descriptor.guide_layer.get(consts.METADATA_DESCRIPTOR_KEY, []))
 			self._build_objects_cache[layers.CritGuideLayer.ID] = guide_layer
 			self.pre_setup_guide()
 			self.setup_guide()
@@ -1327,7 +1352,7 @@ class Component:
 			self.save_descriptor(self._descriptor)
 			self._set_has_guide(True)
 			if has_skeleton:
-				reset_joint_transforms(self.skeleton_layer(), self.descriptor.guideLayer, self.id_mapping())
+				reset_joint_transforms(self.skeleton_layer(), self.descriptor.guide_layer, self.id_mapping())
 		except Exception as exc:
 			self.logger.error('Failed to setup guides: {}'.format(exc), exc_info=True)
 			self._set_has_guide(False)
@@ -1346,7 +1371,6 @@ class Component:
 			- The creation of the guides structure using the component descriptor data.
 		"""
 
-		self.logger.info('Running pre-setup guide...')
 		self._setup_guide_settings()
 
 		self.logger.debug('Generating guides from descriptor...')
@@ -1357,13 +1381,13 @@ class Component:
 
 		# re-parent existing guides if required
 		post_parenting = list()
-		for guide_descriptor in self.descriptor.guideLayer.iterate_guides():
+		for guide_descriptor in self.descriptor.guide_layer.iterate_guides():
 			guide_id = guide_descriptor['id']
 			current_scene_guide = current_guides.get(guide_id)
 			guide_name = name_manager.resolve(
 				'guideName', {'componentName': component_name, 'side': component_side, 'id': guide_id, 'type': 'guide'})
 			if current_scene_guide is not None:
-				current_scene_guide.create_attributes_from_dict({v['name']: v for v in guide_descriptor.get('attributes', list())})
+				current_scene_guide.createAttributesFromDict({v['name']: v for v in guide_descriptor.get('attributes', list())})
 				current_scene_guide.rename(guide_name)
 				_, parent_id = current_scene_guide.guide_parent()
 				if parent_id != guide_descriptor['parent']:
@@ -1423,13 +1447,12 @@ class Component:
 		Post setup guide function that is run after setup_guide function is called.
 		"""
 
-		self.logger.info('Running post-setup guide...')
 		guide_layer = self.guide_layer()
 		guide_layer_transform = guide_layer.root_transform()
 
 		# delete guides in the scene that does not need to exist
 		scene_guides = {found_guide.id() for found_guide in guide_layer.iterate_guides()}
-		default_guides = {guide_descriptor['id'] for guide_descriptor in self.descriptor.guideLayer.iterate_guides()}
+		default_guides = {guide_descriptor['id'] for guide_descriptor in self.descriptor.guide_layer.iterate_guides()}
 		to_delete = [guide_id for guide_id in scene_guides if guide_id not in default_guides]
 		if to_delete:
 			guide_layer.delete_guides(*to_delete)
@@ -1471,6 +1494,423 @@ class Component:
 		if nodes_to_publish and container is not None:
 			container.publishNodes(nodes_to_publish)
 
+		# TODO: Bring back controller tags once Autodesk fixes them
+		# tags = list(self.create_guide_controller_tags(guides, None))
+		# guide_layer.add_extra_nodes(tags)
+		# if container is not None:
+		# 	container.addNodes(tags)
+
+		layout_id = self.descriptor.get(consts.GUIDE_MARKING_MENU_DESCRIPTOR_KEY) or consts.DEFAULT_GUIDE_MARKING_MENU
+		components.create_triggers(guide_layer, layout_id)
+
+		self.deserialize_component_connections(layer_type=consts.GUIDE_LAYER_TYPE)
+
+	def setup_inputs(self):
+		"""
+		Set up the input layer for this component.
+		"""
+
+		def _build_input(_input_descriptor: InputDescriptor) -> meta_nodes.InputNode:
+			"""
+			Internal function that creates an input node instance from given input descriptor data.
+
+			:param InputDescriptor _input_descriptor: input descriptor instance.
+			:return: input node created from input descriptor.
+			:rtype: meta_nodes.InputNode
+			"""
+
+			parent = root_transform if _input_descriptor.parent is None else input_layer.input_node(_input_descriptor.parent)
+			try:
+				input_node = input_layer.input_node(_input_descriptor.id)
+			except errors.CritInvalidInputNodeMetaData:
+				input_node = None
+			if input_node is None:
+				_input_descriptor.name = name_manager.resolve(
+					'inputName', {'componentName': name, 'side': side, 'type': 'input', 'id': _input_descriptor.id})
+				input_node = input_layer.create_input(**_input_descriptor)
+
+			input_node.setParent(parent, maintain_offset=True)
+
+			return input_node
+
+		name, side = self.name(), self.side()
+		name_manager = self.naming_manager()
+		hierarchy_name, meta_name = naming.compose_names_for_layer(
+				self.naming_manager(), self.name(), self.side(), consts.INPUT_LAYER_TYPE)
+		input_layer = self._meta.create_layer(consts.INPUT_LAYER_TYPE, hierarchy_name, meta_name, parent=self._meta.root_transform())
+		root_transform = input_layer.root_transform()
+		if root_transform is None:
+			root_transform = input_layer.create_transform(name=hierarchy_name, parent=self._meta.root_transform())
+		self._build_objects_cache[layers.CritInputLayer.ID] = input_layer
+
+		descriptor = self.descriptor
+		input_layer_descriptor = descriptor.input_layer
+		current_inputs = {input_node.id(): input_node for input_node in input_layer.iterate_inputs()}
+		new_inputs = {}
+		for input_descriptor in input_layer_descriptor.iterate_inputs():
+			input_node = _build_input(input_descriptor)
+			new_inputs[input_node.id] = input_node
+
+		# remove any input node that does not exist anymore
+		for input_id, input_node in current_inputs.items():
+			if input_id in new_inputs:
+				continue
+			parent_node = input_node.parent()
+			for child in input_node.children((api.kTransform,)):
+				child.setParent(parent_node)
+			input_layer.delete_input(input_id)
+
+		input_settings = input_layer_descriptor.settings
+		for setting in iter(input_settings):
+			input_layer.addAttribute(**setting)
+
+	def setup_outputs(self, parent_node: meta_nodes.Joint | api.DagNode):
+		"""
+		Set up the output layer for this component.
+
+		:param api.DagNode parent_node: parent node.
+		"""
+
+		def _build_output(_output_descriptor: OutputDescriptor) -> meta_nodes.OutputNode:
+			"""
+			Internal function that creates an output node instance from given output descriptor data.
+
+			:param OutputDescriptor _output_descriptor: output descriptor instance.
+			:return: output node created from output descriptor.
+			:rtype: meta_nodes.OutputNode
+			"""
+
+			parent = root_transform if _output_descriptor.parent is None else output_layer.output_node(_output_descriptor.parent)
+			try:
+				output_node = output_layer.output_node(_output_descriptor.id)
+			except errors.CritInvalidOutputNodeMetaData:
+				output_node = None
+			if output_node is None:
+				_output_descriptor.name = name_manager.resolve(
+					'outputName', {'componentName': name, 'side': side, 'type': 'output', 'id': _output_descriptor.id})
+				output_node = output_layer.create_output(**_output_descriptor)
+
+			output_node.setParent(parent, maintain_offset=True)
+
+			return output_node
+
+		name, side = self.name(), self.side()
+		name_manager = self.naming_manager()
+		hierarchy_name, meta_name = naming.compose_names_for_layer(
+				self.naming_manager(), self.name(), self.side(), consts.OUTPUT_LAYER_TYPE)
+		output_layer = self._meta.create_layer(
+			consts.OUTPUT_LAYER_TYPE, hierarchy_name, meta_name, parent=self._meta.root_transform())
+		root_transform = output_layer.root_transform()
+		if root_transform is None:
+			root_transform = output_layer.create_transform(name=hierarchy_name, parent=self._meta.root_transform())
+		self._build_objects_cache[layers.CritOutputLayer.ID] = output_layer
+
+		descriptor = self.descriptor
+		output_layer_descriptor = descriptor.output_layer
+		current_outputs = {output_node.id(): output_node for output_node in output_layer.iterate_outputs()}
+		new_outputs = {}
+		for output_descriptor in output_layer_descriptor.iterate_outputs():
+			output_node = _build_output(output_descriptor)
+			new_outputs[output_node.id] = output_node
+
+		# remove any output node that does not exist anymore
+		for output_id, output_node in current_outputs.items():
+			if output_id in new_outputs:
+				continue
+			parent_node = output_node.parent()
+			for child in output_node.children((api.kTransform,)):
+				child.setParent(parent_node)
+			output_layer.delete_output(output_id)
+
+		output_settings = output_layer_descriptor.settings
+		for setting in iter(output_settings):
+			output_layer.addAttribute(**setting)
+
+	def component_parent_joint(self, parent_node: api.DagNode) -> meta_nodes.Joint | api.DagNode:
+		"""
+		Returns the parent component connected joint.
+
+		:param api.DagNode parent_node: parent node.
+		:return: component parent joint.
+		:rtype: meta_nodes.Joint or api.DagNode
+		"""
+
+		parent_node = parent_node or self.skeleton_layer().root_transform()
+		child_input_layer = self.input_layer()
+		if not child_input_layer:
+			return parent_node
+		parent_component = self.parent()
+		if not parent_component:
+			return parent_node
+		parent_skeleton_layer = parent_component.skeleton_layer()
+		if not parent_skeleton_layer:
+			return parent_node
+
+		input_element = child_input_layer.root_input_plug()
+		for source_input in input_element.child(3):
+			output_node_plug = source_input.child(0).source()
+			if output_node_plug is None:
+				continue
+			parent_output_layer = layers.CritOutputLayer(output_node_plug.node().object())
+			parent_output_root_transform = parent_output_layer.root_transform()
+			output_id = output_node_plug.parent().child(1).value()
+			parent_joint = parent_skeleton_layer.joint(output_id)
+			if not parent_joint:
+				parent_joints = {i.id(): i for i in parent_skeleton_layer.iterate_joints()}
+				total_joints = len(list(parent_joints.keys()))
+				if total_joints == 0:
+					return parent_node
+				if total_joints == 1:
+					return list(parent_joints.values())[0]
+				parent_output_node = output_node_plug.sourceNode()
+				while parent_joint is None:
+					parent_output_node = parent_output_node.parent()
+					if parent_output_node == parent_output_root_transform:
+						break
+					output_id = parent_output_node.attribute(consts.CRIT_ID_ATTR).value()
+					parent_joint = parent_joints.get(output_id)
+			return parent_joint or parent_node
+
+		return parent_node
+
+	def build_skeleton(self, parent_node: api.DagNode | None = None) -> bool:
+		"""
+		Builds the skeleton system for this component.
+
+		:param api.DagNode or None parent_node: optional parent node component skeleton root joint will be parented
+			under.
+		:return: True if build guide operation was successful; False otherwise.
+		:rtype: bool
+		:raises errors.CritComponentDoesNotExistError: if the component does not exist.
+		:raises errors.CritBuildComponentGuideUnknownError: if an unknown error occurs while building the guide system.
+		"""
+
+		if not self.exists():
+			raise errors.CritComponentDoesNotExistError(self.descriptor.name)
+
+		self._generate_objects_cache()
+
+		if self.has_polished():
+			self._set_has_polished(False)
+
+		self.serialize_from_scene(layer_ids=(consts.GUIDE_LAYER_TYPE,))
+
+		self._is_building_skeleton = True
+
+		container = self.container()
+		if container is None:
+			container = self.create_container()
+			self._build_objects_cache['container'] = container
+		if container is not None:
+			container.makeCurrent(True)
+			container.lock(False)
+
+		self.logger.info('Starting skeleton building with namespace: {}'.format(self.namespace()))
+		try:
+			self.setup_inputs()
+			self.deserialize_component_connections(layer_type=consts.INPUT_LAYER_TYPE)
+			hierarchy_name, meta_name = naming.compose_names_for_layer(
+				self.naming_manager(), self.name(), self.side(), consts.SKELETON_LAYER_TYPE)
+			skeleton_layer = self._meta.create_layer(
+				consts.SKELETON_LAYER_TYPE, hierarchy_name, meta_name, parent=self._meta.root_transform())
+			skeleton_layer.update_metadata(self.descriptor.skeleton_layer.get(consts.METADATA_DESCRIPTOR_KEY, []))
+			self._build_objects_cache[layers.CritSkeletonLayer.ID] = skeleton_layer
+			if container:
+				container.addNode(skeleton_layer)
+			parent_joint = self.component_parent_joint(parent_node)
+			self._setup_guide_offsets()
+			self.pre_setup_skeleton_layer()
+			self.setup_skeleton_layer(parent_joint)
+			self.setup_outputs(parent_joint)
+			self.post_setup_skeleton_layer(parent_joint)
+			self.blackbox = False
+			self.save_descriptor(self._descriptor)
+			self._set_has_skeleton(True)
+		except Exception as exc:
+			self.logger.error('Failed to setup skeleton: {}'.format(exc), exc_info=True)
+			self._set_has_skeleton(False)
+			raise errors.CritBuildComponentSkeletonUnknownError('Failed {}'.format('_'.join([self.name(), self.side()])))
+		finally:
+			if container is not None:
+				container.makeCurrent(False)
+			self._is_building_skeleton = False
+			self._build_objects_cache.clear()
+
+		return True
+
+	def pre_setup_skeleton_layer(self):
+		"""
+		Pre setup skeleton layer based on the descriptor.
+
+		For each guide in the guide layer descriptor, it checks if a matching skeleton joint exists in the skeleton
+		layer descriptor. If it does, it sets the translation, rotation and rotation order of the skeleton joint to the
+		values of the corresponding guide.
+		"""
+
+		descriptor = self.descriptor
+		guide_layer_descriptor = descriptor.guide_layer
+		skeleton_layer_descriptor = descriptor.skeleton_layer
+
+		guide_descriptors = {k.id: k for k in guide_layer_descriptor.iterate_guides()}
+		joint_descriptors = {k.id: k for k in skeleton_layer_descriptor.iterate_deform_joints()}
+		for guide_id, guide_descriptor in guide_descriptors.items():
+			joint_descriptor = joint_descriptors.get(guide_id)
+			if joint_descriptor is None:
+				continue
+			joint_descriptor.translate = guide_descriptor.get('translate', (0.0, 0.0, 0.0))
+			joint_descriptor.rotate = guide_descriptor.get('rotate', (0.0, 0.0, 0.0, 1.0))
+			joint_descriptor.rotateOrder = guide_descriptor.get('rotateOrder', 0)
+
+	def setup_skeleton_layer(self, parent_joint: meta_nodes.Joint):
+		"""
+		Setup skeleton layer for this component.
+
+		:param meta_nodes.Joint or api.DagNode parent_joint: parent joint or node which the joints will be parented
+			under.
+		"""
+
+		skeleton_layer = self.skeleton_layer()
+		descriptor = self.descriptor
+		guide_layer_descriptor = descriptor.guide_layer
+		skeleton_layer_descriptor = descriptor.skeleton_layer
+		naming_manager = self.naming_manager()
+		guide_descriptors = {k.id: k for k in guide_layer_descriptor.iterate_guides()}
+		existing_joints = {k.id(): k for k in skeleton_layer.iterate_joints()}
+		skeleton_layer_transform = skeleton_layer.root_transform()
+		new_joint_ids = {}
+		primary_root_joint = parent_joint or skeleton_layer_transform
+		id_mapping = {v: k for k, v in self.id_mapping()[consts.SKELETON_LAYER_TYPE].items()}
+
+		# find joints that do not exist anymore
+		for jnt in skeleton_layer_descriptor.iterate_deform_joints():
+			existing_joint = existing_joints.get(jnt.id)
+			guide = guide_descriptors.get(id_mapping.get(jnt.id, ''))
+			descriptor_parent = jnt.get('parent')
+			joint_parent = primary_root_joint if descriptor_parent is None else existing_joints[descriptor_parent]
+			joint_name = naming_manager.resolve(
+				'skinJointName',
+				{'componentName': self.name(), 'side': self.side(), 'id': jnt.id, 'type': 'joint'})
+			if existing_joint:
+				if not guide:
+					continue
+				new_joint_ids[jnt.id] = existing_joint
+				existing_joint.rotateOrder.set(jnt.rotateOrder)
+				existing_joint.segmentScaleCompensate.set(False)
+				existing_joint.setParent(joint_parent)
+				existing_joint.rename(joint_name)
+				continue
+
+			new_node = skeleton_layer.create_joint(name=joint_name, id=jnt.id, rotateOrder=jnt.rotateOrder, translate=jnt.translate, rotate=jnt.rotate, parent=joint_parent)
+			new_node.segmentScaleCompensate.set(False)
+			existing_joints[jnt.id] = new_node
+			new_joint_ids[jnt.id] = new_node
+
+		# purge any joints that where removed from the descriptor
+		for jnt_id, existing_joint in existing_joints.items():
+			if jnt_id in new_joint_ids:
+				continue
+			parent_joint = existing_joint.parent()
+			for child in existing_joint.children((api.kTransform, api.kJoint)):
+				child.setParent(parent_joint)
+			skeleton_layer.delete_joint(jnt_id)
+
+		# binding components skeleton joints to the selection set
+		selection_set = skeleton_layer.selection_set()
+		if selection_set is None:
+			selection_set_name = naming_manager.resolve(
+				'selectionSet', {'componentName': self.name(), 'side': self.side(), 'selectionSet': 'componentSkeleton', 'type': 'objectSet'})
+			selection_set = skeleton_layer.create_selection_set(
+				selection_set_name, parent=self.rig.meta.selection_sets()['skeleton'])
+
+		bind_joints = self._setup_selection_set_joints(skeleton_layer, new_joint_ids)
+		current_selection_set_members = selection_set.members(True)
+		to_remove = [i for i in current_selection_set_members if i not in bind_joints]
+		if to_remove:
+			selection_set.removeMembers(to_remove)
+		if bind_joints:
+			selection_set.addMembers(bind_joints)
+		# skeleton_layer.set_live_link(
+		# 	self.input_layer().setting_node(consts.CRIT_INPUT_OFFSET_ATTR_NAME_ATTR),
+		# 	id_mapping=self.id_mapping()[consts.SKELETON_LAYER_TYPE], state=True)
+
+	def post_setup_skeleton_layer(self, parent_joint: meta_nodes.Joint):
+		"""
+		Post setup skeleton layer for this component.
+
+		:param meta_nodes.Joint parent_joint: parent joint.
+		"""
+
+		skeleton_layer = self.skeleton_layer()
+		guide_offset = self.input_layer().setting_node(consts.CRIT_INPUT_OFFSET_ATTR_NAME_ATTR)
+		# skeleton_layer.set_live_link(guide_offset, state=False)
+
+		guide_layer = self.guide_layer()
+		if guide_layer is not None:
+			guide_layer.set_live_link(guide_offset, state=False)
+
+		if self.configuration.build_skeleton_marking_menu:
+			layout_id = self.descriptor.get(
+				consts.SKELETON_MARKING_MENU_DESCRIPTOR_KEY) or consts.DEFAULT_SKELETON_MARKING_MENU
+			components.create_triggers(skeleton_layer, layout_id)
+
+		container = self.container()
+		if container is not None:
+			container.publishNodes(skeleton_layer.joints())
+
+		skeleton_layer.root_transform().hide()
+
+	@profiler.fn_timer
+	def build_rig(self, parent_node: api.DagNode | None = None) -> bool:
+		"""
+		Builds the rig for this component.
+
+		:param api.DagNode or None parent_node: parent node for the rig to be parented to. If None, the rig will not be
+			parented to anything.
+		:return: True if the component rig was built successfully; False otherwise.
+		:raises errors.CritComponentDoesNotExistError: if the current component does not exist.
+		:raises errors.CritBuildComponentRigUnknownError: if the component build rig process fails.
+		"""
+
+		if not self.exists():
+			raise errors.CritComponentDoesNotExistError(self.descriptor.name)
+		elif self.has_rig():
+			self.logger.info(f'Component "{self.name()}" already have a rig, skipping the build!')
+			return True
+
+		self._generate_objects_cache()
+		if self.has_polished():
+			self._set_has_polished(False)
+		self.serialize_from_scene()
+		reset_joint_transforms(self.skeleton_layer(), self.descriptor.guide_layer, self.id_mapping())
+
+		self._is_building_rig = True
+		container = self.container()
+		try:
+			if container is None and self.configuration.use_containers:
+				container = self.create_container()
+				self._build_objects_cache['container'] = container
+			if container is not None:
+				container.makeCurrent(True)
+				container.lock(False)
+			parent_joint = self.component_parent_joint(parent_node)
+			self.pre_setup_rig(parent_joint)
+			self.setup_rig(parent_joint)
+			self.post_setup_rig(parent_joint)
+			self._set_has_rig(True)
+			self.blackbox = self.configuration.blackbox
+			self.save_descriptor(self._descriptor)
+		except Exception:
+			msg = f'Failed to build rig for component {"_".join([self.name(), self.side()])}'
+			self.logger.error(msg, exc_info=True)
+			raise errors.CritBuildComponentRigUnknownError(msg)
+		finally:
+			self._is_building_rig = False
+			if container is not None:
+				container.makeCurrent(False)
+				self._build_objects_cache.clear()
+
+		return True
+
 	@profiler.fn_timer
 	def delete(self) -> bool:
 		"""
@@ -1484,8 +1924,8 @@ class Component:
 		container = self.container()
 		current_children = list(self.iterate_children())
 		for child in current_children:
-			child.meta.add_meta_parent(rig.components_layer())
-		self.logger.debug('Starting componetn deletion operation')
+			child.meta.add_meta_parent(self.rig.components_layer())
+		self.logger.debug('Starting component deletion operation')
 		self.delete_rig()
 		self.delete_skeleton()
 		self.delete_guide()
@@ -1633,20 +2073,26 @@ class Component:
 		has_rig_attr.isLocked = False
 		has_rig_attr.setBool(flag)
 
+	def _setup_guide_offsets(self):
+		"""
+		Internal function that set up live link nodes for guides.
+		"""
+
+		pass
+
 	def _setup_guide_settings(self):
 		"""
 		Internal function that setup guide settings.
 		"""
 
-		self.logger.info('Creating guide settings from descriptor...')
 		guide_layer = self.guide_layer()
-		component_settings = self.descriptor.guideLayer.settings
+		component_settings = self.descriptor.guide_layer.settings
 		if not component_settings:
 			return
 		existing_settings = guide_layer.guide_settings()
 		outgoing_connections = dict()
 		if existing_settings is not None:
-			existing_settings.attribute('message').disconnect_all()
+			existing_settings.attribute('message').disconnectAll()
 			for attr in existing_settings.iterateExtraAttributes():
 				if attr.isSource:
 					outgoing_connections[attr.partialName()] = list(attr.destinations())
@@ -1663,7 +2109,7 @@ class Component:
 				attr = settings_node.addAttribute(**setting_descriptor)
 			else:
 				attr = settings_node.attribute(setting_descriptor.name)
-				attr.set_from_dict(setting_descriptor)
+				attr.setFromDict(setting_descriptor)
 			conns = outgoing_connections.get(setting_descriptor.name, list())
 			for dest in conns:
 				if not dest.exists():
@@ -1781,6 +2227,74 @@ class Component:
 			break
 
 		return constraints
+
+	def _set_skeleton_naming(self, naming_manager: NameManager, mod: api.OpenMaya.MDGModifier):
+		"""
+		Internal function that updates the node names of the skeleton layer nodes.
+
+		:param NameManager naming_manager: naming manager instance to use.
+		:param api.MDGModifier mod: optional modifier to use to rename the nodes.
+		"""
+
+		def _change_lock_skeleton_layer(state):
+			"""
+			Internal function that sets the lock state of the skeleton layer nodes.
+
+			:param bool state: True to lock the nodes; False otherwise.
+			"""
+
+			for _layer_node in layer_mapping.values():
+				try:
+					transform = _layer_node.root_transform()
+					_layer_node.lock(state, mod=mod, apply=False)
+					transform.lock(state, mod=mod, apply=False)
+				except AttributeError:
+					continue
+			for setting_attr in settings:
+				setting_attr.lock(state, mod=mod, apply=False)
+
+		component_name, component_side = self.name(), self.side()
+		layer_mapping = self._meta.layers_by_id((consts.INPUT_LAYER_TYPE, consts.OUTPUT_LAYER_TYPE, consts.SKELETON_LAYER_TYPE))
+		settings = []
+		for layer_node in layer_mapping.values():
+			settings.extend(list(layer_node.iterate_settings_nodes()))
+
+		try:
+			_change_lock_skeleton_layer(False)
+			for layer_id, layer_node in layer_mapping.items():
+				hierarchy_name, meta_name = naming.compose_names_for_layer(
+					naming_manager, component_name, component_side, layer_id)
+				try:
+					transform = layer_node.root_transform()
+					layer_node.rename(meta_name, mod=mod, apply=False)
+					transform.rename(hierarchy_name, mod=mod, apply=False)
+				except AttributeError:
+					continue
+				for setting in settings:
+					name = naming_manager.resolve(
+						'settingsName', {
+							'componentName': component_name, 'side': component_side,
+							'section': setting.id(), 'type': 'settings'})
+					setting.rename(name, mod=mod, apply=False)
+		finally:
+			_change_lock_skeleton_layer(True)
+
+		self.set_skeleton_naming(naming_manager, mod)
+
+	def _setup_selection_set_joints(
+			self, skeleton_layer: layers.CritSkeletonLayer, deform_joints: Dict[str, meta_nodes.Joint]):
+		"""
+		Function that handles the addition of joints into the skeleton layer deform joints selection set.
+
+		:param layers.CritSkeletonLayer skeleton_layer: skeleton layer instance.
+		:param Dict[str, meta_nodes.Joint] deform_joints: list of default skeleton layer bind joints.
+		:return: list of bind joints to add.
+		"""
+
+		if deform_joints:
+			return list(deform_joints.values())
+
+		return []
 
 	def _update_space_switch_component_dependencies(self, new_name: str, new_side: str):
 		"""

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from overrides import override
+import typing
+from typing import Tuple, List, Dict, Iterator
 
-import collections
+from overrides import override
 
 import maya.cmds as cmds
 
@@ -11,7 +12,11 @@ from tp.maya.meta import base
 from tp.maya.om import plugs, mathlib as om_mathlib, nodes as om_nodes
 
 from tp.libs.rig.crit import consts
+from tp.libs.rig.crit.core import errors
 from tp.libs.rig.crit.maya.meta import nodes as meta_nodes
+
+if typing.TYPE_CHECKING:
+	from tp.libs.rig.crit.maya.meta.component import CritComponent
 
 
 class CritLayer(base.DependentNode):
@@ -20,17 +25,20 @@ class CritLayer(base.DependentNode):
 	entry point ot access rig DAG related nodes.
 	"""
 
-	def __init__(self, node=None, name=None, parent=None, init_defaults=True, lock=True, mod=None):
+	def __init__(
+			self, node: api.OpenMaya.MObject | None = None, name: str | None = None,
+			parent: api.OpenMaya.MObject | None = None, init_defaults: bool = True, lock: bool = True,
+			mod: api.OpenMaya.MDGModifier | None = None):
 		super().__init__(node=node, name=name, parent=parent, init_defaults=init_defaults, lock=lock, mod=mod)
 
 	@override
-	def meta_attributes(self) -> list[dict]:
+	def meta_attributes(self) -> List[Dict]:
 		"""
 		Overrides base meta_attributes function.
 		Returns the list of default meta attributes that should 	be added into the meta node during creation.
 
 		:return: list of attributes data within a dictionary.
-		:rtype: list[dict]
+		:rtype: List[Dict]
 		"""
 
 		attrs = super().meta_attributes()
@@ -74,7 +82,7 @@ class CritLayer(base.DependentNode):
 		self.lock(True)
 		try:
 			[s.delete(mod=mod, apply=apply) for s in list(
-				self.settings_nodes()) + list(self.extra_nodes()) + list(self.annotations())]
+				self.iterate_settings_nodes()) + list(self.iterate_extra_nodes()) + list(self.iterate_connectors())]
 			transform = self.root_transform()
 			if transform:
 				transform.lock(False)
@@ -85,17 +93,17 @@ class CritLayer(base.DependentNode):
 		return super().delete(mod=mod, apply=apply)
 
 	@override(check_signature=False)
-	def serializeFromScene(self) -> dict:
+	def serializeFromScene(self) -> Dict:
 		"""
 		Serializes current layer into a dictionary compatible with JSON.
 
 		:return: JSON compatible dictionary.
-		:rtype: dict
+		:rtype: Dict
 		"""
 
-		return dict()
+		return {}
 
-	def show(self, mod: api.OpenMaya.MDGModifier | None = None, apply: bool = True):
+	def show(self, mod: api.OpenMaya.MDGModifier | None = None, apply: bool = True) -> bool:
 		"""
 		Sets the visibility for this node to 1.0.
 
@@ -139,14 +147,14 @@ class CritLayer(base.DependentNode):
 
 		return self.sourceNodeByName(consts.CRIT_ROOT_TRANSFORM_ATTR)
 
-	def create_transform(self, name: str, parent: api.OpenMaya.MObject | api.DagNode | None = None):
+	def create_transform(self, name: str, parent: api.OpenMaya.MObject | api.DagNode | None = None) -> api.DagNode:
 		"""
 		Creates the transform node within Maya scene linked to this meta node.
 
 		:param str name: name of the transform node.
 		:param api.OpenMaya.MObject or api.DagNode or None parent: optional parent node.
 		:return: newly created transform node.
-		:rtype:
+		:rtype: api.DagNode
 		"""
 
 		layer_transform = api.factory.create_dag_node(name=name, node_type='transform', parent=parent)
@@ -157,11 +165,11 @@ class CritLayer(base.DependentNode):
 
 		return layer_transform
 
-	def update_metadata(self, metadata: dict):
+	def update_metadata(self, metadata: Dict):
 		"""
 		Updates metadata attribute with given metadata dictionary contents.
 
-		:param dict metadata: metadata dictionary contents.
+		:param Dict metadata: metadata dictionary contents.
 		"""
 
 		for meta_attr in metadata:
@@ -169,14 +177,14 @@ class CritLayer(base.DependentNode):
 			if attribute is None:
 				self.addAttribute(**meta_attr)
 			else:
-				attribute.set_from_dict(**meta_attr)
+				attribute.setFromDict(**meta_attr)
 
-	def iterate_extra_nodes(self) -> collections.Iterator[api.DGNode]:
+	def iterate_extra_nodes(self) -> Iterator[api.DGNode]:
 		"""
 		Generator function that iterates over all the extra nodes attached to this meta node instance.
 
 		:return: iterated attached extra nodes.
-		:rtype: collections.Iterator[api.DGNode]
+		:rtype: Iterator[api.DGNode]
 		"""
 
 		for element in self.attribute(consts.CRIT_EXTRA_NODES_ATTR):
@@ -184,11 +192,11 @@ class CritLayer(base.DependentNode):
 			if source:
 				yield source.node()
 
-	def add_extra_nodes(self, nodes: list[api.DGNode]):
+	def add_extra_nodes(self, nodes: List[api.DGNode]):
 		"""
 		Connects given nodes into this meta node instance as an extra node.
 
-		:param list[api.DGNode] nodes: node to add as extra node.
+		:param List[api.DGNode] nodes: node to add as extra node.
 		"""
 
 		extras_array = self.attribute(consts.CRIT_EXTRA_NODES_ATTR)
@@ -207,12 +215,12 @@ class CritLayer(base.DependentNode):
 
 		self.add_extra_nodes([node])
 
-	def iterate_settings_nodes(self) -> collections.Iterator[meta_nodes.SettingsNode]:
+	def iterate_settings_nodes(self) -> Iterator[meta_nodes.SettingsNode]:
 		"""
 		Generator function that iterates over all the attached settings nodes attached to this meta node instance.
 
 		:return: iterated attached setting node instances.
-		:rtype: collections.Iterator[meta_nodes.SettingsNode]
+		:rtype: Iterator[meta_nodes.SettingsNode]
 		"""
 
 		settings_nodes_compound_attr = self.attribute(consts.CRIT_SETTING_NODES_ATTR)
@@ -221,7 +229,7 @@ class CritLayer(base.DependentNode):
 			if source_node is not None:
 				yield meta_nodes.SettingsNode(node=source_node.object())
 
-	def setting_node(self, name:str) -> meta_nodes.SettingsNode | None:
+	def setting_node(self, name: str) -> meta_nodes.SettingsNode | None:
 		"""
 		Finds and returns the settings node with given name it exists.
 
@@ -266,13 +274,13 @@ class CritComponentsLayer(CritLayer):
 	ID = consts.COMPONENTS_LAYER_TYPE
 
 	@override
-	def meta_attributes(self) -> list[dict]:
+	def meta_attributes(self) -> List[Dict]:
 		"""
 		Overrides base meta_attributes function.
 		Returns the list of default meta attributes that should be added into the meta node during creation.
 
 		:return: list of attributes data within a dictionary.
-		:rtype: list[dict]
+		:rtype: List[Dict]
 		"""
 
 		attrs = super().meta_attributes()
@@ -300,25 +308,25 @@ class CritComponentsLayer(CritLayer):
 
 		return attrs
 
-	def components(self, depth_limit: int = 256) -> list['tp.libs.rig.crit.maya.meta.component.CritComponent']:
+	def components(self, depth_limit: int = 256) -> List[CritComponent]:
 		"""
 		Returns all components in order as a list.
 
 		:param int depth_limit: recursive depth limit.
 		:return: list of components linked to this layer.
-		:rtype: list[tp.libs.rig.crit.maya.meta.component.CritComponent]
+		:rtype: List[CritComponent]
 		"""
 
 		return list(self.iterate_components(depth_limit=depth_limit))
 
 	def iterate_components(
-			self, depth_limit: int = 256) -> collections.Iterator['tp.libs.rig.crit.maya.meta.component.CritComponent']:
+			self, depth_limit: int = 256) -> Iterator[CritComponent]:
 		"""
 		Generator function that iterates over all components linked to this layer.
 
 		:param int depth_limit: recursive depth limit.
 		:return: iterated components linked to this layer.
-		:rtype: collections.Iterator[tp.libs.rig.crit.maya.meta.component.CritComponent]
+		:rtype: Iterator[CritComponent]
 		"""
 
 		for meta_child in self.iterate_meta_children(depth_limit):
@@ -331,13 +339,13 @@ class CritGuideLayer(CritLayer):
 	ID = consts.GUIDE_LAYER_TYPE
 
 	@override
-	def meta_attributes(self) -> list[dict]:
+	def meta_attributes(self) -> List[Dict]:
 		"""
 		Overrides base meta_attributes function.
 		Returns the list of default meta attributes that should be added into the meta node during creation.
 
 		:return: list of attributes data within a dictionary.
-		:rtype: list(dict)
+		:rtype: List(Dict)
 		"""
 
 		attrs = super().meta_attributes()
@@ -399,16 +407,16 @@ class CritGuideLayer(CritLayer):
 		"""
 
 		root = self.guide_root()
-		dag = list()
+		dag = []
 		if root:
 			dag.append(
 				root.serializeFromScene(extra_attributes_only=True, include_namespace=False, use_short_names=True))
 
-		setting_nodes = list()
+		setting_nodes = []
 		for setting_node in iter(self.iterate_settings_nodes()):
 			setting_nodes.extend(setting_node.serializeFromScene())
 
-		metadata = list()
+		metadata = []
 		for attr_name in (
 				consts.CRIT_GUIDE_VISIBILITY_ATTR,
 				consts.CRIT_GUIDE_CONTROL_VISIBILITY_ATTR,
@@ -421,7 +429,7 @@ class CritGuideLayer(CritLayer):
 				consts.DAG_DESCRIPTOR_KEY: dag,
 				consts.SETTINGS_DESCRIPTOR_KEY: setting_nodes,
 				consts.METADATA_DESCRIPTOR_KEY: metadata,
-				consts.DG_DESCRIPTOR_KEY: list()
+				consts.DG_DESCRIPTOR_KEY: []
 			}
 		}
 
@@ -444,7 +452,7 @@ class CritGuideLayer(CritLayer):
 
 		return super().delete(mod=mod, apply=apply)
 
-	def guide_root(self) -> meta_nodes.Guide:
+	def guide_root(self) -> meta_nodes.Guide | None:
 		"""
 		Returns the guide which contains the expected root attribute as True.
 
@@ -465,27 +473,27 @@ class CritGuideLayer(CritLayer):
 
 		return None
 
-	def iterate_guides_compound_attribute(self) -> collections.Iterator[api.Plug]:
+	def iterate_guides_compound_attribute(self) -> Iterator[api.Plug]:
 		"""
 		Generator function that iterates over the attribute that links this layer meta node instance with the different
 		guide nodes within current scene.
 
 		:return: guide's compound attribute iterator.
-		:rtype: collections.Iterator[api.Plug]
+		:rtype: Iterator[api.Plug]
 		"""
 
 		guide_plug = self.attribute(consts.CRIT_GUIDES_ATTR)
 		for i in range(guide_plug.evaluateNumElements()):
 			yield guide_plug.elementByPhysicalIndex(i)
 
-	def iterate_guides(self, include_root: bool = True) -> collections.Iterator[meta_nodes.Guide]:
+	def iterate_guides(self, include_root: bool = True) -> Iterator[meta_nodes.Guide]:
 		"""
 		Generator function that iterates through the guides connected to this layer. The iteration is done based on the
 		order the guides were added to the layer meta node instance.
 
 		:param bool include_root: whether to include root guide.
 		:return: generator of iterated guide instances.
-		:rtype: collections.Iterator[meta_nodes.Guide]
+		:rtype: Iterator[meta_nodes.Guide]
 		"""
 
 		if not self.exists() or not self.hasAttribute(consts.CRIT_GUIDES_ATTR):
@@ -789,6 +797,20 @@ class CritGuideLayer(CritLayer):
 
 		return self.setting_node(consts.GUIDE_LAYER_TYPE)
 
+	def iterate_connectors(self) -> Iterator[meta_nodes.Connector]:
+		"""
+		Generator function that iterates over all connector nodes linked to this layer.
+
+		:return: iterated connectors.
+		:rtype: Iterator[meta_nodes.Connector]
+		"""
+
+		attr = self.attribute(consts.CRIT_CONNECTORS_ATTR)
+		for connector in attr or []:
+			source_connector = connector.sourceNode()
+			if source_connector:
+				yield meta_nodes.Connector(source_connector.object())
+
 	def is_pinned(self) -> bool:
 		"""
 		Returns whether guides attached to this layer are pinned.
@@ -815,7 +837,7 @@ class CritGuideLayer(CritLayer):
 			aim_state = guide.attribute(consts.CRIT_AUTO_ALIGN_ATTR).asBool()
 			if not aim_state:
 				continue
-			up_vector = guide.atribute(consts.CRIT_AUTO_ALIGN_UP_VECTOR_ATTR).value()
+			up_vector = guide.attribute(consts.CRIT_AUTO_ALIGN_UP_VECTOR_ATTR).value()
 			aim_vector = guide.attribute(consts.CRIT_AUTO_ALIGN_AIM_VECTOR_ATTR).value()
 			child = None																# type: meta_nodes.Guide or None
 			for child in guide.iterate_child_guides(recursive=False):
@@ -944,18 +966,18 @@ class CritGuideLayer(CritLayer):
 
 		return guides_compound_attribute
 
-	def _serialize_graphs(self):
+	def _serialize_graphs(self) -> List[Dict]:
 		"""
 		Internal function that serializes network nodes connected to this layer.
 
 		:return: serialized nodes JSON compatible dictionaries.
-		:rtype: list(dict)
+		:rtype: List(Dict)
 		"""
 
-		graphs = list()
+		graphs = []
 		for graph_element in self.attribute(consts.CRIT_GUIDE_DG_GRAPH_ATTR):
 			graph_id = graph_element.child(self.DG_GRAPH_ID_INDEX).value()
-			node_data = list()
+			node_data = []
 			for node_element in graph_element.child(self.DG_GRAPH_NODES_INDEX):
 				node_id = node_element.child(self.DG_GRAPH_NODE_ID_INDEX).value()
 				node = node_element.child(self.DG_GRAPH_NODE_INDEX).sourceNode()
@@ -968,19 +990,577 @@ class CritGuideLayer(CritLayer):
 		return graphs
 
 
+class CritInputLayer(CritLayer):
+
+	ID = consts.INPUT_LAYER_TYPE
+
+	@override
+	def meta_attributes(self) -> List[Dict]:
+
+		attrs = super().meta_attributes()
+
+		attrs.extend(
+			(
+				dict(
+					name=consts.CRIT_INPUTS_ATTR, type=api.kMFnCompoundAttribute, isArray=True,
+					children=[
+						dict(name=consts.CRIT_INPUT_NODE_ATTR, type=api.kMFnMessageAttribute),
+						dict(name=consts.CRIT_INPUT_ID_ATTR, type=api.kMFnDataString),
+						dict(name=consts.CRIT_IS_INPUT_ROOT_ATTR, type=api.kMFnNumericBoolean),
+						dict(
+							name=consts.CRIT_SOURCE_INPUTS_ATTR, type=api.kMFnCompoundAttribute, isArray=True,
+							children=[
+								dict(name=consts.CRIT_SOURCE_INPUT_ATTR, type=api.kMFnMessageAttribute),
+								dict(name=consts.CRIT_SOURCE_INPUT_CONSTRAINT_NODES_ATTR, type=api.kMFnMessageAttribute, isArray=True),
+							]),
+					]
+				),
+			)
+		)
+
+		return attrs
+
+	def has_input(self, name: str) -> bool:
+		"""
+		Returns whether input node with given name is attached to this layer instance.
+
+		:param str name: name of the input node to check.
+		:return: True if input node with given name is attached to this layer instance; False otherwise.
+		:rtype: bool
+		"""
+
+		try:
+			return self.input_node(name) is not None
+		except errors.CritInvalidInputNodeMetaData:
+			return False
+
+	def input_plug_by_id(self, input_id: str) -> api.Plug | None:
+		"""
+		Returns the input plug instance for the input node with given ID.
+
+		:param str input_id: ID of the input node plug to retrieve.
+		:return: found plug instance with given ID.
+		:rtype: api.Plug or None
+		"""
+
+		input_plug = self.attribute(consts.CRIT_INPUTS_ATTR)
+		found_plug = None
+		for element in input_plug:
+			if element.child(1).asString() == input_id:
+				found_plug = element
+				break
+
+		return found_plug
+
+	def input_node(self, name: str) -> meta_nodes.InputNode | None:
+		"""
+		Returns input node with given name attached to this layer instance.
+
+		:param str name: name of the input node to get.
+		:return: input node instance.
+		:rtype: meta_nodes.InputNode or None
+		"""
+
+		element = self.input_plug_by_id(name)
+		if element is None:
+			return None
+
+		source = element.child(0).source()
+		if not source:
+			raise errors.CritInvalidInputNodeMetaData('-'.join([name, element.child(1).asString()]))
+
+		return meta_nodes.InputNode(source.node().object())
+
+	def iterate_inputs(self) -> Iterator[meta_nodes.InputNode]:
+		"""
+		Generator function that iterates over all input nodes within this layer.
+
+		:return: iterated input nodes.
+		:rtype: Iterator[meta_nodes.InputNode]
+		"""
+
+		input_plug = self.attribute(consts.CRIT_INPUTS_ATTR)
+		for element in input_plug:
+			source = element.child(0).source()
+			if source is not None:
+				yield meta_nodes.InputNode(source.node().object())
+
+	def create_input(self, name: str, **kwargs: Dict) -> meta_nodes.InputNode:
+		"""
+		Creates a new input node with given name and given attributes.
+
+		:param str name: input node name.
+		:param Dict kwargs: input node attributes.
+		:return: newly created input node.
+		:rtype: meta_nodes.InputNode
+		"""
+
+		assert not self.has_input(name)
+		new_input_node = meta_nodes.InputNode()
+		new_input_node.create(name=name, **kwargs)
+		new_input_node.setParent(self.root_transform(), True)
+		self.add_input_node(new_input_node, as_root=kwargs.get('root', False))
+
+		return new_input_node
+
+	def add_input_node(self, input_node: meta_nodes.InputNode, as_root: bool = False):
+		"""
+		Attaches given input node into this layer meta node instance.
+
+		:param meta_nodes.InputNode input_node: input node instance.
+		:param bool as_root: whether input node is a root one.
+		"""
+
+		input_plug = self.attribute(consts.CRIT_INPUTS_ATTR)
+		next_element = input_plug.nextAvailableDestElementPlug()
+		input_node.message.connect(next_element.child(0))
+		next_element.child(1).setString(input_node.id())
+		next_element.child(2).setBool(as_root)
+
+	def delete_input(self, input_id: str) -> bool:
+		"""
+		Deletes input with given ID.
+
+		:param str input_id: ID of the input node to delete.
+		:return: True if input node was deleted successfully; False otherwise.
+		:rtype: bool
+		"""
+
+		input_plug = self.input_plug_by_id(input_id)
+		if not input_plug:
+			return False
+
+		node = input_plug.child(0).sourceNode()
+		if node is not None:
+			node.delete()
+
+		input_plug.delete()
+
+		return True
+
+	def clear_inputs(self) -> api.DGModifier:
+		"""
+		Clears all input nodes from this layer. Only input nodes whose are parented under the layer root node will be
+		deleted.
+
+		:return: DG modifier instance used to clear outputs.
+		:rtype: api.DGModifier
+		"""
+
+		input_array = self.attribute(consts.CRIT_INPUTS_ATTR)
+		root_transform = self.root_transform()
+		mod = api.DGModifier()
+		for element in input_array:
+			source = element.child(0).sourceNode()
+			if source is not None and source.parent() == root_transform:
+				source.delete(mod=mod, apply=False)
+		mod.doIt()
+		input_array.deleteElements(mod=mod, apply=True)
+
+		return mod
+
+
 class CritOutputLayer(CritLayer):
 
 	ID = consts.OUTPUT_LAYER_TYPE
+
+	@override
+	def meta_attributes(self) -> List[Dict]:
+
+		attrs = super().meta_attributes()
+
+		attrs.extend(
+			(
+				dict(
+					name=consts.CRIT_OUTPUTS_ATTR, type=api.kMFnCompoundAttribute, isArray=True,
+					children=[
+						dict(name=consts.CRIT_OUTPUT_NODE_ATTR, type=api.kMFnMessageAttribute),
+						dict(name=consts.CRIT_OUTPUT_ID_ATTR, type=api.kMFnDataString),
+					]
+				),
+			)
+		)
+
+		return attrs
+
+	def has_output(self, name: str) -> bool:
+		"""
+		Returns whether output node with given name is attached to this layer instance.
+
+		:param str name: name of the output node to check.
+		:return: True if output node with given name is attached to this layer instance; False otherwise.
+		:rtype: bool
+		"""
+
+		try:
+			return self.output_node(name) is not None
+		except errors.CritInvalidOutputNodeMetaData:
+			return False
+
+	def output_plug_by_id(self, output_id: str) -> api.Plug | None:
+		"""
+		Returns the output plug instance for the output node with given ID.
+
+		:param str output_id: ID of the output node plug to retrieve.
+		:return: found plug instance with given ID.
+		:rtype: api.Plug or None
+		"""
+
+		output_plug = self.attribute(consts.CRIT_OUTPUTS_ATTR)
+		found_plug = None
+		for element in output_plug:
+			if element.child(1).asString() == output_id:
+				found_plug = element
+				break
+
+		return found_plug
+
+	def output_node(self, name: str) -> meta_nodes.OutputNode | None:
+		"""
+		Returns output node with given name attached to this layer instance.
+
+		:param str name: name of the output node to get.
+		:return: output node instance.
+		:rtype: meta_nodes.OutputNode or None
+		"""
+
+		element = self.output_plug_by_id(name)
+		if element is None:
+			return None
+
+		source = element.child(0).source()
+		if not source:
+			raise errors.CritInvalidOutputNodeMetaData('-'.join([name, element.child(1).asString()]))
+
+		return meta_nodes.OutputNode(source.node().object())
+
+	def iterate_outputs(self) -> Iterator[meta_nodes.OutputNode]:
+		"""
+		Generator function that iterates over all output nodes within this layer.
+
+		:return: iterated output nodes.
+		:rtype: Iterator[meta_nodes.OutputNode]
+		"""
+
+		output_plug = self.attribute(consts.CRIT_OUTPUTS_ATTR)
+		for element in output_plug:
+			source = element.child(0).source()
+			if source is not None:
+				yield meta_nodes.OutputNode(source.node().object())
+
+	def create_output(self, name: str, **kwargs: Dict) -> meta_nodes.OutputNode:
+		"""
+		Creates a new output node with given name and given attributes.
+
+		:param str name: output node name.
+		:param Dict kwargs: output node attributes.
+		:return: newly created output node.
+		:rtype: meta_nodes.OutputNode
+		"""
+
+		assert not self.has_output(name)
+		new_output_node = meta_nodes.OutputNode()
+		new_output_node.create(name=name, **kwargs)
+		new_output_node.setParent(self.root_transform(), True)
+		self.add_output_node(new_output_node)
+
+		return new_output_node
+
+	def add_output_node(self, output_node: meta_nodes.OutputNode):
+		"""
+		Attaches given output node into this layer meta node instance.
+
+		:param meta_nodes.OutputNode output_node: output node instance.
+		"""
+
+		output_plug = self.attribute(consts.CRIT_OUTPUTS_ATTR)
+		next_element = output_plug.nextAvailableDestElementPlug()
+		output_node.message.connect(next_element.child(0))
+		next_element.child(1).setString(output_node.id())
+
+	def delete_output(self, output_id: str) -> bool:
+		"""
+		Deletes output given ID.
+
+		:param str output_id: ID of the output node to delete.
+		:return: True if output node was deleted successfully; False otherwise.
+		:rtype: bool
+		"""
+
+		output_plug = self.output_plug_by_id(output_id)
+		if not output_plug:
+			return False
+
+		node = output_plug.child(0).sourceNode()
+		if node is not None:
+			node.delete()
+
+		output_plug.delete()
+
+		return True
+
+	def clear_outputs(self) -> api.DGModifier:
+		"""
+		Clears all output nodes from this layer. Only output nodes whose are parented under the layer root node will be
+		deleted.
+
+		:return: DG modifier instance used to clear outputs.
+		:rtype: api.DGModifier
+		"""
+
+		output_array = self.attribute(consts.CRIT_OUTPUTS_ATTR)
+		root_transform = self.root_transform()
+		mod = api.DGModifier()
+		for element in output_array:
+			source = element.child(0).sourceNode()
+			if source is not None and source.parent() == root_transform:
+				source.delete(mod=mod, apply=False)
+		mod.doIt()
+		output_array.deleteElements(mod=mod, apply=True)
+
+		return mod
 
 
 class CritSkeletonLayer(CritLayer):
 
 	ID = consts.SKELETON_LAYER_TYPE
 
+	@override
+	def meta_attributes(self) -> List[Dict]:
+		attrs = super().meta_attributes()
 
-class CritInputLayer(CritLayer):
+		attrs.extend(
+			(
+				dict(
+					name=consts.CRIT_JOINTS_ATTR, type=api.kMFnCompoundAttribute, isArray=True,
+					children=[
+						dict(name=consts.CRIT_JOINT_ATTR, type=api.kMFnMessageAttribute),
+						dict(name=consts.CRIT_JOINT_ID_ATTR, type=api.kMFnDataString),
+					]
+				),
+				dict(name=consts.CRIT_JOINT_SELECTION_SET_ATTR, type=api.kMFnMessageAttribute),
+				dict(name=consts.CRIT_GUIDE_LIVE_LINK_NODES_ATTR, type=api.kMFnMessageAttribute, isArray=True),
+				dict(name=consts.CRIT_GUIDE_IS_LIVE_LINK_ACTIVE_ATTR, type=api.kMFnNumericBoolean),
+			)
+		)
 
-	ID = consts.INPUT_LAYER_TYPE
+		return attrs
+
+	@override
+	def serializeFromScene(self) -> Dict:
+
+		return {}
+
+	@override(check_signature=False)
+	def delete(self, mod: api.OpenMaya.MDGModifier | None = None, apply: bool = True, delete_joints: bool = True) -> bool:
+		if not delete_joints:
+			return super().delete(mod=mod, apply=apply)
+
+		joints = self.joints()
+		success = super().delete(mod=mod, apply=apply)
+		for joint in joints:
+			joint.delete(mod, apply=apply)
+
+		return success
+
+	def selection_set(self) -> api.ObjectSet | None:
+		"""
+		Returns the selection set attached to this layer.
+
+		:return: selection set instance.
+		:rtype: api.ObjectSet or None
+		"""
+
+		return self.sourceNodeByName(consts.CRIT_JOINT_SELECTION_SET_ATTR)
+
+	def create_selection_set(self, name: str, parent: api.ObjectSet | None = None) -> api.ObjectSet:
+		"""
+		Creates layer selection set and parent it in the optional parent selection set.
+
+		:param str name: name of the selection set.
+		:param api.ObjectSet or None parent: optional selection set parent instance.
+		:return: newly created selection set instance.
+		:rtype: api.ObjectSet
+		"""
+
+		existing_set = self.selection_set()
+		if existing_set is not None:
+			return existing_set
+
+		object_set = api.factory.create_dg_node(name, 'objectSet')
+		if parent is not None:
+			parent.addMember(object_set)
+		self.connect_to(consts.CRIT_JOINT_SELECTION_SET_ATTR, object_set)
+
+		return object_set
+
+	def iterate_joint_plugs(self) -> Iterator[api.Plug]:
+		"""
+		Generator function that iterates over all joint plugs.
+
+		:return: iterated joint plugs.
+		:rtype: Iterator[api.Plug]
+		"""
+
+		for i in self.attribute(consts.CRIT_JOINTS_ATTR):
+			yield i
+
+	def iterate_joints(self) -> Iterator[meta_nodes.Joint]:
+		"""
+		Generator function that iterates over all deform skeleton joints.
+
+		:return: iterated deform skeleton joints.
+		:rtype: Iterator[meta_nodes.Joint]
+		"""
+
+		for i in self.iterate_joint_plugs():
+			source = i.child(0).source()
+			if source:
+				yield meta_nodes.Joint(source.node().object())
+
+	def joints(self) -> List[meta_nodes.Joint]:
+		"""
+		Returns all the joints that are under this layer in order of the DAG.
+
+		:return: list of DAG ordered joints.
+		:rtype: List[meta_nodes.Joint]
+		"""
+
+		found_joints = []
+		for element in self.iterate_joint_plugs():
+			joint_plug = element.child(0)
+			source = joint_plug.source()
+			if not source:
+				continue
+			found_joints.append(meta_nodes.Joint(source.node().object()))
+
+		return found_joints
+
+	def iterate_root_joints(self) -> Iterator[meta_nodes.Joint]:
+		"""
+		Generator function that iterates over all deform root skeleton joints.
+
+		:return: iterated root deform skeleton joints.
+		:rtype: Iterator[meta_nodes.Joint]
+		"""
+
+		current_joints = self.joints()
+		for joint in current_joints:
+			parent = joint.parent()
+			if parent is None or parent not in current_joints:
+				yield joint
+
+	def joint(self, name: str) -> meta_nodes.Joint | None:
+		"""
+		Return joint with given ID.
+
+		:param str name: ID of the joint to retrieve.
+		:return: joint found with given ID.
+		:rtype: meta_nodes.Joint or None
+		"""
+
+		found_joint = None
+		for element in self.iterate_joint_plugs():
+			joint_plug = element.child(0)
+			id_plug = element.child(1)
+			if id_plug.asString() == name:
+				source = joint_plug.source()
+				if not source:
+					return None
+				found_joint = meta_nodes.Joint(source.node().object())
+				break
+
+		return found_joint
+
+	def find_joints(self, *ids: Tuple[str]) -> List[meta_nodes.Joint | None]:
+		"""
+		Returns the joint node instances from given IDs.
+
+		:param Tuple[str] ids: IDs to find joint nodes of.
+		:return: list containing the found joint nodes.
+		:rtype: List[meta_nodes.Joint or None]
+		"""
+
+		found_joints = [None] * len(ids)
+		for joint in self.iterate_joints():
+			current_id = joint.attribute(consts.CRIT_ID_ATTR).value()
+			if current_id in ids:
+				found_joints[ids.index(current_id)] = joint
+
+		return found_joints
+
+	def create_joint(self, **kwargs) -> meta_nodes.Joint:
+		"""
+		Creates a new joint based on given data.
+
+		:param Dict kwargs: joint data. e.g:
+			{
+				'id': 'root',
+				'name': 'rootJnt'
+				'translate': [0.0, 0.0, 0.0],
+				'rotate': [0.0, 0.0, 0.0, 1.0],
+				'rotateOrder': 0,
+				'parent': None
+			}
+		:return: newly created joint.
+		:rtype: meta_nodes.Joint
+		"""
+
+		new_joint = meta_nodes.Joint()
+		new_joint.create(
+			id=kwargs.get('id', ''),
+			name=kwargs.get('name', 'NO_NAME'),
+			translate=kwargs.get('translate', (0.0, 0.0, 0.0)),
+			rotate=kwargs.get('rotate', (0.0, 0.0, 0.0, 1.0)),
+			rotateOrder=kwargs.get('rotateOrder', 0),
+			parent=kwargs.get('parent', None))
+		self.add_joint(new_joint, kwargs.get('id', ''))
+
+		return new_joint
+
+	def add_joint(self, joint: meta_nodes.Joint, joint_id: str):
+		"""
+		Attaches given joint to this layer with given ID.
+
+		:param meta_nodes.Joint joint: joint instance to attach to this layer instance.
+		:param str joint_id: joint ID.
+		"""
+
+		joints_attr = self.attribute(consts.CRIT_JOINTS_ATTR)
+		joints_attr.isLocked = False
+		element = joints_attr.nextAvailableDestElementPlug()
+		joint.message.connect(element.child(0))
+		if not joint.hasAttribute(consts.CRIT_ID_ATTR):
+			joint.addAttribute(name=consts.CRIT_ID_ATTR, type=api.kMFnDataString, default='', value=joint_id)
+		element.child(1).set(joint_id)
+
+	def delete_joint(self, joint_id: str) -> bool:
+		"""
+		Deletes joint with given ID from this layer instance.
+
+		:param str joint_id: ID of the joint to delete.
+		:return: True if the joint was deleted successfully; False otherwise.
+		:rtype: bool
+		"""
+
+		found_plug = None
+		found_node = None
+		for element in self.iterate_joint_plugs():
+			node_plug = element.child(0)
+			id_plug = element.child(1)
+			if id_plug.asString() == joint_id:
+				found_plug = element
+				found_node = node_plug.sourceNode()
+				break
+		if found_plug is None and found_node is None:
+			return False
+
+		if found_plug is not None:
+			found_plug.delete()
+		if found_node is not None:
+			found_node.delete()
+
+		return True
 
 
 class CritRigLayer(CritLayer):

@@ -93,7 +93,7 @@ class CritBuilderWindow(frameless.FramelessWindow):
 		self._menu_tab_widget = qt.LineTabWidget(alignment=qt.Qt.AlignLeft, parent=self)
 		self._create_view = createview.CreateView(
 			components_manager=self._components_manager, controller=self._controller, ui_interface=self._ui_interface,
-			theme_prefs=self._theme_prefs, hparent=self)
+			theme_prefs=self._theme_prefs, parent=self)
 		self._menu_tab_widget.add_tab(self._create_view, {'text': 'Modules', 'image': 'puzzle', 'checked': True})
 		self._outliners_widget.layout().addWidget(self._menu_tab_widget)
 

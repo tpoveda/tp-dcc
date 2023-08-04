@@ -5,9 +5,11 @@ from typing import List, Dict
 
 from tp.maya import api
 from tp.maya.meta import base
+from tp.maya.libs.triggers import api as triggers
 from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.core import errors
 from tp.libs.rig.crit.maya.library.functions import rigs
+
 
 if typing.TYPE_CHECKING:
 	from tp.libs.rig.crit.maya.core.rig import Rig
@@ -75,7 +77,7 @@ def component_meta_node_from_node(node: api.DGNode) -> CritComponent | None:
 	:raises ValueError: if given node is not attached to any meta node.
 	"""
 
-	meta_nodes = base.connected_meta_nodes(node) if base.is_meta_node(node) else [base.MetaBase(node.object())]
+	meta_nodes = base.connected_meta_nodes(node) if not base.is_meta_node(node) else [base.MetaBase(node.object())]
 	if not meta_nodes:
 		raise ValueError('No meta node attached to given node!')
 
@@ -88,3 +90,39 @@ def component_meta_node_from_node(node: api.DGNode) -> CritComponent | None:
 			return meta_parent
 
 	return None
+
+
+def create_triggers(node: api.DGNode, layout_id: str):
+	"""
+	Creates contextual menu trigger into given node and attaches the given contextual menu layout ID to it.
+
+	:param api.DGNode node: node to attach contextual menu trigger to.
+	:param str layout_id: ID of the contextual menu layout to set.
+	"""
+
+	found_trigger = triggers.as_trigger_node(node)
+	if found_trigger is not None:
+		found_trigger.delete_triggers()
+
+	new_trigger = triggers.create_trigger_for_node(node, 'triggerMenu')
+	new_trigger.command.set_menu(layout_id)
+
+
+def setup_space_switches(components: List[Component]):
+	"""
+	Function that loop over given components and setup space switches.
+
+	:param List[Component] components: list of components to setup space switches for.
+	"""
+
+	pass
+
+
+def cleanup_space_switches(component: Component):
+	"""
+	Function that removes all space switch drivers which use the given component as a driver.
+
+	:param Component component: component instance which will be deleted.
+	"""
+
+	pass

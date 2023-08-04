@@ -16,6 +16,10 @@ environment:
     - '{self}/tp/libs/rig/crit/maya/meta'
   TPDCC_COMMAND_LIB:
     - '{self}/tp/libs/rig/crit/maya/library/commands'
+  TPDCC_MARKING_MENU_PATHS:
+    - '{self}/tp/libs/rig/crit/maya/library/markingmenus/menus'
+  TPDCC_MARKING_MENU_COMMAND_PATHS:
+    - '{self}/tp/libs/rig/crit/maya/library/markingmenus/commands'
   CRIT_BUILD_SCRIPTS_PATH: "{self}/tp/libs/rig/crit/library/buildscripts"
   CRIT_NAME_PRESET_PATH: "{self}/tp/libs/rig/crit/library/naming"
   CRIT_COMPONENTS_PATHS:

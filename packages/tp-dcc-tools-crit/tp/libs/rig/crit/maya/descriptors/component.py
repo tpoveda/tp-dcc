@@ -5,6 +5,8 @@ import copy
 import pprint
 from typing import Dict, Any
 
+from overrides import override
+
 from tp.common.python import helpers
 
 from tp.libs.rig.crit import consts
@@ -121,30 +123,28 @@ class ComponentDescriptor(helpers.ObjectDict):
 	VERSION = '1.0'
 
 	def __init__(self, data: Dict | None = None, original_descriptor: Dict | None = None, path: str | None = None):
-		super().__init__(data)
-
-		print(data)
 
 		data = data or {}
 		data[consts.VERSION_DESCRIPTOR_KEY] = self.VERSION
-		# data[consts.INPUT_LAYER_DESCRIPTOR_KEY] = layers.InputLayerDescriptor.from_data(
-		# 	data.get(consts.INPUT_LAYER_DESCRIPTOR_KEY, dict()))
-		# data[consts.OUTPUT_LAYER_DESCRIPTOR_KEY] = layers.OutputLayerDescriptor.from_data(
-		# 	data.get(consts.OUTPUT_LAYER_DESCRIPTOR_KEY, dict()))
+		data[consts.INPUT_LAYER_DESCRIPTOR_KEY] = layers.InputLayerDescriptor.from_data(
+			data.get(consts.INPUT_LAYER_DESCRIPTOR_KEY, {}))
+		data[consts.OUTPUT_LAYER_DESCRIPTOR_KEY] = layers.OutputLayerDescriptor.from_data(
+			data.get(consts.OUTPUT_LAYER_DESCRIPTOR_KEY, {}))
 		data[consts.GUIDE_LAYER_DESCRIPTOR_KEY] = layers.GuideLayerDescriptor.from_data(
 			data.get(consts.GUIDE_LAYER_DESCRIPTOR_KEY, {}))
-		# data[consts.SKELETON_LAYER_DESCRIPTOR_KEY] = layers.SkeletonLayerDescriptor.from_data(
-		# 	data.get(consts.SKELETON_LAYER_DESCRIPTOR_KEY, dict()))
+		data[consts.SKELETON_LAYER_DESCRIPTOR_KEY] = layers.SkeletonLayerDescriptor.from_data(
+			data.get(consts.SKELETON_LAYER_DESCRIPTOR_KEY, {}))
 		# data[consts.RIG_LAYER_DESCRIPTOR_KEY] = layers.RigLayerDescriptor.from_data(
 		# 	data.get(consts.RIG_LAYER_DESCRIPTOR_KEY, dict()))
 		data[consts.PARENT_DESCRIPTOR_KEY] = data.get(consts.PARENT_DESCRIPTOR_KEY, [])
 		data[consts.CONNECTIONS_DESCRIPTOR_KEY] = data.get(consts.CONNECTIONS_DESCRIPTOR_KEY, {})
 		# data[consts.SPACE_SWITCH_DESCRIPTOR_KEY] = [spaceswitch.SpaceSwitchDescriptor(i) for i in data.get(consts.SPACE_SWITCH_DESCRIPTOR_KEY, list())]
 
-		super(ComponentDescriptor, self).__init__(data)
+		super().__init__(data)
 
 		self.path = path or ''
-		self.original_descriptor = ComponentDescriptor(original_descriptor) if original_descriptor is not None else dict()
+		self.original_descriptor = {}
+		self.original_descriptor = ComponentDescriptor(original_descriptor) if original_descriptor is not None else {}
 
 	def __repr__(self) -> str:
 		return f'<{self.__class__.__name__}> {self.name}'
@@ -154,7 +154,7 @@ class ComponentDescriptor(helpers.ObjectDict):
 			return self[item]
 		except KeyError:
 			pass
-		guid = self.guideLayer.guide(item)
+		guid = self.guide_layer.guide(item)
 		if guid is not None:
 			return guid
 
@@ -164,6 +164,31 @@ class ComponentDescriptor(helpers.ObjectDict):
 	def guide_layer(self) -> layers.GuideLayerDescriptor | None:
 		return self[consts.GUIDE_LAYER_DESCRIPTOR_KEY]
 
+	@property
+	def input_layer(self) -> layers.InputLayerDescriptor | None:
+		return self[consts.INPUT_LAYER_DESCRIPTOR_KEY]
+
+	@property
+	def output_layer(self) -> layers.OutputLayerDescriptor | None:
+		return self[consts.OUTPUT_LAYER_DESCRIPTOR_KEY]
+
+	@property
+	def skeleton_layer(self) -> layers.SkeletonLayerDescriptor | None:
+		return self[consts.SKELETON_LAYER_DESCRIPTOR_KEY]
+
+	@override(check_signature=False)
+	def update(self, kwargs: Dict):
+
+		self[consts.GUIDE_LAYER_DESCRIPTOR_KEY].update(kwargs.get(consts.GUIDE_LAYER_DESCRIPTOR_KEY, {}))
+		self[consts.INPUT_LAYER_DESCRIPTOR_KEY].update(kwargs.get(consts.INPUT_LAYER_DESCRIPTOR_KEY, {}))
+		self[consts.OUTPUT_LAYER_DESCRIPTOR_KEY].update(kwargs.get(consts.OUTPUT_LAYER_DESCRIPTOR_KEY, {}))
+		self[consts.SKELETON_LAYER_DESCRIPTOR_KEY].update(kwargs.get(consts.SKELETON_LAYER_DESCRIPTOR_KEY, {}))
+		self[consts.RIG_LAYER_DESCRIPTOR_KEY].update(kwargs.get(consts.RIG_LAYER_DESCRIPTOR_KEY, {}))
+		self._update_space_switching(kwargs.get(consts.SPACE_SWITCH_DESCRIPTOR_KEY, []))
+		for k, v in kwargs.items():
+			if k not in consts.DESCRIPTOR_KEYS_TO_SKIP_UPDATE:
+				self[k] = v
+
 	def serialize(self) -> Dict:
 		"""
 		Serializes the contents of the descriptor.
@@ -172,7 +197,7 @@ class ComponentDescriptor(helpers.ObjectDict):
 		:rtype: Dict
 		"""
 
-		data = dict()
+		data = {}
 
 		for k, v in self.items():
 			if k in ('original_descriptor', 'path'):
@@ -234,3 +259,6 @@ class ComponentDescriptor(helpers.ObjectDict):
 		"""
 
 		pprint.pprint(dict(self.serialize()))
+
+	def _update_space_switching(self, spaces):
+		pass

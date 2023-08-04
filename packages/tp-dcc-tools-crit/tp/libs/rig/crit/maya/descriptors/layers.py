@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-import collections
+from typing import Tuple, List, Iterator, Dict
+
+from overrides import override
 
 from tp.common.python import helpers
 from tp.maya import api
@@ -9,13 +11,13 @@ from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.maya.descriptors import nodes, attributes, graphs
 
 
-def traverse_descriptor_layer_dag(layer_descriptor: LayerDescriptor) -> collections.Iterator:
+def traverse_descriptor_layer_dag(layer_descriptor: LayerDescriptor) -> Iterator:
 	"""
 	Depth first search recursive generator function which walks the layer descriptor DAG nodes.
 
 	:param LayerDescriptor layer_descriptor: layer descriptor to traverse.
 	:return: iterated DAG nodes.
-	:rtype: collections.Iterator
+	:rtype: Iterator
 	"""
 
 	def _node_iter(_node):
@@ -38,12 +40,12 @@ class LayerDescriptor(helpers.ObjectDict):
 	"""
 
 	@classmethod
-	def from_data(cls, layer_data: dict) -> LayerDescriptor:
+	def from_data(cls, layer_data: Dict) -> LayerDescriptor:
 		"""
 		Transforms given data to valid descriptor instances and returns an instance of this layer descriptor based on
 		given data.
 
-		:param dict layer_data: layer dictionary data.
+		:param Dict layer_data: layer dictionary data.
 		:return: new layer descriptor instance.
 		:rtype: LayerDescriptor
 		"""
@@ -74,13 +76,13 @@ class LayerDescriptor(helpers.ObjectDict):
 			if found_node['id'] == node_id:
 				return found_node
 
-	def iterate_nodes(self, include_root: bool = True) -> collections.Iterator[nodes.TransformDescriptor]:
+	def iterate_nodes(self, include_root: bool = True) -> Iterator[nodes.TransformDescriptor]:
 		"""
 		Generator function that iterates over all DAG nodes within this layer.
 
 		:param bool include_root: whether to include root node.
 		:return: iterated DAG nodes.
-		:rtype: collections.Iterator[nodes.TransformDescriptor]
+		:rtype: Iterator[nodes.TransformDescriptor]
 		"""
 
 		for found_node in traverse_descriptor_layer_dag(self):
@@ -88,12 +90,12 @@ class LayerDescriptor(helpers.ObjectDict):
 				continue
 			yield found_node
 
-	def find_nodes(self, *node_ids: tuple) -> list[nodes.TransformDescriptor | None]:
+	def find_nodes(self, *node_ids: Tuple) -> List[nodes.TransformDescriptor | None]:
 		"""
 		Loops through all nodes within this layer and returns a list with found nodes.
 
-		:param tuple[str] node_ids: list of node IDs to search.
-		:return: list[nodes.TransformDescriptor | None]
+		:param Tuple[str] node_ids: list of node IDs to search.
+		:return: List[nodes.TransformDescriptor or None]
 		"""
 
 		results = [None] * len(node_ids)
@@ -129,11 +131,11 @@ class GuideLayerDescriptor(LayerDescriptor):
 
 		return super().__getattribute__(item)
 
-	def update(self, kwargs: dict):
+	def update(self, kwargs: Dict):
 		"""
 		Overrides update function to update data with proper descriptors.
 
-		:param dict kwargs: dictionary to update current one with.
+		:param Dict kwargs: dictionary to update current one with.
 		"""
 
 		settings = self[consts.SETTINGS_DESCRIPTOR_KEY]
@@ -147,7 +149,7 @@ class GuideLayerDescriptor(LayerDescriptor):
 		self[consts.SETTINGS_DESCRIPTOR_KEY] = list(consolidated_settings.values())
 
 		current_guides = {i['id'] for i in self.iterate_guides()}
-		new_or_updated = list()
+		new_or_updated = []
 		for guide_descriptor in traverse_descriptor_layer_dag(kwargs):
 			new_or_updated.append(guide_descriptor['id'])
 			current_node = self.guide(guide_descriptor['id'])
@@ -165,19 +167,19 @@ class GuideLayerDescriptor(LayerDescriptor):
 			self.delete_guides(*to_purge)
 
 		self[consts.METADATA_DESCRIPTOR_KEY] = [attributes.attribute_class_for_descriptor(s) for s in kwargs.get(
-			consts.METADATA_DESCRIPTOR_KEY, list())] or self.get(consts.METADATA_DESCRIPTOR_KEY, list())
+			consts.METADATA_DESCRIPTOR_KEY, [])] or self.get(consts.METADATA_DESCRIPTOR_KEY, [])
 
 		dg_graphs = kwargs.get(consts.DG_DESCRIPTOR_KEY)
 		if dg_graphs is not None:
 			self[consts.DG_DESCRIPTOR_KEY] = graphs.NamedGraphs.from_data(dg_graphs)
 
 	@classmethod
-	def from_data(cls, layer_data: dict) -> GuideLayerDescriptor:
+	def from_data(cls, layer_data: Dict) -> GuideLayerDescriptor:
 		"""
 		Transforms given data to valid descriptor instances and returns an instance of this layer descriptor based on
 		given data.
 
-		:param dict layer_data: layer dictionary data.
+		:param Dict layer_data: layer dictionary data.
 		:return: new layer descriptor instance.
 		:rtype: GuideLayerDescriptor
 		"""
@@ -196,12 +198,12 @@ class GuideLayerDescriptor(LayerDescriptor):
 		return cls(data)
 
 	@classmethod
-	def default_metadata_settings(cls) -> list[attributes.AttributeDescriptor]:
+	def default_metadata_settings(cls) -> List[attributes.AttributeDescriptor]:
 		"""
 		Returns default metadata settings dictionary.
 
 		:return: default metadata attribute settings.
-		:rtype: list[attributes.AttributeDescriptor]
+		:rtype: List[attributes.AttributeDescriptor]
 		"""
 
 		data = [
@@ -216,12 +218,12 @@ class GuideLayerDescriptor(LayerDescriptor):
 		return [attributes.attribute_class_for_descriptor(attr_data) for attr_data in data]
 
 	@classmethod
-	def default_guide_settings(cls) -> list[attributes.AttributeDescriptor]:
+	def default_guide_settings(cls) -> List[attributes.AttributeDescriptor]:
 		"""
 		Returns default guide setting dictionary.
 
 		:return: default guide attribute settings.
-		:rtype: list[attributes.AttributeDescriptor]
+		:rtype: List[attributes.AttributeDescriptor]
 		"""
 
 		data = [
@@ -234,13 +236,13 @@ class GuideLayerDescriptor(LayerDescriptor):
 		return [attributes.attribute_class_for_descriptor(attr_data) for attr_data in data]
 
 	@classmethod
-	def merge_default_settings(cls, new_state: dict) -> list[attributes.AttributeDescriptor]:
+	def merge_default_settings(cls, new_state: Dict) -> List[attributes.AttributeDescriptor]:
 		"""
 		Returns a dictionary with override guide settings based on default guide settings.
 
-		:param dict new_state: override guide settings dictionary.
+		:param Dict new_state: override guide settings dictionary.
 		:return: merged override default guide settings dictionary.
-		:rtype: list[attributes.AttributeDescriptor]
+		:rtype: List[attributes.AttributeDescriptor]
 		"""
 
 		default_settings = dict((i['name'], i) for i in cls.default_guide_settings())
@@ -254,13 +256,13 @@ class GuideLayerDescriptor(LayerDescriptor):
 		return list(default_settings.values())
 
 	@classmethod
-	def merge_default_metadata(cls, new_state: dict) -> list[attributes.AttributeDescriptor]:
+	def merge_default_metadata(cls, new_state: Dict) -> List[attributes.AttributeDescriptor]:
 		"""
 		Returns a dictionary with override metadata settings based on default metadata settings.
 
-		:param dict new_state: override metadata settings dictionary.
+		:param Dict new_state: override metadata settings dictionary.
 		:return: merged override default metadata settings dictionary.
-		:rtype: list[attributes.AttributeDescriptor]
+		:rtype: List[attributes.AttributeDescriptor]
 		"""
 
 		default_settings = dict((i['name'], i) for i in cls.default_guide_settings())
@@ -290,12 +292,12 @@ class GuideLayerDescriptor(LayerDescriptor):
 
 		return len(list(self.iterate_guides(include_root=include_root)))
 
-	def iterate_guides(self, include_root: bool = True) -> collections.Iterator[nodes.GuideDescriptor]:
+	def iterate_guides(self, include_root: bool = True) -> Iterator[nodes.GuideDescriptor]:
 		"""
 		Generator function that iterates over all guides defined within this descriptor instance.
 
 		:param bool include_root: whether to take root guide into consideration.
-		:return: collections.Iterator[nodes.GuideDescriptor]
+		:return: Iterator[nodes.GuideDescriptor]
 		"""
 
 		for guide_descriptor in iter(self.get(consts.DAG_DESCRIPTOR_KEY, list())):
@@ -307,13 +309,13 @@ class GuideLayerDescriptor(LayerDescriptor):
 				for child_descriptor in guide_descriptor.iterate_children():
 					yield child_descriptor
 
-	def find_guides(self, *ids: tuple) -> list[nodes.GuideDescriptor | None]:
+	def find_guides(self, *ids: Tuple) -> List[nodes.GuideDescriptor | None]:
 		"""
 		Finds and returns all guides with the given IDs.
 
-		:param tuple[str] ids: guide IDs to find.
+		:param Tuple[str] ids: guide IDs to find.
 		:return: list of guides in given order.
-		:rtype: list[nodes.GuideDescriptor or None]
+		:rtype: List[nodes.GuideDescriptor or None]
 		"""
 
 		return self.find_nodes(*ids)
@@ -445,12 +447,12 @@ class GuideLayerDescriptor(LayerDescriptor):
 
 		return False
 
-	def iterate_guide_settings(self) -> collections.Iterator[attributes.AttributeDescriptor]:
+	def iterate_guide_settings(self) -> Iterator[attributes.AttributeDescriptor]:
 		"""
 		Generator function that iterates over all guide settings.
 
 		:return: iterated guide settings.
-		:rtype: collections.Iterator[attributes.AttributeDescriptor]
+		:rtype: Iterator[attributes.AttributeDescriptor]
 		"""
 
 		return iter(self[consts.SETTINGS_DESCRIPTOR_KEY])
@@ -470,11 +472,11 @@ class GuideLayerDescriptor(LayerDescriptor):
 
 		return None
 
-	def guide_settings(self, *names: tuple) -> helpers.ObjectDict[str, attributes.AttributeDescriptor]:
+	def guide_settings(self, *names: Tuple) -> helpers.ObjectDict[str, attributes.AttributeDescriptor]:
 		"""
 		Returns all matching guide settings attributes as a dict.
 
-		:param tuple[str] names: guides settings attribute names to retrieve.
+		:param Tuple[str] names: guides settings attribute names to retrieve.
 		:return: dictionary with the guide settings.
 		:rtype: helpers.ObjectDict[str, attributes.AttributeDescriptor]
 		"""
@@ -522,11 +524,11 @@ class GuideLayerDescriptor(LayerDescriptor):
 		except KeyError:
 			return False
 
-	def delete_settings(self, names: list[str]):
+	def delete_settings(self, names: List[str]):
 		"""
 		Deletes all guide settings based on the given names.
 
-		:param list[str] names: list of settings to delete.
+		:param List[str] names: list of settings to delete.
 		"""
 
 		valid = list()
@@ -534,3 +536,356 @@ class GuideLayerDescriptor(LayerDescriptor):
 			if setting.name not in names:
 				valid.append(setting)
 		self[consts.SETTINGS_DESCRIPTOR_KEY] = valid
+
+
+class InputLayerDescriptor(LayerDescriptor):
+
+	@classmethod
+	@override
+	def from_data(cls, layer_data: dict) -> LayerDescriptor:
+
+		data = {
+			consts.SETTINGS_DESCRIPTOR_KEY: list(map(
+				attributes.attribute_class_for_descriptor, layer_data.get(consts.SETTINGS_DESCRIPTOR_KEY, []))),
+			consts.DAG_DESCRIPTOR_KEY: list(map(
+				nodes.InputDescriptor.deserialize, iter(layer_data.get(consts.DAG_DESCRIPTOR_KEY, []))))
+		}
+
+		return cls(data)
+
+	@override(check_signature=False)
+	def update(self, kwargs):
+		self[consts.SETTINGS_DESCRIPTOR_KEY] = list(map(
+			attributes.attribute_class_for_descriptor,
+			kwargs.get(consts.SETTINGS_DESCRIPTOR_KEY, []))) or self[consts.SETTINGS_DESCRIPTOR_KEY]
+
+		for input_descriptor in traverse_descriptor_layer_dag(kwargs):
+			self.create_input(**input_descriptor)
+
+	def iterate_inputs(self) -> Iterator[nodes.InputDescriptor]:
+		"""
+		Generator function that iterates over all input node descriptors.
+
+		:return: iterated input node descriptors.
+		:rtype: Iterator[nodes.InputDescriptor]
+		"""
+
+		for input_descriptor in iter(self.get(consts.DAG_DESCRIPTOR_KEY, [])):
+			yield input_descriptor
+			for child in input_descriptor.iterate_children():
+				yield child
+
+	def input(self, name: str) -> nodes.InputDescriptor | None:
+		"""
+		Returns input node descriptor with given name.
+
+		:param str name: name of the input node.
+		:return: input node descriptor.
+		:rtype: nodes.InputDescriptor or None
+		"""
+
+		found_input_descriptor = None
+		for input_descriptor in self.iterate_inputs():
+			if input_descriptor['id'] == name:
+				found_input_descriptor = input_descriptor
+				break
+
+		return found_input_descriptor
+
+	def create_input(self, **data: Dict) -> nodes.InputDescriptor:
+		"""
+		Creates a new input descriptor from given data and adds it into this layer descriptor.
+
+		:param Dict data: input descriptor data.
+		:return: newly created input descriptor instance.
+		:rtype: nodes.InputDescriptor
+		"""
+
+		existing_input = self.input(data['id'])
+		if existing_input is not None:
+			return existing_input
+
+		parent = data.get('parent', None)
+		parent = parent if parent and parent != 'root' else None
+		input_descriptor = nodes.InputDescriptor.deserialize(data, parent=parent)
+		self.add_input(input_descriptor)
+
+		return input_descriptor
+
+	def add_input(self, input_descriptor: nodes.InputDescriptor):
+		"""
+		Adds given input descriptor instance into this layer descriptor.
+
+		:param nodes.InputDescriptor input_descriptor: input descriptor to add.
+		"""
+
+		input_descriptor['critType'] = 'input'
+		if input_descriptor.parent is None:
+			self[consts.DAG_DESCRIPTOR_KEY].append(input_descriptor)
+			return
+
+		for _input_descriptor in self.iterate_inputs():
+			if _input_descriptor.id == input_descriptor.parent:
+				_input_descriptor.children.append(input_descriptor)
+				break
+
+	def clear_inputs(self):
+		"""
+		Deletes all input node descriptors from this layer.
+		"""
+
+		self[consts.DAG_DESCRIPTOR_KEY] = []
+
+
+class OutputLayerDescriptor(LayerDescriptor):
+
+	@classmethod
+	@override
+	def from_data(cls, layer_data: dict) -> LayerDescriptor:
+
+		data = {
+			consts.SETTINGS_DESCRIPTOR_KEY: list(map(
+				attributes.attribute_class_for_descriptor, layer_data.get(consts.SETTINGS_DESCRIPTOR_KEY, []))),
+			consts.DAG_DESCRIPTOR_KEY: list(map(
+				nodes.OutputDescriptor.deserialize, iter(layer_data.get(consts.DAG_DESCRIPTOR_KEY, []))))
+		}
+
+		return cls(data)
+
+	@override(check_signature=False)
+	def update(self, kwargs):
+		self[consts.SETTINGS_DESCRIPTOR_KEY] = list(map(
+			attributes.attribute_class_for_descriptor,
+			kwargs.get(consts.SETTINGS_DESCRIPTOR_KEY, []))) or self[consts.SETTINGS_DESCRIPTOR_KEY]
+
+		for output_descriptor in traverse_descriptor_layer_dag(kwargs):
+			current_node = self.output(output_descriptor['id'])
+			if current_node is not None:
+				children = output_descriptor.get('children')
+				if children:
+					output_descriptor['children'] = [
+						nodes.OutputDescriptor.deserialize(i, output_descriptor['id']) for i in children]
+				current_node.update(output_descriptor)
+			else:
+				self.create_output(**output_descriptor)
+
+	def iterate_outputs(self) -> Iterator[nodes.OutputDescriptor]:
+		"""
+		Generator function that iterates over all output node descriptors.
+
+		:return: iterated output node descriptors.
+		:rtype: Iterator[nodes.OutputDescriptor]
+		"""
+
+		for output_descriptor in iter(self.get(consts.DAG_DESCRIPTOR_KEY, [])):
+			yield output_descriptor
+			for child in output_descriptor.iterate_children():
+				yield child
+
+	def output(self, name: str) -> nodes.OutputDescriptor | None:
+		"""
+		Returns output node descriptor with given name.
+
+		:param str name: name of the output node.
+		:return: output node descriptor.
+		:rtype: nodes.OutputDescriptor or None
+		"""
+
+		found_output_descriptor = None
+		for output_descriptor in self.iterate_outputs():
+			if output_descriptor['id'] == name:
+				found_output_descriptor = output_descriptor
+				break
+
+		return found_output_descriptor
+
+	def create_output(self, **data: Dict) -> nodes.OutputDescriptor:
+		"""
+		Creates a new output descriptor from given data and adds it into this layer descriptor.
+
+		:param Dict data: output descriptor data.
+		:return: newly created output descriptor instance.
+		:rtype: nodes.OutputDescriptor
+		"""
+
+		existing_output = self.output(data['id'])
+		if existing_output is not None:
+			existing_output.parent = data.get('parent', existing_output.parent)
+			return existing_output
+
+		parent = data.get('parent', None)
+		parent = parent if parent and parent != 'root' else None
+		output_descriptor = nodes.OutputDescriptor.deserialize(data, parent=parent)
+		self.add_output(output_descriptor)
+
+		return output_descriptor
+
+	def add_output(self, output_descriptor: nodes.OutputDescriptor):
+		"""
+		Adds given output descriptor instance into this layer descriptor.
+
+		:param nodes.OutputDescriptor output_descriptor: output descriptor to add.
+		"""
+
+		output_descriptor['critType'] = 'output'
+		if output_descriptor.parent is None:
+			self[consts.DAG_DESCRIPTOR_KEY].append(output_descriptor)
+			return
+
+		for _output_descriptor in self.iterate_outputs():
+			if _output_descriptor.id == output_descriptor.parent:
+				_output_descriptor.children.append(output_descriptor)
+				break
+
+	def clear_outputs(self):
+		"""
+		Deletes all output node descriptors from this layer.
+		"""
+
+		self[consts.DAG_DESCRIPTOR_KEY] = []
+
+
+class SkeletonLayerDescriptor(LayerDescriptor):
+
+	@classmethod
+	@override
+	def from_data(cls, layer_data: Dict) -> LayerDescriptor:
+
+		data = {
+			consts.SETTINGS_DESCRIPTOR_KEY: list(map(
+				attributes.attribute_class_for_descriptor, layer_data.get(consts.SETTINGS_DESCRIPTOR_KEY, []))),
+			consts.DAG_DESCRIPTOR_KEY: list(map(
+				nodes.JointDescriptor.deserialize, iter(layer_data.get(consts.DAG_DESCRIPTOR_KEY, []))))
+		}
+
+		return cls(data)
+
+	@override(check_signature=False)
+	def update(self, kwargs: Dict):
+
+		self[consts.SETTINGS_DESCRIPTOR_KEY] = list(
+			map(attributes.attribute_class_for_descriptor, kwargs.get(consts.SETTINGS_DESCRIPTOR_KEY, []))) or self[
+			consts.SETTINGS_DESCRIPTOR_KEY]
+		skeleton_layer_info = kwargs.get(consts.DAG_DESCRIPTOR_KEY)
+		if skeleton_layer_info:
+			self[consts.DAG_DESCRIPTOR_KEY] = list(map(nodes.JointDescriptor.deserialize, iter(skeleton_layer_info)))
+
+	def joint(self, joint_id: str) -> nodes.JointDescriptor | None:
+		"""
+		Returns the joint descriptor instance that matches given ID.
+
+		:param str joint_id: ID of the joint descriptor to find.
+		:return: found joint descriptor instance.
+		:rtype: nodes.JointDescriptor or None
+		"""
+
+		found_joint_descriptor = None
+		for joint_descriptor in self.iterate_deform_joints():
+			if joint_descriptor.id == joint_id:
+				found_joint_descriptor = joint_descriptor
+				break
+
+		return found_joint_descriptor
+
+	def iterate_deform_joints(self) -> Iterator[nodes.JointDescriptor]:
+		"""
+		Generator function that iterates over all deform joints defined within this skeleton descriptor layer.
+
+		:return: iterated skeleton deform descriptor joints.
+		:rtype: terator[nodes.JointDescriptor]
+		"""
+
+		for joint_descriptor in iter(self.get(consts.DAG_DESCRIPTOR_KEY, [])):
+			yield joint_descriptor
+			for child in joint_descriptor.iterate_children():
+				yield child
+
+	def find_joints(self, *ids: Tuple[str]) -> List[nodes.JointDescriptor | None]:
+		"""
+		Returns the joint descriptor instances from given IDs.
+
+		:param Tuple[str] ids: IDs to find joint descriptors of.
+		:return: list containing the found joint descriptors.
+		:rtype: List[nodes.JointDescriptor or None]
+		"""
+
+		found_joint_descriptors = [None] * len(ids)
+		for joint_descriptor in self.iterate_deform_joints():
+			joint_id = joint_descriptor.id
+			if joint_id in ids:
+				found_joint_descriptors[ids.index(joint_id)] = joint_descriptor
+
+		return found_joint_descriptors
+
+	def create_joint(self, **data: Dict) -> nodes.JointDescriptor:
+		"""
+		Creates a new joint descriptor based on given data.
+
+		:param Dict data: joint descriptor data. e.g:
+			{
+				'id': 'root',
+				'name': 'rootJnt'
+				'translate': [0.0, 0.0, 0.0],
+				'rotate': [0.0, 0.0, 0.0, 1.0],
+				'rotateOrder': 0,
+			}
+		:return: newly created joint descriptor.
+		:rtype: nodes.JointDescriptor
+		"""
+
+		existing_joint = self.joint(data['id'])
+		if existing_joint is not None:
+			return existing_joint
+
+		parent = data.get('parent', '')
+		if parent == 'root':
+			parent = None
+
+		joint_descriptor = nodes.JointDescriptor.deserialize(data, parent=parent)
+		self.add_joint(joint_descriptor)
+
+		return joint_descriptor
+
+	def add_joint(self, joint_descriptor: nodes.JointDescriptor):
+		"""
+		Adds given joint descriptor into this layer descriptor.
+
+		:param nodes.JointDescriptor joint_descriptor: joint descriptor instance to add.
+		"""
+
+		joint_descriptor['critType'] = 'joint'
+		if joint_descriptor.parent is None:
+			self[consts.DAG_DESCRIPTOR_KEY].append(joint_descriptor)
+			return
+
+		for _joint_descriptor in self.iterate_deform_joints():
+			if _joint_descriptor.id == joint_descriptor.parent:
+				_joint_descriptor.children.append(joint_descriptor)
+				break
+
+	def delete_joints(self, *joints_ids: Tuple[str]):
+		"""
+		Deletes joint descriptors that matches given IDs.
+
+		:param Tuple[str] joints_ids: joint IDs to delete.
+		"""
+
+		top_level_nodes_to_delete = []
+		for joint_descriptor in self.iterate_deform_joints():
+			if joint_descriptor.id not in joints_ids:
+				continue
+			elif joint_descriptor.parent is None:
+				top_level_nodes_to_delete.append(joint_descriptor)
+				continue
+			parent = self.joint(joint_descriptor.parent)
+			parent.delete_child(joint_descriptor.id)
+
+		for joint_descriptor in top_level_nodes_to_delete:
+			self[consts.DAG_DESCRIPTOR_KEY].remove(joint_descriptor)
+
+	def clear_joints(self):
+		"""
+		Clears all joint descriptors defined within this layer descriptor.
+		"""
+
+		self[consts.DAG_DESCRIPTOR_KEY] = []

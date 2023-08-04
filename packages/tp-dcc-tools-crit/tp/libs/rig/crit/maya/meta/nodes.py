@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterator
+from typing import Iterator, List, Dict
 from collections import OrderedDict
 
 from overrides import override
@@ -848,3 +848,164 @@ class Guide(ControlNode):
 		api.build_constraint(
 			shape_node, {'targets': ((self.fullPathName(partial_name=True, include_namespace=False), self),)},
 			constraint_type='matrix', track=False, maintainOffset=True)
+
+
+class InputNode(api.DagNode):
+
+	@override(check_signature=False)
+	def create(self, **kwargs: Dict):
+
+		name = kwargs.get('name', 'input')
+		node = om_nodes.factory.create_dag_node(name, 'transform', self.parent())
+		self.setObject(node)
+		self.setRotationOrder(kwargs.get('rotateOrder', api.consts.kRotateOrder_XYZ))
+		self.setTranslation(api.Vector(kwargs.get('translate', [0.0, 0.0, 0.0])), space=api.kWorldSpace)
+		self.setRotation(api.Quaternion(kwargs.get('rotate', (0.0, 0.0, 0.0, 1.0))))
+		self.addAttribute(consts.CRIT_ID_ATTR, api.kMFnDataString, value=kwargs.get('id', name))
+		self.addAttribute(consts.CRIT_IS_INPUT_ATTR, api.kMFnNumericBoolean, value=True)
+
+		return self
+
+	def id(self) -> str:
+		"""
+		Returns the ID attribute value for this input node.
+
+		:return: input node ID.
+		:rtype: str
+		"""
+
+		id_attr = self.attribute(consts.CRIT_ID_ATTR)
+		return id_attr.value() if id_attr is not None else ''
+
+
+class OutputNode(api.DagNode):
+
+	@override(check_signature=False)
+	def create(self, **kwargs: Dict):
+
+		name = kwargs.get('name', 'output')
+		node = om_nodes.factory.create_dag_node(name, 'transform', self.parent())
+		self.setObject(node)
+		world_matrix = kwargs.get('worldMatrix', None)
+		if world_matrix is not None:
+			transform_matrix = api.TransformationMatrix(api.Matrix(world_matrix))
+			transform_matrix.setScale((1, 1, 1), api.kWorldSpace)
+			self.setWorldMatrix(transform_matrix.asMatrix())
+		else:
+			self.setTranslation(api.Vector(kwargs.get('translate', (0.0, 0.0, 0.0))), space=api.kWorldSpace)
+			self.setRotation(api.Quaternion(kwargs.get('rotate', (0.0, 0.0, 0.0, 1.0))))
+
+		self.setRotationOrder(kwargs.get('rotateOrder', api.consts.kRotateOrder_XYZ))
+		self.addAttribute(consts.CRIT_ID_ATTR, api.kMFnDataString, value=kwargs.get('id', name))
+		self.addAttribute(consts.CRIT_IS_OUTPUT_ATTR, api.kMFnNumericBoolean, value=True)
+
+		return self
+
+	def id(self) -> str:
+		"""
+		Returns the ID attribute value for this input node.
+
+		:return: input node ID.
+		:rtype: str
+		"""
+
+		id_attr = self.attribute(consts.CRIT_ID_ATTR)
+		return id_attr.value() if id_attr is not None else ''
+
+
+class Joint(api.DagNode):
+
+	@override(check_signature=False)
+	def create(self, **kwargs: Dict) -> Joint:
+
+		name = kwargs.get('name', 'joint')
+		joint = om_nodes.factory.create_dag_node(name, 'joint')
+		self.setObject(joint)
+		world_matrix = kwargs.get('worldMatrix', None)
+		if world_matrix is not None:
+			transform_matrix = api.TransformationMatrix(api.Matrix(world_matrix))
+			transform_matrix.setScale((1, 1, 1), api.kWorldSpace)
+			self.setWorldMatrix(transform_matrix.asMatrix())
+		else:
+			self.setTranslation(api.Vector(kwargs.get('translate', (0.0, 0.0, 0.0))), space=api.kWorldSpace)
+			self.setRotation(api.Quaternion(kwargs.get('rotate', (0.0, 0.0, 0.0, 1.0))))
+
+		self.setRotationOrder(kwargs.get('rotateOrder', api.consts.kRotateOrder_XYZ))
+		self.setParent(kwargs.get('parent', None), maintain_offset=True)
+		self.addAttribute(consts.CRIT_ID_ATTR, api.kMFnDataString, value=kwargs.get('id', ''))
+		self.segmentScaleCompensate.set(False)
+
+		return self
+
+	def setParent(
+			self, parent: api.OpenMaya.MObject, maintain_offset: bool = True,
+			mod: api.OpenMaya.MDagModifier | None = None, apply: bool = True) -> api.OpenMaya.MDagModifier:
+
+		rotation = self.rotation(space=api.kWorldSpace)
+		result = super().setParent(parent, maintain_offset=True)
+		if parent is None:
+			return result
+
+		parent_quat = parent.rotation(api.kWorldSpace, as_quaternion=True)
+		new_rotation = rotation * parent_quat.inverse()
+		self.jointOrient.set(new_rotation.asEulerRotation())
+		self.setRotation((0.0, 0.0, 0.0), api.kTransformSpace)
+		if parent.apiType() == api.kJoint:
+			parent.attribute('scale').connect(self.inverseScale)
+
+	@override
+	def serializeFromScene(
+			self, skip_attributes=(), include_connections=True, include_attributes=(), extra_attributes_only=False,
+			use_short_names=False, include_namespace=True):
+
+		data = super().serializeFromScene(
+			skip_attributes=skip_attributes, include_connections=include_connections,
+			include_attributes=include_attributes, extra_attributes_only=extra_attributes_only,
+			use_short_names=use_short_names, include_namespace=include_namespace)
+
+		data.update({
+			'name': self.fullPathName(partial_name=True, include_namespace=False),
+			'id': self.id(),
+			'critType': 'joint'
+		})
+
+		return data
+
+	def id(self) -> str:
+		"""
+		Returns the ID attribute value for this joint.
+
+		:return: joint ID.
+		:rtype: str
+		"""
+
+		id_attr = self.attribute(consts.CRIT_ID_ATTR)
+		return id_attr.value() if id_attr is not None else ''
+
+	def aim_to_child(
+			self, aim_vector: api.OpenMaya.MVector | List[float, float, float],
+			up_vector: api.OpenMaya.MVector | List[float, float, float], use_joint_orient: bool = True):
+		"""
+		Aims this joint to point to its first child in the hierarchy. If joint has no chain, rotation will be reset.
+
+		:param api.OpenMaya.MVector or List[float, float, float] aim_vector: vector to use as the aim vector.
+		:param api.OpenMaya.MVector or List[float, float, float] up_vector: vector to use as the up vector.
+		:param bool use_joint_orient: whether to move rotation values to the joint orient after aiming.
+		"""
+
+		child = self.child(0)
+		if child is None:
+			self.setRotation(api.Quaternion())
+			return
+
+		om_nodes.aim_nodes(
+			target_node=child.object(), driven=[self.object()], aim_vector=aim_vector, up_vector=up_vector)
+
+		if use_joint_orient:
+			self.jointOrient.set(self.rotation())
+			self.setRotation(api.Quaternion())
+
+
+class Connector(api.DagNode):
+
+	pass

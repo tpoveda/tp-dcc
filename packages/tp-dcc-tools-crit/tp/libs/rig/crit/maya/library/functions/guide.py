@@ -9,6 +9,7 @@ from tp.maya.cmds import mathlib
 
 from tp.libs.rig.crit.maya.library.functions import attribute
 
+
 logger = log.rigLogger
 
 
@@ -21,7 +22,7 @@ def create_line_guide(
 	:param b:
 	:param name:
 	:param suffix:
-	:return: dictioanry containing the clusters and the created line curve.
+	:return: dictionary containing the clusters and the created line curve.
 	:rtype: Dict
 	"""
 

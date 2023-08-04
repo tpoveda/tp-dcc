@@ -15,7 +15,7 @@ from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.core import errors, naming
 from tp.libs.rig.crit.maya.core import config, component
 from tp.libs.rig.crit.maya.meta import rig
-from tp.libs.rig.crit.maya.library.functions import rigs, components
+from tp.libs.rig.crit.maya.library.functions import rigs, components, guides
 
 if typing.TYPE_CHECKING:
 	from tp.common.naming.manager import NameManager
@@ -271,9 +271,9 @@ class Rig:
 
 		components_layer = self.components_layer()
 		if not components_layer:
-			namer = self.naming_manager()
+			name_manager = self.naming_manager()
 			hierarchy_name, meta_name = naming.compose_rig_names_for_layer(
-				namer, self.name(), consts.COMPONENTS_LAYER_TYPE)
+				name_manager, self.name(), consts.COMPONENTS_LAYER_TYPE)
 			components_layer = self._meta.create_layer(
 				consts.COMPONENTS_LAYER_TYPE, hierarchy_name=hierarchy_name, meta_name=meta_name,
 				parent=self._meta.root_transform())
@@ -290,6 +290,25 @@ class Rig:
 
 		return self._meta.skeleton_layer()
 
+	def get_or_create_skeleton_layer(self) -> CritSkeletonLayer:
+		"""
+		Returns the skeleton layer if it is attached to this rig or creates a new one and attaches it.
+
+		:return: skeleton layer instance.
+		:rtype: CritSkeletonLayer
+		"""
+
+		skeleton_layer = self.skeleton_layer()
+		if not skeleton_layer:
+			name_manager = self.naming_manager()
+			hierarchy_name, meta_name = naming.compose_rig_names_for_layer(
+				name_manager, self.name(), consts.SKELETON_LAYER_TYPE)
+			skeleton_layer = self._meta.create_layer(
+				consts.SKELETON_LAYER_TYPE, hierarchy_name=hierarchy_name, meta_name=meta_name,
+				parent=self._meta.root_transform())
+
+		return skeleton_layer
+
 	def geometry_layer(self) -> CritGeometryLayer | None:
 		"""
 		Returns the geometry layer instance from this rig by querying the attached meta node.
@@ -299,6 +318,25 @@ class Rig:
 		"""
 
 		return self._meta.geometry_layer()
+
+	def get_or_create_geometry_layer(self) -> CritGeometryLayer:
+		"""
+		Returns the geometry layer if it is attached to this rig or creates a new one and attaches it.
+
+		:return: geometry layer instance.
+		:rtype: CritGeometryLayer
+		"""
+
+		geometry_layer = self.geometry_layer()
+		if not geometry_layer:
+			name_manager = self.naming_manager()
+			hierarchy_name, meta_name = naming.compose_rig_names_for_layer(
+				name_manager, self.name(), consts.GEOMETRY_LAYER_TYPE)
+			geometry_layer = self._meta.create_layer(
+				consts.GEOMETRY_LAYER_TYPE, hierarchy_name=hierarchy_name, meta_name=meta_name,
+				parent=self._meta.root_transform())
+
+		return geometry_layer
 
 	def create_component(
 			self, component_type: str | None = None, name: str | None = None, side: str | None = None,
@@ -521,12 +559,12 @@ class Rig:
 
 	@profiler.profile_it('~/tp/preferences/logs/crit/buildGuides.profile')
 	@profiler.fn_timer
-	def build_guides(self, components: list[component.Component] | None = None):
+	def build_guides(self, components: List[component.Component] | None = None) -> bool:
 		"""
 		Builds all the guides for the current rig initialized components. If a component has guides already built it
 		will be skipped.
 
-		:param list[component.Component] or None components: list of components to
+		:param List[component.Component] or None components: list of components to
 			build guides for. If None, all components guides for this rig instance will be built.
 		:return: True if the build guides operation was successful; False otherwise.
 		:rtype: bool
@@ -548,7 +586,7 @@ class Rig:
 		child_parent_relationship = {_component: _component.parent() for _component in self.iterate_components()}
 		components = components or list(child_parent_relationship.keys())
 
-		unordered = list()
+		unordered = []
 		for found_component in components:
 			_construct_unordered_list(found_component)
 
@@ -601,6 +639,63 @@ class Rig:
 				guide_layer.set_guides_visible(guide_value, include_root=include_root)
 		modifier.doIt()
 
+	@profiler.fn_timer
+	def build_skeleton(self, components: List[component.Component] | None = None) -> bool:
+		"""
+		Builds skeleton for the given components. If not given, all initialized components skeletons will be built.
+
+		:param  List[component.Component] or None components: optional list of components to build skeleton for.
+		:return: True if the build skeleton operation was successful; False otherwise.
+		:rtype: bool
+		"""
+
+		self._config.update_from_rig(self)
+		child_parent_relationship = {_component: _component.parent() for _component in self.iterate_components()}
+		components = components or list(child_parent_relationship.keys())
+
+		parent_node = self.get_or_create_skeleton_layer().root_transform()
+		parent_node.show()
+		self.get_or_create_geometry_layer()
+
+		with self.build_script_context(consts.SKELETON_FUNCTION_TYPE):
+			guides.align_guides(self, components)
+			self._meta.create_selection_sets(self.naming_manager())
+			self._build_components(components, child_parent_relationship, 'build_skeleton', parent_node=parent_node)
+			mod = api.DGModifier()
+			for comp in components:
+				comp.update_naming(layer_types=(consts.SKELETON_LAYER_TYPE,), mod=mod, apply=False)
+			mod.doIt()
+
+		return True
+
+	@profiler.fn_timer
+	def build_rigs(self, components_to_build: List[component.Component] | None = None) -> bool:
+		"""
+		Builds rigs for the given components. If not given, all initialized components rigs will be built.
+
+		:param List[component.Component] or None components_to_build: optional list of components to build rig for.
+		:return: True if the build rigs operation was successful; False otherwise.
+		:rtype: bool
+		"""
+
+		self._config.update_from_rig(self)
+		self._meta.create_selection_sets(self.naming_manager())
+		child_parent_relationship = {_component: _component.parent() for _component in self.iterate_components()}
+		components_to_build = components_to_build or list(child_parent_relationship.keys())
+
+		if not any(found_component.has_skeleton() for found_component in components_to_build):
+			self.build_skeleton(components_to_build)
+
+		with self.build_script_context(consts.RIG_FUNCTION_TYPE):
+			success = self._build_components(
+				components_to_build, child_parent_relationship, 'build_rig', parent_node=None)
+			components.setup_space_switches(components_to_build)
+			if success:
+				self._handle_control_display_layer(components_to_build)
+				return True
+
+		return False
+
 	def serialize_from_scene(self, rig_components: List[Component] | None = None) -> Dict:
 		"""
 		Runs through all current initialized rig components and serializes them.
@@ -627,6 +722,16 @@ class Rig:
 
 		return data
 
+	def control_display_layer(self) -> api.DGNode | None:
+		"""
+		Returns the display layer for the controls.
+
+		:return: controls display layer instance.
+		:rtype: api.DGNode or None
+		"""
+
+		return self.meta.attribute(consts.CRIT_CONTROL_DISPLAY_LAYER_ATTR).sourceNode()
+
 	def delete_control_display_layer(self) -> bool:
 		"""
 		Deletes the current display for this rig instance.
@@ -636,6 +741,37 @@ class Rig:
 		"""
 
 		return self._meta.delete_control_display_layer()
+
+	@profiler.fn_timer
+	def delete_guides(self):
+		"""
+		Deletes all guides from this rig.
+		"""
+
+		with self.build_script_context(consts.DELETE_GUIDE_LAYER_FUNCTION_TYPE):
+			for _component in self.iterate_components():
+				_component.delete_guide()
+
+	@profiler.fn_timer
+	def delete_skeleton(self):
+		"""
+		Deletes all component skeletons.
+		"""
+
+		with self.build_script_context(consts.DELETE_SKELETON_LAYER_FUNCTION_TYPE):
+			for _component in self.iterate_components():
+				_component.delete_skeleton()
+
+	@profiler.fn_timer
+	def delete_rigs(self):
+		"""
+		Deletes all component rigs.
+		"""
+
+		with self.build_script_context(consts.DELETE_RIG_LAYER_FUNCTION_TYPE):
+			for _component in self.iterate_components():
+				_component.delete_rig()
+			self.delete_control_display_layer()
 
 	@profiler.fn_timer
 	def delete_components(self):
@@ -670,7 +806,7 @@ class Rig:
 			return False
 
 		with self.build_script_context(consts.DELETE_COMPONENT_FUNCTION_TYPE, component=found_component):
-			self._cleanup_space_switches(found_component)
+			components.cleanup_space_switches(found_component)
 			found_component.delete()
 			try:
 				self._components_cache.remove(found_component)
@@ -752,11 +888,26 @@ class Rig:
 
 		return True
 
-	def _cleanup_space_switches(self, component: Component):
+	def _handle_control_display_layer(self, built_components: List[Component]):
 		"""
-		Internal function that removes all space switch drivers which use the given component as a driver.
+		Intenral function that creates and renames the primary display layer for this rig and adds all controls from
+		the components to the layer.
 
-		:param Component component: component instance which will be deleted.
+		:param List[Component] built_components: components whose controls we want to add into the rig display layer.
 		"""
 
-		pass
+		display_layer_plug = self.meta.attribute(consts.CRIT_CONTROL_DISPLAY_LAYER_ATTR)
+		layer = display_layer_plug.sourceNode()
+		naming_manager = self.naming_manager()
+		control_layer_name = naming_manager.resolve(
+			'controlDisplayLayerSuffix', {'rigName': self.name(), 'type': 'controlLayer'})
+		if layer is None:
+			layer = api.factory.create_display_layer(control_layer_name)
+			layer.hideOnPlayback.set(True)
+			layer.message.connect(display_layer_plug)
+		elif layer.name(include_namespace=False) != control_layer_name:
+			layer.rename(control_layer_name)
+		layer.playback = True
+		for _component in built_components:
+			for control in _component.rig_layer().iterate_controls():
+				layer.drawInfo.connect(control.drawOverride)

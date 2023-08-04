@@ -117,3 +117,5 @@ def rig_from_node(node: DGNode) -> rig.Rig | None:
 		return parent_rig(meta_nodes[0])
 	except AttributeError:
 		raise errors.CritMissingMetaNode(f'Attached meta node is not a valid CRIT node')
+
+
