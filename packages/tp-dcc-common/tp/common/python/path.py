@@ -8,6 +8,7 @@ Utility methods related to string paths
 from __future__ import annotations
 
 import os
+import sys
 import uuid
 import stat
 import time
@@ -843,15 +844,72 @@ def find_parent_directory(child_path: str, parent_folder_name: str) -> str | Non
     return found_path
 
 
+def find_first_in_paths(filename: str, paths: List[str]) -> str:
+    """
+    Given a file name or path fragment, returns the first occurrence of a file with that name in the given
+    list of paths.
+
+    :param str filename: file name to find.
+    :param List[str] paths: list of paths to search in.
+    :return: found first occurrence.
+    :rtype: str
+    :raises Exception: if no path was found.
+    """
+
+    for found_path in paths:
+        loc = os.path.join(found_path, filename)
+        if os.path.exists(loc):
+            return loc
+
+    raise Exception(f'File "{filename}" cannot be found in the given paths!')
+
+
+def find_first_in_env(filename: str, env_var_name: str):
+    """
+    Given a file name or path fragment, returns the full path to the first matching file found in the given environment
+    variable.
+
+    :param str filename: file name to find.
+    :param str env_var_name: environment variable name.
+    :return: found first occurrence.
+    :rtype: str
+    """
+
+    return find_first_in_paths(filename, os.environ[env_var_name].split(os.pathsep))
+
+
+def find_first_in_path_env(filename: str):
+    """
+    Given a file name or path fragment, returns the full path to the first matching file found in the PATH environment
+    variable.
+
+    :param str filename: file name to find.
+    :return: found first occurrence.
+    """
+
+    return find_first_in_env(filename, 'PATH')
+
+
+def find_first_in_sys_path(filename: str):
+    """
+    Given a file name or path fragment, returns the full path to the first matching file found in the "sys.path" paths.
+
+    :param str filename: file name to find.
+    :return: found first occurrence.
+    """
+
+    return find_first_in_paths(filename, sys.path)
+
+
 class FindUniquePath(name.FindUniqueString, object):
     def __init__(self, directory):
         if not directory:
             directory = folder.current_working_directory()
 
         self.parent_path = self._get_parent_path(directory)
-        basename = basename(directory=directory)
+        _basename = basename(directory=directory)
 
-        super(FindUniquePath, self).__init__(basename)
+        super(FindUniquePath, self).__init__(_basename)
 
     def _get_scope_list(self):
         return folder.get_files_and_folders(directory=self.parent_path)

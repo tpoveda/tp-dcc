@@ -1302,7 +1302,7 @@ def update_dictionaries(source, target):
     return target, message_log
 
 
-def merge_dictionaries(target, source, path=None, update=False):
+def merge_dictionaries(target, source, path=None, only_missing_keys=False, update=False):
     """
     Merges given dictionaries.
 
@@ -1319,10 +1319,12 @@ def merge_dictionaries(target, source, path=None, update=False):
         base_key = target[key]
         merge_key = source[key]
         if isinstance(base_key, dict) and isinstance(merge_key, dict):
-            merge_dictionaries(base_key, merge_key, path + [str(key)], update=update)
+            merge_dictionaries(base_key, merge_key, path + [str(key)])
+        elif only_missing_keys:
+            continue
         elif base_key == merge_key:
             pass
-        elif isinstance(base_key, list) and isinstance(merge_key, list):
+        elif isinstance(target[key], list) and isinstance(merge_key, list):
             base_key += [i for i in merge_key if i not in base_key]
         else:
             if update:
