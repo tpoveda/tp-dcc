@@ -1,28 +1,32 @@
 import sys
 
-import maya.api.OpenMaya
+import maya.cmds as cmds
+import maya.api.OpenMaya as OpenMaya
 
-if not hasattr(maya.api.OpenMaya, '_TPDCC_COMMAND'):
-    maya.api.OpenMaya._TPDCC_COMMAND = None
-    maya.api.OpenMaya._COMMAND_RUNNER = None
+if not hasattr(OpenMaya, '_TPDCC_COMMAND'):
+    OpenMaya._TPDCC_COMMAND = None
+    OpenMaya._COMMAND_RUNNER = None
 
 
 def maya_useNewAPI():
     pass
 
 
-class UndoCommand(maya.api.OpenMaya.MPxCommand):
+class UndoCommand(OpenMaya.MPxCommand):
     """
     Custom undo command plugin that allow us to support the undo of custom tpDcc
     commands that uses both API and MEL code
     """
 
     commandName = 'tpDccUndo'
+    Id = '-id'
+    IdLong = '-commandId'
 
     def __init__(self):
         super(UndoCommand, self).__init__()
 
         self._command = None
+        self._command_name = ''
         self._command_runner = None
 
     @classmethod
@@ -31,42 +35,49 @@ class UndoCommand(maya.api.OpenMaya.MPxCommand):
 
     @staticmethod
     def syntax_creator():
-        return maya.api.OpenMaya.MSyntax()
+        syntax = OpenMaya.MSyntax()
+        syntax.addFlag(UndoCommand.Id, UndoCommand.IdLong, OpenMaya.MSyntax.kString)
+        return syntax
 
     def doIt(self, args_list):
-        import maya.api.OpenMaya
-        if maya.api.OpenMaya._TPDCC_COMMAND is not None:
-            self._command = maya.api.OpenMaya._TPDCC_COMMAND
-            maya.api.OpenMaya._TPDCC_COMMAND = None
-            self._command_runner = maya.api.OpenMaya._COMMAND_RUNNER
+        parser = OpenMaya.MArgParser(self.syntax(), args_list)
+        command_id = parser.flagArgumentString(UndoCommand.Id, 0)
+        self._command_name = command_id
+        self._command_runner = OpenMaya._COMMAND_RUNNER
+        if OpenMaya._TPDCC_COMMAND is not None:
+            self._command = OpenMaya._TPDCC_COMMAND
+            OpenMaya._TPDCC_COMMAND = None
             self.redoIt()
 
     def redoIt(self):
         if self._command is None:
             return
 
-        self._command_runner._run(self._command)
+        prev_state = cmds.undoInfo(query=True, stateWithoutFlush=True)
+        try:
+            if self._command.disable_queue:
+                cmds.undoInfo(stateWithoutFlush=False)
+            self._command_runner._run(self._command)
+        finally:
+            cmds.undoInfo(stateWithoutFlush=prev_state)
 
     def undoIt(self):
-        import maya.api.OpenMaya
-        if self._command is None:
+        if self._command is None or not self._command.is_undoable:
             return
 
-        if self._command != maya.api.OpenMaya._COMMAND_RUNNER.undo_stack[-1]:
-            raise ValueError('Undo stack has become out of sync with tpDcc commands {}'.format(self._command.id))
-        elif self._command.is_undoable:
-            try:
-                self._command.undo()
-            finally:
-                maya.api.OpenMaya._COMMAND_RUNNER.redo_stack.append(self._command)
-                maya.api.OpenMaya._COMMAND_RUNNER.undo_stack.pop()
+        prev_state = cmds.undoInfo(query=True, stateWithoutFlush=True)
+        cmds.undoInfo(stateWithoutFlush=False)
+        try:
+            self._command.undo()
+        finally:
+            cmds.undoInfo(stateWithoutFlush=prev_state)
 
     def isUndoable(self):
         return self._command.is_undoable
 
 
 def initializePlugin(mobj):
-    mplugin = maya.api.OpenMaya.MFnPlugin(mobj, 'Tomas Poveda', '1.0', 'Any')
+    mplugin = OpenMaya.MFnPlugin(mobj, 'Tomas Poveda', '1.0', 'Any')
     try:
         mplugin.registerCommand(UndoCommand.commandName, UndoCommand.command_creator, UndoCommand.syntax_creator)
     except Exception:
@@ -74,7 +85,7 @@ def initializePlugin(mobj):
 
 
 def uninitializePlugin(mobj):
-    mplugin = maya.api.OpenMaya.MFnPlugin(mobj)
+    mplugin = OpenMaya.MFnPlugin(mobj)
     try:
         mplugin.deregisterCommand(UndoCommand.commandName)
     except Exception:
