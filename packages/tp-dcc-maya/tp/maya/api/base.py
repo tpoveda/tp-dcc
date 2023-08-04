@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import contextlib
 from functools import wraps
-from typing import Tuple, List, Iterator
+from typing import Tuple, List, Iterator, Dict, Callable
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
 import maya.api.OpenMayaAnim as OpenMayaAnim
+
+from overrides import override
 
 from tp.core import log
 from tp.common.python import helpers
@@ -21,11 +23,11 @@ LOCAL_TRANSFORM_ATTRS = LOCAL_TRANSLATE_ATTRS + LOCAL_ROTATE_ATTRS + LOCAL_SCALE
 logger = log.tpLogger
 
 
-def lock_node_context(fn):
+def lock_node_context(fn: Callable):
 	"""
 	Decorator function to lock and unlock the node.
 
-	:param callable fn: decorated function.
+	:param Callable fn: decorated function.
 	"""
 
 	@wraps(fn)
@@ -44,11 +46,11 @@ def lock_node_context(fn):
 	return locker
 
 
-def lock_node_plug_context(fn):
+def lock_node_plug_context(fn: Callable):
 	"""
 	Decorator function to lock and unlock a node plug.
 
-	:param callable fn: decorated function.
+	:param Callable fn: decorated function.
 	"""
 
 	@wraps(fn)
@@ -460,10 +462,6 @@ class DGNode(object):
 
 		self.deleteAttribute(key)
 
-	# =================================================================================================================
-	# STATIC METHODS
-	# =================================================================================================================
-
 	@staticmethod
 	def sourceNode(plug):
 		"""
@@ -476,10 +474,6 @@ class DGNode(object):
 
 		source = plug.source()
 		return source.node() if source is not None else None
-
-	# =================================================================================================================
-	# PROPERTIES
-	# =================================================================================================================
 
 	@property
 	def typeName(self):
@@ -502,10 +496,6 @@ class DGNode(object):
 		"""
 
 		return self.mfn().isLocked
-
-	# =================================================================================================================
-	# BASE
-	# =================================================================================================================
 
 	def create(self, name, node_type, namespace=None, mod=None):
 		"""
@@ -964,7 +954,7 @@ class DGNode(object):
 			current_obj, nodes.add_proxy_attribute(current_obj, source_plug.get_plug(), **plug_data).object()))
 
 	@lock_node_context
-	def createAttributesFromDict(self, data, mod=None):
+	def createAttributesFromDict(self, data: Dict, mod: OpenMaya.MDGModifier | None = None) -> List[Plug]:
 		"""
 		Creates an attribute on the node based on the attribute data in the following form:
 		{
@@ -982,28 +972,28 @@ class DGNode(object):
 			"value": 3
 		}
 
-		:param dict data: serialized attribute data.
+		:param Dict data: serialized attribute data.
 		:param OpenMaya.MDGModifier or None mod: optional modifier to add.
 		:return: list of created plugs.
-		:rtype: list(Plug).
+		:rtype: List[Plug].
 		"""
 
-		created = list()
+		created_plugs = []
 		mfn = self.mfn()
 		mobj = self.object()
 		for name, attr_data in iter(data.items()):
 			children = attr_data.get('children')
 			if children:
 				compound = nodes.add_compound_attribute(mobj, name, name, children, mod=mod, **attr_data)
-				created.append(Plug(self, OpenMaya.MPlug(mobj, compound.object())))
+				created_plugs.append(Plug(self, OpenMaya.MPlug(mobj, compound.object())))
 			else:
 				if self.hasAttribute(name):
-					created.append(Plug(self, mfn.findPlug(name, False)))
+					created_plugs.append(Plug(self, mfn.findPlug(name, False)))
 					continue
 				attr = nodes.add_attribute(mobj, name, name, attr_data.pop('type', None), mod=mod, **attr_data)
-				created.append(Plug(self, OpenMaya.MPlug(mobj, attr.object())))
+				created_plugs.append(Plug(self, OpenMaya.MPlug(mobj, attr.object())))
 
-		return created
+		return created_plugs
 
 	def renameAttribute(self, name, new_name):
 		"""
@@ -1742,12 +1732,15 @@ class DagNode(DGNode):
 
 		return self._mfn.findPlug('visibility', False).asFloat() < 1.0
 
-	def setVisible(self, flag, mod=None, apply=True):
+	def setVisible(
+			self, flag: bool, mod: OpenMaya.MDGModifier | OpenMaya.MDagModifier | None = None,
+			apply: bool = True) -> bool:
 		"""
 		Sets whether this node is visible.
 
 		:param bool flag: True to make this node visible; False to hide it.
-		:param OpenMaya.MDagModifier or None mod: optional modifier to use to set the visibility this node.
+		:param OpenMaya.MDGModifier or OpenMaya.MDagModifier or None mod: optional modifier to use to set the
+			visibility this node.
 		:param bool apply: whether to apply the operation immediately.
 		:return: True if node was showed successfully; False otherwise.
 		:return: True if the set visibility operation was successful; False otherwise.
@@ -1788,7 +1781,7 @@ class DagNode(DGNode):
 		return self.setVisible(False, mod=mod, apply=apply)
 
 
-class Plug(object):
+class Plug:
 	"""
 	Wrapper class for OpenMaya.MPlug that provides an easier solution to access connections and values.
 	"""
@@ -2010,10 +2003,6 @@ class Plug(object):
 
 		self.disconnect(other)
 
-	# ==================================================================================================================
-	# STATIC METHODS
-	# ==================================================================================================================
-
 	@staticmethod
 	def _convert_value_type(value):
 		"""
@@ -2034,10 +2023,6 @@ class Plug(object):
 			value = [Plug._convert_value_type(val) for val in value]
 
 		return value
-
-	# ==================================================================================================================
-	# BASE
-	# ==================================================================================================================
 
 	def apiType(self):
 		"""
@@ -2387,6 +2372,16 @@ class Plug(object):
 		return plugs.set_plug_value(self._mplug, value, mod=mod, apply=apply)
 
 	@lock_node_plug_context
+	def setFromDict(self, **data: Dict):
+		"""
+		Set plug data from given dictionary.
+
+		:param Dict data: serialized plug data.
+		"""
+
+		plugs.set_plug_info_from_dict(self._mplug, **data)
+
+	@lock_node_plug_context
 	def connect(self, plug, children=None, force=True, mod=None, apply=True):
 		"""
 		Connects given plug to this plug instance.
@@ -2501,7 +2496,7 @@ class Plug(object):
 		return plugs.serialize_plug(self._mplug) if self.exists() else dict()
 
 	@lock_node_plug_context
-	def delete(self, mod=None, apply=True):
+	def delete(self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True) -> OpenMaya.MDGModifier:
 		"""
 		Deletes the plug from the attached node. If batching is needed then use the modifier parameter to pass a
 		DGModifier, once all operations are done, call modifier.doIt() function.
@@ -2517,16 +2512,48 @@ class Plug(object):
 		if not self.isDynamic and self.node().isReferenced():
 			raise exceptions.ReferenceObjectError('Plug {} is reference and locked'.format(self.name()))
 
-		if self.isLocked:
-			self.lock(False)
+		# if self.isLocked:
+		# 	self.lock(False)
+
+		modifier = mod or OpenMaya.MDGModifier()
+
 		if self._mplug.isElement:
 			logical_index = self._mplug.logicalIndex()
-			modifier = plugs.remove_element_plug(self._mplug.array(), logical_index, mod=mod, apply=apply)
+			modifier = plugs.remove_element_plug(self._mplug.array(), logical_index, mod=modifier, apply=apply)
 		else:
-			modifier = mod or OpenMaya.MDGModifier()
 			modifier.removeAttribute(self.node().object(), self.attribute())
-			if mod is None or apply:
-				modifier.doIt()
+
+		if mod is None or apply:
+			modifier.doIt()
+
+		return modifier
+
+	@lock_node_plug_context
+	def deleteElements(self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True) -> OpenMaya.MDGModifier:
+		"""
+		Deletes all array elements from this plug.
+
+		:param OpenMaya.DGModifier mod: modifier to dad to. If None, one will be created.
+		:param bool apply: if True, then plugs value will be set immediately with the modifier, if False, then is
+			user is responsible to call modifier.doIt() function.
+		:return: Maya DGModifier used for the operation.
+		:rtype: OpenMaya.MDGModifier
+		:raises exceptions.ReferenceObjectError: in the case where the plug is not dynamic and is referenced.
+		:raises TypeError: if plug is not an array.
+		"""
+
+		if not self.isDynamic and self.node().isReferenced():
+			raise exceptions.ReferenceObjectError('Plug {} is reference and locked'.format(self.name()))
+		if not self._mplug.isArray:
+			raise TypeError('Invalid plug type to delete, must be of type Array')
+
+		modifier = mod or OpenMaya.MDGModifier()
+		for element in self:
+			logical_index = element.logicalIndex()
+			modifier = plugs.remove_element_plug(self._mplug, logical_index, mod=modifier, apply=apply)
+
+		if mod is None or apply:
+			modifier.doIt()
 
 		return modifier
 
@@ -2874,19 +2901,17 @@ class ObjectSet(DGNode):
 
 	MFN_TYPE = OpenMaya.MFnSet
 
-	def create(self, name, mod=None, members=None):
+	@override(check_signature=False)
+	def create(self, name: str, mod: OpenMaya.MDGModifier | None = None, members: List[DGNode] | None = None) -> ObjectSet:
 		"""
 		Creates the MFnSet and sets this instance MObject to the new node.
 
 		:param str name: name for the object set node.
-		:param OpenMaya.MDagModifier or None mod: modifier to add to, if None it will create one.
-		:param list(DagNode) or None members: list of nodes to add as members of this object set.
+		:param OpenMaya.MDGModifier or None mod: modifier to add to, if None it will create one.
+		:param List[DGNode] or None members: list of nodes to add as members of this object set.
 		:return: instance of the new object set.
 		:rtype: ObjectSet
 		"""
-
-		# import here to avoid cyclic imports
-		from tp.maya.api import factory
 
 		obj = factory.create_dg_node(name, 'objectSet', mod=mod)
 		self.setObject(obj)
@@ -2895,18 +2920,18 @@ class ObjectSet(DGNode):
 
 		return self
 
-	def isMember(self, node):
+	def isMember(self, node: DGNode) -> bool:
 		"""
 		Returns whether given node is a member of this set.
 
-		:param api.DGNode node: node to check for membership.
+		:param DGNode node: node to check for membership.
 		:return: True if given node is a member of this set; False otherwise.
 		:rtype: bool
 		"""
 
 		return self._mfn.isMember(self.object()) if node.exists() else False
 
-	def addMember(self, node):
+	def addMember(self, node: DGNode) -> bool:
 		"""
 		Adds given node to the set.
 
@@ -2928,26 +2953,58 @@ class ObjectSet(DGNode):
 
 		return True
 
-	def addMembers(self, new_members):
+	def addMembers(self, new_members: List[DGNode]):
 		"""
 		Adds a list of new objects into the set.
 
-		:param list(DGNode) new_members: list of nodes to add as new members to this set.
+		:param List[DGNode] new_members: list of nodes to add as new members to this set.
 		"""
 
 		for member in new_members:
 			self.addMember(member)
 
-	def members(self, flatten=False):
+	def members(self, flatten: bool = False) -> List[DGNode]:
 		"""
 		Returns the members of this set as a list.
 
 		:param bool flatten: whether all sets that exist inside this set will be expanded into a list of their contents.
 		:return: a list of all members in the set.
-		:rtype: list(DGNOde)
+		:rtype: List[DGNode]
 		"""
 
 		return list(map(node_by_name, self._mfn.getMembers(flatten).getSelectionStrings()))
+
+	def removeMember(self, member: DGNode):
+		"""
+		Removes given item from the set.
+
+		:param DGNode member: item to remove.
+		"""
+
+		if member.exists():
+			self.removeMembers([member])
+
+	def removeMembers(self, members: List[DGNode]):
+		"""
+		Removes items of the list from the set.
+
+		:param List[DGNode] members: member nodes to remove.
+		"""
+
+		member_list = OpenMaya.MSelectionList()
+		for member in members:
+			if not member.exists():
+				continue
+			member_list.add(member.fullPathName())
+
+		self._mfn.removeMembers(member_list)
+
+	def clear(self):
+		"""
+		Removes all members from this set.
+		"""
+
+		self._mfn.clear()
 
 
 class BlendShape(DGNode):

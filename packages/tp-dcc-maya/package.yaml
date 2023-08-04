@@ -16,5 +16,7 @@ environment:
     - '{self}/tp/maya/managers/tools.py'
   TPDCC_CURVES_PATHS:
     - '{self}/tp/maya/libs/curves/library'
+  TPDCC_TRIGGERS_COMMAND_PATHS:
+    - '{self}/tp/maya/libs/triggers/commands'
 commands:
   - '{self}/startup/tpmaya.py'

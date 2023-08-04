@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import inspect
-from typing import Set, Tuple, List, Dict, Iterator, Type
+from typing import Set, Tuple, List, Dict, Iterator, Iterable, Type
 
 from overrides import override
 
@@ -823,7 +823,7 @@ class MetaBase(base.DGNode):
 
 		return [child for child in self.iterate_meta_children(depth_limit) if child.metaclass_type() == class_type]
 
-	def find_children_by_class_types(self, class_types: List[str], depth_limit: int = 1) -> List[MetaBase]:
+	def find_children_by_class_types(self, class_types: Iterable[str], depth_limit: int = 1) -> List[MetaBase]:
 		"""
 		Finds all meta node children of the given types.
 
@@ -915,7 +915,7 @@ class Core(MetaBase):
 	Core network object, which is the starting point for any meta node graph. Must exist for other nodes to connect to.
 	"""
 
-	ID = 'Core'
+	ID = 'core'
 
 	def __init__(
 			self, node: OpenMaya.MObject | None = None, name: str | None = None, init_defaults: bool = True,
@@ -929,7 +929,7 @@ class DependentNode(MetaBase):
 	the creation of all dependent nodes down the chain until one can connect into the existing meta node graph.
 	"""
 
-	ID = 'DependentNode'
+	ID = 'dependentNode'
 	DEPENDENT_NODE_CLASS = None
 
 	def __init__(

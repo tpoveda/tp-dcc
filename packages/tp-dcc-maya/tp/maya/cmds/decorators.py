@@ -72,21 +72,19 @@ def viewport_off(f):
     return wrap
 
 
-def undo(f):
+def undo(fn):
     """
     Function decorator that enables undo functionality using Maya Python commands
     :param f: fn, function
     """
 
+    @wraps(fn)
     def wrapper(*args, **kwargs):
-        cmds.undoInfo(openChunk=True)
         try:
-            ret = f(*args, **kwargs)
-        except Exception as exc:
-            raise Exception(traceback.format_exc())
+            cmds.undoInfo(openChunk=True, chunkName=fn.__name__)
+            return fn(*args, **kwargs)
         finally:
             cmds.undoInfo(closeChunk=True)
-        return ret
     return wrapper
 
 

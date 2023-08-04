@@ -1662,7 +1662,7 @@ def create_axis_attribute(name, node, value=0, positive_axes=True, negative_axis
 
 def create_triangle_attribute(name, node, value=None):
     """
-    Adds a triangle atribute to the given node
+    Adds a triangle attribute to the given node
     :param name: str, name of the attribute
     :param node: str, node to add attribute into
     :param value: int, default enum value

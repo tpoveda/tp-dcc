@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import math
+from typing import List
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
@@ -1787,7 +1790,7 @@ def aim_to_node(source, target, aim_vector=None, up_vector=None, world_up_vector
 	"""
 	Aim source node to target node using quaternions.
 
-	:param OpenMaya.MObject or list(float, float, float) source: node to aim towards the target node.
+	:param OpenMaya.MObject source: node to aim towards the target node.
 	:param OpenMaya.MObject target: node source node will point to.
 	:param OpenMaya.MVector or list(float, float, float) or None aim_vector: vector for the aim axis.
 	:param OpenMaya.MVector or list(float, float, float) or None up_vector: up vector for the aim.
@@ -1833,26 +1836,33 @@ def aim_to_node(source, target, aim_vector=None, up_vector=None, world_up_vector
 	transform_fn.setRotation(quat_u, OpenMaya.MSpace.kWorld)
 
 
-def aim_nodes(target_node, driven, aim_vector=None, up_vector=None, world_up_vector=None):
+def aim_nodes(
+		target_node: OpenMaya.MObject, driven: List[OpenMaya.MObject],
+		aim_vector: OpenMaya.MVector | List[float, float, float] | None = None,
+		up_vector: OpenMaya.MVector | List[float, float, float] | None = None,
+		world_up_vector: OpenMaya.MVector | List[float, float, float] | None = None):
 	"""
+	Aim target node to the iven driven joints using strictly math (no aim constraint).
 
-	:param target_node:
-	:param driven:
-	:param aim_vector:
-	:param up_vector:
-	:param world_up_vector:
-	:return:
+	:param OpenMaya.MObject target_node: node we want to aim to.
+	:param List[penMaya.MObject] driven: list of nodes we want to aim to target one.
+	:param OpenMaya.MVector or List[float, float, float] or None aim_vector: optional vector used to aim target node to
+		driven ones.
+	:param OpenMaya.MVector or List[float, float, float] or None up_vector: optional vector used to define the up
+		vector when aiming target node to driven ones.
+	:param OpenMaya.MVector or List[float, float, float] or None world_up_vector: optional vector used to define the
+		world up vector when aiming target node to driven ones.
 	"""
 
 	for driven_node in iter(driven):
-		children = list()
+		found_children = []
 		for child in list(iterate_children(
 				driven_node, recursive=False, filter_types=(OpenMaya.MFn.kTransform, OpenMaya.MFn.kJoint))):
 			set_parent(child, None, maintain_offset=True)
-			children.append(child)
+			found_children.append(child)
 		aim_to_node(
 			driven_node, target_node, aim_vector=aim_vector, up_vector=up_vector, world_up_vector=world_up_vector)
-		for child in iter(children):
+		for child in iter(found_children):
 			set_parent(child, driven_node, maintain_offset=True)
 
 

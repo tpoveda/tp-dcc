@@ -25,3 +25,4 @@ from tp.maya.api.spaceswitch import (
 )
 from tp.maya.api.animation import set_rotation_order_over_frames
 from tp.maya.api.nodes import root_node
+from tp.maya.om.utils import is_valid_mobject, is_valid_mobject_handle, int_to_mtransform_rotation_order

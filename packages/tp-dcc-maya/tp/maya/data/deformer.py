@@ -84,7 +84,7 @@ class MayaDeformerData(object):
                 self._data[geo]['mesh'] = mesh.MeshData(geo)
 
         # Add custom data
-        self.custom_deformer_atributes(self._data['type'])
+        self.custom_deformer_attributes(self._data['type'])
         self.get_deformer_attr_values()
         self.get_deformer_attr_connections()
 
@@ -118,7 +118,7 @@ class MayaDeformerData(object):
             if attr_cnt:
                 self._data['attrConnectionDict'][attr] = attr_cnt[0]
 
-    def custom_deformer_atributes(self, deformer_type):
+    def custom_deformer_attributes(self, deformer_type):
         """
         Add custom attributes to data dictonary depending of the deformer type
         :param deformer_type: str

@@ -24,6 +24,7 @@ from tp.common.python import path
 from tp.common.resources import api as resources
 from tp.maya.meta import base
 from tp.maya.plugins import loader
+from tp.maya.libs.triggers import markingmenuoverride, triggercallbacks
 
 if typing.TYPE_CHECKING:
 	from tp.bootstrap.core.package import Package
@@ -69,6 +70,10 @@ def startup(package: Package):
 	# initialize metadata manager
 	base.MetaRegistry()
 
+	# setup custom marking menu and callbacks
+	markingmenuoverride.setup()
+	triggercallbacks.create_selection_callback()
+
 
 def shutdown(package: Package):
 	"""
@@ -86,6 +91,11 @@ def shutdown(package: Package):
 
 	logger.info('Shutting down tp-dcc-maya Package...')
 
+	# reset custom marking menu
+	triggercallbacks.remove_selection_callback()
+	markingmenuoverride.reset()
+
+	# unload tp-dcc-maya plugins
 	loader.unload_all_plugins()
 
 	if env.is_maya():
