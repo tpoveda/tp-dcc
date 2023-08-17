@@ -169,6 +169,38 @@ class TriggerNode:
 
 		return False
 
+	def is_command_type(self, command_type: Type) -> bool:
+		"""
+		Returns whether current command is an instance of given class.
+
+		:param Type command_type: command type to check against.
+		:return: True if command is an instance of given class; False otherwise.
+		:rtype: bool
+		"""
+
+		command = self._command
+		if not command:
+			return False
+		if isinstance(command, command_type):
+			return True
+
+		return False
+
+	def is_command_base_type(self, base_type: Type) -> bool:
+		"""
+		Returns whether current command is an instance of given class.
+
+		:param Type base_type: base type to check against.
+		:return: True if command is an instance of given class; False otherwise.
+		:rtype: bool
+		"""
+
+		command = self._command
+		if not command:
+			return False
+
+		return command.BASE_TYPE == base_type
+
 	def set_command(self, command: TriggerCommand, modifier: OpenMaya.MDGModifier | None = None, apply: bool = True):
 		"""
 		Sets the trigger command instance, which will result in trigger attributes being created witin the wrapped
@@ -208,6 +240,18 @@ class TriggerNode:
 			attrs.extend(self._command.attributes())
 
 		return attrs
+
+	def delete_triggers(self, modifier: OpenMaya.MDGModifier | None = None, apply: bool = True):
+		"""
+		Deletes the trigger from the wrapped node.
+
+		:param OpenMaya.MDGModifier or None modifier: optional modifier to use.
+		:param bool apply: whether to immediately execute command functionality.
+		"""
+
+		self._node.deleteAttribute(consts.TRIGGER_ATTR_NAME, mod=modifier)
+		if modifier is not None and apply:
+			modifier.doIt()
 
 	def _create_attributes(self, modifier: OpenMaya.MDGModifier | None = None, apply: bool = True):
 		"""

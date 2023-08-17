@@ -204,17 +204,17 @@ class MarkingMenu:
 		"""
 
 		def _build_generic(_data: List, _menu: str):
-			for _item in data:
+			for _item in _data:
 				if _item['type'] == 'command':
 					self.add_command(_item, _menu)
 				elif _item['type'] == 'menu':
-					sub_menu = cmds.menuItem(label=item['label'], subMenu=True, parent=_menu)
-					_build_generic(item['children'], sub_menu)
-				elif item['type'] == 'radioButtonMenu':
-					sub_menu = cmds.menuItem(label=item['label'], subMenu=True, parent=_menu)
+					sub_menu = cmds.menuItem(label=_item['label'], subMenu=True, parent=_menu)
+					_build_generic(_item['children'], sub_menu)
+				elif _item['type'] == 'radioButtonMenu':
+					sub_menu = cmds.menuItem(label=_item['label'], subMenu=True, parent=_menu)
 					cmds.radioMenuItemCollection(parent=sub_menu)
-					_build_generic(item['children'], sub_menu)
-				elif item['type'] == 'separator':
+					_build_generic(_item['children'], sub_menu)
+				elif _item['type'] == 'separator':
 					self.add_separator(_menu, _item)
 
 		for item, data in layout.items():
@@ -266,6 +266,8 @@ class MarkingMenu:
 		icon_path = ui_data.get('icon', '')
 		icon_option_box = ui_data.get('optionBoxIcon', '')
 		if icon_path:
+			if not icon_path.endswith('.png'):
+				icon_path = f'{os.path.splitext(icon_path)[0]}.png'
 			new_icon_path = resources.get('icons', 'default', icon_path)
 			if new_icon_path:
 				icon_path = new_icon_path

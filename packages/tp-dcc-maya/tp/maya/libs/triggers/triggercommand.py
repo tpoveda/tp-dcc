@@ -8,6 +8,7 @@ import maya.api.OpenMaya as OpenMaya
 from tp.common import plugin
 from tp.common.python import decorators
 from tp.maya.api import base
+from tp.maya.libs.triggers import consts
 
 if typing.TYPE_CHECKING:
 	from tp.maya.libs.triggers.triggernode import TriggerNode
@@ -17,6 +18,7 @@ if typing.TYPE_CHECKING:
 class TriggerCommand(plugin.Plugin):
 
 	ID = ''
+	BASE_TYPE = consts.TRIGGER_MENU_TYPE
 
 	def __init__(self, trigger: TriggerNode | None = None, factory: plugin.PluginFactory | None = None):
 		super().__init__(factory)

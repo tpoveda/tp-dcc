@@ -8,6 +8,7 @@ import maya.api.OpenMaya as OpenMaya
 
 from tp.maya.cmds import decorators
 from tp.maya.api import base, callbacks
+from tp.maya.libs.triggers import consts, triggernode
 
 CURRENT_SELECTION_CALLBACK = None					# type: callbacks.CallbackSelection
 
@@ -71,7 +72,17 @@ def execute_trigger_from_nodes(nodes: List[base.DGNode]):
 	:param List[base.DGNode] nodes: nodes to execute trigger for. 
 	"""
 
-	print('Executing trigger for ...', nodes)
+	triggers = []
+	for node in nodes:
+		triggers.append(triggernode.TriggerNode.from_node(node))
+	if not triggers:
+		return
+	for trigger in triggers:
+		if trigger is None or not trigger.is_command_base_type(consts.TRIGGER_SELECTION_TYPE):
+			continue
+		cmd = trigger.command
+		if cmd:
+			cmd.execute()
 
 
 @contextlib.contextmanager
