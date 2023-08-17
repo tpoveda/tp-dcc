@@ -7,6 +7,7 @@ from overrides import override
 
 import maya.cmds as cmds
 
+from tp.common.python import helpers
 from tp.maya import api
 from tp.maya.meta import base
 from tp.maya.om import plugs, mathlib as om_mathlib, nodes as om_nodes
@@ -537,17 +538,17 @@ class CritGuideLayer(CritLayer):
 		guide_plug = self.attribute(consts.CRIT_GUIDES_ATTR)
 		return guide_plug.evaluateNumElements()
 
-	def find_guides(self, *guide_ids: tuple) -> list[meta_nodes.Guide | None]:
+	def find_guides(self, *guide_ids: Tuple[str]) -> List[meta_nodes.Guide | None]:
 		"""
 		Searches and returns guides with given IDs.
 
-		:param tuple[str] guide_ids: list of guide IDs to search for.
+		:param Tuple[str] guide_ids: list of guide IDs to search for.
 		:return: list of found guides.
-		:rtype: list[meta_nodes.Guide | None]
+		:rtype: List[meta_nodes.Guide or None]
 		"""
 
 		if not self.exists():
-			return list()
+			return []
 
 		results = [None] * len(guide_ids)
 		for found_guide in self.iterate_guides():
@@ -582,7 +583,7 @@ class CritGuideLayer(CritLayer):
 		"""
 
 		modifier = mod or api.DGModifier()
-		connectors = self.connectors()
+		connectors = self.iterate_connectors()
 		for guide in self.iterate_guides(include_root=include_root):
 			if guide.visibility.isLocked:
 				continue
@@ -591,7 +592,7 @@ class CritGuideLayer(CritLayer):
 			if connector.visibility.isLocked:
 				continue
 			connector.setVisible(flag, mod=modifier, apply=True)
-		self.guideVisibility.set(flag, mod=modifier, apply=apply)
+		self.attribute(consts.CRIT_GUIDE_VISIBILITY_ATTR).set(flag, mod=modifier, apply=apply)
 		if mod or apply:
 			modifier.doIt()
 
@@ -1278,6 +1279,28 @@ class CritOutputLayer(CritLayer):
 		output_node.message.connect(next_element.child(0))
 		next_element.child(1).setString(output_node.id())
 
+	def find_output_nodes(self, *ids: Tuple[str]) -> List[meta_nodes.OutputNode | None]:
+		"""
+		Returns the output node instances from given IDs.
+
+		:param Tuple[str] ids: IDs to find output nodes of.
+		:return: list containing the found output nodes.
+		:rtype: List[meta_nodes.OutputNode or None]
+		"""
+
+		found_outputs = [None] * len(ids)
+		output_plug = self.attribute(consts.CRIT_OUTPUTS_ATTR)
+		for element in output_plug:
+			output_id = element.child(1).asString()
+			if output_id not in ids:
+				continue
+			source = element.child(0).source()
+			if not source:
+				continue
+			found_outputs[ids.index(output_id)] = meta_nodes.OutputNode(source.node().object())
+
+		return found_outputs
+
 	def delete_output(self, output_id: str) -> bool:
 		"""
 		Deletes output given ID.
@@ -1566,6 +1589,438 @@ class CritSkeletonLayer(CritLayer):
 class CritRigLayer(CritLayer):
 
 	ID = consts.RIG_LAYER_TYPE
+
+	@override
+	def meta_attributes(self) -> List[Dict]:
+		attrs = super().meta_attributes()
+
+		attrs.extend(
+			(
+				dict(
+					name=consts.CRIT_JOINTS_ATTR, type=api.kMFnCompoundAttribute, isArray=True,
+					children=[
+						dict(name=consts.CRIT_JOINT_ATTR, type=api.kMFnMessageAttribute),
+						dict(name=consts.CRIT_JOINT_ID_ATTR, type=api.kMFnDataString),
+					]
+				),
+				dict(
+					name=consts.CRIT_CONTROLS_ATTR, type=api.kMFnCompoundAttribute, isArray=True,
+					children=[
+						dict(name=consts.CRIT_CONTROL_NODE_ATTR, type=api.kMFnMessageAttribute),
+						dict(name=consts.CRIT_CONTROL_ID_ATTR, type=api.kMFnDataString),
+						dict(name=consts.CRIT_CONTROL_SRTS_ATR, type=api.kMFnMessageAttribute, isArray=True)
+					]
+				),
+				dict(
+					name=consts.CRIT_SPACE_SWITCHING_ATTR, type=api.kMFnCompoundAttribute, isArray=True,
+					children=[
+						dict(name=consts.CRIT_SPACE_SWITCH_CONTROL_NAME_ATTR, type=api.kMFnDataString),
+						dict(name=consts.CRIT_SPACE_SWITCH_DRIVEN_NODE_ATTR, type=api.kMFnMessageAttribute),
+					]
+				),
+				dict(name=consts.CRIT_CONTROL_SELECTION_SET_ATTR, type=api.kMFnMessageAttribute),
+				dict(
+					name=consts.CRIT_GUIDE_DG_GRAPH_ATTR, type=api.kMFnCompoundAttribute, isArray=True,
+					locked=False, children=[
+						dict(name=consts.CRIT_GUIDE_DG_GRAPH_ID_ATTR, type=api.kMFnDataString),
+						dict(name=consts.CRIT_GUIDE_DG_GRAPH_NAME_ATTR, type=api.kMFnDataString),
+						dict(name=consts.CRIT_GUIDE_DG_GRAPH_METADATA_ATTR, type=api.kMFnDataString),
+						dict(name=consts.CRIT_GUIDE_DG_GRAPH_INPUT_NODE_ATTR, type=api.kMFnMessageAttribute),
+						dict(name=consts.CRIT_GUIDE_DG_GRAPH_OUTPUT_NODE_ATTR, type=api.kMFnMessageAttribute),
+						dict(name=consts.CRIT_GUIDE_DG_GRAPH_NODES_ATTR, type=api.kMFnCompoundAttribute, isArray=True, children=[
+								dict(name=consts.CRIT_GUIDE_DG_GRAPH_NODE_ID_ATTR, type=api.kMFnDataString),
+								dict(name=consts.CRIT_GUIDE_DG_GRAPH_NODE_ATTR, type=api.kMFnMessageAttribute),
+							]),
+					]),
+			)
+		)
+
+		return attrs
+
+	@override
+	def serializeFromScene(self) -> Dict:
+
+		data = {}
+		for i in self.iterate_settings_nodes():
+			data[i.id()] = i.serializeFromScene()
+
+		return {
+			consts.RIG_LAYER_DESCRIPTOR_KEY: {
+				consts.SETTINGS_DESCRIPTOR_KEY: data,
+				consts.DAG_DESCRIPTOR_KEY: [],
+				consts.DG_DESCRIPTOR_KEY: []
+			}
+		}
+
+	def control_panel(self) -> meta_nodes.SettingsNode:
+		"""
+		Returns the control panel settings node.
+
+		:return: control panel settings node.
+		:rtype: meta_nodes.SettingsNode
+		"""
+
+		return self.setting_node(consts.CONTROL_PANEL_TYPE)
+
+	def selection_set(self) -> api.ObjectSet | None:
+		"""
+		Returns rig layer controls selection set.
+
+		:return: controls selection set.
+		:rtype: api.ObjectSet or None
+		"""
+
+		return self.sourceNodeByName(consts.CRIT_CONTROL_SELECTION_SET_ATTR)
+
+	def create_selection_set(self, name: str, parent: api.ObjectSet | None = None):
+		"""
+		Creates rig layer controls selection set if it does not exist.
+
+		:param str name: selection set name.
+		:param api.ObjectSet or None parent: optional parent selection set.
+		:return: newly created selection set.
+		:rtype: api.ObjectSet
+		"""
+
+		existing_set = self.sourceNodeByName(consts.CRIT_CONTROL_SELECTION_SET_ATTR)
+		if existing_set is not None:
+			return existing_set
+
+		object_set = api.factory.create_dg_node(name, 'objectSet')
+		if parent is not None:
+			parent.addMember(object_set)
+		self.connect_to(consts.CRIT_CONTROL_SELECTION_SET_ATTR, object_set)
+
+		return object_set
+
+	def iterate_joint_plugs(self) -> Iterator[api.Plug]:
+		"""
+		Generator function that iterates over all joint plugs.
+
+		:return: iterated joint plugs.
+		:rtype: Iterator[api.Plug]
+		"""
+
+		for i in self.attribute(consts.CRIT_JOINTS_ATTR):
+			yield i
+
+	def iterate_joints(self) -> Iterator[meta_nodes.Joint]:
+		"""
+		Generator function that iterates over all deform skeleton joints.
+
+		:return: iterated deform skeleton joints.
+		:rtype: Iterator[meta_nodes.Joint]
+		"""
+
+		for i in self.iterate_joint_plugs():
+			source = i.child(0).source()
+			if source:
+				yield meta_nodes.Joint(source.node().object())
+
+	def joints(self) -> List[meta_nodes.Joint]:
+		"""
+		Returns all the joints that are under this layer in order of the DAG.
+
+		:return: list of DAG ordered joints.
+		:rtype: List[meta_nodes.Joint]
+		"""
+
+		found_joints = []
+		for element in self.iterate_joint_plugs():
+			joint_plug = element.child(0)
+			source = joint_plug.source()
+			if not source:
+				continue
+			found_joints.append(meta_nodes.Joint(source.node().object()))
+
+		return found_joints
+
+	def iterate_root_joints(self) -> Iterator[meta_nodes.Joint]:
+		"""
+		Generator function that iterates over all deform root skeleton joints.
+
+		:return: iterated root deform skeleton joints.
+		:rtype: Iterator[meta_nodes.Joint]
+		"""
+
+		current_joints = self.joints()
+		for joint in current_joints:
+			parent = joint.parent()
+			if parent is None or parent not in current_joints:
+				yield joint
+
+	def joint(self, name: str) -> meta_nodes.Joint | None:
+		"""
+		Return joint with given ID.
+
+		:param str name: ID of the joint to retrieve.
+		:return: joint found with given ID.
+		:rtype: meta_nodes.Joint or None
+		"""
+
+		found_joint = None
+		for element in self.iterate_joint_plugs():
+			joint_plug = element.child(0)
+			id_plug = element.child(1)
+			if id_plug.asString() == name:
+				source = joint_plug.source()
+				if not source:
+					return None
+				found_joint = meta_nodes.Joint(source.node().object())
+				break
+
+		return found_joint
+
+	def find_joints(self, *ids: Tuple[str]) -> List[meta_nodes.Joint | None]:
+		"""
+		Returns the joint node instances from given IDs.
+
+		:param Tuple[str] ids: IDs to find joint nodes of.
+		:return: list containing the found joint nodes.
+		:rtype: List[meta_nodes.Joint or None]
+		"""
+
+		found_joints = [None] * len(ids)
+		for joint in self.iterate_joints():
+			current_id = joint.attribute(consts.CRIT_ID_ATTR).value()
+			if current_id in ids:
+				found_joints[ids.index(current_id)] = joint
+
+		return found_joints
+
+	def create_joint(self, **kwargs) -> meta_nodes.Joint:
+		"""
+		Creates a new joint based on given data.
+
+		:param Dict kwargs: joint data. e.g:
+			{
+				'id': 'root',
+				'name': 'rootJnt'
+				'translate': [0.0, 0.0, 0.0],
+				'rotate': [0.0, 0.0, 0.0, 1.0],
+				'rotateOrder': 0,
+				'parent': None
+			}
+		:return: newly created joint.
+		:rtype: meta_nodes.Joint
+		"""
+
+		new_joint = meta_nodes.Joint()
+		new_joint.create(
+			id=kwargs.get('id', ''),
+			name=kwargs.get('name', 'NO_NAME'),
+			translate=kwargs.get('translate', (0.0, 0.0, 0.0)),
+			rotate=kwargs.get('rotate', (0.0, 0.0, 0.0, 1.0)),
+			rotateOrder=kwargs.get('rotateOrder', 0),
+			parent=kwargs.get('parent', None))
+		self.add_joint(new_joint, kwargs.get('id', ''))
+
+		return new_joint
+
+	def add_joint(self, joint: meta_nodes.Joint, joint_id: str):
+		"""
+		Attaches given joint to this layer with given ID.
+
+		:param meta_nodes.Joint joint: joint instance to attach to this layer instance.
+		:param str joint_id: joint ID.
+		"""
+
+		joints_attr = self.attribute(consts.CRIT_JOINTS_ATTR)
+		joints_attr.isLocked = False
+		element = joints_attr.nextAvailableDestElementPlug()
+		joint.message.connect(element.child(0))
+		if not joint.hasAttribute(consts.CRIT_ID_ATTR):
+			joint.addAttribute(name=consts.CRIT_ID_ATTR, type=api.kMFnDataString, default='', value=joint_id)
+		element.child(1).set(joint_id)
+
+	def delete_joint(self, joint_id: str) -> bool:
+		"""
+		Deletes joint with given ID from this layer instance.
+
+		:param str joint_id: ID of the joint to delete.
+		:return: True if the joint was deleted successfully; False otherwise.
+		:rtype: bool
+		"""
+
+		found_plug = None
+		found_node = None
+		for element in self.iterate_joint_plugs():
+			node_plug = element.child(0)
+			id_plug = element.child(1)
+			if id_plug.asString() == joint_id:
+				found_plug = element
+				found_node = node_plug.sourceNode()
+				break
+		if found_plug is None and found_node is None:
+			return False
+
+		if found_plug is not None:
+			found_plug.delete()
+		if found_node is not None:
+			found_node.delete()
+
+		return True
+
+	def iterate_control_plugs(self) -> Iterator[api.Plug]:
+		"""
+		Generator function that iterates over all control plugs connected to this rig layer instance.
+
+		:return: iterated control plugs.
+		:rtype: Iterator[api.Plug]
+		"""
+
+		control_parent_plug = self.attribute(consts.CRIT_CONTROLS_ATTR)
+		if control_parent_plug is not None:
+			for i in control_parent_plug:
+				yield i
+
+	def iterate_controls(self, recursive: bool = False) -> Iterator[meta_nodes.ControlNode]:
+		"""
+		Generator function that iterates over all control nodes connected to this rig layer instance.
+
+		:param bool recursive: whether to return all controls recursively or only parent controls.
+		:return: iterated control nodes.
+		:rtype: Iterator[meta_nodes.ControlNode]
+		"""
+
+		for element in self.iterate_control_plugs():
+			source = element.child(0).source()
+			if not source:
+				continue
+			yield meta_nodes.ControlNode(source.node().object())
+		if recursive:
+			for child in self.find_children_by_class_types(consts.RIG_LAYER_TYPE, depth_limit=1):
+				child_layer = CritRigLayer(node=child)
+				for child_control in child_layer.iterate_controls():
+					yield child_control
+
+	def control_plug_by_id(self, control_id: str) -> api.Plug | None:
+		"""
+		Returns the plug where control with given ID is connected.
+
+		:param str control_id: ID of the control whose plug we want to retrieve.
+		:return: control plug.
+		:rtype: api.Plug or None
+		"""
+
+		found_plug = None
+		for element in self.iterate_control_plugs():
+			id_plug = element.child(1)
+			if id_plug.asString() == control_id:
+				found_plug = element
+				break
+
+		return found_plug
+
+	def control(self, name: str) -> meta_nodes.ControlNode:
+		"""
+		Returns control instance with given name attached to this rig layer instance.
+
+		:param str name: name of the control to find.
+		:return: found control instance with given name.
+		:rtype: meta_nodes.ControlNode
+		:raises errors.CritMissingControlError: if no control with name is found.
+		"""
+
+		for element in self.iterate_control_plugs():
+			control_plug = element.child(0)
+			id_plug = element.child(1)
+			if id_plug.asString() != name:
+				continue
+			source = control_plug.source()
+			if source is not None:
+				return meta_nodes.ControlNode(source.node().object())
+
+		raise errors.CritMissingControlError(f'No control found with name "{name}"')
+
+	def add_control(self, control: meta_nodes.ControlNode):
+		"""
+		Attaches given control node instance to this rig layer instance.
+
+		:param meta_nodes.ControlNode control: control node to attach to this rig layer instance.
+		"""
+
+		controls_attr = self.attribute(consts.CRIT_CONTROLS_ATTR)
+		controls_attr.isLocked = False
+		element = controls_attr.nextAvailableDestElementPlug()
+		control.message.connect(element.child(0))
+		element.child(1).set(control.id())
+		srt = control.srt()
+		if srt is not None:
+			srt.message.connect(element.child(2))
+
+	def create_control(self, **kwargs) -> meta_nodes.ControlNode:
+		"""
+		Creats a new control attached to this rig layer instance.
+
+		:param Dict kwargs: control keyword arguments.
+		:return: newly created control.
+		:rtype: meta_nodes.ControlNode
+		"""
+
+		new_control = meta_nodes.ControlNode()
+		control_parent = kwargs.get('parent', '')
+		if not control_parent:
+			kwargs['parent'] = self.root_transform()
+		elif helpers.is_string(control_parent):
+			kwargs['parent'] = self.root_transform() if control_parent == 'root' else self.control(control_parent)
+		world_matrix = kwargs.get('worldMatrix')
+		if world_matrix is not None:
+			world_matrix = api.TransformationMatrix(api.Matrix(world_matrix))
+			world_matrix.setScale((1, 1, 1), api.kWorldSpace)
+			kwargs['worldMatrix'] = world_matrix.asMatrix()
+		new_control.create(**kwargs)
+		self.add_control(new_control)
+
+		for srt_descriptor in kwargs.get('srts', []):
+			self.create_srt_buffer(kwargs['id'], srt_descriptor['name'])
+
+		return new_control
+
+	def find_controls(self, *ids: Tuple[str]) -> List[meta_nodes.ControlNode | None]:
+		"""
+		Returns controls with given IDs that are linked to this rig layer instance.
+
+		:param Tuple[str] ids: IDs of the controls to find.
+		:return: found controls that matche given IDs.
+		:rtype: List[meta_nodes.ControlNode | None]
+		"""
+
+		found_controls = [None] * len(ids)
+		for ctrl in self.iterate_controls(recursive=False):
+			ctrl_id = ctrl.id()
+			if ctrl_id not in ids:
+				continue
+			found_controls[ids.index(ctrl_id)] = ctrl
+
+		return found_controls
+
+	def create_srt_buffer(self, control_id: str, name: str) -> api.DagNode | None:
+		"""
+		Creates a new SRT buffer for the control with given ID and with the given name.
+
+		:param str control_id: ID of the control we want to create SRT buffer for.
+		:param str name: name of the SRT buffer node.
+		:return: newly created SRT buffer.
+		:rtype: api.DagNode or None
+		"""
+
+		control_element = self.control_plug_by_id(control_id)
+		if control_element is None:
+			return None
+
+		control_source = control_element.child(0).source()
+		control_node = meta_nodes.ControlNode(control_source.node().object())
+		srt_plug = control_element[2]
+		next_element = srt_plug.nextAvailableDestElementPlug()
+		ctrl_parent = control_node.parent()
+		new_srt = api.factory.create_dag_node(name, 'transform')
+		new_srt.setWorldMatrix(control_node.worldMatrix())
+		new_srt.setParent(ctrl_parent)
+		control_node.setParent(new_srt, use_srt=False)
+		new_srt.message.connect(next_element)
+
+		return new_srt
 
 
 class CritXGroupLayer(CritLayer):

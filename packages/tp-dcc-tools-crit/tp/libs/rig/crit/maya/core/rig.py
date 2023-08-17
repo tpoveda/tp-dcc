@@ -7,7 +7,7 @@ import collections
 from typing import Set, List, Dict
 
 from tp.bootstrap import api as bootstrap
-from tp.core import log
+from tp.core import log, dcc
 from tp.common.python import profiler
 from tp.maya import api
 
@@ -39,6 +39,7 @@ class Rig:
 		self._components_cache = set()					# type: Set[component.Component]
 		self._config = rig_config or config.MayaConfiguration()
 		self._crit_version = ''
+		self._application_version = dcc.version_name()
 
 	def __repr__(self) -> str:
 		return f'<{self.__class__.__name__}> name:{self.name()}'
@@ -63,17 +64,17 @@ class Rig:
 
 	def __getattr__(self, item: str):
 		if item.startswith('_'):
-			return super(Rig, self).__getattribute__(item)
+			return super().__getattribute__(item)
 		splitter = item.split('_')
 		if len(splitter) < 2:
-			return super(Rig, self).__getattribute__(item)
+			return super().__getattribute__(item)
 		component_name = '_'.join(splitter[:-1])
 		component_side = splitter[-1]
 		component_found = self.component(component_name, component_side)
 		if component_found is not None:
 			return component_found
 
-		return super(Rig, self).__getattribute__(item)
+		return super().__getattribute__(item)
 
 	@property
 	def meta(self) -> rig.CritRig:
@@ -250,6 +251,16 @@ class Rig:
 		"""
 
 		return self._meta.root_transform() if self.exists() else None
+
+	def selection_sets(self) -> Dict[str, api.ObjectSet]:
+		"""
+		Returns rig selection sets.
+
+		:return: selection sets with names as keys and instances as values.
+		:rtype: Dict[str, api.ObjectSet]
+		"""
+
+		return self._meta.selection_sets()
 
 	def components_layer(self) -> CritComponentsLayer | None:
 		"""
@@ -445,12 +456,12 @@ class Rig:
 		found_components = set()
 		visited_meta = set()
 
-		for component in self._components_cache:
-			if not component.exists():
+		for cached_component in self._components_cache:
+			if not cached_component.exists():
 				continue
-			found_components.add(component)
-			visited_meta.add(component.meta)
-			yield component
+			found_components.add(cached_component)
+			visited_meta.add(cached_component.meta)
+			yield cached_component
 
 		components_layer = self.components_layer()
 		if components_layer is None:
@@ -716,8 +727,8 @@ class Rig:
 		saved_config = self.save_configuration()
 		if 'guidePivotVisibility' in saved_config:
 			del saved_config['guidePivotVisibility']
-		if 'guideControlVisibility' in saved_config:
-			del saved_config['guideControlVisibility']
+		if 'guide_control_visibility' in saved_config:
+			del saved_config['guide_control_visibility']
 		data['config'] = saved_config
 
 		return data

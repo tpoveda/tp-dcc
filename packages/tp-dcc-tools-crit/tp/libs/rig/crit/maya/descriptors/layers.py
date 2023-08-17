@@ -889,3 +889,48 @@ class SkeletonLayerDescriptor(LayerDescriptor):
 		"""
 
 		self[consts.DAG_DESCRIPTOR_KEY] = []
+
+
+class RigLayerDescriptor(LayerDescriptor):
+
+	@classmethod
+	@override
+	def from_data(cls, layer_data: Dict) -> LayerDescriptor:
+
+		data = {
+			consts.DAG_DESCRIPTOR_KEY: [nodes.ControlDescriptor.deserialize(i) for i in iter(layer_data.get(consts.DAG_DESCRIPTOR_KEY, []))],
+			consts.SETTINGS_DESCRIPTOR_KEY: {name: list(map(attributes.attribute_class_for_descriptor, v)) for name, v in iter(layer_data.get(consts.SETTINGS_DESCRIPTOR_KEY, {}).items())},
+			consts.DG_DESCRIPTOR_KEY: graphs.NamedGraphs.from_data(layer_data.get(consts.DG_DESCRIPTOR_KEY, []))
+		}
+
+		return cls(data)
+
+	@override(check_signature=False)
+	def update(self, kwargs: Dict):
+
+		self._update_settings(kwargs)
+		rig_layer_info = kwargs.get(consts.DAG_DESCRIPTOR_KEY)
+		if rig_layer_info is not None:
+			self[consts.DAG_DESCRIPTOR_KEY] = list(map(nodes.ControlDescriptor.deserialize, iter(rig_layer_info)))
+		dg_graphs = kwargs.get(consts.DG_DESCRIPTOR_KEY)
+		if dg_graphs is not None:
+			self[consts.DG_DESCRIPTOR_KEY] = graphs.NamedGraphs.from_data(dg_graphs)
+
+	def _update_settings(self, kwargs: Dict):
+		"""
+		Internal function that updates settings attriubtes.
+
+		:param Dict kwargs: keyword arguments.
+		"""
+
+		settings = self[consts.SETTINGS_DESCRIPTOR_KEY]
+		kwargs_settings = kwargs.get(consts.SETTINGS_DESCRIPTOR_KEY, {})
+		for node_type, attrs in settings.items():
+			kwargs_node_settings = kwargs_settings.get(node_type, [])
+			kwargs_node_settings = {i['name']: attributes.attribute_class_for_descriptor(i) for i in kwargs_node_settings}
+			consolidated_settings = {i['name']: i for i in attrs}
+			for name, new_attr in kwargs_node_settings.items():
+				existing_atr = consolidated_settings.get(name, None)
+				if existing_atr is None:
+					consolidated_settings[name] = new_attr
+			settings[node_type] = list(consolidated_settings.values())

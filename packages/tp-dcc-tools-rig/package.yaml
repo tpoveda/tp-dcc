@@ -16,17 +16,5 @@ environment:
     - '{self}/tp/libs/rig/crit/maya/meta'
   TPDCC_COMMAND_LIB:
     - '{self}/tp/libs/rig/crit/maya/library/commands'
-  CRIT_BUILD_SCRIPTS_PATH: "{self}/tp/libs/rig/crit/library/buildscripts"
-  CRIT_NAME_PRESET_PATH: "{self}/tp/libs/rig/crit/library/naming"
-  CRIT_COMPONENTS_PATHS:
-    - "{self}/tp/libs/rig/crit/maya/library/components"
-  CRIT_DESCRIPTORS_PATHS:
-    - "{self}/tp/libs/rig/crit/maya/library/descriptors"
-  CRIT_COMPONENT_MODELS_PATHS:
-    - "{self}/tp/tools/rig/crit/builder/models/components"
-  CRIT_UI_EDITORS_PATHS:
-    - "{self}/tp/tools/rig/crit/builder/editors"
-  CRIT_UI_COMMANDS_PATHS:
-    - "{self}/tp/tools/rig/crit/builder/commands"
 commands:
   - '{self}/startup/rig.py'

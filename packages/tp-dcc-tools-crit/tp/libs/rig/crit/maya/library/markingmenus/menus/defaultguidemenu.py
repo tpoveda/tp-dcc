@@ -33,8 +33,74 @@ class CritDefaultGuideMenu(markingmenu.MarkingMenuDynamic):
 				'type': 'command',
 				'id': 'critDeleteComponent',
 				'arguments': arguments
+			},
+			{
+				'type': 'separator'
+			},
+			{
+				'type': 'command',
+				'id': 'critComponentSelectRootGuide',
+				'arguments': arguments
+			},
+			{
+				'type': 'command',
+				'id': 'critComponentToggleVisibility',
+				'arguments': {
+					'visibilityType': 'Guides',
+					'rig': rig,
+					'components': components
+				}
+			},
+			{
+				'type': 'command',
+				'id': 'critComponentToggleVisibility',
+				'arguments': {
+					'visibilityType': 'Controls',
+					'rig': rig,
+					'components': components
+				}
+			},
+			{
+				'type': 'separator'
 			}
 		]
+
+		generic.extend([
+			{
+				'type': 'command',
+				'id': 'critConstraintSelectedGuides',
+				'arguments': {'rig': rig, 'components': components}
+			},
+			{
+				'type': 'command',
+				'id': 'critRemoveAllConstraints',
+				'arguments': arguments
+			},
+			{
+				'type': 'separator'
+			},
+			{
+				'type': 'menu',
+				'label': 'Select',
+				'children': [
+					{
+						'type': 'command',
+						'id': 'critComponentGuideSelectShape',
+						'arguments': arguments
+					},
+					{
+						'type': 'command',
+						'id': 'critComponentGuideSelectAllShapes',
+						'arguments': arguments
+					},
+					{
+						'type': 'command',
+						'id': 'critComponentSelectGuides',
+						'arguments': arguments
+					}
+				]
+			}
+		])
 
 		layout['items'] = {'generic': generic}
 

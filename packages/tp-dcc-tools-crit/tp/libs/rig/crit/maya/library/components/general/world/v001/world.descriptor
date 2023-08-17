@@ -1,10 +1,9 @@
-name: god
-version: 1.0.0
-descriptorVersion: 1.0.0
-type: god
+name: world
+version: 1
+descriptorVersion: 1
+type: world
 side: M
 description: ''
-connections: []
 guideLayer:
   dag:
     - id: root
@@ -158,6 +157,14 @@ guideLayer:
       channelBox: true
       type: 0
       value: false
+    - name: rootMotionVis
+      default: false
+      isDynamic: true
+      keyable: false
+      locked: false
+      channelBox: true
+      type: 0
+      value: false
 inputLayer:
   dag:
     - id: godnode
@@ -188,7 +195,7 @@ outputLayer:
               name: rootMotion
               critType: output
   settings: []
-deformLayer: {}
+skeletonLayer: {}
 rigLayer:
   dag: []
   settings:

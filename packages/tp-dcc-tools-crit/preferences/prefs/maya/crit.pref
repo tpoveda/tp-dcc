@@ -11,6 +11,10 @@ settings:
           indexPadding: 2
           template: 'default'
           startIndex: 0
+    requiredMayaPlugins:
+      - 'matrixNodes'
+      - 'lookdevKit'
+      - 'quatNodes'
     useProxyAttributes: true
     buildScripts: ['default']
     buildScriptPaths: []

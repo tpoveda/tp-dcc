@@ -182,7 +182,7 @@ class TransformDescriptor(DGNodeDescriptor):
 
 		# update children to make sure they have this transform descriptor defined as parent
 		new_instance.children = [cls.deserialize(
-			child, parent=new_instance.id) for child in new_instance.get('children', list())]
+			child, parent=new_instance.id) for child in new_instance.get('children', [])]
 		new_instance.parent = parent
 
 		return new_instance
@@ -441,7 +441,7 @@ class GuideDescriptor(ControlDescriptor):
 		new_instance = super().deserialize(data, parent=parent)
 
 		# make sure srts are described as transform descriptor instances
-		new_instance['srts'] = list(map(TransformDescriptor, new_instance.get('srts', list())))
+		new_instance['srts'] = list(map(TransformDescriptor, new_instance.get('srts', [])))
 
 		return new_instance
 

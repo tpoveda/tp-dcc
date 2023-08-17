@@ -1,0 +1,15 @@
+# base
+name: abc
+enabled: true
+displayName: Abc
+description: abc test
+version: 1
+descriptorVersion: 1
+type: CRIT.abc
+side: M
+
+# layers
+inputLayer: {}
+skeletonLayer: {}
+outputLayer: {}
+rigLayer: {}

@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from tp.maya import api
-from tp.maya.meta import base
 
 from tp.libs.rig.crit.maya.core import component
-from tp.libs.rig.crit.maya.library.functions import names, joints
+from tp.libs.rig.crit.maya.library.functions import joints
 
 
 class SpineComponent(component.Component):

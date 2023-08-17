@@ -4,7 +4,7 @@ required: True
 author: 'Tomas Poveda'
 authorEmail: 'tpovedatd@gmail.com'
 description: 'Unreal package for tpDcc Tools framework'
-displayName: 'tpDcc Unreal'
+displayName: 'tp-dcc Unreal'
 environment:
   PYTHONPATH:
     - '{self}'

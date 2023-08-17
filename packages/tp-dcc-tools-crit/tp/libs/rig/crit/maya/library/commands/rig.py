@@ -40,6 +40,46 @@ class CreateRigCommand(command.MayaCommand):
 		return new_rig
 
 
+class UpdateRigConfigurationCommand(command.MayaCommand):
+	id = 'crit.rig.configuration.update'
+	creator = 'Tomas Poveda'
+	is_undoable = True
+	is_enabled = True
+	ui_data = {
+		'icon': '', 'tooltip': 'Updates rig configuration settings',
+		'label': 'Update Rig Configuration', 'color': 'white', 'backgroundColor': 'black'}
+
+	_rig = None  # type: crit.Rig
+	_settings = {}
+	_original_settings = {}
+
+	@override
+	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+		rig = arguments.get('rig', None)
+		if rig is None or not isinstance(rig, crit.Rig):
+			self.display_warning('Must supple the rig instance to the command')
+			return
+		self._rig = rig
+		self._settings = arguments['settings']
+
+	@override(check_signature=False)
+	def do(self, rig: crit.Rig | None = None, settings: Dict | None = None) -> bool:
+		original_config = self._rig.cached_configuration()
+		if not original_config:
+			original_config = self._rig.configuration.serialize()
+		self._rig.configuration.update_from_cache(self._settings, rig=self._rig)
+		self._original_settings = original_config
+		self._rig.save_configuration()
+
+		return True
+
+	@override
+	def undo(self):
+		if self._rig.exists():
+			self._rig.configuration.update_from_cache(self._original_settings)
+			self._rig.save_configuration()
+
+
 class RenameRigCommand(command.MayaCommand):
 
 	id = 'crit.rig.rename'

@@ -99,12 +99,12 @@ class CritRig(base.DependentNode):
 
 		return layer_transform
 
-	def selection_sets(self) -> Dict[str, api.DGNode]:
+	def selection_sets(self) -> Dict[str, api.ObjectSet]:
 		"""
 		Returns a list of all selection sets for this rig within current scene.
 
 		:return: list of selection sets instances.
-		:rtype: Dict[str, api.DGNode]
+		:rtype: Dict[str, api.ObjectSet]
 		"""
 
 		return {

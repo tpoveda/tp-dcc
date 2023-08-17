@@ -10,6 +10,7 @@ if typing.TYPE_CHECKING:
 	from tp.maya.api import DagNode
 	from tp.libs.rig.crit.maya.core.rig import Rig
 	from tp.libs.rig.crit.maya.core.component import Component
+	from tp.libs.rig.crit.maya.meta.nodes import Guide
 
 
 def create_rig(name: str | None = None, namespace: str | None = None) -> Rig:
@@ -27,6 +28,17 @@ def create_rig(name: str | None = None, namespace: str | None = None) -> Rig:
 			return command.execute('crit.rig.create', **locals())
 
 	return command.execute('crit.rig.create', **locals())
+
+
+def update_rig_configuration(rig: Rig, settings: Dict):
+	"""
+	Updates given rig configuration with the given settings.
+
+	:param Rig rig: rig instance to update configuration of.
+	:param Dict settings: dictionary containing the setting keys and values.
+	"""
+
+	command.execute('crit.rig.configuration.update', **locals())
 
 
 def rename_rig(rig: Rig, name: str) -> bool:
@@ -122,6 +134,68 @@ def set_component_side(component: Component, side: str):
 	command.execute('crit.component.rename.side', **locals())
 
 
+def parent_selected_components() -> bool:
+	"""
+	Parents currently selected components (selected guides).
+
+	:return: True if parent selected components was successful; False otherwise.
+	:rtype: bool
+	"""
+
+	return command.execute('crit.component.parent.selectionAdd')
+
+
+def unparent_selected_components() -> bool:
+	"""
+	Unparent currently selected components (selected guides).
+
+	:return: True if unparent selected components was successful; False otherwise.
+	:rtype: bool
+	"""
+
+	return command.execute('crit.component.parent.removeAll')
+
+
+def select_components_guides(components: List[Component]):
+	"""
+	Selects all guides of given component instances.
+
+	:param List[Component] components: components with guide pivots to select.
+	"""
+
+	command.execute('crit.component.guide.select', components=components)
+
+
+def select_components_root_guide(components: List[Component]):
+	"""
+	Selects all root guide of given component instances.
+
+	:param List[Component] components: components with guide pivots to select.
+	"""
+
+	command.execute('crit.component.guide.select.root', components=components)
+
+
+def select_component_guide_shapes(guides: List[Guide]):
+	"""
+	Select all shapes of given guides.
+
+	:param List[Guide] guides: list of guides whose shapes we want to select.
+	"""
+
+	command.execute('crit.component.guide.select.shapes', guides=guides)
+
+
+def select_all_component_guide_shapes(components: List[Component]):
+	"""
+	Select all shapes of given guides.
+
+	:param List[Component] components: components with guide pivots to select.
+	"""
+
+	command.execute('crit.component.guide.select.shapes.all', components=components)
+
+
 def delete_components(rig: Rig, components: List[Component], children: bool = True):
 	"""
 	Deletes given components from rig.
@@ -136,7 +210,16 @@ def delete_components(rig: Rig, components: List[Component], children: bool = Tr
 
 	def _repeat_delete_components():
 
-		selected_components = None
+		from tp.libs.rig.crit import api as crit
+		selected_components = crit.components_from_selected()
+		if not selected_components:
+			return
+		rig_instance = None
+		selected_components = list(selected_components.keys())
+		for component in selected_components:
+			rig_instance = component.rig
+			break
+		command.execute(command_id, rig=rig_instance, components=selected_components, children=children)
 
 	result = command.execute(command_id, rig=rig, components=components, children=children)
 	if dcc.is_maya():

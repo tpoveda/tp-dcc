@@ -10,7 +10,7 @@ from overrides import override
 from tp.common.python import helpers
 
 from tp.libs.rig.crit import consts
-from tp.libs.rig.crit.maya.descriptors import layers
+from tp.libs.rig.crit.maya.descriptors import layers, spaceswitch
 
 
 SCENE_LAYER_ATTR_TO_DESCRIPTOR = {
@@ -134,11 +134,12 @@ class ComponentDescriptor(helpers.ObjectDict):
 			data.get(consts.GUIDE_LAYER_DESCRIPTOR_KEY, {}))
 		data[consts.SKELETON_LAYER_DESCRIPTOR_KEY] = layers.SkeletonLayerDescriptor.from_data(
 			data.get(consts.SKELETON_LAYER_DESCRIPTOR_KEY, {}))
-		# data[consts.RIG_LAYER_DESCRIPTOR_KEY] = layers.RigLayerDescriptor.from_data(
-		# 	data.get(consts.RIG_LAYER_DESCRIPTOR_KEY, dict()))
+		data[consts.RIG_LAYER_DESCRIPTOR_KEY] = layers.RigLayerDescriptor.from_data(
+			data.get(consts.RIG_LAYER_DESCRIPTOR_KEY, dict()))
 		data[consts.PARENT_DESCRIPTOR_KEY] = data.get(consts.PARENT_DESCRIPTOR_KEY, [])
 		data[consts.CONNECTIONS_DESCRIPTOR_KEY] = data.get(consts.CONNECTIONS_DESCRIPTOR_KEY, {})
-		# data[consts.SPACE_SWITCH_DESCRIPTOR_KEY] = [spaceswitch.SpaceSwitchDescriptor(i) for i in data.get(consts.SPACE_SWITCH_DESCRIPTOR_KEY, list())]
+		data[consts.SPACE_SWITCH_DESCRIPTOR_KEY] = [
+			spaceswitch.SpaceSwitchDescriptor(i) for i in data.get(consts.SPACE_SWITCH_DESCRIPTOR_KEY, [])]
 
 		super().__init__(data)
 
@@ -175,6 +176,14 @@ class ComponentDescriptor(helpers.ObjectDict):
 	@property
 	def skeleton_layer(self) -> layers.SkeletonLayerDescriptor | None:
 		return self[consts.SKELETON_LAYER_DESCRIPTOR_KEY]
+
+	@property
+	def rig_layer(self) -> layers.RigLayerDescriptor | None:
+		return self[consts.RIG_LAYER_DESCRIPTOR_KEY]
+
+	@property
+	def space_switching(self) -> spaceswitch.SpaceSwitchDescriptor | None:
+		return self[consts.SPACE_SWITCH_DESCRIPTOR_KEY]
 
 	@override(check_signature=False)
 	def update(self, kwargs: Dict):

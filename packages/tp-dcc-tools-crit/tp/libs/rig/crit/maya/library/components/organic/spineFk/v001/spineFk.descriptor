@@ -1,0 +1,46 @@
+name: spineFk
+version: 1.0.0
+descriptorVersion: 1.0.0
+type: spineFk
+side: M
+guideLayer:
+  dag:
+    - id: root
+      name: root
+      type: transform
+      critType: guide
+      parent: null
+      translate: [ 0.0, 0.0, 0.0 ]
+      rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+      scale: [ 4.0, 4.0, 4.0 ]
+      rotateOrder: 0
+      matrix: [ 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1 ]
+      worldMatrix: [ 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1 ]
+      shape: null
+      attributes: []
+      pivotShape: 2
+      pivotColor: [ 0.38, 0.0, 0.0 ]
+      srts:
+        - name: root_guide_srt
+          parent: null
+          type: transform
+          critType: transform
+          translate: [ 0.0, 0.0, 0.0 ]
+          rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+          scale: [ 1.0, 1.0, 1.0 ]
+          rotateOrder: 0
+          matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+          worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+  settings:
+    - name: jointCount
+      type: 2
+      value: 5
+      channelBox: true
+      default: 3
+      isDynamic: true
+      keyable: false
+      locked: false
+      max: 9999
+      min: 3
+      softMax: null
+      softMin: null

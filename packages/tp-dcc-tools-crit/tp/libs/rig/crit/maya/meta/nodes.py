@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterator, List, Dict
+from typing import Iterator, Set, List, Dict
 from collections import OrderedDict
 
 from overrides import override
@@ -131,7 +131,7 @@ class ControlNode(api.DagNode):
 		self.addAttribute(
 			consts.CRIT_ID_ATTR, api.kMFnDataString, value=kwargs.get('id', kwargs['name']), default='', locked=True)
 
-		child_highlighting = kwargs.get('selectionChildHighlighting')
+		child_highlighting = kwargs.get('selection_child_highlighting')
 		if child_highlighting is not None:
 			self.attribute('selectionChildHighlighting').set(child_highlighting)
 
@@ -234,12 +234,14 @@ class ControlNode(api.DagNode):
 		:rtype: api.DGNode or None
 		"""
 
+		found_controller_tag = None
 		for dest in self.attribute('message').destinations():
 			node = dest.node()
 			if node.apiType() == api.kControllerTag:
-				return node
+				found_controller_tag = node
+				break
 
-		return None
+		return found_controller_tag
 
 	def add_controller_tag(
 			self, name: str, parent: ControlNode | None = None, visibility_plug: api.Plug | None = None) -> api.DGNode:
@@ -566,20 +568,6 @@ class Guide(ControlNode):
 
 		return base_data
 
-	def delete_shape_transform(self) -> bool:
-		"""
-		Deletes shape transform for this guide.
-
-		:return: True if delete shape transform operation was successful; False otherwise.
-		:rtype: bool
-		"""
-
-		shape_node = self.shape_node()
-		if shape_node is not None and shape_node.exists():
-			return shape_node.delete()
-
-		return False
-
 	@api.lock_node_context
 	@override(check_signature=False)
 	def delete(self) -> bool:
@@ -694,6 +682,20 @@ class Guide(ControlNode):
 			nurbs_shapes.append(shape.fullPathName() + '.cv[*]')
 		if nurbs_shapes:
 			cmds.scale(x, y, z, nurbs_shapes)
+
+	def delete_shape_transform(self) -> bool:
+		"""
+		Deletes shape transform for this guide.
+
+		:return: True if delete shape transform operation was successful; False otherwise.
+		:rtype: bool
+		"""
+
+		shape_node = self.shape_node()
+		if shape_node is not None and shape_node.exists():
+			return shape_node.delete()
+
+		return False
 
 	@classmethod
 	def _iterate_child_guides(cls, guide, recursive=False):

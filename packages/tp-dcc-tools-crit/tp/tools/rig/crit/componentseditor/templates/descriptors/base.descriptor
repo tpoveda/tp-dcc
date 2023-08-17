@@ -1,0 +1,15 @@
+# base
+name: {{{name}}}
+enabled: true
+displayName: {{{displayName}}}
+description: {{{description}}}
+version: 1
+descriptorVersion: 1
+type: {{{type}}}
+side: {{{side}}}
+
+# layers
+inputLayer: {}
+skeletonLayer: {}
+outputLayer: {}
+rigLayer: {}

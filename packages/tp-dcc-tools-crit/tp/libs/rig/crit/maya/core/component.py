@@ -7,13 +7,13 @@ import contextlib
 from typing import Tuple, List, Dict, Iterator, Iterable
 
 from tp.bootstrap import log
-from tp.common.python import profiler
+from tp.common.python import profiler, decorators
 from tp.maya import api
 from tp.maya.cmds import helpers
 
 from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.core import errors, naming
-from tp.libs.rig.crit.maya.descriptors import component
+from tp.libs.rig.crit.maya.descriptors import component, spaceswitch
 from tp.libs.rig.crit.maya.library.functions import names, components
 from tp.libs.rig.crit.maya.meta import layers, nodes as meta_nodes, component as meta_component
 
@@ -343,7 +343,7 @@ class Component:
 		meta_node.attribute(consts.CRIT_NAME_ATTR).set(component_name)
 		meta_node.attribute(consts.CRIT_SIDE_ATTR).set(side)
 		meta_node.attribute(consts.CRIT_ID_ATTR).set(component_name)
-		meta_node.attribute(consts.CRIT_VERSION_ATTR).set(descriptor.get('version', ''))
+		meta_node.attribute(consts.CRIT_VERSION_ATTR).set(str(descriptor.get('version', '')))
 		meta_node.attribute(consts.CRIT_COMPONENT_TYPE_ATTR).set(descriptor.get('type', ''))
 		notes = meta_node.attribute('notes')
 		if notes is None:
@@ -837,7 +837,7 @@ class Component:
 
 		return self.exists() and self.meta.attribute(consts.CRIT_HAS_POLISHED_ATTR).value()
 
-	def save_descriptor(self, descriptor_to_save: component.ComponentDescriptor):
+	def save_descriptor(self, descriptor_to_save: component.ComponentDescriptor | None = None):
 		"""
 		Saves the given descriptor as the descriptor cache and bakes the descriptor into the component meta node
 		instance.
@@ -845,6 +845,8 @@ class Component:
 		:param dict or tp.rigtoolkit.crit.lib.maya.core.descriptor.component.ComponentDescriptor descriptor_to_save: descriptor
 			data to save.
 		"""
+
+		descriptor_to_save = descriptor_to_save or self._descriptor
 
 		if type(descriptor_to_save) == dict:
 			descriptor_to_save = component.load_descriptor(descriptor_to_save, self._original_descriptor)
@@ -1013,19 +1015,19 @@ class Component:
 			for child in i.iterate_children():
 				yield child
 
-	# def control_panel(self):
-	# 	"""
-	# 	Returns control panel instance for this rig layer instance.
-	#
-	# 	:return: control panel node from the scene.
-	# 	:rtype: nodes.SettingNode or None
-	# 	"""
-	#
-	# 	rig_layer = self.rig_layer()
-	# 	if not rig_layer:
-	# 		return None
-	#
-	# 	return rig_layer.setting_node(consts.CONTROL_PANEL_TYPE)
+	def control_panel(self) -> meta_nodes.SettingsNode | None:
+		"""
+		Returns control panel instance for this rig layer instance.
+
+		:return: control panel node from the scene.
+		:rtype: meta_nodes.SettingNode or None
+		"""
+
+		rig_layer = self.rig_layer()
+		if not rig_layer:
+			return None
+
+		return rig_layer.control_panel()
 
 	def id_mapping(self) -> Dict:
 		"""
@@ -1216,6 +1218,57 @@ class Component:
 		"""
 
 		return self._remap_connections(layer_type)
+
+	def space_switch_ui_data(self) -> Dict:
+		"""
+		Returns the available space switch driven and driver settings for this component instance
+		:return: dictionary containing the information about what space switch controls are available for either being
+		driven or being drivers of space switches.
+		:rtype: Dict
+		..note:: drivers marked as internal will force a non-editable driver state within UI driver column and only
+			displayed in the "driver component" column.
+		.. code-block:: pytho
+
+			def spaceSwitchUiData(self):
+				driven = [crit.SpaceSwitchUIDriven(id_="myControlId", label="User DisplayLabel")]
+				drivers = [crit.SpaceSwitchUIDriver(id_="myControlId", label="User DisplayLabel", internal=True)]
+				return {"driven": driven, "drivers": drivers}
+		"""
+
+		return {
+			'driven': [],
+			'drivers': []
+		}
+
+	def subsystems(self) -> Dict:
+		"""
+		Returns the subsystems for this component instance.
+
+		:return: dictionary with keys of the subsystems and values of the corresponding subsystem instances. e.g:
+			{
+				'twists': :class:`tp.libs.rig.crit.maya.library.subsystems.twist.TwistSubSystem`,
+				'bendy': :class:`tp.libs.rig.crit.maya.library.subsystems.bendy.BendySubSystem`
+			}
+		:rtype: Dict
+		..note:: if the subsystems have already been created, the cached version is returned.
+		"""
+
+		cached = self._build_objects_cache.get('subsystems', None)
+		return cached if cached is not None else self.create_subsystems()
+
+	def create_subsystems(self) -> Dict:
+		"""
+		Function that creates the subsystems for the current component instance.
+
+		:return: dictionary with keys of the subsystems and values of the corresponding subsystem instances. e.g:
+			{
+				'twists': :class:`tp.libs.rig.crit.maya.library.subsystems.twist.TwistSubSystem`,
+				'bendy': :class:`tp.libs.rig.crit.maya.library.subsystems.bendy.BendySubSystem`
+			}
+		:rtype: Dict
+		"""
+
+		return {}
 
 	@profiler.fn_timer
 	def serialize_from_scene(self, layer_ids: Iterable[str] | None = None) -> component.ComponentDescriptor:
@@ -1761,6 +1814,23 @@ class Component:
 			joint_descriptor.rotate = guide_descriptor.get('rotate', (0.0, 0.0, 0.0, 1.0))
 			joint_descriptor.rotateOrder = guide_descriptor.get('rotateOrder', 0)
 
+	def setup_selection_set_joints(
+			self, skeleton_layer: layers.CritSkeletonLayer,
+			deform_joints: Dict[str, meta_nodes.Joint]) -> List[meta_nodes.Joint]:
+		"""
+		Function that handles the addition of joints into the skeleton layer deform joints selection set.
+
+		:param layers.CritSkeletonLayer skeleton_layer: skeleton layer instance.
+		:param Dict[str, meta_nodes.Joint] deform_joints: list of default skeleton layer bind joints.
+		:return: list of bind joints to add.
+		:rtype: List[meta_nodes.Joint]
+		"""
+
+		if deform_joints:
+			return list(deform_joints.values())
+
+		return []
+
 	def setup_skeleton_layer(self, parent_joint: meta_nodes.Joint):
 		"""
 		Setup skeleton layer for this component.
@@ -1822,7 +1892,7 @@ class Component:
 			selection_set = skeleton_layer.create_selection_set(
 				selection_set_name, parent=self.rig.meta.selection_sets()['skeleton'])
 
-		bind_joints = self._setup_selection_set_joints(skeleton_layer, new_joint_ids)
+		bind_joints = self.setup_selection_set_joints(skeleton_layer, new_joint_ids)
 		current_selection_set_members = selection_set.members(True)
 		to_remove = [i for i in current_selection_set_members if i not in bind_joints]
 		if to_remove:
@@ -1910,6 +1980,81 @@ class Component:
 				self._build_objects_cache.clear()
 
 		return True
+
+	def pre_setup_rig(self, parent_node: meta_nodes.Joint | api.DagNode | None = None):
+		"""
+		Pre setup rig function that is run before setup_rig function is called.
+
+		:param  meta_nodes.Joint or api.DagNode or None parent_node: parent node for the rig to be parented to. If
+			None, the rig will not be parented to anything.
+		"""
+
+		component_name, component_side = self.name(), self.side()
+		hierarchy_name, meta_name = naming.compose_names_for_layer(
+			self.naming_manager(), component_name, component_side, consts.RIG_LAYER_TYPE)
+		rig_layer = self._meta.create_layer(
+			consts.RIG_LAYER_TYPE, hierarchy_name, meta_name, parent=self._meta.root_transform())
+		self._build_objects_cache[layers.CritRigLayer.ID] = rig_layer
+		name = self.naming_manager().resolve(
+			'settingsName', {
+				'componentName': component_name, 'side': component_side, 'section': consts.RIG_LAYER_TYPE,
+				'type': 'settings'})
+		rig_layer.create_settings_node(name, attr_name=consts.CONTROL_PANEL_TYPE)
+		self._setup_rig_settings()
+
+	@decorators.abstractmethod
+	def setup_rig(self, parent_node: meta_nodes.Joint | api.DagNode | None = None):
+		"""
+		Main rig setup function. Can be overriden to customize the way rig are created in custom components.
+
+		:param  meta_nodes.Joint or api.DagNode or None parent_node: parent node for the rig to be parented to. If
+			None, the rig will not be parented to anything.
+		"""
+
+		raise NotImplementedError
+
+	def post_setup_rig(self, parent_node: meta_nodes.Joint | api.DagNode | None = None):
+		"""
+		Post setup rig function that is run after setup_rig function is called.
+
+		:param  meta_nodes.Joint or api.DagNode or None parent_node: parent node for the rig to be parented to. If
+			None, the rig will not be parented to anything.
+		"""
+
+		control_panel = self.control_panel()
+		rig_layer = self.rig_layer()
+
+		controller_tag_plug = control_panel.addAttribute(
+			**dict(
+				name=consts.CRIT_CONTROL_NODE_ATTR, type=api.kMFnkEnumAttribute, keyable=False, channelBox=True,
+				enums=['Not Overridden', 'Inherit Parent Controller', 'Show on Mouse Proximity']
+			)
+		)
+		controls = list(rig_layer.iterate_controls())
+		selection_set = rig_layer.selection_set()
+		if selection_set is None:
+			selection_set_name = self.naming_manager().resolve(
+				'selectionSet',
+				{'componentName': self.name(), 'side': self.side(), 'selectionSet': 'componentCtrls', 'type': 'objectSet'})
+			selection_set = rig_layer.create_selection_set(
+				selection_set_name, parent=self.rig.meta.selection_sets()['ctrls'])
+		controller_tags = list(self._create_rig_controller_tags(controls, controller_tag_plug))
+		selection_set.addMembers(controls + [control_panel])
+		rig_layer.add_extra_nodes(controller_tags)
+
+		container = self._merge_component_into_container()
+
+		if container is not None:
+			container.publishNodes(list(rig_layer.iterate_controls()) + controller_tags)
+			container.publishAttributes(
+				[i for i in control_panel.iterateExtraAttributes() if i.partialName(
+					include_node_name=False) not in consts.ATTRIBUTES_TO_SKIP_PUBLISH])
+
+		for rig_joint in rig_layer.iterate_joints():
+			rig_joint.hide()
+
+		layout_id = self.descriptor.get(consts.RIG_MARKING_MENU_DESCRIPTOR_KYE) or consts.DEFAULT_RIG_MARKING_MENU
+		components.create_triggers(rig_layer, layout_id)
 
 	@profiler.fn_timer
 	def delete(self) -> bool:
@@ -2024,6 +2169,7 @@ class Component:
 		self._build_objects_cache['container'] = self.container()
 		self._build_objects_cache['parent'] = self.parent()
 		self._build_objects_cache['naming'] = self.naming_manager()
+		self._build_objects_cache['subsystems'] = self.subsystems()
 
 	def _set_has_guide(self, flag: bool):
 		"""
@@ -2116,6 +2262,45 @@ class Component:
 					continue
 				attr.connect(dest, mod=modifier, apply=False)
 		modifier.doIt()
+
+	def _setup_rig_settings(self):
+		"""
+		Internal function that setup rig settings.
+		"""
+
+		rig_layer = self.rig_layer()
+		settings = self.descriptor.rig_layer.get('settings', {})
+		space_switching = self.descriptor.space_switching
+		control_panel_descriptor = settings.get('controlPanel', [])
+		spaceswitch.merge_attributes_with_space_switches(control_panel_descriptor, space_switching, exclude_active=True)
+		if control_panel_descriptor:
+			settings['controlPanel'] = control_panel_descriptor
+		naming_manager = self.naming_manager()
+		component_name, component_side = self.name(), self.side()
+		for name, attr_data in iter(settings.items()):
+			node = rig_layer.setting_node(name)
+			if node is None:
+				attr_name = name
+				name = naming_manager.resolve(
+					'settingsName', {
+						'componentName': component_name, 'side': component_side, 'section': name, 'type': 'settings'})
+				node = rig_layer.create_settings_node(name, attr_name=attr_name)
+			for i in iter(attr_data):
+				node.addAttribute(**i)
+
+	def _create_rig_controller_tags(self, controls: List[meta_nodes.ControlNode], visibility_plug: api.Plug):
+		"""
+		Creates rig controller tags for given controls.
+
+		:param List[meta_nodes.ControlNode] controls: control nodes instance we want to create tags of.
+		:param api.Plug visibility_plug: plug that will connect controller tag to.
+		"""
+
+		parent = None
+		for control in controls:
+			yield control.add_controller_tag(
+				name='_'.join([control.name(), 'tag']), parent=parent, visibility_plug=visibility_plug)
+			parent = control
 
 	@profiler.fn_timer
 	def _merge_component_into_container(self) -> api.ContainerAsset | None:
@@ -2281,21 +2466,6 @@ class Component:
 
 		self.set_skeleton_naming(naming_manager, mod)
 
-	def _setup_selection_set_joints(
-			self, skeleton_layer: layers.CritSkeletonLayer, deform_joints: Dict[str, meta_nodes.Joint]):
-		"""
-		Function that handles the addition of joints into the skeleton layer deform joints selection set.
-
-		:param layers.CritSkeletonLayer skeleton_layer: skeleton layer instance.
-		:param Dict[str, meta_nodes.Joint] deform_joints: list of default skeleton layer bind joints.
-		:return: list of bind joints to add.
-		"""
-
-		if deform_joints:
-			return list(deform_joints.values())
-
-		return []
-
 	def _update_space_switch_component_dependencies(self, new_name: str, new_side: str):
 		"""
 		Internal function that updates any component space switches which contains this component current name as a
@@ -2306,3 +2476,71 @@ class Component:
 		"""
 
 		pass
+
+
+class SpaceSwitchUIDriver:
+	"""
+	Space Switch UI driver Control Data class
+	"""
+
+	def __init__(self, id: str, label: str, internal: bool = False):
+		self._id = id
+		self._label = label
+		self._internal = internal
+
+	@property
+	def id(self) -> str:
+		return self._id
+
+	@property
+	def label(self) -> str:
+		return self._label
+
+	@property
+	def internal(self) -> bool:
+		return self._internal
+
+	def serialize(self) -> Dict:
+		"""
+		Serializes the object attributes into a dictionary.
+
+		:return: serialized object.
+		:rtype: Dict
+		"""
+
+		return {
+			'id': self._id,
+			'label': self._label,
+			'internal': self._internal
+		}
+
+
+class SpaceSwitchUIDriven:
+	"""
+	Space Switch UI driven Control Data class
+	"""
+
+	def __init__(self, id: str, label: str):
+		self._id = id
+		self._label = label
+
+	@property
+	def id(self) -> str:
+		return self._id
+
+	@property
+	def label(self) -> str:
+		return self._label
+
+	def serialize(self) -> Dict:
+		"""
+		Serializes the object attributes into a dictionary.
+
+		:return: serialized object.
+		:rtype: Dict
+		"""
+
+		return {
+			'id': self._id,
+			'label': self._label
+		}

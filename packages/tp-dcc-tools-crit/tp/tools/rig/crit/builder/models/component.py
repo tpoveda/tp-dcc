@@ -28,9 +28,17 @@ class ComponentModel(qt.QObject):
 	def component(self) -> Component:
 		return self._component
 
+	@component.setter
+	def component(self, value: Component):
+		self._component = value
+
 	@property
 	def rig_model(self) -> RigModel:
 		return self._rig_model
+
+	@rig_model.setter
+	def rig_model(self, value: RigModel):
+		self._rig_model = value
 
 	@property
 	def name(self) -> str:

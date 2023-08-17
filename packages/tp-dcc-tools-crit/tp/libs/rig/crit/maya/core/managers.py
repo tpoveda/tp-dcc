@@ -66,7 +66,7 @@ class ComponentsManager(object):
 
 		self._manager.register_paths_from_env_var(consts.COMPONENTS_ENV_VAR_KEY, package_name='crit')
 		component_paths = self._preferences_interface.user_components_paths()
-		self._manager.register_paths(component_paths)
+		self._manager.register_paths(component_paths, package_name='crit')
 		descriptor_paths = os.environ.get(consts.DESCRIPTORS_ENV_VAR_KEY, '').split(os.pathsep)
 		for descriptor_path in descriptor_paths + component_paths:
 			for root, dirs, files in os.walk(descriptor_path):

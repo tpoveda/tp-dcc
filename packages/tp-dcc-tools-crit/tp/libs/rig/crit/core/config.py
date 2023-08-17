@@ -1,16 +1,24 @@
 from __future__ import annotations
 
 import os
+import typing
+from typing import List, Dict
 
+from tp.core import log
 from tp.common import plugin
-from tp.common.python import helpers
+from tp.common.python import helpers, strings
 from tp.preferences.interfaces import crit
 
 from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.core import namingpresets, buildscript
 
+if typing.TYPE_CHECKING:
+	from tp.libs.rig.crit.maya.core.rig import Rig
 
-def initialize_build_scripts_manager(preference_interface, reload=False):
+logger = log.rigLogger
+
+
+def initialize_build_scripts_manager(preference_interface, reload: bool = False):
 	"""
 	Initializes CRIT build scripts manager.
 
@@ -30,7 +38,7 @@ def initialize_build_scripts_manager(preference_interface, reload=False):
 		Configuration.BUILD_SCRIPTS_MANAGER = build_scripts_manager
 
 
-def initialize_naming_preset_manager(preference_interface, reload=False):
+def initialize_naming_preset_manager(preference_interface, reload: bool = False):
 	"""
 	Initializes Naming preset manager.
 
@@ -120,12 +128,12 @@ class Configuration:
 		return self._current_naming_preset
 
 	@property
-	def build_scripts(self) -> list[str]:
+	def build_scripts(self) -> List[str]:
 		"""
 		Returns list of directories or Python file paths which can be run during build time.
 
 		:return: list of build script absolute paths.
-		:rtype: list[str]
+		:rtype: List[str]
 		"""
 
 		return self._build_scripts
@@ -141,6 +149,16 @@ class Configuration:
 
 		return self._selection_child_highlighting
 
+	@selection_child_highlighting.setter
+	def selection_child_highlighting(self, flag: bool):
+		"""
+		Sets whether selection child highlighting should be enabled.
+
+		:param bool flag: True to enable child highlighting; False to disable it.
+		"""
+
+		self._selection_child_highlighting = flag
+
 	@property
 	def auto_align_guides(self) -> bool:
 		"""
@@ -151,6 +169,16 @@ class Configuration:
 		"""
 
 		return self._auto_align_guides
+
+	@auto_align_guides.setter
+	def auto_align_guides(self, flag: bool):
+		"""
+		Sets whether auto alignment should be run when building the skeleton layer.
+
+		:param bool flag: True to enable auto align guide feature; False to disable it.
+		"""
+
+		self._auto_align_guides = flag
 
 	@property
 	def single_chain_hierarchy(self) -> bool:
@@ -203,7 +231,7 @@ class Configuration:
 		:param bool flag: True if guide pivot is visible; False otherwise.
 		"""
 
-		self._guide_control_visibility = flag
+		self._guide_pivot_visibility = flag
 
 	@property
 	def build_skeleton_marking_menu(self) -> bool:
@@ -216,24 +244,24 @@ class Configuration:
 
 		return self._build_skeleton_marking_menu
 
-	def update_from_rig(self, rig: 'tp.libs.rig.crit.maya.core.rig.Rig'):
+	def update_from_rig(self, rig: Rig) -> Dict:
 		"""
 		Updates this configuration from the given scene rig instance.
 
 		:param tp.libs.rig.maya.core.rig.Rig rig: rig instance to pull configuration data from.
 		:return: updated configuration dictionary.
-		:rtype: dict
+		:rtype: Dict
 		"""
 
 		cache = rig.cached_configuration()
 		self.update_from_cache(cache)
 		return cache
 
-	def update_from_cache(self, cache: dict):
+	def update_from_cache(self, cache: Dict):
 		"""
 		Updates this configuration from the given configuration dictionary.
 
-		:param dict cache: configuration dictionary to update this configuration from.
+		:param Dict cache: configuration dictionary to update this configuration from.
 		"""
 
 		try:
@@ -243,20 +271,23 @@ class Configuration:
 			pass
 
 		for setting, value in cache.items():
-
 			if setting == 'buildScripts':
 				self.set_build_scripts(value)
 				continue
-
 			if hasattr(self, setting):
 				setattr(self, setting, value)
+			elif hasattr(self, strings.camel_case_to_snake_case(setting)):
+				try:
+					setattr(self, strings.camel_case_to_snake_case(setting), value)
+				except Exception:
+					logger.error(f'Something went wrong while updating configuration: {setting}', exc_info=True)
 
-	def serialize(self) -> dict:
+	def serialize(self) -> Dict:
 		"""
 		Serializes current configuration data.
 
 		:return: serialized data.
-		:rtype: dict
+		:rtype: Dict
 		"""
 
 		cache = self._config_cache
@@ -271,13 +302,16 @@ class Configuration:
 						'guidePivotVisibility',
 						'guideControlVisibility'):
 			config_state = cache.get(setting)
+			current_state = None
 			if hasattr(self, setting):
 				current_state = getattr(self, setting)
-				if current_state != config_state:
-					overrides[setting] = current_state
+			elif hasattr(self, strings.camel_case_to_snake_case(setting)):
+				current_state = getattr(self, strings.camel_case_to_snake_case(setting))
+			if current_state is not None and current_state != config_state:
+				overrides[setting] = current_state
 
 		for build_script in self._build_scripts:
-			properties = build_script.get(build_script.ID, dict())
+			properties = build_script.get(build_script.ID, {})
 			overrides.setdefault('buildScripts', list()).append([build_script.ID, properties])
 
 		if self._current_naming_preset.name != consts.DEFAULT_BUILTIN_PRESET_NAME:
