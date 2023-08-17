@@ -56,8 +56,6 @@ class MayaWindow(window.AbstractWindow):
 
 	@override
 	def resize(self, w: int, h: int | None = None) -> None:
-		print('gogogogog')
-
 		if isinstance(w, QSize):
 			h = w.height()
 			w = w.width()

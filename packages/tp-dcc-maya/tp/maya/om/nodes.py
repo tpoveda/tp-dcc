@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import List
+from typing import List, Any
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
@@ -18,7 +18,7 @@ MIRROR_ORIENTATION = 1
 logger = log.tpLogger
 
 
-def check_node(node):
+def check_node(node: str | OpenMaya.MObject) -> bool:
 	"""
 	Checks if a node is a valid node and raise and exception if the node is not valid.
 
@@ -36,7 +36,7 @@ def check_node(node):
 	return True
 
 
-def is_dag_node(mobj):
+def is_dag_node(mobj: OpenMaya.MObject) -> bool:
 	"""
 	Checks if an MObject is a DAG node.
 
@@ -48,7 +48,7 @@ def is_dag_node(mobj):
 	return mobj.hasFn(OpenMaya.MFn.kDagNode)
 
 
-def is_shape(mobj):
+def is_shape(mobj: OpenMaya.MObject) -> bool:
 	"""
 	Returns whether the given node is a valid shape node.
 
@@ -63,7 +63,7 @@ def is_shape(mobj):
 	return True
 
 
-def is_valid_mobject(node):
+def is_valid_mobject(node: OpenMaya.MObject) -> bool:
 	"""
 	Returns whether given node is a valid MObject.
 
@@ -77,13 +77,14 @@ def is_valid_mobject(node):
 	return handle.isValid() and handle.isAlive()
 
 
-def mobject(node_name):
+def mobject(node_name: Any) -> OpenMaya.MObject | None:
 	"""
 	Returns an MObject for the input scene object.
 
-	:param str node_name: name of the Maya node to get MObject for
+	:param Any node_name: name of the Maya node to get MObject for
 	:return: Maya object instance from given name.
-	:rtype: OpenMaya.MObject
+	:rtype: OpenMaya.MObject or None
+	:raises exceptions.MissingObjectByNameError: if no node with given name exists.
 	"""
 
 	check_node(node_name)
@@ -112,7 +113,7 @@ def mobject(node_name):
 	return node_name
 
 
-def name(mobj, partial_name=False, include_namespace=True):
+def name(mobj: OpenMaya.MObject, partial_name: bool = False, include_namespace: bool = True) -> str:
 	"""
 	Returns full or partial name for a given MObject (which must be valid).
 
@@ -135,16 +136,17 @@ def name(mobj, partial_name=False, include_namespace=True):
 	return node_name
 
 
-def names_from_mobject_handles(mobjs_list):
+def names_from_mobject_handles(handles_list: List[OpenMaya.MObjectHandle]) -> List[str]:
 	"""
-	Returns names of the given list of Maya object hanldes.
-	:param list(OpenMaya.MObjectHandle) mobjs_list: list of Maya object handles to retrieve names of.
+	Returns names of the given list of Maya object handles.
+
+	:param List[OpenMaya.MObjectHandle] handles_list: list of Maya object handles to retrieve names of.
 	:return: list of names.
-	:rtype: list(str)
+	:rtype: List[str]
 	"""
 
 	names_list = list()
-	for mobj in mobjs_list:
+	for mobj in handles_list:
 		object_handle = OpenMaya.MObjectHandle(mobj)
 		if not object_handle.isValid() or not object_handle.isAlive():
 			continue

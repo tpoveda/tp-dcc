@@ -1204,10 +1204,6 @@ class DagNode(DGNode):
 
 	MFN_TYPE = OpenMaya.MFnDagNode
 
-	# ==================================================================================================================
-	# OVERRIDES
-	# ==================================================================================================================
-
 	def create(self, name, node_type, parent=None, mod=None):
 		"""
 		Function that builds the node within the Maya scene.
@@ -2405,9 +2401,9 @@ class Plug:
 				children = children[:self_len]
 			elif children < self_len:
 				children += [False] * (self_len - child_len)
-			return plugs.connect_vector_plugs(self.plug(), plug.plug(), children, force=force, mod=mod, apply=apply)
+			return plugs.connect_vector_plugs(self._mplug, plug.plug(), children, force=force, mod=mod, apply=apply)
 
-		return plugs.connect_plugs(self.plug(), plug.plug(), mod=mod, force=force, apply=apply)
+		return plugs.connect_plugs(self._mplug, plug.plug(), mod=mod, force=force, apply=apply)
 
 	@lock_node_plug_context
 	def disconnect(self, plug, mod=None, apply=True):
