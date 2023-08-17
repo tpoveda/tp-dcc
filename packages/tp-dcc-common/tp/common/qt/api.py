@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from Qt.QtCore import (
 	Qt, Signal, Property, QObject, QPoint, QPointF, QRect, QRectF, QSize, QItemSelectionModel, QAbstractListModel,
 	QAbstractTableModel, QAbstractItemModel, QStringListModel, QModelIndex, QPersistentModelIndex, QEvent, QMimeData,
@@ -69,6 +71,24 @@ from tp.common.qt.widgets.linetabwidget import LineTabWidget
 from tp.common.qt.widgets.stack import sliding_opacity_stacked_widget, StackItem
 from tp.common.qt.widgets.checkboxes import checkbox, checkbox_widget, BaseCheckBoxWidget
 from tp.common.qt.widgets.toolbars import FlowToolBar
+from tp.common.qt.widgets.accordion import AccordionWidget
+from tp.common.qt.widgets.directories import PathWidget
+
+
+def widget(layout: QLayout, parent: QWidget | None = None) -> QWidget:
+	"""
+	Returns a new widget instance with the given layout.
+
+	:param QLayout layout: widget layout.
+	:param QWidget or None parent: optional parent widget.
+	:return: newly created widget.
+	:rtype: QWidget
+	"""
+
+	new_widget = QWidget(parent=parent)
+	new_widget.setLayout(layout)
+
+	return new_widget
 
 
 # from tp.common.qt.base import widget, frame, BaseWidget, BaseFrame, ScrollWidget

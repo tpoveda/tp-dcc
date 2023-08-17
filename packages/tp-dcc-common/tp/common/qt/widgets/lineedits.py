@@ -3,7 +3,7 @@ from __future__ import annotations
 from overrides import override
 from Qt.QtCore import Qt
 from Qt.QtWidgets import QWidget, QLineEdit, QTextBrowser
-from Qt.QtGui import QFocusEvent, QMouseEvent
+from Qt.QtGui import QFocusEvent, QMouseEvent, QDragEnterEvent, QDragMoveEvent, QDropEvent
 
 from tp.common.qt import validators
 
@@ -48,6 +48,37 @@ class BaseLineEdit(QLineEdit):
 			parent: QWidget | None = None):
 		super().__init__(parent)
 
+
+class FolderLineEdit(BaseLineEdit):
+	"""
+	Custom QLineEdit with drag and drop behaviour for files and folders
+	"""
+
+	def __init__(self, parent: QWidget | None = None):
+		super().__init__(parent=parent)
+
+		self.setDragEnabled(True)
+
+	@override
+	def dragEnterEvent(self, arg__1: QDragEnterEvent) -> None:
+		data = arg__1.mimeData()
+		urls = data.urls()
+		if urls and urls[0].scheme() == 'file':
+			arg__1.acceptProposedAction()
+
+	@override
+	def dragMoveEvent(self, e: QDragMoveEvent) -> None:
+		data = e.mimeData()
+		urls = data.urls()
+		if urls and urls[0].scheme() == 'file':
+			e.acceptProposedAction()
+
+	@override
+	def dropEvent(self, arg__1: QDropEvent) -> None:
+		data = arg__1.mimeData()
+		urls = data.urls()
+		if urls and urls[0].scheme() == 'file':
+			self.setText(urls[0].toLocalFile())
 
 
 class EditableLineEditOnClick(QLineEdit):

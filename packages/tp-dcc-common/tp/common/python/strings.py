@@ -249,17 +249,19 @@ def string_to_camel_case(string):
     return ''.join(x for x in string.title() if not x.isspace())
 
 
-def camel_case_to_lower_case_underscore(text):
+def camel_case_to_snake_case(text: str) -> str:
     """
-    Converts camel case string to underscore separate string
-    :param text: str, string to convert
-    :return: str
+    Converts camel case string to underscore separate string.
+
+    :param str text: camel case string to convert.
+    :return: snake case string.
+    :rtype: str
     """
 
-    words = list()
+    words = []
     char_pos = 0
     for curr_char_pos, char in enumerate(text):
-        if char.isupper() and char_pos < text:
+        if char.isupper() and char_pos < len(text):
             words.append(text[char_pos:curr_char_pos].lower())
             char_pos = curr_char_pos
     words.append(text[char_pos:].lower())

@@ -20,7 +20,7 @@ from tp.common.qt import consts, dpi, qtutils
 
 
 def vertical_layout(
-        spacing: int = consts.DEFAULT_SPACING, margins: Tuple[int, int, int, int] = (0, 0, 0, 0),
+        spacing: int = consts.DEFAULT_SPACING, margins: Tuple[int, int, int, int] = (2, 2, 2, 2),
         alignment: Qt.AlignmentFlag | None = None, parent: QWidget | None = None) -> QVBoxLayout:
     """
     Returns a new vertical layout that automatically handles DPI stuff.

@@ -543,8 +543,8 @@ class FramelessOverlay(overlay.OverlayWidget):
 		self._title_bar.end_move()
 		self._top_left.windowResizedFinished.emit()
 		self._top_right.windowResizedFinished.emit()
-		self._bottom_left.windowResizedFinished()
-		self._bottom_right.windowResizedFinished()
+		self._bottom_left.windowResizedFinished.emit()
+		self._bottom_right.windowResizedFinished.emit()
 		self._resize_direction = 0
 		event.ignore()
 

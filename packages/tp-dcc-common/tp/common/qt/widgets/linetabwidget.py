@@ -4,7 +4,7 @@ from typing import Dict
 
 from overrides import override
 from Qt.QtCore import Qt, Signal, Property
-from Qt.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
+from Qt.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton
 
 from tp.preferences.interfaces import core
 from tp.common.qt.widgets import buttongroups, stack, dividers, buttons
@@ -53,7 +53,7 @@ class LineTabWidget(QWidget):
 	def tool_button_group(self) -> UnderlineButtonGroup:
 		return self._tool_button_group
 
-	def add_tab(self, widget: QWidget, button_data: Dict):
+	def add_tab(self, widget: QWidget, button_data: Dict) -> QPushButton:
 		"""
 		Adds a new tab and creates a button to select that new tab with the given button data..
 
@@ -71,10 +71,13 @@ class LineTabWidget(QWidget):
 				'combine': 'horizontal',
 				'position': 'left'
 			}
+		:return: added button.
+		:rtype: QPushButton
 		"""
 
 		self._stack.addWidget(widget)
-		self._tool_button_group.add_button(button_data, self._stack.count() - 1)
+		new_button = self._tool_button_group.add_button(button_data, self._stack.count() - 1)
+		return new_button
 
 	def append_widget(self, widget: QWidget):
 		"""

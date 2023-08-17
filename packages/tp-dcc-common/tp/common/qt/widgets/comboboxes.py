@@ -4,9 +4,10 @@ from typing import Iterable, Any
 
 from overrides import override
 from Qt.QtCore import Qt, Signal
-from Qt.QtWidgets import QWidget, QLabel, QComboBox
+from Qt.QtWidgets import QSizePolicy, QWidget, QLabel, QComboBox
 from Qt.QtGui import QIcon, QKeyEvent, QWheelEvent
 
+from tp.common.python import helpers
 from tp.common.qt import consts, dpi
 from tp.common.qt.widgets import layouts, labels
 
@@ -78,8 +79,14 @@ class BaseComboBox(QComboBox):
             self.parent().setFocus()
 
     @override(check_signature=False)
-    def addItem(self, text: str, userData: Any = ..., is_checkable: bool = False) -> None:
-        super().addItem(text)
+    def addItem(self, icon: QIcon | str | None, text: str = '', userData: Any = ..., is_checkable: bool = False) -> None:
+
+        if not icon:
+            super().addItem(text, userData=userData)
+        elif helpers.is_string(icon):
+            super().addItem(icon, userData=userData)
+        else:
+            super().addItem(icon, text, userData)
 
         model = self.model()
         item = model.item(model.rowCount() - 1, 0)
@@ -318,6 +325,7 @@ class ComboBoxRegularWidget(ComboBoxAbstractWidget):
         if label:
             self._label = labels.label(label, tooltip=tooltip, parent=parent)
             layout.addWidget(self._label, label_ratio) if label_ratio else layout.addWidget(self._label)
+            self._box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         layout.addWidget(self._box, box_ratio) if box_ratio else layout.addWidget(self._box)
         if box_min_width:
             self._box.setMinimumWidth(dpi.dpi_scale(box_min_width))

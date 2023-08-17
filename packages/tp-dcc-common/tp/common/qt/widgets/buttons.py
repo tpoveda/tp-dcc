@@ -1302,6 +1302,16 @@ class OkCancelButtons(QWidget):
 		self._main_layout.addWidget(self._ok_button)
 		self._main_layout.addWidget(self._cancel_button)
 
+		self._setup_signals()
+
+	@property
+	def ok_button(self) -> QPushButton:
+		return self._ok_button
+
+	@property
+	def cancel_button(self) -> QPushButton:
+		return self._cancel_button
+
 	def _setup_signals(self):
 		"""
 		Internal function that setup all the signals for this widget.
