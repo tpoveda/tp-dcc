@@ -503,3 +503,23 @@ def scene_name() -> str:
     """
 
     raise NotImplementedError()
+
+
+@reroute
+def clear_selection():
+    """
+    Clears current scene selection.
+    """
+
+    raise NotImplementedError()
+
+
+@reroute
+def fit_view(animation: bool = True):
+    """
+    Fits current viewport to current selection.
+
+    :param bool animation: whether fit should be animated.
+    """
+
+    raise NotImplementedError()

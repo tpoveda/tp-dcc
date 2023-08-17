@@ -233,3 +233,21 @@ def scene_name() -> str:
     """
 
     return cmds.file(query=True, sceneName=True)
+
+
+def clear_selection():
+    """
+    Clears current scene selection.
+    """
+
+    cmds.select(clear=True)
+
+
+def fit_view(animation: bool = True):
+    """
+    Fits current viewport to current selection.
+
+    :param bool animation: whether fit should be animated.
+    """
+
+    cmds.viewFit(an=animation)
