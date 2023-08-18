@@ -35,7 +35,6 @@ class MayaConfiguration(config.Configuration):
 	"""
 
 	COMPONENTS_MANAGER = None				# type: managers.ComponentsManager
-	print(COMPONENTS_MANAGER)
 
 	def __init__(self):
 

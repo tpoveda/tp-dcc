@@ -25,7 +25,7 @@ if typing.TYPE_CHECKING:
 
 
 @decorators.add_metaclass(decorators.Singleton)
-class ComponentsManager(object):
+class ComponentsManager:
 	"""
 	Singleton class that manages and registers a collection of component classes. This class handles the creation and
 	returning of component instances and descriptors.

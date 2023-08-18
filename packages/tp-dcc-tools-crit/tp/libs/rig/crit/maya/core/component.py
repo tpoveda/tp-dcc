@@ -1538,7 +1538,10 @@ class Component:
 		for guide in guides:
 			parent_guide, id_plug = guide.guide_parent()
 			if parent_guide is not None:
-				pass
+				connector_name = name_manager.resolve(
+					'object', {'componentName': component_name, 'side': component_side, 'section': guide.id(), 'type': 'connector'})
+				guide_layer.create_connector(
+					connector_name, start_guide=guide, end_guide=parent_guide, parent=connectors_group)
 			guide.lock(True)
 			nodes_to_publish.append(guide)
 			shape_node = guide.shape_node()

@@ -1,0 +1,86 @@
+name: vlimbchain
+version: 1.0.0
+descriptorVersion: 1.0.0
+type: vlimbchain
+side: L
+description: ''
+guideLayer:
+  dag:
+    - id: root
+      name: root
+      type: transform
+      critType: guide
+      parent: null
+      translate: [ 0.0, 0.0, 0.0 ]
+      rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+      scale: [ 4.0, 4.0, 4.0 ]
+      rotateOrder: 0
+      matrix: [ 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1 ]
+      worldMatrix: [ 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1 ]
+      shape: null
+      pivotShape: 2
+      pivotColor: [0.38, 0.0, 0.0]
+      internal: false
+      mirror: true
+      srts:
+        - name: root_guide_srt
+          parent: null
+          type: transform
+          critType: transform
+          translate: [ 0.0, 0.0, 0.0 ]
+          rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+          scale: [ 1.0, 1.0, 1.0 ]
+          rotateOrder: 0
+          matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+          worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+      children:
+        - id: upr
+          name: upr
+          type: transform
+          critType: guide
+          parent: root
+          translate: [ 0.0, 0.0, 0.0 ]
+          rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+          scale: [ 2.0, 2.0, 2.0 ]
+          matrix: [ 2.0, 0, 0, 0, 0, 2.0, 0, 0, 0, 0, 2.0, 0, 0, 0, 0, 1 ]
+          worldMatrix: [ 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1 ]
+          rotateOrder: 2
+          shape: world
+          color: [ 0.95, 0.15, 0.15 ]
+          shapeTransform:
+            translate: [ 0.0, 0.0, 0.0 ]
+            rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+            scale: [ 38.0, 38.0, 38.0 ]
+          pivotShape: 0
+          pivotColor: [ 1.0, 1.0, 0.0 ]
+          internal: false
+          mirror: true
+  settings:
+    - name: hasStretch
+      type: 0
+      value: true
+      default: false
+      isArray: false
+      isChild: false
+      isDynamic: true
+      isElement: false
+      keyable: false
+      locked: false
+      max: 1
+      min: 0
+      softMax: null
+      softMin: null
+    - name: ikfk_default
+      type: 2
+      value: 1
+      default: 1
+      isArray: false
+      isChild: false
+      isDynamic: true
+      isElement: false
+      keyable: false
+      locked: false
+      max: null
+      min: null
+      softMax: null
+      softMin: null

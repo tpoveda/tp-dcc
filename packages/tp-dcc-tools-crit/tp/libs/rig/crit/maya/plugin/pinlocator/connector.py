@@ -19,8 +19,8 @@ def maya_useNewAPI():
 class PinLocatorConnector(OpenMayaUI.MPxLocatorNode):
 
     ID = OpenMaya.MTypeId(0x321534)
-    DRAW_DB_CLASSIFICATION = 'drawdb/geometry/drawVector'
-    DRAW_REGISTRANT_ID = 'drawVectorPlugin'
+    DRAW_DB_CLASSIFICATION = 'drawdb/geometry/critPinLocatorConnector'
+    DRAW_REGISTRANT_ID = 'critPinLocatorConnector'
 
     size = OpenMaya.MObject()
     parent_world_matrix = OpenMaya.MObject()
@@ -109,17 +109,9 @@ class PinLocatorConnectorDrawOverride(OpenMayaRender.MPxDrawOverride):
         self._custom_box_draw = True
         self._current_bounding_box = OpenMaya.MBoundingBox()
 
-    # =================================================================================================================
-    # STATIC METHODS
-    # =================================================================================================================
-
     @staticmethod
     def creator(obj):
         return PinLocatorConnectorDrawOverride(obj)
-
-    # =================================================================================================================
-    # OVERRIDES
-    # =================================================================================================================
 
     @staticmethod
     def draw(context, data):

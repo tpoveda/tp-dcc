@@ -37,7 +37,7 @@ def initializePlugin(mobj):
 		'critPinLocator', classification=pinlocator.PinLocator.DRAW_DB_CLASSIFICATION,
 		register=True, label='CRIT Pin Locator')
 	cmds.pluginDisplayFilter(
-		'critPinLocatorConnector', classification=pinlocator.PinLocator.DRAW_DB_CLASSIFICATION,
+		'critPinLocatorConnector', classification=connector.PinLocatorConnector.DRAW_DB_CLASSIFICATION,
 		register=True, label='CRIT Pin Locator Connector')
 
 	# register custom selection mask so our locator takes selection preference over joints

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterator, Set, List, Dict
+from typing import Iterator, Tuple, List, Dict
 from collections import OrderedDict
 
 from overrides import override
@@ -11,6 +11,7 @@ from tp.core import log
 from tp.common.python import helpers
 from tp.maya import api
 from tp.maya.api import curves
+from tp.maya.cmds import shape as cmds_shape
 from tp.maya.om import plugs, nodes as om_nodes
 from tp.maya.libs import curves as curves_library
 from tp.maya.meta import base
@@ -192,7 +193,7 @@ class ControlNode(api.DagNode):
 			'id': self.attribute(consts.CRIT_ID_ATTR).value(),
 			'name': base_data['name'].replace('_guide', ''),
 			'shape': curves.serialize_transform_curve(self.object(), space=api.kObjectSpace),
-			consts.CRIT_ID_ATTR: 'control'
+			'critType': 'control'
 		})
 
 		return base_data
@@ -386,7 +387,7 @@ class Guide(ControlNode):
 		"""
 		Returns whether given node is a valid guide node.
 
-		:param tp.maya.api.DGNode node: node to check.
+		:param api.DGNode node: node to check.
 		:return: True if given node is a valid guide node; False otherwise.
 		:rtype: bool
 		"""
@@ -448,6 +449,7 @@ class Guide(ControlNode):
 		guide_data = dict()
 		guide_data.update(settings)
 
+		parent = guide_data.get('parent')
 		color = guide_data.get('pivotColor', consts.DEFAULT_GUIDE_PIVOT_COLOR)
 		guide_data['color'] = color
 		new_shape = guide_data.get('shape')
@@ -472,14 +474,16 @@ class Guide(ControlNode):
 		snap_pivot.attribute('localScale').set(api.Vector(0.001, 0.001, 0.001))
 		self._track_shapes(list(self.iterateShapes()) + list(snap_pivot.iterateShapes()), replace=True)
 
-		shape_node = helpers.first_in_list([shape for shape in self.shapes() if shape.typeName == 'critPinLocator'])
-		if shape_node:
-			shape_node.shape.set(pivot_shape)
-			shape_node.color.set(color)
-			self.connect(consts.CRIT_DISPLAY_AXIS_SHAPE_ATTR, shape_node.attribute('drawGizmo'))
-			shape_node.attribute('drawShape').set(requires_pivot_shape)
+		pin_locator_shape = self.pin_locator_shape()
+		if pin_locator_shape:
+			pin_locator_shape.shape.set(pivot_shape)
+			pin_locator_shape.color.set(color)
+			self.connect(consts.CRIT_DISPLAY_AXIS_SHAPE_ATTR, pin_locator_shape.attribute('drawGizmo'))
+			pin_locator_shape.attribute('drawShape').set(requires_pivot_shape)
 			if not requires_pivot_shape:
-				shape_node.attribute('drawShape').lock(True)
+				pin_locator_shape.attribute('drawShape').lock(True)
+			if not parent or parent and not Guide.is_guide(parent):
+				pin_locator_shape.attribute('main').set(True)
 
 		if new_shape:
 			shape_transform = guide_data.copy()
@@ -611,6 +615,16 @@ class Guide(ControlNode):
 				return Guide(parent.object()), parent.attribute(consts.CRIT_ID_ATTR).value()
 
 		return None, None
+
+	def pin_locator_shape(self) -> api.DagNode:
+		"""
+		Returns the pin locator shape attached to this guide.
+
+		:return: pin locator shape.
+		:rtype: api.DagNode
+		"""
+
+		return helpers.first_in_list([shape for shape in self.shapes() if shape.typeName == 'critPinLocator'])
 
 	def iterate_child_guides(self, recursive: bool = False) -> Iterator[Guide]:
 		"""
@@ -1010,4 +1024,115 @@ class Joint(api.DagNode):
 
 class Connector(api.DagNode):
 
-	pass
+	@staticmethod
+	def is_connector(node: api.DGNode) -> bool:
+		"""
+		Returns whether given node is a valid connector node.
+
+		:param api.DGNode node: node to check.
+		:return: True if given node is a valid connector node; False otherwise.
+		:rtype: bool
+		"""
+
+		return node.hasAttribute(consts.CRIT_CONNECTOR_ATTR)
+
+	@override(check_signature=False)
+	def create(
+			self, name: str, start: Guide, end: Guide, attribute_holder: api.Plug | None = None,
+			size: float = 1.0, color: Tuple[int, int, int] = (0, 1, 1), parent: api.DagNode | None = None) -> Connector:
+
+		start_name = om_nodes.name(start.object())
+		end_name = om_nodes.name(end.object())
+		connector_shape = cmds.createNode('critPinLocatorConnector')
+		cmds.setAttr(f'{connector_shape}.color', *color, type='double3')
+		cmds.setAttr(f'{connector_shape}.size', size)
+		cmds.connectAttr(f'{start_name}.worldMatrix[0]', f'{connector_shape}.swmat')
+		cmds.connectAttr(f'{end_name}.worldMatrix[0]', f'{connector_shape}.cwmat')
+
+		connector_transform = cmds.listRelatives(connector_shape, parent=True)
+		connector_transform = cmds.rename(connector_transform, name)
+		cmds_shape.rename_shapes(connector_transform)
+		if parent is not None:
+			connector_transform = cmds.parent(connector_transform, parent.fullPathName())[0]
+		connector = om_nodes.mobject(connector_transform)
+		self.setObject(connector)
+
+		self.addCompoundAttribute(
+			consts.CRIT_CONNECTOR_ATTR, [
+				{'name': consts.CRIT_CONNECTOR_START_ATTR, 'type': api.kMFnMessageAttribute},
+				{'name': consts.CRIT_CONNECTOR_END_ATTR, 'type': api.kMFnMessageAttribute},
+				{'name': consts.CRIT_CONNECTOR_ATTRIBUTE_HOLDER_ATTR, 'type': api.kMFnMessageAttribute}])
+		start.message >> self.attribute(consts.CRIT_CONNECTOR_START_ATTR)
+		end.message >> self.attribute(consts.CRIT_CONNECTOR_END_ATTR)
+		attribute_holder = attribute_holder or start
+		attribute_holder.message >> self.attribute(consts.CRIT_CONNECTOR_ATTRIBUTE_HOLDER_ATTR)
+
+		return self
+
+	@override(check_signature=False)
+	def serializeFromScene(self, *args, **kwargs):
+		return {
+			'start': self.start_guide(),
+			'end': self.end_guide(),
+			'attrHolder': self.attribute_holder(),
+			'critType': 'connector'
+		}
+
+	def id(self) -> str:
+		"""
+		Returns the ID attribute value for this connector node.
+
+		:return: connector node ID.
+		:rtype: str
+		"""
+
+		id_attr = self.attribute(consts.CRIT_ID_ATTR)
+		return id_attr.value() if id_attr is not None else ''
+
+	def start_guide(self) -> Guide | None:
+		"""
+		Returns start guide that is connected to this connector.
+
+		:return: start guide instance.
+		:rtype: Guide or None
+		"""
+
+		return self.sourceNodeByName(consts.CRIT_CONNECTOR_START_ATTR)
+
+	def end_guide(self) -> Guide | None:
+		"""
+		Returns end guide that is connected to this connector.
+
+		:return: end guide instance.
+		:rtype: Guide or None
+		"""
+
+		return self.sourceNodeByName(consts.CRIT_CONNECTOR_END_ATTR)
+
+	def set_start_end_guides(self, start_guide: Guide, end_guide: Guide):
+		"""
+		Sets the start and guides for this connector.
+
+		:param Guide start_guide: start guide.
+		:param Guide end_guide: end guide.
+		"""
+
+		start_name = om_nodes.name(start_guide.object())
+		end_name = om_nodes.name(end_guide.object())
+		connector_shape = helpers.first_in_list(
+			[shape for shape in self.shapes() if shape.typeName == 'critPinLocatorConnector'])
+		cmds.connectAttr(f'{start_name}.worldMatrix[0]', f'{connector_shape}.swmat', force=True)
+		cmds.connectAttr(f'{end_name}.worldMatrix[0]', f'{connector_shape}.cwmat', force=True)
+
+		start_guide.message >> self.attribute(consts.CRIT_CONNECTOR_START_ATTR)
+		end_guide.message >> self.attribute(consts.CRIT_CONNECTOR_END_ATTR)
+
+	def attribute_holder(self) -> api.DGNode | None:
+		"""
+		Returns the node that is connected to this connector through its "message" attribute.
+
+		:return: attribute holder node.
+		:rtype: api.DGNode or None
+		"""
+
+		return self.sourceNodeByName(consts.CRIT_CONNECTOR_ATTRIBUTE_HOLDER_ATTR)

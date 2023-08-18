@@ -606,7 +606,7 @@ class CritGuideLayer(CritLayer):
 		:rtype: bool
 		"""
 
-		return self.guideControlVisibility.value()
+		return self.attribute(consts.CRIT_GUIDE_CONTROL_VISIBILITY_ATTR).value()
 
 	def set_guides_controls_visible(self, flag: bool, mod: api.DGModifier = None, apply: bool = True):
 		"""
@@ -622,7 +622,7 @@ class CritGuideLayer(CritLayer):
 			if shape is None:
 				continue
 			shape.setVisible(flag, mod=mod, apply=apply)
-		self.guideControlVisibility.set(flag)
+		self.attribute(consts.CRIT_GUIDE_CONTROL_VISIBILITY_ATTR).set(flag)
 
 	def create_guide(self, **kwargs) -> meta_nodes.Guide:
 		"""
@@ -797,6 +797,55 @@ class CritGuideLayer(CritLayer):
 		"""
 
 		return self.setting_node(consts.GUIDE_LAYER_TYPE)
+
+	def create_connector(
+			self, name: str, start_guide: meta_nodes.Guide, end_guide: meta_nodes.Guide,
+			attribute_holder: api.Plug | None = None, parent: api.DagNode | None = None) -> meta_nodes.Connector:
+		"""
+		Creates a new connector that visually connectors the given start and end guides.
+
+		:param str name: name of the connector node.
+		:param meta_nodes.Guide start_guide: start guide instance.
+		:param meta_nodes.Guide end_guide: end guide instance, connector will point to this guide.
+		:param api.Plug or None attribute_holder: optional plug that will have the connector connected to by a message.
+		:param api.DagNode or None parent: optional connector node parent.
+		:return: newly created connector instance.
+		:rtype: meta_nodes.Connector
+		"""
+
+		existing_connector = self.connector(start_guide, end_guide)
+		if existing_connector:
+			return existing_connector
+
+		new_connector = meta_nodes.Connector()
+		new_connector.create(name, start_guide, end_guide, attribute_holder=attribute_holder, parent=parent)
+		connectors_array = self.attribute(consts.CRIT_CONNECTORS_ATTR)
+		new_connector.message.connect(connectors_array.nextAvailableDestElementPlug())
+		if start_guide.isHidden() or end_guide.isHidden():
+			new_connector.hide()
+			new_connector.setLockStateOnAttributes(['visibility'], state=True)
+
+		return new_connector
+
+	def connector(self, start_guide: meta_nodes.Guide, end_guide: meta_nodes.Guide) -> meta_nodes.Connector | None:
+		"""
+		Returns connector instance that connect given start and end guides.
+
+		:param meta_nodes.Guide start_guide: start guide instance.
+		:param end_guide: end guide instance.
+		:return: found connector that connect both guides.
+		:rtype: meta_nodes.Connector or None
+		"""
+
+		found_connector = None
+		for _connector in self.iterate_connectors():
+			start = _connector.start_guide()
+			end = _connector.end_guide()
+			if start == start_guide and end == end_guide:
+				found_connector = _connector
+				break
+
+		return found_connector
 
 	def iterate_connectors(self) -> Iterator[meta_nodes.Connector]:
 		"""

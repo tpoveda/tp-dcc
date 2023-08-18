@@ -644,7 +644,7 @@ class Rig:
 			if root_transform is not None:
 				root_transform.setVisible(True, mod=modifier, apply=False)
 			if is_control_type:
-				guide_layer.set_guide_control_visible(control_value)
+				guide_layer.set_guides_controls_visible(control_value)
 			_include_root = (False if include_root is None else True) or component_found.has_parent()
 			if is_guide_type:
 				guide_layer.set_guides_visible(guide_value, include_root=include_root)
