@@ -10,6 +10,7 @@ import maya.api.OpenMaya
 import maya.api.OpenMayaAnim
 
 from tp.core import log, dcc
+from tp.common.python import helpers
 from tp.maya.cmds import exceptions, filtertypes, node as node_utils, name as name_utils
 
 logger = log.tpLogger
@@ -509,7 +510,7 @@ def rename_shapes(transform_node=None):
 
     renamed_shapes = list()
 
-    transform_node = python.force_list(transform_node or dcc.selected_nodes())
+    transform_node = helpers.force_list(transform_node or dcc.selected_nodes())
     for node in transform_node:
         node_shapes = list()
         short_name = name_utils.get_short_name(node)
@@ -608,7 +609,7 @@ def scale_shapes(node, scale, use_pivot=True, relative=True):
     if use_pivot:
         pivot = maya.cmds.xform(node, query=True, rp=True, ws=True)
     else:
-        from tpDcc.dccs.maya.core import transform
+        from tp.maya.cmds import transform
         bounding_box = transform.BoundingBox(comps)
         pivot = bounding_box.get_center()
 
@@ -701,7 +702,7 @@ def translate_node_shape_cvs(node_name, translate_list):
     :param translate_list: list(float, float, float), XYZ translation as list
     """
 
-    node_names = python.force_list(node_name)
+    node_names = helpers.force_list(node_name)
     shapes_list = filtertypes.filter_transforms_shapes(node_names, shape_type='nurbsCurve')
     for shape in shapes_list:
         translate_shape_cvs(shape, translate_list)
@@ -716,7 +717,7 @@ def rotate_node_shape_cvs(node_name, rotate_list, relative=True, object_center_p
     :param object_center_pivot: bool, Whether to rotate the objects with the pivot centered in the object or the world
     """
 
-    node_names = python.force_list(node_name)
+    node_names = helpers.force_list(node_name)
     shapes_list = filtertypes.filter_transforms_shapes(node_names, shape_type='nurbsCurve')
     for shape in shapes_list:
         rotate_shape_cvs(shape, rotate_list, relative=relative, object_center_pivot=object_center_pivot)
@@ -729,7 +730,7 @@ def scale_node_shape_cvs(node_name, scale_list):
     :param scale_list: list(float, float, float), XYZ scale as list
     """
 
-    node_names = python.force_list(node_name)
+    node_names = helpers.force_list(node_name)
     shapes_list = filtertypes.filter_transforms_shapes(node_names, shape_type='nurbsCurve')
     for shape in shapes_list:
         scale_shape_cvs(shape, scale_list)

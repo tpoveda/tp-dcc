@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import glob
-from typing import Iterator
+from typing import Tuple, List, Iterator, Dict
 
 import maya.api.OpenMaya as OpenMaya
 
@@ -82,12 +82,12 @@ def iterate_names() -> Iterator[str]:
 		yield curve_name
 
 
-def names() -> list[str]:
+def names() -> List[str]:
 	"""
 	List all the curve names available.
 
 	:return:  list of curve names.
-	:rtype: list[str]
+	:rtype: List[str]
 	..info:: curves are source from all the root location specified by the CURVES_ENV_VAR environment variable.
 	"""
 
@@ -109,27 +109,27 @@ def find_curve_path_by_name(curve_name: str) -> str:
 		return _PATHS_CACHE.get(curve_name, dict()).get('path', '')
 
 
-def load_curve(curve_name: str, folder_path: str) -> dict:
+def load_curve(curve_name: str, folder_path: str) -> Dict:
 	"""
 	Loads the curve with the given name and located in the given directory.
 
 	:param str curve_name: name of the curve to load.
 	:param str folder_path: absolute directory where the curve file is located.
 	:return: loaded curve data.
-	:rtype: dict
+	:rtype: Dict
 	"""
 
 	curve_path = path.join_path(folder_path, '.'.join([curve_name, CURVE_FILE_EXTENSION]))
 	return jsonio.read_file(curve_path)
 
 
-def load_from_lib(curve_name: str) -> dict:
+def load_from_lib(curve_name: str) -> Dict:
 	"""
 	Loads the data from the given curve name in library.
 
 	:param str curve_name: name of the curve to load data of.
 	:return: curve data.
-	:rtype: dict
+	:rtype: Dict
 	:raises MissingCurveFromLibrary: if the given curve name does not exist in the library of curves.
 	"""
 
@@ -163,7 +163,7 @@ def load_and_create_from_lib(curve_name: str, parent: OpenMaya.MObject | None = 
 
 def load_and_create_from_path(
 		curve_name: str, folder_path: str,
-		parent: OpenMaya.MObject | None = None) -> tuple[OpenMaya.MObject | None, list[OpenMaya.MObject]]:
+		parent: OpenMaya.MObject | None = None) -> Tuple[OpenMaya.MObject | None, List[OpenMaya.MObject]]:
 	"""
 	Loads and creates the NURBS curve from the file located in the given path.
 
@@ -171,7 +171,7 @@ def load_and_create_from_path(
 	:param str folder_path: absolute directory where the curve file is located.
 	:param OpenMaya.MObject or None parent: optional parent for the NURBS curve to parent under.
 	:return: tuple containing the MObject of the parent and a list of MObjects representing the created shapes.
-	:rtype: tuple[OpenMaya.MObject or NOne, list[OpenMaya.MObject]]
+	:rtype: Tuple[OpenMaya.MObject or NOne, List[OpenMaya.MObject]]
 	"""
 
 	curve_data = load_curve(curve_name, folder_path)
@@ -180,7 +180,7 @@ def load_and_create_from_path(
 
 def save_to_directory(
 		node: OpenMaya.MObject, directory: str, name: str | None, override: bool = True,
-		save_matrix: bool = False) -> tuple[dict, str]:
+		save_matrix: bool = False, normalize: bool = True) -> Tuple[Dict, str]:
 	"""
 	Saves the given transform node into the given directory.
 
@@ -189,8 +189,9 @@ def save_to_directory(
 	:param str or None name: name of the file to create. If not given, the name of the node will be used.
 	:param bool override: whether to force override the library shape if it already exists.
 	:param bool save_matrix: whether to save matrix information.
+	:param bool normalize: whether to normalize curve data, so it fits in first Maya grid quadrant.
 	:return: tuple containing the save curve data and the save path.
-	:rtype: tuple[dict, str]
+	:rtype: Tuple[Dict, str]
 	:raises ValueError: if we try to save a curve that already exists and override argument is False
 	"""
 
@@ -199,19 +200,22 @@ def save_to_directory(
 	if not override and name in names():
 		raise ValueError(f'Curve with name "{name}" already exists in the curves library!')
 
-	data = curves.serialize_transform_curve(node)
+	data = curves.serialize_transform_curve(node, normalize=normalize)
 	if not save_matrix:
 		for curves_shape in data:
 			data[curves_shape].pop('matrix', None)
 
 	save_path = path.join_path(directory, name)
+
 	jsonio.write_to_file(data, save_path)
 	_PATHS_CACHE[os.path.splitext(name)[0]] = {'path': path, 'data': data}
 
 	return data, save_path
 
 
-def save_to_lib(node: OpenMaya.MObject, name: str, override: bool = True, save_matrix: bool = False) -> tuple[dict, str]:
+def save_to_lib(
+		node: OpenMaya.MObject, name: str | None = None, override: bool = True,
+		save_matrix: bool = False, normalize: bool = True) -> Tuple[Dict, str]:
 	"""
 	Saves the given transform node shapes into the curve library, using the first library directory defined within
 	CURVES_ENV_VAR environment variable.
@@ -220,12 +224,13 @@ def save_to_lib(node: OpenMaya.MObject, name: str, override: bool = True, save_m
 	:param str name: name of the file to create. If not given, the name of the node will be used.
 	:param bool override: whether to force override the library shape if it already exists.
 	:param bool save_matrix: whether to save matrix information.
+	:param bool normalize: whether to normalize curve data, so it fits in first Maya grid quadrant.
 	:return: tuple containing the save curve data and the save path.
-	:rtype: tuple[dict, str]
+	:rtype: Tuple[Dict, str]
 	"""
 
 	directory = os.environ.get(CURVES_ENV_VAR, '').split(os.pathsep)[0]
-	return save_to_directory(node, name, directory, override=override, save_matrix=save_matrix)
+	return save_to_directory(node, directory, name, override=override, save_matrix=save_matrix, normalize=normalize)
 
 
 def rename_curve(curve_name: str, new_name: str):

@@ -5,7 +5,10 @@
 Module that contains functions and classes related with Maya API curve nodes
 """
 
+from __future__ import annotations
+
 from copy import copy
+from typing import Dict
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
@@ -87,13 +90,14 @@ class CurveCV(list):
         return CurveCV([self[i] for i in order])
 
 
-def get_curve_data(curve_shape, space=None, color_data=True, parent=None):
+def get_curve_data(curve_shape, space=None, color_data=True, normalize: bool = True, parent=None):
     """
     Returns curve data from the given shape node.
 
     :param str or OpenMaya.MObject curve_shape: node that represents nurbs curve shape
     :param OpenMaya.MSpace space: MSpace, coordinate space to query the point data
     :param bool color_data: whether to include curve data.
+    :param bool normalize: whether to normalize curve data, so it fits in first Maya grid quadrant.
     :param str or OpenMaya.MObject or None parent: optional parent for the curve.
     :return: curve data as a dictionary.
     :rtype: dict
@@ -114,6 +118,14 @@ def get_curve_data(curve_shape, space=None, color_data=True, parent=None):
     curve_cvs = map(tuple, curve.cvPositions(space))
     curve_cvs = [cv[:-1] for cv in curve_cvs]       # OpenMaya returns 4 elements in the cvs, ignore last one
 
+    if normalize:
+        mx = -1
+        for cv in curve_cvs:
+            for p in cv:
+                if mx < abs(p):
+                    mx = abs(p)
+        curve_cvs = [[p / mx for p in pt] for pt in curve_cvs]
+
     data.update({
         'knots': tuple(curve.knots()),
         'cvs': curve_cvs,
@@ -126,15 +138,18 @@ def get_curve_data(curve_shape, space=None, color_data=True, parent=None):
     return data
 
 
-def serialize_transform_curve(node, space=None, color_data=True):
+def serialize_transform_curve(
+        node: OpenMaya.MObject, space: OpenMaya.MSpace | None = None, color_data: bool = True,
+        normalize: bool = True) -> Dict:
     """
     Serializes given transform shapes curve data and returns a dictionary with that data.
 
-    :param OpenMaya.MObject node: object that represents the transform above the nurbsCurve shapes we want to serialize
-    :param OpenMaya.MSpace space: coordinate space to query the point data
-    :param bool color_data: whether to include or not color curve related data
+    :param OpenMaya.MObject node: object that represents the transform above the nurbsCurve shapes we want to serialize.
+    :param OpenMaya.MSpace or None space: coordinate space to query the point data.
+    :param bool color_data: whether to include or not color curve related data.
+    :param bool normalize: whether to normalize curve data, so it fits in first Maya grid quadrant.
     :return: curve shape data.
-    :rtype: dict
+    :rtype: Dict
     """
 
     space = space or OpenMaya.MSpace.kObject
@@ -144,7 +159,7 @@ def serialize_transform_curve(node, space=None, color_data=True):
         shape_dag = OpenMaya.MFnDagNode(shape.node())
         is_intermediate = shape_dag.isIntermediateObject
         if not is_intermediate:
-            curve_data = get_curve_data(shape, space=space, color_data=color_data)
+            curve_data = get_curve_data(shape, space=space, color_data=color_data, normalize=normalize)
             curve_data['outlinerColor'] = tuple(curve_data.get('outlinerColor', ()))
             if len(curve_data['outlinerColor']) > 3:
                 curve_data['outlinerColor'] = curve_data['outlinerColor'][:-1]

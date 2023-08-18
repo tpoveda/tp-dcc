@@ -1204,7 +1204,9 @@ class DagNode(DGNode):
 
 	MFN_TYPE = OpenMaya.MFnDagNode
 
-	def create(self, name, node_type, parent=None, mod=None):
+	def create(
+			self, name: str, node_type: str, parent: OpenMaya.MObject | None = None,
+			mod: OpenMaya.MDGModifier | None = None) -> DagNode:
 		"""
 		Function that builds the node within the Maya scene.
 
