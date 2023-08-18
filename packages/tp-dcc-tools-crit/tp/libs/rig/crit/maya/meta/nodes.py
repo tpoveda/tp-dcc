@@ -1039,15 +1039,16 @@ class Connector(api.DagNode):
 	@override(check_signature=False)
 	def create(
 			self, name: str, start: Guide, end: Guide, attribute_holder: api.Plug | None = None,
-			size: float = 1.0, color: Tuple[int, int, int] = (0, 1, 1), parent: api.DagNode | None = None) -> Connector:
+			size: float = 1.0, color: Tuple[float, float, float] = (0, 1, 1),
+			parent: api.DagNode | None = None) -> Connector:
 
 		start_name = om_nodes.name(start.object())
 		end_name = om_nodes.name(end.object())
 		connector_shape = cmds.createNode('critPinLocatorConnector')
 		cmds.setAttr(f'{connector_shape}.color', *color, type='double3')
 		cmds.setAttr(f'{connector_shape}.size', size)
-		cmds.connectAttr(f'{start_name}.worldMatrix[0]', f'{connector_shape}.swmat')
-		cmds.connectAttr(f'{end_name}.worldMatrix[0]', f'{connector_shape}.cwmat')
+		cmds.connectAttr(f'{start_name}.worldMatrix[0]', f'{connector_shape}.cwmat')
+		cmds.connectAttr(f'{end_name}.worldMatrix[0]', f'{connector_shape}.swmat')
 
 		connector_transform = cmds.listRelatives(connector_shape, parent=True)
 		connector_transform = cmds.rename(connector_transform, name)
@@ -1121,8 +1122,8 @@ class Connector(api.DagNode):
 		end_name = om_nodes.name(end_guide.object())
 		connector_shape = helpers.first_in_list(
 			[shape for shape in self.shapes() if shape.typeName == 'critPinLocatorConnector'])
-		cmds.connectAttr(f'{start_name}.worldMatrix[0]', f'{connector_shape}.swmat', force=True)
-		cmds.connectAttr(f'{end_name}.worldMatrix[0]', f'{connector_shape}.cwmat', force=True)
+		cmds.connectAttr(f'{start_name}.worldMatrix[0]', f'{connector_shape}.cwmat', force=True)
+		cmds.connectAttr(f'{end_name}.worldMatrix[0]', f'{connector_shape}.swmat', force=True)
 
 		start_guide.message >> self.attribute(consts.CRIT_CONNECTOR_START_ATTR)
 		end_guide.message >> self.attribute(consts.CRIT_CONNECTOR_END_ATTR)

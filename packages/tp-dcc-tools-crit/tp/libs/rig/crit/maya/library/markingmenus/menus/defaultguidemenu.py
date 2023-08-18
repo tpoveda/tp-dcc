@@ -19,7 +19,7 @@ logger = log.rigLogger
 
 class CritDefaultGuideMenu(markingmenu.MarkingMenuDynamic):
 
-	ID = 'critDefaultGuideMenu'
+	ID = crit.consts.DEFAULT_GUIDE_MARKING_MENU
 
 	@override
 	def execute(self, layout: markingmenu.MarkingMenuLayout, arguments: Dict) -> markingmenu.MarkingMenuLayout:
@@ -29,6 +29,19 @@ class CritDefaultGuideMenu(markingmenu.MarkingMenuDynamic):
 			return layout
 
 		generic = [
+			{
+				'type': 'command',
+				'id': 'critConstraintSelectedGuides',
+				'arguments': {'rig': rig, 'components': components}
+			},
+			{
+				'type': 'command',
+				'id': 'critRemoveAllConstraints',
+				'arguments': arguments
+			},
+			{
+				'type': 'separator'
+			},
 			{
 				'type': 'command',
 				'id': 'critDeleteComponent',
@@ -66,19 +79,6 @@ class CritDefaultGuideMenu(markingmenu.MarkingMenuDynamic):
 		]
 
 		generic.extend([
-			{
-				'type': 'command',
-				'id': 'critConstraintSelectedGuides',
-				'arguments': {'rig': rig, 'components': components}
-			},
-			{
-				'type': 'command',
-				'id': 'critRemoveAllConstraints',
-				'arguments': arguments
-			},
-			{
-				'type': 'separator'
-			},
 			{
 				'type': 'menu',
 				'label': 'Select',

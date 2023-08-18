@@ -160,8 +160,105 @@ class AddParentComponentFromSelectionCommand(command.MayaCommand):
 	@override
 	def undo(self):
 		driver = self._driver_components
-		for component in self._driver_components:
+		for component in self._driven_components:
 			component.remove_parent(driver[0])
+
+
+class AddParentComponentCommand(command.MayaCommand):
+	"""
+	Adds component parent
+	"""
+
+	id = 'crit.component.parent.add'
+	creator = 'Tomas Poveda'
+	is_undoable = True
+	use_undo_chunk = True
+	disable_queue = True
+	ui_data = {'icon': '', 'tooltip': __doc__, 'label': 'Parent Component', 'color': '', 'backgroundColor': ''}
+
+	_child_component = None						# type: crit.Component
+	_parent_component = None					# type: crit.Component
+
+	@override
+	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+
+		self._child_component = arguments['child_component']
+		self._parent_component = arguments['parent_component']
+
+		return arguments
+
+	@override(check_signature=False)
+	def do(
+			self, parent_component: crit.Component | None = None, parent_guide: crit.Guide | None = None,
+			child_component: crit.Component | None = None):
+
+		return child_component.set_parent(parent_component, driver_guide=parent_guide)
+
+	@override
+	def undo(self):
+
+		self._child_component.remove_parent(self._parent_component)
+
+
+class RemoveAllParentsComponentFromSelectionCommand(command.MayaCommand):
+	"""
+	Removes all component parents
+	"""
+
+	id = 'crit.component.parent.removeAll'
+	creator = 'Tomas Poveda'
+	is_undoable = True
+	use_undo_chunk = True
+	disable_queue = True
+	ui_data = {'icon': '', 'tooltip': __doc__, 'label': 'Remove Parents', 'color': '', 'backgroundColor': ''}
+
+	_components = []							# type: List[crit.Component]
+	_parent_components = []						# type: List[List[crit.Component, crit.Component, Dict]]
+
+	@override
+	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+
+		selection = list(api.selected(filter_types=api.kTransform,))
+		if not selection:
+			self.display_warning('Must have at least one node selected')
+			return
+
+		visited = set()
+		parents = []
+		for node in selection:
+			component = crit.component_from_node(node)
+			if component is not None and component not in visited:
+				has_guides = component.has_guide()
+				if not has_guides:
+					self.display_warning(f'Component "{component}" missing guides!')
+					return
+				visited.add(component)
+				parents.append([component.parent(), component, component.serialize_component_guide_connections()])
+		if not visited:
+			self.display_warning('No valid components selected')
+			return
+
+		self._components = visited
+		arguments['components'] = visited
+		self._parent_components = parents
+
+		return arguments
+
+	@override(check_signature=False)
+	def do(self, components: List[crit.Component] | None = None):
+
+		for component in components:
+			component.remove_all_parents()
+
+	@override
+	def undo(self):
+
+		for parent, component, connection in self._parent_components:
+			component.set_parent(parent)
+			descriptor = component.descriptor
+			descriptor.connections = connection
+			component.save_descriptor(descriptor)
+			component.deserialize_component_connections(layer_type=crit.consts.GUIDE_LAYER_TYPE)
 
 
 class SelectGuidesCommand(command.MayaCommand):

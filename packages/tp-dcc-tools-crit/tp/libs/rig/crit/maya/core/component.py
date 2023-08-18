@@ -10,6 +10,7 @@ from tp.bootstrap import log
 from tp.common.python import profiler, decorators
 from tp.maya import api
 from tp.maya.cmds import helpers
+from tp.maya.meta import base
 
 from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.core import errors, naming
@@ -488,6 +489,8 @@ class Component:
 
 		return self._meta.root_transform() if self.exists() else None
 
+
+
 	def has_parent(self) -> bool:
 		"""
 		Returns whether this component has a parent component.
@@ -519,12 +522,146 @@ class Component:
 		if self._is_building_guide or self._is_building_skeleton or self._is_building_rig:
 			return self._build_objects_cache.get('parent')
 
+		found_parent = None
 		for parent_meta in self._meta.iterate_meta_parents(recursive=False):
 			if parent_meta.hasAttribute(consts.CRIT_IS_COMPONENT_ATTR):
-				return self._rig.component(
+				found_parent = self._rig.component(
 					parent_meta.attribute(consts.CRIT_NAME_ATTR).value(),
 					parent_meta.attribute(consts.CRIT_SIDE_ATTR).value()
 				)
+				break
+
+		return found_parent
+
+	def set_parent(self, parent_component: Component | None, driver_guide: meta_nodes.Guide | None = None) -> bool:
+		"""
+		Connects this component to the parent component through the given driver guide.
+
+		:param Component parent_component: parent component instancen.
+		:param meta_nodes.Guide driver_guide: driver guide.
+		:return: True if set parent component operation was successful; False otherwise.
+		:rtype: bool
+		"""
+
+		if parent_component == self:
+			return False
+
+		if driver_guide:
+			if not parent_component.id_mapping()[consts.SKELETON_LAYER_TYPE].get(driver_guide.id()):
+				self.logger.warning('Setting parent to a guide which does not belong to a joint is not allowed')
+				return False
+
+		if parent_component is None:
+			self.remove_all_parents()
+			self._meta.add_meta_parent(self.rig.components_layer())
+			return True
+
+		did_set_parent = self._set_meta_parent(parent_component)
+		if not did_set_parent:
+			return False
+
+		self.descriptor.parent = ':'.join([parent_component.name(), parent_component.side()])
+
+		if not driver_guide:
+			return False
+		elif not self.has_guide() and not self._is_building_guide:
+			self.logger.warning('Guide system has not been built yet!')
+			return False
+
+		guide_layer = self.guide_layer()
+		root_guide = guide_layer.guide('root')
+		if not root_guide:
+			self.logger.error('No root guide on this componente, unable to set parent!')
+			return False
+
+		root_srt = root_guide.srt(0)
+		world_matrix = root_guide.worldMatrix()
+
+		# pre-calculate local matrix for the guide from drive rto avoid double transforms
+		local_matrix_offset = world_matrix * driver_guide.worldMatrix().inverse()
+		root_srt.setWorldMatrix(driver_guide.worldMatrix())
+
+		driver_guide_layer = parent_component.guide_layer()
+
+		_, parent_constraint_extras = api.build_constraint(
+			root_srt,
+			{'targets': ((driver_guide.fullPathName(partial_name=True, include_namespace=False), driver_guide),)},
+			constraint_type='parent', maintainOffset=True)
+		_, scale_constraint_extras = api.build_constraint(
+			root_srt,
+			{'targets': ((driver_guide.fullPathName(partial_name=True, include_namespace=False), driver_guide),)},
+			constraint_type='scale', maintainOffset=True)
+		root_guide.setMatrix(local_matrix_offset)
+
+		connector_name = self.naming_manager().resolve(
+			'object',
+			{'componentName': self.name(), 'side': self.side(), 'section': driver_guide.id(), 'type': 'connector'})
+		guide_layer.create_connector(
+			connector_name, root_guide, driver_guide, size=0.5, color=(1, 1, 0), parent=guide_layer.root_transform())
+
+		driver_guide_plug = driver_guide_layer.guide_plug_by_id(driver_guide.id()).child(0)
+		driven_guide_plug = guide_layer.guide_plug_by_id('root').child(4).nextAvailableDestElementPlug()
+		dest_guide_plug = driven_guide_plug.child(0)
+		dest_constraint_array = driven_guide_plug.child(1)
+		driver_guide_plug.connect(dest_guide_plug)
+		for n in parent_constraint_extras + scale_constraint_extras:
+			n.message.connect(dest_constraint_array.nextAvailableDestElementPlug())
+
+	def remove_upstream_connectors(self, parent_component: Component | None = None):
+		"""
+		Removes upstream connectors from this component guide layer.
+
+		:param Component or None parent_component: optional parent component to remove connectos from. If None, all
+			connectors will be removed.
+		"""
+
+		if not self.has_guide():
+			self.logger.info(f'Component "{self}" has no guides')
+			return
+
+		guide_layer = self.guide_layer()
+		if not guide_layer:
+			self.logger.info(f'Component "{self}" has no guide layer')
+			return
+
+		for connector in guide_layer.iterate_connectors():
+			end_guide = connector.end_guide()
+			# TODO: this isn't required or we should just get upstream metaNode to speed things up
+			connector_guide_parent = self.rig.component_from_node(end_guide)
+			if parent_component is None:
+				connector.delete()
+			elif connector_guide_parent == parent_component:
+				connector.delete()
+
+	def remove_parent(self, parent_component: Component | None):
+		"""
+		Removes parent relationship between this component and the parent component.
+
+		:param Component or None parent_component: parent component to remove. If None, all parents will be removed.
+		"""
+
+		if not self.exists():
+			return
+
+		parent = parent_component.meta if parent_component else None
+		self.remove_upstream_connectors(parent_component=parent_component)
+		self._meta.remove_meta_parent(parent)
+		self._meta.add_meta_parent(self._rig.components_layer())
+		self.descriptor.parent = None
+		self.descriptor.connections = {}
+		self.save_descriptor(self.descriptor)
+
+	def remove_all_parents(self):
+		"""
+		Removes all parent components from the current component
+		"""
+
+		if not self.exists():
+			return
+		self.disconnect_all()
+		parent_component = self.parent()
+		if parent_component:
+			self.remove_parent(parent_component)
 
 	def namespace(self) -> str:
 		"""
@@ -2173,6 +2310,33 @@ class Component:
 		self._build_objects_cache['parent'] = self.parent()
 		self._build_objects_cache['naming'] = self.naming_manager()
 		self._build_objects_cache['subsystems'] = self.subsystems()
+
+	def _set_meta_parent(self, parent_component: Component) -> bool:
+		"""
+		Internal function that sets the internal meta parent.
+
+		:param Component parent_component: parent component.
+		:return: True if meta parent was set successfully; False otherwise.
+		:rtype: bool
+		"""
+
+		if self._meta is None:
+			self.logger.warning(f'Component "{self}" has no meta node specified!')
+			return False
+
+		parents = list(self._meta.iterate_meta_parents())
+		if parent_component.meta in parents:
+			return True
+
+		self.remove_all_parents()
+		for parent in parents:
+			if parent.attribute(base.MCLASS_ATTR_NAME).asString() == consts.COMPONENTS_LAYER_TYPE:
+				self._meta.remove_meta_parent(parent)
+				break
+
+		self._meta.add_meta_parent(parent_component.meta)
+
+		return True
 
 	def _set_has_guide(self, flag: bool):
 		"""

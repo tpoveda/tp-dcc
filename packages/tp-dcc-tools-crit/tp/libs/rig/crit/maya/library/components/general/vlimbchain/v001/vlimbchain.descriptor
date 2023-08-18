@@ -4,6 +4,7 @@ descriptorVersion: 1.0.0
 type: vlimbchain
 side: L
 description: ''
+markingMenuAnim: 'critIkFkAnimMenu'
 guideLayer:
   dag:
     - id: root
@@ -42,19 +43,128 @@ guideLayer:
           translate: [ 0.0, 0.0, 0.0 ]
           rotate: [ 0.0, 0.0, 0.0, 1.0 ]
           scale: [ 2.0, 2.0, 2.0 ]
-          matrix: [ 2.0, 0, 0, 0, 0, 2.0, 0, 0, 0, 0, 2.0, 0, 0, 0, 0, 1 ]
-          worldMatrix: [ 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1 ]
+          matrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 0, 0, 1 ]
+          worldMatrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 0, 0, 1 ]
           rotateOrder: 2
-          shape: world
+          shape: sphere_arrows
           color: [ 0.95, 0.15, 0.15 ]
           shapeTransform:
             translate: [ 0.0, 0.0, 0.0 ]
             rotate: [ 0.0, 0.0, 0.0, 1.0 ]
-            scale: [ 38.0, 38.0, 38.0 ]
+            scale: [ 5.0, 5.0, 5.0 ]
           pivotShape: 0
           pivotColor: [ 1.0, 1.0, 0.0 ]
           internal: false
           mirror: true
+          srts:
+            - name: upr
+              parent: root
+              type: transform
+              critType: transform
+              translate: [ 0.0, 0.0, 0.0 ]
+              rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+              scale: [ 1.0, 1.0, 1.0 ]
+              rotateOrder: 0
+              matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+              worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+          children:
+            - id: mid
+              name: mid
+              type: transform
+              critType: guide
+              parent: upr
+              translate: [ 29.0, 0.0, 0.0 ]
+              rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+              scale: [ 2.0, 2.0, 2.0 ]
+              matrix: [ 2.0, 0, 0, 0, 0, 2.0, 0, 0, 0, 0, 2.0, 0, 29.0, 0, 0, 1 ]
+              worldMatrix: [ 2.0, 0, 0, 0, 0, 2.0, 0, 0, 0, 0, 2.0, 0, 29.0, 0, 0, 1 ]
+              rotateOrder: 4
+              shape: sphere_arrows
+              color: [ 0.95, 0.15, 0.15 ]
+              shapeTransform:
+                translate: [ 29.0, 0.0, 0.0 ]
+                rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                scale: [ 5.0, 5.0, 5.0 ]
+              pivotShape: 0
+              pivotColor: [ 1.0, 1.0, 0.0 ]
+              internal: false
+              mirror: true
+              srts:
+                - name: mid
+                  parent: upr
+                  type: transform
+                  critType: transform
+                  translate: [ 0.0, 0.0, 0.0 ]
+                  rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                  scale: [ 1.0, 1.0, 1.0 ]
+                  rotateOrder: 0
+                  matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+                  worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+              children:
+                - id: end
+                  name: end
+                  type: transform
+                  critType: guide
+                  parent: mid
+                  translate: [52.0, 0.0, 0.0]
+                  rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                  scale: [ 2.0, 2.0, 2.0 ]
+                  matrix: [ 2.0, 0, 0, 0, 0, 2.0, 0, 0, 0, 0, 2.0, 0, 52.0, 0, 0.0, 1 ]
+                  worldMatrix: [ 2.0, 0, 0, 0, 0, 2.0, 0, 0, 0, 0, 2.0, 0, 52.0, 0, 0.0, 1 ]
+                  rotateOrder: 3
+                  shape: sphere_arrows
+                  color: [ 0.95, 0.15, 0.15 ]
+                  shapeTransform:
+                    translate: [ 52.0, 0.0, 0.0 ]
+                    rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                    scale: [ 5.0, 5.0, 5.0 ]
+                  pivotShape: 0
+                  pivotColor: [ 1.0, 1.0, 0.0 ]
+                  internal: false
+                  mirror: true
+                  srts:
+                    - name: end
+                      parent: mid
+                      type: transform
+                      critType: transform
+                      translate: [ 0.0, 0.0, 0.0 ]
+                      rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                      scale: [ 1.0, 1.0, 1.0 ]
+                      rotateOrder: 0
+                      matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+                      worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+                - id: upVec
+                  name: upVec
+                  type: transform
+                  critType: guide
+                  parent: mid
+                  translate: [29.0, 0.0, -29.0]
+                  rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                  scale: [ 2.0, 2.0, 2.0 ]
+                  matrix: [ 2.0, 0, 0, 0, 0, 2.0, 0, 0, 0, 0, 2.0, 0, 29.0, 0, -29.0, 1 ]
+                  worldMatrix: [ 2.0, 0, 0, 0, 0, 2.0, 0, 0, 0, 0, 2.0, 0, 29.0, 0, -29.0, 1 ]
+                  rotateOrder: 2
+                  shape: locator
+                  color: [ 0.95, 0.15, 0.15 ]
+                  shapeTransform:
+                    translate: [ 29.0, 0.0, -29.0 ]
+                    rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                    scale: [ 3.0, 3.0, 3.0 ]
+                  pivotShape: 0
+                  pivotColor: [ 1.0, 1.0, 0.0 ]
+                  internal: false
+                  mirror: true
+                  srts:
+                    - name: upVec
+                      parent: mid
+                      type: transform
+                      critType: transform
+                      translate: [ 0.0, 0.0, 0.0 ]
+                      rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                      scale: [ 1.0, 1.0, 1.0 ]
+                      rotateOrder: 0
+                      matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+                      worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
   settings:
     - name: hasStretch
       type: 0
@@ -84,3 +194,313 @@ guideLayer:
       min: null
       softMax: null
       softMin: null
+inputLayer:
+  dag:
+    - id: world
+      name: world
+      critType: input
+      parent: null
+      translate: [ 0.0, 0.0, 0.0 ]
+      rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+      children: [ ]
+    - id: upr
+      name: upr
+      critType: input
+      root: true
+      parent: null
+      translate: [ 0.0, 0.0, 0.0 ]
+      rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+      children: []
+    - id: upVec
+      name: upVec
+      critType: input
+      parent: null
+      translate: [ 0.0, 0.0, 0.0 ]
+      rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+    - id: endIk
+      name: endIk
+      critType: input
+      parent: null
+      translate: [ 0.0, 0.0, 0.0 ]
+      rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+      children: []
+outputLayer:
+  dag:
+    - id: upr
+      name: upr
+      critType: output
+      parent: null
+      children:
+        - id: mid
+          name: mid
+          critType: output
+          parent: upr
+          children:
+            - id: end
+              name: end
+              critType: output
+              parent: mid
+skeletonLayer:
+  dag:
+    - id: upr
+      name: upr
+      parent: null
+      type: joint
+      children:
+        - id: mid
+          name: mid
+          parent: upr
+          type: joint
+          children:
+            - id: end
+              name: end
+              parent: mid
+              type: joint
+rigLayer:
+  settings:
+    constants:
+      - name: constant_totalInitLength
+        type: 5
+        value: 0.001
+        default: 0.001
+        isArray: false
+        isDynamic: true
+        keyable: false
+        locked: false
+        max: 99999999
+        min: -99999999
+        softMax: null
+        softMin: null
+      - name: constant_uprInitialLength
+        type: 5
+        value: 0
+        default: 0
+        isArray: false
+        isDynamic: true
+        keyable: false
+        locked: false
+        max: 99999999
+        min: -99999999
+        softMax: null
+        softMin: null
+      - name: constant_lwrInitialLength
+        type: 5
+        value: 0
+        default: 0
+        isArray: false
+        isDynamic: true
+        keyable: false
+        locked: false
+        max: 99999999
+        min: -99999999
+        softMax: null
+        softMin: null
+      - name: constant_ikfkEndOffset
+        type: 14
+        isArray: false
+        isDynamic: true
+        locked: false
+    controlPanel:
+      - name: _
+        type: 12
+        enums: ['CONTROLS']
+        isDynamic: true
+        keyable: false
+        locked: true
+        channelBox: true
+      - name: ikfk
+        type: 5
+        value: 0
+        default: 0
+        isArray: false
+        isDynamic: true
+        keyable: true
+        locked: false
+        max: 1
+        min: 0
+        softMax: null
+        softMin: null
+        channelBox: false
+      - name: stretch
+        type: 5
+        value: 0
+        default: 0
+        isArray: false
+        isDynamic: true
+        keyable: true
+        locked: false
+        max: 1
+        min: 0
+        softMax: null
+        softMin: null
+        channelBox: false
+      - name: maxStretch
+        type: 5
+        value: 10
+        default: 10
+        isArray: false
+        isDynamic: true
+        keyable: true
+        locked: false
+        max: 9999
+        min: 0
+        softMax: 99
+        softMin: 0.001
+        channelBox: false
+      - name: minStretch
+        type: 5
+        value: 1
+        default: 1
+        isArray: false
+        isDynamic: true
+        keyable: true
+        locked: false
+        max: 9999
+        min: 0
+        softMax: 99
+        softMin: 0.001
+        channelBox: false
+      - name: lowerStretch
+        type: 5
+        value: 1
+        default: 1
+        isArray: false
+        isDynamic: true
+        keyable: true
+        locked: false
+        max: 9999
+        min: 0.1
+        softMax: 99
+        softMin: 0.001
+        channelBox: false
+      - name: upperStretch
+        type: 5
+        value: 1
+        default: 1
+        isArray: false
+        isDynamic: true
+        keyable: true
+        locked: false
+        max: 9999
+        min: 0.1
+        softMax: 99
+        softMin: 0.001
+        channelBox: false
+      - name: lock
+        type: 5
+        value: 0
+        default: 0
+        isArray: false
+        isDynamic: true
+        keyable: true
+        locked: false
+        max: 1
+        min: 0
+        softMax: null
+        softMin: null
+        channelBox: false
+      - name: ikRoll
+        type: 10
+        value: 0
+        default: 0
+        isArray: false
+        isDynamic: true
+        keyable: true
+        locked: false
+        max: 99999
+        min: -99999
+        softMax: null
+        softMin: null
+        channelBox: false
+      - name: __
+        type: 12
+        enums: [ 'VISIBILITY' ]
+        isDynamic: true
+        keyable: false
+        locked: true
+        channelBox: true
+      - name: ikUprCtrlVis
+        type: 10
+        value: false
+        default: false
+        isDynamic: true
+        keyable: false
+        locked: false
+        channelBox: false
+spaceSwitching:
+  - label: ikSpace
+    type: parent
+    controlPanelFilter:
+      default: world
+      group:
+        insertAfter: lock
+        label: Space
+        name: __
+    driven: '@{self.rigLayer.endik}'
+    drivers:
+      - driver: '@{self.inputLayer.upr}'
+        label: parent
+        permissions:
+          allowDriverChange: false
+          allowRename: false
+          value: true
+      - driver: '@{self.inputLayer.world}'
+        label: world
+        permissions:
+          allowDriverChange: false
+          allowRename: false
+          value: true
+    permissions:
+      allowRename: false
+      value: true
+  - label: fkSpace
+    type: orient
+    controlPanelFilter:
+      default: parent
+    driven: '@{self.rigLayer.uprfk}'
+    drivers:
+      - driver: '@{inherit}'
+        label: parent
+        permissions:
+          allowDriverChange: false
+          allowRename: false
+          value: true
+      - driver: '@{self.inputLayer.world}'
+        label: world
+        permissions:
+          allowDriverChange: false
+          allowRename: false
+          value: true
+    permissions:
+      allowRename: false
+      value: true
+  - label: poleVectorSpace
+    type: parent
+    controlPanelFilter:
+      default: ikCtrl
+      group:
+        label: PoleVector
+        name: ___
+    driven: '@{self.rigLayer.upVec}'
+    drivers:
+      - driver: '@{self.rigLayer.endik}'
+        label: ikCtrl
+        permissions:
+          allowDriverChange: false
+          allowRename: false
+          value: true
+      - driver: '@{self.inputLayer.upr}'
+        label: parent
+        permissions:
+          allowDriverChange: false
+          allowRename: false
+          value: true
+      - driver: '@{self.inputLayer.world}'
+        label: world
+        permissions:
+          allowDriverChange: false
+          allowRename: false
+          value: true
+    permissions:
+      allowRename: false
+      value: true

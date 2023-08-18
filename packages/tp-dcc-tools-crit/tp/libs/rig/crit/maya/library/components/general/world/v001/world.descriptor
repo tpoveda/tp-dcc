@@ -22,7 +22,7 @@ guideLayer:
       pivotShape: 2
       pivotColor: [0.38, 0.0, 0.0]
       srts:
-        - name: root_guide_srt
+        - name: root
           parent: null
           type: transform
           critType: transform
@@ -40,9 +40,9 @@ guideLayer:
           parent: root
           translate: [ 0.0, 0.0, 0.0 ]
           rotate: [ 0.0, 0.0, 0.0, 1.0 ]
-          scale: [ 1.0, 1.0, 1.0 ]
-          matrix: [ 1.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 1 ]
-          worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+          scale: [ 3.0, 3.0, 3.0 ]
+          matrix: [ 3.0, 0, 0, 0, 0, 3.0, 0, 0, 0, 0, 3.0, 0, 0, 0, 0, 1 ]
+          worldMatrix: [ 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3, 0, 0, 0, 0, 1 ]
           rotateOrder: 0
           shape: world
           color: [0.95, 0.15, 0.15]
@@ -61,10 +61,10 @@ guideLayer:
               parent: godnode
               translate: [0.0, 0.0, 0.0]
               rotate: [0.0, 0.0, 0.0, 1.0]
-              scale: [1.0, 1.0, 1.0]
+              scale: [2.0, 2.0, 2.0]
               rotateOrder: 0
-              matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
-              worldMatrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+              matrix: [2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1]
+              worldMatrix: [2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1]
               shape: worldmaster
               shapeTransform:
                 translate: [0.0, 0.0, 0.0]
@@ -74,8 +74,8 @@ guideLayer:
               pivotShape: 0
               pivotColor: [1.0, 1.0, 0.0]
               srts:
-                - name: offset_srt
-                  parent: null
+                - name: offset
+                  parent: godnode
                   type: transform
                   critType: transform
                   translate: [0.0, 0.0, 0.0]
@@ -105,8 +105,8 @@ guideLayer:
                   pivotShape: 0
                   pivotColor: [ 1.0, 1.0, 0.0 ]
                   srts:
-                    - name: rootMotion_srt
-                      parent: null
+                    - name: rootMotion
+                      parent: offset
                       type: transform
                       critType: transform
                       translate: [ 0.0, 0.0, 0.0 ]
@@ -150,13 +150,13 @@ guideLayer:
       type: 0
       value: false
     - name: offsetVis
-      default: false
+      default: true
       isDynamic: true
       keyable: false
       locked: false
       channelBox: true
       type: 0
-      value: false
+      value: true
     - name: rootMotionVis
       default: false
       isDynamic: true

@@ -1,13 +1,18 @@
+from __future__ import annotations
+
 import json
+from typing import Tuple, List, Iterator, Dict
 from collections import OrderedDict
+
+from overrides import override
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
 
 from tp.common.python import decorators
 from tp.maya.cmds import helpers
-from tp.maya.api import base, attributetypes, nodes
-from tp.maya.om import factory
+from tp.maya.api import base, attributetypes, nodes, factory
+from tp.maya.om import factory, nodes as om_nodes
 
 CONSTRAINT_TYPES = ('parent', 'point', 'orient', 'scale', 'aim', 'matrix')
 TP_CONSTRAINTS_ATTR_NAME = 'tpConstraints'
@@ -29,11 +34,11 @@ TP_CONSTRAINT_SPACE_TARGET_INDEX = 1
 TP_CONSTRAINT_NODES_INDEX = 5
 
 
-def has_constraint(node):
+def has_constraint(node: base.DagNode) -> bool:
 	"""
 	Returns whether this node is constrained by another.
 
-	:param tp.maya.api.base.DagNode node: node to search for attached constraints.
+	:param base.DagNode node: node to search for attached constraints.
 	:return: True if node is attached to a constraint; False otherwise.
 	:rtype: bool
 	"""
@@ -44,14 +49,14 @@ def has_constraint(node):
 	return False
 
 
-def iterate_constraints(node):
+def iterate_constraints(node: base.DagNode) -> Iterator[Constraint]:
 	"""
 	Generator function that iterates over all attached constraints by iterating over the compound array attribute
 	called "constraints".
 
-	:param tp.maya.api.base.DagNode node: node to iterate.
+	:param base.DagNode node: node to iterate.
 	:return: iterated constraints.
-	:rtype: generator(Constraint)
+	:rtype: Iterator[Constraint]
 	"""
 
 	array = node.attribute(TP_CONSTRAINTS_ATTR_NAME)
@@ -64,13 +69,15 @@ def iterate_constraints(node):
 		yield create_constraint_factory(type_value, node, plug_element)
 
 
-def create_constraint_factory(constraint_type, driven_node, constraint_meta_plug, track=True):
+def create_constraint_factory(
+		constraint_type: str, driven_node: base.DagNode, constraint_meta_plug: base.Plug,
+		track: bool = True) -> Constraint:
 	"""
 	Factory function that allows to create different Constraint classes based on given type.
 
 	:param str constraint_type: type of the attribute to create.
-	:param tp.maya.api.DagNode driven_node: node to drive.
-	:param tp.maya.api.Plug constraint_meta_plug: constraint plug.
+	:param tp.baseDagNode driven_node: node to drive.
+	:param tp.base.Plug constraint_meta_plug: constraint plug.
 	:param bool track: whether the constraint and all nodes created should be tracked via metadata.
 	:return: new constraint instance.
 	:rtype: Constraint
@@ -87,14 +94,14 @@ def create_constraint_factory(constraint_type, driven_node, constraint_meta_plug
 	return constraint_instance
 
 
-def add_constraint_attribute(node):
+def add_constraint_attribute(node: base.DagNode) -> base.Plug:
 	"""
 	Creates and returns the "constraints" compound attribute, which is used to store all incoming constraints no
 	matter how they are created. If the attribute already exists, it will be returned.
 
-	:param tp.maya.api.base.DagNode node: node to create compound attribute in.
+	:param base.DagNode node: node to create compound attribute in.
 	:return: constraint compound attribute.
-	:rtype: tp.maya.api.base.Plug
+	:rtype: base.Plug
 	"""
 
 	if node.hasAttribute(TP_CONSTRAINTS_ATTR_NAME):
@@ -116,18 +123,25 @@ def add_constraint_attribute(node):
 	return constraint_plug
 
 
-def build_constraint(driven, drivers, constraint_type='parent', track=True, **kwargs):
+def build_constraint(
+		driven: base.DagNode, drivers: Dict, constraint_type: str = 'parent', track: bool = True,
+		**kwargs: Dict) -> Tuple[Constraint, List[base.DagNode]]:
 	"""
 	Builds a space switching ready constraint.
 
 	:param tp.maya.api.base.DagNode driven: transform to drive.
-	:param dict drivers: a dict containing the target information.
+	:param Dict drivers: a dict containing the target information. e.g:
+		{
+			'targets': (
+				(driver_guide.fullPathName(partial_name=True, include_namespace=False), driver_guide),
+			)
+		}
 	:param str constraint_type: constraint type.
 	:param bool track: whether the constraint and all nodes created should be tracked via metadata.
-	:param dict kwargs: extra keyword arguments.
+	:param Dict kwargs: extra keyword arguments.
 	:keyword bool maintainOffset: whether to maintain offset transformation after constraint is applied.
 	:return: tuple containing the constraint instance and the constraint extra nodes.
-	:rtype: tuple(Constraint, list(tp.maya.api.base.DagNode))
+	:rtype: Tuple[Constraint, List[base.DagNode]]
 	"""
 
 	assert constraint_type in CONSTRAINT_TYPES, 'Constraint of type: {} is not supported'.format(constraint_type)
@@ -137,7 +151,7 @@ def build_constraint(driven, drivers, constraint_type='parent', track=True, **kw
 		attr_name = drivers.get('attributeName', '')
 		for last_constraint in iterate_constraints(driven):
 			if attr_name and attr_name == last_constraint.controller_attribute_name():
-				utilities =  last_constraint.build(drivers, **kwargs)
+				utilities = last_constraint.build(drivers, **kwargs)
 				return last_constraint, utilities
 			constraint_attr = last_constraint.plug_element
 		if constraint_attr is None:
@@ -151,40 +165,43 @@ def build_constraint(driven, drivers, constraint_type='parent', track=True, **kw
 	return constraint, constraint.build(drivers, **kwargs)
 
 
-def delete_constraints(nodes, mod=None):
+def delete_constraints(
+		constrained_nodes: List[base.DagNode], mod: OpenMaya.MDagModifier | None = None) -> OpenMaya.MDagModifier:
 	"""
 	Deletes all the constraints of the given nodes.
 
-	:param list(tp.maya.api.base.DagNode) nodes: nodes we want to delete constraints of.
+	:param List[base.DagNode] constrained_nodes: nodes we want to delete constraints of.
 	:param OpenMaya.MDagModifier or None mod: optional modifier to add to.
 	:return: modifier used to run the operation.
 	:rtype: OpenMaya.MDagModifier
 	"""
 
 	mod = mod or OpenMaya.MDagModifier()
-	for node in nodes:
-		for constraint in iterate_constraints(node):
+	for constrained_node in constrained_nodes:
+		for constraint in iterate_constraints(constrained_node):
 			constraint.delete(mod=mod, apply=False)
-		delete_constraint_map_attribute(node, mod=mod)
+		delete_constraint_map_attribute(constrained_node, mod=mod)
 
 	return mod
 
 
 def add_constraint_map(
-		drivers, driven, controller, controller_attr_name, utilities, constraint_type, meta_element_plug,
-		kwargs_map=None):
+		drivers: List[base.DagNode], driven: base.DagNode, controller: base.DGNode | None, controller_attr_name: str,
+		utilities: List[base.DGNode], constraint_type: str, meta_element_plug: base.Plug | None,
+		kwargs_map: Dict | None = None) -> base.Plug:
 	"""
 	Adds a mapping of drivers and utilities to the constraint compound array attribute.
 
-	:param drivers:
-	:param driven:
-	:param controller:
-	:param controller_attr_name:
-	:param utilities:
-	:param constraint_type:
-	:param meta_element_plug:
-	:param kwargs_map:
-	:return:
+	:param List[base.DagNode] drivers: list of driver nodes.
+	:param base.DagNode driven: driven node.
+	:param base.DGNode controller: optional node that will be connected to controller plug through its message
+		attribute.
+	:param str controller_attr_name: controller attribute name.
+	:param List[base.DGNode] utilities: list of constraint extra nodes.
+	:param str constraint_type: constraint type.
+	:param base.Plug or None meta_element_plug: element plug.
+	:param Dict or None kwargs_map: optional keyword arguments for the constraint.
+	:return: plug where constraint attributes where added.
 	"""
 
 	kwargs_map = kwargs_map or dict()
@@ -226,11 +243,11 @@ def add_constraint_map(
 	return compound_plug
 
 
-def delete_constraint_map_attribute(node, mod=None):
+def delete_constraint_map_attribute(node: base.DGNode, mod: OpenMaya.MDGModifier | None = None) -> OpenMaya.MDGModifier:
 	"""
 	Removes the constraint metadata if it is present on given node.
 
-	:param tp.maya.api.base.DGNode node: node to remove metadata from.
+	:param base.DGNode node: node to remove metadata from.
 	:param OpenMaya.MDGModifier or None mod: optional modifier to add to.
 	:return: used modifier to run the operation.
 	:rtype: OpenMaya.MDGModifier
@@ -266,12 +283,12 @@ def delete_constraint_map_attribute(node, mod=None):
 	return mod
 
 
-class Constraint(object):
+class Constraint:
 
 	ID = ''
 
-	def __init__(self, driven=None, plug_element=None, track=True):
-		super(Constraint, self).__init__()
+	def __init__(self, driven: base.DagNode | None = None, plug_element: base.Plug | None = None, track: bool = True):
+		super().__init__()
 
 		if driven and not plug_element or (plug_element and not driven):
 			raise ValueError('if driven or plug_element are specified, both of them must be specified')
@@ -281,66 +298,54 @@ class Constraint(object):
 		self._track = track
 		self._constraint_node = None
 
-	# ==================================================================================================================
-	# PROPERTIES
-	# ==================================================================================================================
-
 	@property
-	def plug_element(self):
+	def plug_element(self) -> base.Plug:
 		return self._plug_element
 
 	@property
-	def constraint_node(self):
+	def constraint_node(self) -> str:
 		return self._constraint_node
 
-	# ==================================================================================================================
-	# ABSTRACT METHODS
-	# ==================================================================================================================
-
 	@decorators.abstractmethod
-	def build(self, drivers, **constraint_kwargs):
+	def build(self, drivers: Dict, **constraint_kwargs: Dict) -> List[base.DGNode]:
 		"""
 		Builds the constraint with given keyword arguments.
 
-		:param list(tp.maya.api.DagNode) drivers: nodes to be driven by the constraint.
-		:param dict constraint_kwargs: constraint keyword arguments.
+		:param Dict drivers: dictionary containing the targets nodes to be driven by the constraint.
+		:param Dict constraint_kwargs: constraint keyword arguments.
 		:return: list of created nodes.
-		:rtype: list(tp.maya.api.base.DGNode)
+		:rtype: List[base.DGNode]
 		"""
 
 		raise NotImplementedError('Build method must be implemented in subclasses')
 
-	# ==================================================================================================================
-	# BASE
-	# ==================================================================================================================
-
-	def driven(self):
+	def driven(self) -> base.DagNode | None:
 		"""
 		Returns constraint driven node.
 
 		:return: driven node.
-		:rtype: tp.maya.api.base.DagNode or None
+		:rtype: base.DagNode or None
 		"""
 
 		return self._driven
 
-	def set_driven(self, node, plug_element):
+	def set_driven(self, node: base.DagNode, plug_element: base.Plug):
 		"""
 		Sets the driven node for the constraint.
 
-		:param tp.maya.api.base.DagNode node: driven node.
-		:param tp.maya.api.base.Plug plug_element: plug element
+		:param base.DagNode node: driven node.
+		:param base.Plug plug_element: plug element
 		"""
 
 		self._driven = node
 		self._plug_element = plug_element
 
-	def iterate_drivers(self):
+	def iterate_drivers(self) -> Iterator[Tuple[str, base.DagNode]]:
 		"""
 		Generator function that iterates over all driver nodes of the constraint.
 
 		:return: iterated driver nodes.
-		:rtype: generator(tp.maya.api.base.DagNode)
+		:rtype: Iterator[Tuple[str, base.DagNode]]
 		"""
 
 		if not self._plug_element:
@@ -352,12 +357,135 @@ class Constraint(object):
 			if label:
 				yield label, source_node
 
-	def delete(self, mod=None, apply=True):
+	def iterate_utility_nodes(self) -> Iterator[base.DGNode]:
+		"""
+		Generator function that iterates over all the constraint utility nodes.
+
+		:return: iterated utility nodes.
+		:rtype: Iterator[base.DGNode]
+		"""
+
+		if self._plug_element is None:
+			return
+
+		for target_plug in self._plug_element.child(TP_CONSTRAINT_NODES_INDEX):
+			source_plug = target_plug.source()
+			if not source_plug:
+				continue
+			util_node = source_plug.node()
+			if util_node is None:
+				continue
+			yield util_node
+
+	def has_target(self, node: base.DagNode) -> bool:
+		"""
+		Returns whether this constraint is affecting the given target.
+
+		:param base.DagNode node: node to check.
+		:return: True if given node is being affected by this constraint; False otherwise.
+		:rtype: bool
+		"""
+
+		for _, target in self.iterate_drivers():
+			if target == node:
+				return True
+
+		return False
+
+	def has_target_label(self, label: str) -> bool:
+		"""
+		Returns whether this constraint is affecting a target with given label.
+
+		:param str label: target label to check.
+		:return: True if given target label is being affected by this constraint; False otherwise.
+		:rtype: bool
+		"""
+
+		if self._plug_element is None:
+			return False
+
+		for target_element in self._plug_element.child(TP_CONSTRAINT_TARGETS_INDEX):
+			if target_element.child(TP_CONSTRAINT_SPACE_LABEL_INDEX).value() == label:
+				return True
+
+		return False
+
+	def controller_attr_name(self) -> str:
+		"""
+		Returns the attribute name which controls this constraint.
+
+		:return: controller attribute name.
+		:rtype: str
+		"""
+
+		if self._plug_element is None:
+			return ''
+
+		return self._plug_element.child(TP_CONSTRAINT_CONTROL_ATTR_NAME_INDEX).value()
+
+	def controller(self) -> Dict:
+		"""
+		Returns the controller data.
+
+		:return: controller data.
+		:rtype: Dict
+		"""
+
+		if self._plug_element is None:
+			return {'node': None, 'attr': None}
+
+		source_plug = self._plug_element.child(TP_CONSTRAINT_CONTROLLER_INDEX).source()
+		if source_plug is None:
+			return {'node': None, 'attr': None}
+		controller = source_plug.node()
+
+		return {
+			'node': controller,
+			'attr': source_plug.node().attribute(self._plug_element.child(TP_CONSTRAINT_CONTROL_ATTR_NAME_INDEX).value())
+		}
+
+	def serialize(self) -> Dict:
+		"""
+		Serializes this constraint into a dictionary.
+
+		:return: serialized constraint.
+		:rtype: Dict
+		"""
+
+		if self._plug_element is None:
+			return {}
+
+		sources = self._plug_element[TP_CONSTRAINT_TARGETS_INDEX]
+		kwargs_str = self._plug_element[TP_CONSTRAINT_KWARGS_INDEX].value()
+		try:
+			kwargs = json.loads(kwargs_str)
+		except ValueError:
+			kwargs = {}
+		targets = []
+		for source in sources:
+			label = source.child(TP_CONSTRAINT_SPACE_LABEL_INDEX).value()
+			target = source.child(TP_CONSTRAINT_SPACE_TARGET_INDEX).sourceNode()
+			if not target:
+				continue
+			targets.append((label, target))
+		if not targets:
+			return {}
+		controller_source = self._plug_element.child(TP_CONSTRAINT_CONTROLLER_INDEX).source()
+		controller_node = controller_source.node() if controller_source is not None else None
+
+		return {
+			'targets': targets,
+			'kwargs': kwargs,
+			'controller': (controller_node, self._plug_element.child(TP_CONSTRAINT_CONTROL_ATTR_NAME_INDEX).value()),
+			'type': self.ID
+		}
+
+	def delete(self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True) -> bool:
 		"""
 		Deletes constraint.
 
 		:param OpenMaya.MDGModifier or None mod: optional modifier to add to.
-		:param bool apply: whether to immediately apply delete operation.
+		:param bool apply: whether to immediately apply the operation.
 		:return: True if the constraint was deleted successfully; False otherwise.
 		:rtype: bool
 		"""
@@ -386,31 +514,19 @@ class Constraint(object):
 		return True
 
 
-
-
 class ParentConstraint(Constraint):
 
 	ID = 'parent'
 	CONSTRAINT_TARGET_INDEX = 1
 	CONSTRAINT_FN = 'parentConstraint'
 
-	# ==================================================================================================================
-	# OVERRIDES
-	# ==================================================================================================================
-
-	def build(self, drivers, **constraint_kwargs):
-		"""
-		Builds the constraint with given keyword arguments.
-
-		:param list(tp.maya.api.DagNode) drivers: nodes to be driven by the constraint.
-		:param dict constraint_kwargs: constraint keyword arguments.
-		:return: list of created nodes.
-		:rtype: list(tp.maya.api.base.DGNode)
-		"""
+	@override
+	def build(self, drivers: Dict, **constraint_kwargs: Dict) -> List[base.DGNode]:
 
 		space_node = drivers.get('spaceNode')
 		attr_name = drivers.get('attributeName', 'parent')
 		target_info = drivers['targets']
+		default_driver_label = drivers.get('label', '')
 
 		# check whether the constraint needs to be rebuilt if the request node is the same as the current target
 		new_target_structure = OrderedDict(self.iterate_drivers())
@@ -422,7 +538,7 @@ class ParentConstraint(Constraint):
 				requires_update = True
 			new_target_structure[request_label] = request_node
 		if not requires_update:
-			return list()
+			return []
 
 		indexing = [index for index, (_, request_node) in enumerate(target_info) if request_node]
 
@@ -451,30 +567,28 @@ class ParentConstraint(Constraint):
 					kwargs_map=constraint_kwargs)
 			return [constraint]
 
-		raise NotImplementedError
+		raise NotImplementedError('Space Switch Setup not implemented yet!')
 
-	# ==================================================================================================================
-	# BASE
-	# ==================================================================================================================
-
-	def pre_construct_constraint(self, driven, target_nodes, constraint_kwargs):
+	def pre_construct_constraint(self, driven: base.DagNode, target_nodes: List[base.DagNode], constraint_kwargs: Dict):
 		"""
 		Function that is called before the constraint is created.
 
-		:param tp.maya.api.base.DagNode driven: constraint driven node.
-		:param list(tp.maya.api.base.DagNode) target_nodes: list of target nodes.
-		:param dict constraint_kwargs: constraint keyword arguments.
+		:param base.DagNode driven: constraint driven node.
+		:param List[base.DagNode] target_nodes: list of target nodes.
+		:param Dict constraint_kwargs: constraint keyword arguments.
 		"""
 
 		pass
 
-	def post_construct_constraint(self, driven, target_nodes, constraint, constraint_kwargs):
+	def post_construct_constraint(
+			self, driven: base.DagNode, target_nodes: List[base.DagNode], constraint: base.DagNode,
+			constraint_kwargs: Dict):
 		"""
 		Function that is called after the constraint is created.
 
-		:param tp.maya.api.base.DagNode driven: constraint driven node.
-		:param list(tp.maya.api.base.DagNode) target_nodes: list of target nodes.
-		:param tp.maya.api.base.DagNode constraint: created constraint node.
+		:param base.DagNode driven: constraint driven node.
+		:param List[base.DagNode] target_nodes: list of target nodes.
+		:param base.DagNode constraint: created constraint node.
 		:param dict constraint_kwargs: constraint keyword arguments.
 		"""
 
@@ -486,6 +600,25 @@ class PointConstraint(ParentConstraint):
 	ID = 'point'
 	CONSTRAINT_TARGET_INDEX = 4
 	CONSTRAINT_FN = 'pointConstraint'
+
+	@override
+	def pre_construct_constraint(self, driven: base.DagNode, target_nodes: List[base.DagNode], constraint_kwargs: Dict):
+
+		# point constraint maintain offset has a bug when we add multiple targets with maintain offset and introduces
+		# offset so here we manage the translation offset ourselves
+
+		first_target = target_nodes[0]
+		if constraint_kwargs.get('maintainOffset'):
+			self._translation_offset = driven.translation(
+				space=OpenMaya.MSpace.kWorld) - first_target.translation(space=OpenMaya.MSpace.kWorld)
+
+	@override
+	def post_construct_constraint(
+			self, driven: base.DagNode, target_nodes: List[base.DagNode], constraint: base.DagNode,
+			constraint_kwargs: Dict):
+
+		if constraint_kwargs.get('maintainOffset'):
+			constraint.offset.set(self._translation_offset)
 
 
 class OrientConstraint(ParentConstraint):
@@ -513,42 +646,30 @@ class MatrixConstraint(Constraint):
 
 	ID = 'matrix'
 
-	# ==================================================================================================================
-	# OVERRIDES
-	# ==================================================================================================================
-
-	def build(self, drivers, decompose=False, **constraint_kwargs):
-		"""
-		Builds the constraint with given keyword arguments.
-
-		:param list(tp.maya.api.DagNode) drivers: nodes to be driven by the constraint.
-		:param bool decompose: use decompose node to create the constraint.
-		:param dict constraint_kwargs: constraint keyword arguments.
-		:return: list of created nodes.
-		:rtype: list(tp.maya.api.base.DGNode)
-		"""
+	@override(check_signature=False)
+	def build(self, drivers: Dict, decompose: bool = False, **constraint_kwargs: Dict) -> List[base.DGNode]:
 
 		if helpers.maya_version() >= 2020 and not decompose:
 			return MatrixConstraint._build_offset_parent_matrix_constraint(
-				self.driven(), drivers, self._track, **constraint_kwargs)
+				self.ID, self.driven(), drivers, self._track, **constraint_kwargs)
 
-		return MatrixConstraint._build_matrix_constraint(self.driven(), drivers, self._track, **constraint_kwargs)
-
-	# ==================================================================================================================
-	# CLASS METHODS
-	# ==================================================================================================================
+		return MatrixConstraint._build_matrix_constraint(
+			self.ID, self.driven(), drivers, self._track, **constraint_kwargs)
 
 	@classmethod
-	def _build_offset_parent_matrix_constraint(cls, driven, drivers, track=True, **constraint_kwargs):
+	def _build_offset_parent_matrix_constraint(
+			cls, constraint_id: str, driven: base.DagNode, drivers: Dict, track: bool = True,
+			**constraint_kwargs: Dict) -> List[base.DGNode]:
 		"""
 		Internal function that creates an offset parent matrix constraint.
 
-		:param tp.maya.api.DagNode driven: constraint driven node.
-		:param list(dict) drivers: dictionary containing targets info.
+		:param str constraint_id: constraint type.
+		:param base.DagNode driven: constraint driven node.
+		:param Dict drivers: dictionary containing targets info.
 		:param bool track: whether the constraint and all nodes created should be tracked via metadata.
-		:param dict constraint_kwargs: extra constraint keyword arguments.
+		:param Dict constraint_kwargs: extra constraint keyword arguments.
 		:return: list of constraint related nodes created.
-		:rtype: list(tp.maya.api.base.DGNode)
+		:rtype: List[base.DGNode]
 		"""
 
 		maintain_offset = constraint_kwargs.get('maintainOffset', False)
@@ -563,11 +684,11 @@ class MatrixConstraint(Constraint):
 		skip_translate = any(i for i in skip_translate)
 		skip_rotate = any(i for i in skip_rotate)
 		skip_scale = any(i for i in skip_scale)
+		utilities = []
 
-		utilities = list()
 		current_world_matrix = driven.worldMatrix()
 		if any((skip_scale, skip_translate, skip_rotate)):
-			pick_matrix = base.create_dg(compose_name, 'pickMatrix')
+			pick_matrix = factory.create_dg_node(compose_name, 'pickMatrix')
 			driver.attribute('worldMatrix')[0].connect(pick_matrix.inputMatrix)
 			pick_matrix.useTranslate = not skip_translate
 			pick_matrix.useRotate = not skip_rotate
@@ -583,21 +704,25 @@ class MatrixConstraint(Constraint):
 			driven.resetTransform(translate=True, rotate=True, scale=True)
 
 		if track:
-			add_constraint_map(target_info, driven, None, '', utilities, cls.ID, None, kwargs_map=constraint_kwargs)
+			add_constraint_map(
+				target_info, driven, None, '', utilities, constraint_id, None, kwargs_map=constraint_kwargs)
 
 		return utilities
 
 	@classmethod
-	def _build_matrix_constraint(cls, driven, drivers, track=True, **constraint_kwargs):
+	def _build_matrix_constraint(
+			cls, constraint_id: str, driven: base.DagNode, drivers: Dict, track: bool = True,
+			**constraint_kwargs: Dict) -> List[base.DGNode]:
 		"""
 		Internal function that creates a matrix constraint.
 
-		:param tp.maya.api.DagNode driven: constraint driven node.
-		:param list(dict) drivers: dictionary containing targets info.
+		:param str constraint_id: constraint type.
+		:param base.DagNode driven: constraint driven node.
+		:param Dict drivers: dictionary containing targets info.
 		:param bool track: whether the constraint and all nodes created should be tracked via metadata.
-		:param dict constraint_kwargs: extra constraint keyword arguments.
+		:param Dict constraint_kwargs: extra constraint keyword arguments.
 		:return: list of constraint related nodes created.
-		:rtype: list(tp.maya.api.base.DGNode)
+		:rtype: List[base.DGNode]
 		"""
 
 		maintain_offset = constraint_kwargs.get('maintainOffset', False)
@@ -609,10 +734,10 @@ class MatrixConstraint(Constraint):
 		_, target_nodes = zip(*target_info)
 		driver = target_nodes[0]
 		compose_name = '_'.join([name, 'wMtxCompose'])
+		utilities = []
 
-		utilities = list()
 		if maintain_offset:
-			offset = nodes.offset_matrix(driver.object(), driven.object())
+			offset = om_nodes.offset_matrix(driver.object(), driven.object())
 			offset_name = '_'.join([name, 'wMtxOffset'])
 			mult_matrix = factory.create_mult_matrix(
 				offset_name, inputs=(offset, driver.attribute('worldMatrix')[0], driven.parentInverseMatrix()),
@@ -630,7 +755,8 @@ class MatrixConstraint(Constraint):
 		utilities.append(decompose)
 
 		if track:
-			add_constraint_map(target_info, driven, None, '', utilities, cls.ID, kwargs_map=constraint_kwargs)
+			add_constraint_map(
+				target_info, driven, None, '', utilities, constraint_id, None, kwargs_map=constraint_kwargs)
 
 		return utilities
 

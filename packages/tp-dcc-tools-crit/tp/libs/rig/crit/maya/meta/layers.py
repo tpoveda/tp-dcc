@@ -800,7 +800,8 @@ class CritGuideLayer(CritLayer):
 
 	def create_connector(
 			self, name: str, start_guide: meta_nodes.Guide, end_guide: meta_nodes.Guide,
-			attribute_holder: api.Plug | None = None, parent: api.DagNode | None = None) -> meta_nodes.Connector:
+			attribute_holder: api.Plug | None = None, size: float = 1.0, color: Tuple[float, float, float] = (0, 1, 1),
+			parent: api.DagNode | None = None) -> meta_nodes.Connector:
 		"""
 		Creates a new connector that visually connectors the given start and end guides.
 
@@ -808,6 +809,8 @@ class CritGuideLayer(CritLayer):
 		:param meta_nodes.Guide start_guide: start guide instance.
 		:param meta_nodes.Guide end_guide: end guide instance, connector will point to this guide.
 		:param api.Plug or None attribute_holder: optional plug that will have the connector connected to by a message.
+		:param float size: size of the connector.
+		:param Tuple[float, float, float] color: color of the connector.
 		:param api.DagNode or None parent: optional connector node parent.
 		:return: newly created connector instance.
 		:rtype: meta_nodes.Connector
@@ -818,7 +821,8 @@ class CritGuideLayer(CritLayer):
 			return existing_connector
 
 		new_connector = meta_nodes.Connector()
-		new_connector.create(name, start_guide, end_guide, attribute_holder=attribute_holder, parent=parent)
+		new_connector.create(
+			name, start_guide, end_guide, attribute_holder=attribute_holder, color=color, size=size, parent=parent)
 		connectors_array = self.attribute(consts.CRIT_CONNECTORS_ATTR)
 		new_connector.message.connect(connectors_array.nextAvailableDestElementPlug())
 		if start_guide.isHidden() or end_guide.isHidden():
