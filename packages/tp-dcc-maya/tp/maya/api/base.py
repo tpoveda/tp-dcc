@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 from functools import wraps
-from typing import Tuple, List, Iterator, Dict, Callable
+from typing import Tuple, List, Iterator, Iterable, Dict, Callable
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
@@ -13,7 +13,7 @@ from overrides import override
 from tp.core import log
 from tp.common.python import helpers
 from tp.maya.api import exceptions, consts, types, attributetypes
-from tp.maya.om import nodes, plugs, utils, factory
+from tp.maya.om import nodes, plugs, utils, factory, mathlib
 
 LOCAL_TRANSLATE_ATTRS = ['translateX', 'translateY', 'translateZ']
 LOCAL_ROTATE_ATTRS = ['rotateX', 'rotateY', 'rotateZ']
@@ -78,13 +78,13 @@ def lock_node_plug_context(fn: Callable):
 
 
 @contextlib.contextmanager
-def lock_state_attr_context(node, attr_names, state):
+def lock_state_attr_context(node: DGNode, attr_names: List[str], state: bool):
 	"""
 	Context manager which handles the lock state for a list of attribute on the given node.
 
 	:param DGNode node: node to lock/unlock attributes of.
-	:param list(str) attr_names: list of attribute names.
-	:param bool state: lock state to set while witing the context scope.
+	:param List[str] attr_names: list of attribute names.
+	:param bool state: lock state to set while executing the context scope.
 	"""
 
 	attributes = list()
@@ -104,13 +104,13 @@ def lock_state_attr_context(node, attr_names, state):
 			attr.lock(not state)
 
 
-def node_by_object(mobj):
+def node_by_object(mobj: OpenMaya.MObject) -> DGNode:
 	"""
 	Returns the correct API node for the given MObject by wrapping the MObject within an API node instance.
 
 	:param OpenMaya.MObject mobj: Maya object.
 	:return: API node instance.
-	:rtype: DagNode or DGNode
+	:rtype: DGNode
 	"""
 
 	if mobj.hasFn(OpenMaya.MFn.kDagNode):
@@ -123,13 +123,14 @@ def node_by_object(mobj):
 			sup = Camera
 		elif mobj.hasFn(OpenMaya.MFn.kIkHandle):
 			sup = IkHandle
+		elif mobj.hasFn(OpenMaya.MFn.kJoint):
+			sup = Joint
 		else:
 			sup = DagNode
 		object_to_set = dag_path
 	else:
 		if mobj.hasFn(OpenMaya.MFn.kContainer):
 			sup = ContainerAsset
-	
 		elif mobj.hasFn(OpenMaya.MFn.kAnimCurve):
 			sup = AnimCurve
 		elif mobj.hasFn(OpenMaya.MFn.kSkinClusterFilter):
@@ -169,6 +170,8 @@ def node_by_name(node_name):
 			sup = Camera
 		elif mobj.hasFn(OpenMaya.MFn.kIkHandle):
 			sup = IkHandle
+		elif mobj.hasFn(OpenMaya.MFn.kJoint):
+			sup = Joint
 		else:
 			sup = DagNode
 		object_to_set = dag_path
@@ -302,14 +305,14 @@ def clear_selection(mod=None, apply=True):
 	return mod
 
 
-class DGNode(object):
+class DGNode:
 	"""
 	Wrapper class for Maya Dependency Graph nodes.
 	"""
 
 	MFN_TYPE = OpenMaya.MFnDependencyNode
 
-	def __init__(self, node=None):
+	def __init__(self, node: OpenMaya.MObject | None = None):
 		self._handle = None		# type: OpenMaya.MObjectHandle or None
 		self._mfn = None		# type: OpenMaya.MFn or None
 		if node is not None:
@@ -381,7 +384,7 @@ class DGNode(object):
 
 	def __getattr__(self, name):
 		"""
-		Overrides __getattr__ function to try to access node attribute..
+		Overrides __getattr__ function to try to access node attribute.
 
 		:param str name: name of the attribute to access.
 		:return: attribute value.
@@ -497,7 +500,9 @@ class DGNode(object):
 
 		return self.mfn().isLocked
 
-	def create(self, name, node_type, namespace=None, mod=None):
+	def create(
+			self, name: str, node_type: str, namespace: str | None = None,
+			mod: OpenMaya.MDGModifier | None = None) -> DGNode:
 		"""
 		Function that builds the node within the Maya scene.
 
@@ -945,13 +950,13 @@ class DGNode(object):
 		if self.hasAttribute(name):
 			return None
 
-		plug_data = plugs.serialize_plug(source_plug.get_plug())
-		plug_data['longName'] = name
-		plug_data['shortName'] = name
+		plug_data = plugs.serialize_plug(source_plug.plug())
+		plug_data['long_name'] = name
+		plug_data['short_name'] = name
 		plug_data['type'] = plug_data['type']
 		current_obj = self.object()
 		return Plug(self, OpenMaya.MPlug(
-			current_obj, nodes.add_proxy_attribute(current_obj, source_plug.get_plug(), **plug_data).object()))
+			current_obj, nodes.add_proxy_attribute(current_obj, source_plug.plug(), **plug_data).object()))
 
 	@lock_node_context
 	def createAttributesFromDict(self, data: Dict, mod: OpenMaya.MDGModifier | None = None) -> List[Plug]:
@@ -1263,10 +1268,6 @@ class DagNode(DGNode):
 		except RuntimeError:
 			return dict()
 
-	# ==================================================================================================================
-	# BASE
-	# ==================================================================================================================
-
 	def dagPath(self):
 		"""
 		Returns the MDagPath of this node.
@@ -1307,12 +1308,12 @@ class DagNode(DGNode):
 
 		return self._mfn.boundingBox
 
-	def iterateShapes(self):
+	def iterateShapes(self) -> Iterator[DagNode]:
 		"""
 		Generator function that iterates over all shape nodes under this dag node instance.
 
 		:return: iterated shape nodes.
-		:rtype: generator(DagNode)
+		:rtype: Iterator[DagNode]
 		"""
 
 		path = self.dagPath()
@@ -1321,12 +1322,12 @@ class DagNode(DGNode):
 			dag_path.extendToShape(i)
 			yield node_by_object(dag_path.node())
 
-	def shapes(self):
+	def shapes(self) -> List[DagNode]:
 		"""
 		Returns a list of all shape nodes under this dag node instance.
 
 		:return: list of shape nodes.
-		:rtype: list(DagNode)
+		:rtype: List[DagNode]
 		"""
 
 		return list(self.iterateShapes())
@@ -1379,7 +1380,7 @@ class DagNode(DGNode):
 
 	@lock_node_context
 	def setParent(
-			self, parent: OpenMaya.MObject, maintain_offset: bool = True, mod: OpenMaya.MDagModifier | None = None,
+			self, parent: DagNode | None, maintain_offset: bool = True, mod: OpenMaya.MDagModifier | None = None,
 			apply: bool = True) -> OpenMaya.MDagModifier:
 		"""
 		Sets the parent of this node.
@@ -1605,9 +1606,9 @@ class DagNode(DGNode):
 		transform = OpenMaya.MFnTransform(self._mfn.getPath())
 		transform.setRotationOrder(rotate_order, preserve)
 
-	def worldMatrix(self, context=types.DGContext.kNormal):
+	def worldMatrix(self, context: OpenMaya.MDGContext = types.DGContext.kNormal) -> OpenMaya.MMatrix:
 		"""
-		Returns the world marix of this node.
+		Returns the world matrix of this node.
 
 		:param OpenMaya.MDGContext context: optional context to use.
 		:return: world matrix.
@@ -1617,7 +1618,7 @@ class DagNode(DGNode):
 		world_matrix = self._mfn.findPlug('worldMatrix', False).elementByLogicalIndex(0)
 		return OpenMaya.MFnMatrixData(world_matrix.asMObject(context)).matrix()
 
-	def setWorldMatrix(self, matrix):
+	def setWorldMatrix(self, matrix: OpenMaya.MMatrix):
 		"""
 		Sets the world matrix of this node.
 
@@ -1647,14 +1648,16 @@ class DagNode(DGNode):
 
 		nodes.set_matrix(self.object(), matrix, space=OpenMaya.MSpace.kTransform)
 
-	def transformationMatrix(self, rotate_order=None, space=None):
+	def transformationMatrix(
+			self, rotate_order: int | None = None, space:
+			OpenMaya.MSpace | None = types.kWorldSpace) -> types.TransformationMatrix:
 		"""
 		Returns the current node matrix in the form of MTransformationMatrix.
 
 		:param int rotate_order: rotation order to use.
-		:param OpenMaya.MFn.type space: coordinate space to use.
+		:param OpenMaya.MSpace space: coordinate space to use.
 		:return: Maya transformation matrix instance.
-		:rtype: TransformationMatrix
+		:rtype: types.TransformationMatrix
 		"""
 
 		transform = types.TransformationMatrix(self.worldMatrix() if space == types.kWorldSpace else self.matrix())
@@ -2450,7 +2453,7 @@ class Plug:
 		source = self._mplug.source()
 		return Plug(node_by_object(source.node()), source) if not source.isNull else None
 
-	def sourceNode(self):
+	def sourceNode(self) -> DGNode | None:
 		"""
 		Returns the source node from this plug or None if it is not connected to any node.
 
@@ -2461,37 +2464,37 @@ class Plug:
 		source = self.source()
 		return source.node() if source is not None else None
 
-	def destinations(self):
+	def destinations(self) -> Iterator[Plug]:
 		"""
 		Generator function that iterates over all destination plugs connected to this plug instance.
 
 		:return: iterated destination plugs.
-		:rtype: collection.Iterable(DGNode)
+		:rtype: Iterator[Plug]
 		"""
 
 		for destination_plug in self._mplug.destinations():
 			yield Plug(node_by_object(destination_plug.node()), destination_plug)
 
-	def destinationNodes(self):
+	def destinationNodes(self) -> Iterator[DGNode]:
 		"""
 		Generator function that iterates over all destination nodes.
 
 		:return: iterated destination nodes.
-		:rtype: collection.Iterable(DGNode)
+		:rtype: Iterator[DGNode]
 		"""
 
 		for destination_plug in self.destinations():
 			yield destination_plug.node()
 
-	def serializeFromScene(self):
+	def serializeFromScene(self) -> Dict:
 		"""
 		Serializes current plug instance as a dictionary.
 
 		:return: serialized plug data.
-		:rtype: dict
+		:rtype: Dict
 		"""
 
-		return plugs.serialize_plug(self._mplug) if self.exists() else dict()
+		return plugs.serialize_plug(self._mplug) if self.exists() else {}
 
 	@lock_node_plug_context
 	def delete(self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True) -> OpenMaya.MDGModifier:
@@ -2573,7 +2576,150 @@ class Camera(DagNode):
 
 
 class IkHandle(DagNode):
-	pass
+
+	SCENE_UP = 0
+	OBJECT_UP = 1
+	OBJECT_UP_START_END = 2
+	OBJECT_ROTATION_UP = 3
+	OBJECT_ROTATION_UP_START_END = 4
+	VECTOR = 5
+	VECTOR_START_END = 6
+	RELATIVE = 7
+
+	FORWARD_POSITIVE_X = 0
+	FORWARD_POSITIVE_Y = 1
+	FORWARD_POSITIVE_Z = 2
+	FORWARD_NEGATIVE_X = 3
+	FORWARD_NEGATIVE_Y = 4
+	FORWARD_NEGATIVE_Z = 5
+
+	UP_POSITIVE_Y = 0
+	UP_NEGATIVE_Y = 1
+	UP_CLOSET_Y = 2
+	UP_POSITIVE_Z = 3
+	UP_NEGATIVE_Z = 4
+	UP_CLOSET_Z = 5
+	UP_POSITIVE_X = 6
+	UP_NEGATIVE_X = 7
+	UP_CLOSET_X = 8
+
+	def vector_to_forward_axis_enum(self, vec: Iterable[float, float, float]) -> int:
+		"""
+		Returns forward axis index from given vector.
+
+		:param Iterable[float, float, float] vec: vector.
+		:return: forward axis index.
+		:rtype: int
+		"""
+
+		axis_index = mathlib.X_AXIS_INDEX
+		is_negative = sum(vec) < 0.0
+
+		for i, value in enumerate(vec):
+			if int(value) != 0:
+				break
+
+		if is_negative:
+			return {
+				mathlib.X_AXIS_INDEX: IkHandle.FORWARD_NEGATIVE_X,
+				mathlib.Y_AXIS_INDEX: IkHandle.FORWARD_NEGATIVE_Y,
+				mathlib.Z_AXIS_INDEX: IkHandle.FORWARD_NEGATIVE_Z,
+			}[axis_index]
+
+		return axis_index
+
+	def vector_to_up_axis_enum(self, vec: Iterable[float, float, float]) -> int:
+		"""
+		Returns up axis index from given vector.
+
+		:param Iterable[float, float, float] vec: vector.
+		:return: up axis index.
+		:rtype: int
+		"""
+
+		axis_index = mathlib.X_AXIS_INDEX
+		is_negative = sum(vec) < 0.0
+
+		for i, value in enumerate(vec):
+			if int(value) != 0:
+				break
+
+		axis_mapping = {
+			mathlib.X_AXIS_INDEX: IkHandle.UP_POSITIVE_X,
+			mathlib.Y_AXIS_INDEX: IkHandle.UP_POSITIVE_Y,
+			mathlib.Z_AXIS_INDEX: IkHandle.UP_POSITIVE_Z,
+		}
+		if is_negative:
+			axis_mapping = {
+				mathlib.X_AXIS_INDEX: IkHandle.UP_NEGATIVE_X,
+				mathlib.Y_AXIS_INDEX: IkHandle.UP_NEGATIVE_Y,
+				mathlib.Z_AXIS_INDEX: IkHandle.UP_NEGATIVE_Z,
+			}
+
+		return axis_mapping[axis_index]
+
+
+class Joint(DagNode):
+
+	@override(check_signature=False)
+	def create(self, **kwargs: Dict) -> Joint:
+
+		name = kwargs.get('name', 'joint')
+		joint = nodes.factory.create_dag_node(name, 'joint')
+		self.setObject(joint)
+		world_matrix = kwargs.get('worldMatrix', None)
+		if world_matrix is not None:
+			transform_matrix = types.TransformationMatrix(types.Matrix(world_matrix))
+			transform_matrix.setScale((1, 1, 1), types.kWorldSpace)
+			self.setWorldMatrix(transform_matrix.asMatrix())
+		else:
+			self.setTranslation(types.Vector(kwargs.get('translate', (0.0, 0.0, 0.0))), space=types.kWorldSpace)
+			self.setRotation(types.Quaternion(kwargs.get('rotate', (0.0, 0.0, 0.0, 1.0))))
+
+		self.setRotationOrder(kwargs.get('rotateOrder', consts.kRotateOrder_XYZ))
+		self.setParent(kwargs.get('parent', None), maintain_offset=True)
+		self.segmentScaleCompensate.set(False)
+
+		return self
+
+	@override(check_signature=False)
+	def setParent(
+			self, parent: Joint, maintain_offset: bool = True,
+			mod: OpenMaya.MDagModifier | None = None, apply: bool = True) -> OpenMaya.MDagModifier:
+
+		rotation = self.rotation(space=types.kWorldSpace)
+		result = super().setParent(parent, maintain_offset=True)
+		if parent is None:
+			return result
+
+		parent_quat = parent.rotation(types.kWorldSpace, as_quaternion=True)
+		new_rotation = rotation * parent_quat.inverse()
+		self.jointOrient.set(new_rotation.asEulerRotation())
+		self.setRotation((0.0, 0.0, 0.0), types.kTransformSpace)
+		if parent.apiType() == types.kJoint:
+			parent.attribute('scale').connect(self.inverseScale)
+
+	def aim_to_child(
+			self, aim_vector: OpenMaya.MVector | List[float, float, float],
+			up_vector: OpenMaya.MVector | List[float, float, float], use_joint_orient: bool = True):
+		"""
+		Aims this joint to point to its first child in the hierarchy. If joint has no chain, rotation will be reset.
+
+		:param OpenMaya.MVector or List[float, float, float] aim_vector: vector to use as the aim vector.
+		:param OpenMaya.MVector or List[float, float, float] up_vector: vector to use as the up vector.
+		:param bool use_joint_orient: whether to move rotation values to the joint orient after aiming.
+		"""
+
+		child = self.child(0)
+		if child is None:
+			self.setRotation(types.Quaternion())
+			return
+
+		nodes.aim_nodes(target_node=child.object(), driven=[self.object()], aim_vector=aim_vector, up_vector=up_vector)
+
+		if use_joint_orient:
+			self.jointOrient.set(self.rotation())
+			self.setRotation(types.Quaternion())
 
 
 class ContainerAsset(DGNode):
@@ -2582,10 +2728,6 @@ class ContainerAsset(DGNode):
 	"""
 
 	MFN_TYPE = OpenMaya.MFnContainerNode
-
-	# ==================================================================================================================
-	# OVERRIDES
-	# ==================================================================================================================
 
 	def create(self, name):
 		"""
@@ -2861,12 +3003,8 @@ class AnimCurve(DGNode):
 
 	MFN_TYPE = OpenMayaAnim.MFnAnimCurve
 
-	# =================================================================================================================
-	# PROPERTIES
-	# =================================================================================================================
-
 	@property
-	def numKeys(self):
+	def numKeys(self) -> int:
 		"""
 		Returns the total amount of keys for this animation curve.
 
@@ -2876,7 +3014,7 @@ class AnimCurve(DGNode):
 
 		return self.mfn().numKeys
 
-	def input(self, index):
+	def input(self, index: int) -> OpenMaya.MTime | float:
 		"""
 		Returns the input (MTime for T* curves or double for U* curves) of the key at the specified index.
 

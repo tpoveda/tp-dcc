@@ -1,4 +1,5 @@
 import maya.api.OpenMaya as OpenMaya
+import maya.api.OpenMayaAnim as OpenMayaAnim
 
 kRotateOrder_XYZ = 0
 kRotateOrder_YZX = 1
@@ -25,3 +26,24 @@ kMayaToRotateOrder = {
 	OpenMaya.MTransformationMatrix.kYXZ: kRotateOrder_YXZ,
 	OpenMaya.MTransformationMatrix.kZYX: kRotateOrder_ZYX
 }
+
+kIkRPSolveType = "ikRPsolver"
+kIkSCSolveType = "ikSCsolver"
+kIkSplineSolveType = "ikSplineSolver"
+
+kTangentGlobal = OpenMayaAnim.MFnAnimCurve.kTangentGlobal
+kTangentFixed = OpenMayaAnim.MFnAnimCurve.kTangentFixed
+kTangentLinear = OpenMayaAnim.MFnAnimCurve.kTangentLinear
+kTangentFlat = OpenMayaAnim.MFnAnimCurve.kTangentFlat
+kTangentSmooth = OpenMayaAnim.MFnAnimCurve.kTangentSmooth
+kTangentStep = OpenMayaAnim.MFnAnimCurve.kTangentStep
+kTangentClamped = OpenMayaAnim.MFnAnimCurve.kTangentClamped
+kTangentPlateau = OpenMayaAnim.MFnAnimCurve.kTangentPlateau
+kTangentStepNext = OpenMayaAnim.MFnAnimCurve.kTangentStepNext
+
+kTangentAuto = OpenMayaAnim.MFnAnimCurve.kTangentAuto
+kInfinityConstant = OpenMayaAnim.MFnAnimCurve.kConstant
+kInfinityLinear = OpenMayaAnim.MFnAnimCurve.kLinear
+kInfinityCycle = OpenMayaAnim.MFnAnimCurve.kCycle
+kInfinityCycleRelative = OpenMayaAnim.MFnAnimCurve.kCycleRelative
+kInfinityOscillate = OpenMayaAnim.MFnAnimCurve.kOscillate

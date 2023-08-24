@@ -1,10 +1,17 @@
-import maya.cmds as cmds
+from __future__ import annotations
 
-from tp.maya.api import base
+from typing import Tuple, List
+
+import maya.cmds as cmds
+import maya.api.OpenMaya as OpenMaya
+
+from tp.maya.api import consts, base, contexts
 from tp.maya.om import factory
 
 
-def create_dag_node(name, node_type, parent=None, mod=None, apply=True):
+def create_dag_node(
+		name: str, node_type: str, parent: base.DagNode | None = None, mod: OpenMaya.MDagModifier | None = None,
+		apply: bool = True) -> base.DagNode:
 	"""
 	Creates a new DAG node and if a parent is specified, then parent the new node.
 
@@ -22,7 +29,8 @@ def create_dag_node(name, node_type, parent=None, mod=None, apply=True):
 		factory.create_dag_node(name=name, node_type=node_type, parent=parent_node, mod=mod, apply=apply))
 
 
-def create_dg_node(name, node_type, mod=None, apply=True):
+def create_dg_node(
+		name: str, node_type: str, mod: OpenMaya.MDGModifier | None = None, apply: bool = True) -> base.DGNode:
 	"""
 	Creates a dependency graph node and returns the node Maya object.
 
@@ -37,15 +45,15 @@ def create_dg_node(name, node_type, mod=None, apply=True):
 	return base.node_by_object(factory.create_dg_node(name=name, node_type=node_type, mod=mod, apply=apply))
 
 
-def create_mult_matrix(name, inputs, output):
+def create_mult_matrix(name: str, inputs: List[base.Plug], output: base.Plug | None) -> base.DGNode:
 	"""
 	Creates a multMatrix node.
 
 	:param str name: name of the node.
-	:param list(tp.maya.api.base.Plug) inputs: input plugs.
-	:param tp.maya.api.base.Plug or None output: output plug.
+	:param List[base.Plug] inputs: input plugs.
+	:param base.Plug or None output: output plug.
 	:return: created multMatrix node.
-	:rtype: tp.maya.api.base.DGNode
+	:rtype: base.DGNode
 	"""
 
 	mult_matrix = create_dg_node(name, 'multMatrix')
@@ -68,16 +76,18 @@ def create_mult_matrix(name, inputs, output):
 
 
 def create_decompose(
-		name, destination, translate_values=(True, True, True), rotation_values=(True, True, True),
-		scale_values=(True, True, True), input_matrix_plug=None):
+		name: str, destination: base.DGNode, translate_values: Tuple[bool, bool, bool] = (True, True, True),
+		rotation_values: Tuple[bool, bool, bool] = (True, True, True),
+		scale_values: Tuple[bool, bool, bool] = (True, True, True),
+		input_matrix_plug: base.Plug | None = None) -> base.DGNode:
 	"""
 	Creates decompose node and connects it to the given destination node.
 
 	:param str name: name of the node.
 	:param base.DGNode destination: node to connect to.
-	:param tuple(bool) translate_values: X, Y, Z to apply for the translation channel.
-	:param tuple(bool) rotation_values: X, Y, Z to apply for the rotation channel.
-	:param tuple(bool) scale_values: X, Y, Z to apply for the scale channel.
+	:param Tuple[bool, bool, bool] translate_values: X, Y, Z to apply for the translation channel.
+	:param Tuple[bool, bool, bool] rotation_values: X, Y, Z to apply for the rotation channel.
+	:param Tuple[bool, bool, bool] scale_values: X, Y, Z to apply for the scale channel.
 	:param base.Plug or None input_matrix_plug: optional input matrix plug to connect from.
 	:return: created decompose node.
 	:rtype: base.DGNode
@@ -96,16 +106,55 @@ def create_decompose(
 	return decompose
 
 
-def create_controller_tag(node, name, parent=None, visibility_plug=None):
+def create_reverse(name: str, inputs: base.Plug | List[base.Plug], outputs: base.Plug | List[base.Plug]):
+	"""
+	Creates a reverse node.
+
+	:param str name: name for the reverse node.
+	:param base.Plug or List[base.Plug] inputs: input compound plug or list of plugs.
+	:param base.Plug or List[base.Plug] outputs: output compound plug or list of plugs.
+	:return: created reverse node.
+	:rtype: base.DGNode
+	:raises ValueError: if only one input is passed and input plug is not a compound attribute.
+	:raises ValueError: if only one output is passed and output plug is not a compound attribute.
+	"""
+
+	reverse_node = create_dg_node(name, 'reverse')
+	in_plug = reverse_node.input
+	out_plug = reverse_node.output
+
+	if isinstance(inputs, base.Plug):
+		if inputs.isCompound:
+			inputs.connect(in_plug)
+			return reverse_node
+		raise ValueError('inputs argument must be a compound when passing a single plug')
+	elif isinstance(outputs, base.Plug):
+		if outputs.isCompound:
+			outputs.connect(out_plug)
+			return reverse_node
+		raise ValueError('outputs argument must be a compound when passing a single plug')
+
+	for child_index in range(len(inputs)):
+		in_a = inputs[child_index]
+		if in_a is None:
+			continue
+		out_plug.child(child_index).connect(outputs[child_index])
+
+	return reverse_node
+
+
+def create_controller_tag(
+		node: base.DagNode, name: str, parent: base.DGNode | None = None,
+		visibility_plug: base.Plug | None = None) -> base.DGNode:
 	"""
 	Creates a new Maya kControllerTag node into this control.
 
-	:param api.DagNode node: node to tag.
+	:param base.DagNode node: node to tag.
 	:param str name: name of the newly created controller tag.
 	:param ControlNode parent: optional controller tag control parent.
-	:param api.Plug visibility_plug: visibility plug to connect to.
+	:param base.Plug visibility_plug: visibility plug to connect to.
 	:return: newly created controller tag instance.
-	:rtype: api.DGNode
+	:rtype: base.DGNode
 	"""
 
 	new_controller = create_dg_node(name, 'controller')
@@ -128,3 +177,44 @@ def create_display_layer(name):
 	"""
 
 	return base.node_by_name(cmds.createDisplayLayer(name=name, empty=True))
+
+
+def create_ik_handle(
+		name: str, start_joint: base.Joint, end_joint: base.Joint, solver_type=consts.kIkRPSolveType,
+		parent: base.DagNode | None = None, **kwargs) -> Tuple[base.IkHandle, base.DagNode]:
+	"""
+	Creates an IK handle and returns both, the IK handle and the IK effector.
+
+	:param str name: name of the ik handle.
+	:param base.Joint start_joint: start joint.
+	:param base.Joint end_joint: end joint for the effector.
+	:param str solver_type: solver type ('ikRPSolver' or 'ikSCsolver' or 'ikSplineSolver').
+	:param api.DagNode or None parent: optional node to be the parent of the handle.
+	:keyword str curve: full path to the curve.
+	:keyword int priority: 1
+	:keyword float weight: 1.0
+	:keyword float positionWeight: 1.0
+	:keyword bool forceSolver: True
+	:keyword bool snapHandleFlagToggle: True
+	:keyword bool sticky: False
+	:keyword bool createCurve: True
+	:keyword bool simplifyCurve: True
+	:keyword bool rootOnCurve: True
+	:keyword str twistType: "linear"
+	:keyword bool createRootAxis: False
+	:keyword bool parentCurve: True
+	:keyword bool snapCurve: False
+	:keyword int numSpans: 1
+	:keyword bool rootTwistMode: False
+	:return: tuple with the created IK handle and IK effector.
+	:rtype: Tuple[base.IkHandle, base.DagNode]
+	"""
+
+	with contexts.namespace_context(OpenMaya.MNamespace.rootNamespace()):
+		ik_nodes = cmds.ikHandle(
+			sj=start_joint.fullPathName(), ee=end_joint.fullPathName(), solver=solver_type, n=name, **kwargs)
+		handle, effector = map(base.node_by_name, ik_nodes)
+		if parent:
+			handle.setParent(parent)
+
+	return handle, effector

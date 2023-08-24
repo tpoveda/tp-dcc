@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import List, Dict, Type
+from typing import List, Dict
 
 from tp.common import plugin
 from tp.common.python import decorators, yamlio

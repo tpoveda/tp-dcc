@@ -354,7 +354,7 @@ def create_curve_from_points(name, points, shape_dict=None, parent=None):
     name = '{}Shape'.format(name)
     degree = 3
     total_cvs = len(points)
-    # append two zeros to the front of the knot count so it lines up with maya specs
+    # append two zeros to the front of the knot count, so it lines up with maya specs
     # (ncvs - deg) + 2 * deg - 1
     knots = [0, 0] + range(total_cvs)
     # remap the last two indices to match the third from last

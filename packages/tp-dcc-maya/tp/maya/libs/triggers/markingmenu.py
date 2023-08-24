@@ -9,13 +9,29 @@ import maya.cmds as cmds
 
 from tp.core import log
 from tp.common import plugin
-from tp.common.python import helpers, decorators, strings
+from tp.common.python import helpers, decorators
 from tp.common.resources import api as resources
 
 if typing.TYPE_CHECKING:
 	from tp.maya.libs.triggers.managers import MarkingMenusManager
 
 logger = log.tpLogger
+
+
+def find_layout(layout_id: str) -> MarkingMenuLayout | None:
+	"""
+	Finds the layout with given ID from the marking menus register.
+
+	:param str layout_id: ID of the marking menu layout to find.
+	:return: found marking menu.
+	:rtype: MarkingMenuLayout or None
+	"""
+
+	from tp.maya.libs.triggers import managers
+
+	manager = managers.MarkingMenusManager()
+	if layout_id in manager.layouts:
+		return manager.layouts[layout_id]
 
 
 class MarkingMenuLayout(dict):
@@ -335,14 +351,14 @@ class MarkingMenuDynamic(plugin.Plugin):
 	ID = ''
 
 	@decorators.abstractmethod
-	def execute(self, layout: MarkingMenuLayout, arguments: Dict) -> MarkingMenuLayout:
+	def execute(self, layout: MarkingMenuLayout, arguments: Dict) -> MarkingMenuLayout | None:
 		"""
 		Executes the building of the marking menu.
 
 		:param MarkingMenuLayout layout: marking menu layout instance.
 		:param Dict arguments: dictionary containing the marking menu arguments.
 		:return: marking menu layout instance.
-		:rtype: MarkingMenuLayout
+		:rtype: MarkingMenuLayout or None
 		"""
 
 		raise NotImplementedError('Execute method must be implemented in subclasses')

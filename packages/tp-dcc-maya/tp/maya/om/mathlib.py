@@ -5,7 +5,10 @@
 Module that contains functions and classes related with Maya API math
 """
 
+from __future__ import annotations
+
 import math
+from typing import Tuple
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
@@ -15,6 +18,17 @@ from tp.common.math import scalar
 X_AXIS_VECTOR = OpenMaya.MVector(1, 0, 0)
 Y_AXIS_VECTOR = OpenMaya.MVector(0, 1, 0)
 Z_AXIS_VECTOR = OpenMaya.MVector(0, 0, 1)
+X_AXIS_INDEX = 0
+Y_AXIS_INDEX = 1
+Z_AXIS_INDEX = 2
+NEGATIVE_X_AXIS_INDEX = 3
+NEGATIVE_Y_AXIS_INDEX = 4
+NEGATIVE_Z_AXIS_INDEX = 5
+AXIS_VECTOR_BY_INDEX = [
+	X_AXIS_VECTOR, Y_AXIS_VECTOR, Z_AXIS_VECTOR, X_AXIS_VECTOR * - 1, Y_AXIS_VECTOR * -1, Z_AXIS_VECTOR * -1]
+AXIS_NAME_BY_INDEX = ['X', 'Y', 'Z', 'X', 'Y', 'Z']
+AXIS_INDEX_BY_NAME = {'X': 0, 'Y': 1, 'Z': 2}
+AXIS_NAMES = ['X', 'Y', 'Z']
 
 
 def magnitude(vector=(0, 0, 0)):
@@ -27,6 +41,18 @@ def magnitude(vector=(0, 0, 0)):
 	"""
 
 	return OpenMaya.MVector(vector[0], vector[1], vector[2]).length()
+
+
+def is_vector_negative(vector: OpenMaya.MVector) -> bool:
+	"""
+	Returns whether given vector is negative by checking whether the sum of the XYZ components is less than 0.0.
+
+	:param OpenMaya.MVector vector: vector to check.
+	:return: True if given vector is negative; False otherwise.
+	:rtype: bool
+	"""
+
+	return sum(vector) < 0.0
 
 
 def axis_vector(transform, vector):
@@ -69,6 +95,43 @@ def normalize_vector(vector=(0, 0, 0)):
 	normal = OpenMaya.MVector(vector[0], vector[1], vector[2]).normal()
 
 	return normal.x, normal.y, normal.z
+
+
+def two_point_normal(
+		point_a: OpenMaya.MVector, point_b: OpenMaya.MVector, normal: OpenMaya.MVector) -> OpenMaya.MVector:
+	"""
+	Returns the plane normal based on the given two points and the additional normal vector.
+
+	:param OpenMaya.MVector point_a: first vector.
+	:param OpenMaya.MVector point_b: second vector.
+	:param OpenMaya.MVector normal: additional normal which will be crossed with the distance vector.
+	:return: plane normal.
+	:rtype: OpenMaya.MVector
+	"""
+
+	line_vec = point_b - point_a
+
+	# find the normal between the line formed by 2 points and the given normal
+	first_normal = (normal ^ line_vec).normalize()
+
+	# find the cross product between the line and the first normal
+
+	return (first_normal ^ line_vec).normalize()
+
+
+def three_point_normal(
+		point_a: OpenMaya.MVector, point_b: OpenMaya.MVector, point_c: OpenMaya.MVector) -> OpenMaya.MVector:
+	"""
+	Retursn the plane normal based on the given three points.
+
+	:param OpenMaya.MVector point_a: first vector.
+	:param OpenMaya.MVector point_b: second vector.
+	:param OpenMaya.MVector point_c: third vector.
+	:return: plane normal.
+	:rtype: OpenMaya.MVector
+	"""
+
+	return ((point_c - point_b) ^ (point_b - point_a)).normalize()
 
 
 def dot_product(vector1=(0.0, 0.0, 0.0), vector2=(0.0, 0.0, 0.0)):
@@ -159,6 +222,19 @@ def closest_point_on_line(pnt, line1, line2, clamp_segment=False):
 
 	# project Vector
 	return [line1[0] + (line_offset[0] * dot), line1[1] + (line_offset[1] * dot), line1[2] + (line_offset[2] * dot)]
+
+
+def closest_point_on_plane(point: OpenMaya.MVector, plane: OpenMaya.MPlane) -> OpenMaya.MVector:
+	"""
+	Returns the closest point on the given plan by projecting the point on the plane.
+
+	:param OpenMaya.MVector point: point to project on to the plane.
+	:param OpenMaya.MPlane plane: plane instance to get closes point.
+	:return: closest point.
+	:rtype: OpenMaya.MVector
+	"""
+
+	return point - (plane.normal() * plane.distanceToPoint(point, signed=True))
 
 
 def inverse_distance_weight_3d(point_array, sample_point):
@@ -596,17 +672,18 @@ def convert_from_scene_units(value):
 
 
 def look_at(
-		source_position, aim_position, aim_vector=None, up_vector=None, world_up_vector=None,
-		constraint_axis=OpenMaya.MVector(1, 1, 1)):
+		source_position: OpenMaya.MVector, aim_position: OpenMaya.MVector, aim_vector: OpenMaya.MVector | None = None,
+		up_vector: OpenMaya.MVector | None = None, world_up_vector: OpenMaya.MVector | None = None,
+		constraint_axis: OpenMaya.MVector = OpenMaya.MVector(1, 1, 1)) -> OpenMaya.MQuaternion:
 	"""
 	Returns the rotation to apply to a node to aim to another one.
 
 	:param OpenMaya.MVector source_position: source position which as the eye.
 	:param OpenMaya.MVector aim_position: target position to aim at.
-	:param OpenMaya.MVector aim_vector: vector for the aim axis.
-	:param OpenMaya.MVector up_vector: vector for the up axis.
-	:param OpenMaya.MVector world_up_vector: alternative world up vector.
-	:param OpenMaya.MVector constraint_axis: axis vector to constraint the aim on.
+	:param OpenMaya.MVector or None  aim_vector: vector for the aim axis.
+	:param OpenMaya.MVector or None up_vector: vector for the up axis.
+	:param OpenMaya.MVector or None world_up_vector: alternative world up vector.
+	:param OpenMaya.MVector constraint_axis: axis vector to constraint the aim to.
 	:return: aim rotation to apply.
 	:rtype: OpenMaya.MQuaternion
 	"""
@@ -628,7 +705,7 @@ def look_at(
 	except (ZeroDivisionError, ValueError):
 		angle = 0.0 if sum(eye_up) > 0 else -math.pi
 	quat_v = OpenMaya.MQuaternion(angle, eye_u)
-	if not eye_v.isEquivalent(up_rotated.rotateBy(quat_v) , 1.0e-5):
+	if not eye_v.isEquivalent(up_rotated.rotateBy(quat_v), 1.0e-5):
 		angle = (2 * math.pi) - angle
 		quat_v = OpenMaya.MQuaternion(angle, eye_u)
 	quat_u *= quat_v
@@ -665,3 +742,26 @@ def aim_to_node(
 	rotation = look_at(source_pivot_pos, target_pivot_pos, aim_vector, up_vector, world_up_vector, constraint_axis)
 	target_transform_fn.setObject(source_dag)
 	target_transform_fn.setRotation(rotation, OpenMaya.MSpace.kWorld)
+
+
+def perpendicular_axis_from_align_vectors(
+		aim_vector: OpenMaya.MVector, up_vector: OpenMaya.MVector) -> Tuple[int, bool]:
+	"""
+	Given an aim and up vectors, this function returns which axis is not being used and determines whether to get
+	positive values from an incoming attribute whether it needs to be negated.
+
+	:param OpenMaya.MVector aim_vector: aim vector.
+	:param OpenMaya.MVector up_vector: up vector.
+	:return: tuple containing the axis number (0='X', 1='Y', 2='Z') and whether it should be negated.
+	:rtype: Tuple[int, bool]
+	"""
+
+	perpendicular_vector = OpenMaya.MVector(aim_vector) ^ OpenMaya.MVector(up_vector)
+	axis_index = Z_AXIS_INDEX
+	is_negative = is_vector_negative(perpendicular_vector)
+
+	for axis_index, value in enumerate(perpendicular_vector):
+		if int(value) != 0:
+			break
+
+	return axis_index, is_negative

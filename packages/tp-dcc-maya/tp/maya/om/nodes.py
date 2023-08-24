@@ -660,16 +660,15 @@ def set_rotation(mobj, rotation, space=None):
 	transform.setRotation(rotation, space)
 
 
-def set_matrix(mobj, matrix, space=None):
+def set_matrix(mobj: OpenMaya.MObject, matrix: OpenMaya.MMatrix, space: OpenMaya.MSpace = OpenMaya.MSpace.kTransform):
 	"""
 	Sets the object matrix using MTransform.
 
 	:param OpenMaya.MObject mobj: Maya object to modify.
-	:param OpenMaya.MMatrix matrix: Matrix to set
-	:param OpenMaya.MSpace space: coordinate space to set the matrix by
+	:param OpenMaya.MMatrix matrix: Matrix to set.
+	:param OpenMaya.MSpace space: coordinate space to set the matrix by.
 	"""
 
-	space = space or OpenMaya.MSpace.kTransform
 	dag = OpenMaya.MFnDagNode(mobj)
 	transform = OpenMaya.MFnTransform(dag.getPath())
 	transform_matrix = OpenMaya.MTransformationMatrix(matrix)
@@ -1245,10 +1244,13 @@ def add_attribute(
 	soft_max = kwargs.get('softMax')
 	value = kwargs.get('value')
 	locked = kwargs.get('locked', False)
+	nice_name = kwargs.get('niceName', None)
 
 	attr.storable = storable
 	attr.writable = writable
 	attr.connectable = connectable
+	if nice_name:
+		attr.setNiceNameOverride(nice_name)
 
 	if channel_box is not None:
 		attr.channelBox = channel_box
@@ -1356,7 +1358,7 @@ def add_proxy_attribute(mobj, source_plug, **kwargs):
 	:rtype: OpenMaya.MFnAttribute
 	"""
 
-	# numeric compound attributes ie. double3 isn't supported via addCompound as it's an
+	# numeric compound attributes e.g: double3 isn't supported via addCompound as it's an
 	# actual maya type mfn.kAttributeDouble3 which means we don't create it via MFnCompoundAttribute.
 	# therefore we manage that for via the kwargs dict.
 	if kwargs['type'] == attributetypes.kMFnCompoundAttribute:
