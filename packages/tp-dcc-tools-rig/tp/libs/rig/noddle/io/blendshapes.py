@@ -3,8 +3,8 @@ import maya.cmds as cmds
 from tp.core import log
 from tp.common.python import jsonio
 
-from tp.libs.rig.crit.library.functions import files
-from tp.libs.rig.crit.maya.library.io import abstract
+from tp.libs.rig.noddle.utils import files
+from tp.libs.rig.noddle.io import abstract
 
 logger = log.rigLogger
 

@@ -57,7 +57,7 @@ guideLayer:
           internal: false
           mirror: true
           srts:
-            - name: upr
+            - name: upr_guide_srt
               parent: root
               type: transform
               critType: transform
@@ -90,7 +90,7 @@ guideLayer:
               internal: false
               mirror: true
               srts:
-                - name: mid
+                - name: mid_guide_srt
                   parent: upr
                   type: transform
                   critType: transform
@@ -123,7 +123,7 @@ guideLayer:
                   internal: false
                   mirror: true
                   srts:
-                    - name: end
+                    - name: end_guide_srt
                       parent: mid
                       type: transform
                       critType: transform
@@ -155,7 +155,7 @@ guideLayer:
                   internal: false
                   mirror: true
                   srts:
-                    - name: upVec
+                    - name: upVec_guide_srt
                       parent: mid
                       type: transform
                       critType: transform
@@ -217,8 +217,8 @@ inputLayer:
       parent: null
       translate: [ 0.0, 0.0, 0.0 ]
       rotate: [ 0.0, 0.0, 0.0, 1.0 ]
-    - id: endIk
-      name: endIk
+    - id: endik
+      name: endik
       critType: input
       parent: null
       translate: [ 0.0, 0.0, 0.0 ]

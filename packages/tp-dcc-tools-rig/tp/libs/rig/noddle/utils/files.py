@@ -5,12 +5,12 @@ import shutil
 
 from tp.core import log, dcc
 from tp.common.python import path
-from tp.preferences.interfaces import crit
+from tp.preferences.interfaces import noddle
 
 logger = log.rigLogger
 
 
-def create_empty_scene(new_path: str):
+def create_empty_scene(new_path: str) -> bool:
 	"""
 	Copies empty scenes four CRIT assets directory to the given path.
 
@@ -21,10 +21,10 @@ def create_empty_scene(new_path: str):
 	"""
 
 	if path.is_file(new_path):
-		return
+		return False
 
-	crit_interface = crit.crit_interface()
-	source_path = path.join_path(crit_interface.empty_scenes_path(), f'EmptyScene_Maya{dcc.version_name()}.ma')
+	noddle_interface = noddle.noddle_interface()
+	source_path = path.join_path(noddle_interface.empty_scenes_path(), f'EmptyScene_Maya{dcc.version_name()}.ma')
 	logger.debug(f'Copying file "{source_path}" to "{new_path}"')
 	if not path.is_file(source_path):
 		raise IOError

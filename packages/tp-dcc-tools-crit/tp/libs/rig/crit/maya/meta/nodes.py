@@ -395,12 +395,12 @@ class Guide(ControlNode):
 		return node.hasAttribute(consts.CRIT_IS_GUIDE_ATTR)
 
 	@staticmethod
-	def set_guides_world_matrix(guides: list[Guide], matrices: list[api.Matrix], skip_locked_transforms: bool = True):
+	def set_guides_world_matrix(guides: List[Guide], matrices: List[api.Matrix], skip_locked_transforms: bool = True):
 		"""
 		Sets the world matrix of the given guide nodes.
 
-		:param list(Guide) guides: list of guides to set world matrix of.
-		:param list(api.Matrix) matrices: list of matrices to set.
+		:param List[Guide] guides: list of guides to set world matrix of.
+		:param List[api.Matrix] matrices: list of matrices to set.
 		:param bool skip_locked_transforms: whether to skip locked transforms.
 		"""
 
@@ -409,8 +409,11 @@ class Guide(ControlNode):
 		for guide, matrix in zip(guides, matrices):
 			srt = guide.srt()
 			children = list(guide.iterateChildren(recursive=False, node_types=(api.kNodeTypes.kTransform,)))
+
 			for child in children:
 				child.setParent(None)
+
+			shape_transform = None
 			shape_node = guide.shape_node()
 			if shape_node:
 				shape_transform = shape_node.worldMatrix()
@@ -431,7 +434,7 @@ class Guide(ControlNode):
 			for child in children:
 				child.setParent(guide)
 
-			if shape_node:
+			if shape_transform:
 				shape_node.setMatrix(shape_transform * shape_node.offsetParentMatrix.value().inverse())
 
 	@override(check_signature=False)
@@ -538,7 +541,7 @@ class Guide(ControlNode):
 		if not self.exists():
 			return dict()
 
-		attributes_to_skip = list(skip_attributes) + list(self.ATTRIBUTES_TO_SKIP)
+		attributes_to_skip = tuple(list(skip_attributes) + list(self.ATTRIBUTES_TO_SKIP))
 		base_data = super(Guide, self).serializeFromScene(
 			skip_attributes=attributes_to_skip, include_connections=include_connections,
 			include_attributes=include_attributes, extra_attributes_only=extra_attributes_only,
@@ -575,12 +578,6 @@ class Guide(ControlNode):
 	@api.lock_node_context
 	@override(check_signature=False)
 	def delete(self) -> bool:
-		"""
-		Deletes the guide from the scene.
-
-		:rtype: bool
-		"""
-
 		self.delete_shape_transform()
 
 		root_str = self.srt(0)
@@ -615,6 +612,18 @@ class Guide(ControlNode):
 				return Guide(parent.object()), parent.attribute(consts.CRIT_ID_ATTR).value()
 
 		return None, None
+
+	def iterate_guide_parents(self) -> Iterator[Tuple[Guide, str]]:
+		"""
+		Generator function that iterates over all guide parents.
+
+		:return: iterated guide parents.
+		:rtype: Iterator[Tuple[Guide, str]]
+		"""
+
+		for parent in self.iterateParents():
+			if parent.hasAttribute(consts.CRIT_IS_GUIDE_ATTR):
+				yield Guide(parent.object()), parent.attribute(consts.CRIT_ID_ATTR).value()
 
 	def pin_locator_shape(self) -> api.DagNode:
 		"""
@@ -664,6 +673,78 @@ class Guide(ControlNode):
 
 		return False
 
+	def aim_to_child(
+			self, aim_vector: api.OpenMaya.MVector, up_vector: api.OpenMaya.MVector,
+			world_up_vector: api.OpenMaya.MVector | None = None):
+		"""
+		Aims this guide to point to its first child in the hierarchy. If guide has no child, rotation will be reset.
+
+		:param api.OpenMaya.MVector or List[float, float, float] aim_vector: vector to use as the aim vector.
+		:param api.OpenMaya.MVector or List[float, float, float] up_vector: vector to use as the up vector.
+		:param api.OpenMaya.MVector or List[float, float, float] or None  world_up_vector: vector to use as the world
+			up vector.
+		"""
+
+		child = None
+		for child in self.iterate_child_guides(recursive=False):
+			break
+
+		# if the guide is the leaf (it has no children) we set the rotation to zero
+		if child is None:
+			current_parent = self.parent()
+			srt = self.srt()
+			guide_parent, _ = self.guide_parent()
+			if guide_parent is None:
+				return
+			shape_node = self.shape_node()
+			shape_transform = shape_node.worldMatrix() if shape_node else None
+			if str is None:
+				self.setRotation(guide_parent.rotation(space=api.kWorldSpace), space=api.kWorldSpace)
+			else:
+				self.setParent(None, use_srt=False)
+				self.resetTransform(scale=False)
+				self.setParent(current_parent, use_srt=False)
+				self.resetTransform(translate=False, rotate=True, scale=False)
+			if shape_node:
+				shape_node.setMatrix(shape_transform * shape_node.offsetParentMatrix.value().inverse())
+			return
+
+		self.aim_to_guide(child, aim_vector, up_vector, world_up_vector)
+
+	@api.lock_node_context
+	def aim_to_guide(
+			self, target: Guide, aim_vector: api.OpenMaya.MVector, up_vector: api.OpenMaya.MVector,
+			world_up_vector: api.OpenMaya.MVector | None = None):
+		"""
+		Aims this guide to point to the given target guide.
+
+		:param Guide target: target guide to point.
+		:param api.OpenMaya.MVector or List[float, float, float] aim_vector: vector to use as the aim vector.
+		:param api.OpenMaya.MVector or List[float, float, float] up_vector: vector to use as the up vector.
+		:param api.OpenMaya.MVector or List[float, float, float] or None  world_up_vector: vector to use as the world
+			up vector.
+		"""
+
+		shape_node = self.shape_node()
+		for srt in self.iterate_srts():
+			children = list(srt.iterateChildren(recursive=False, node_types=(api.kNodeTypes.kTransform,)))
+			for child in children:
+				child.setParent(None)
+			srt.resetTransform(scale=False)
+			for child in children:
+				child.setParent(srt)
+
+		if shape_node is not None:
+			current_transform = shape_node.worldMatrix()
+			om_nodes.aim_nodes(
+				target_node=target.object(), driven=[self.object()], aim_vector=aim_vector, up_vector=up_vector,
+				world_up_vector=world_up_vector)
+			shape_node.setMatrix(current_transform * shape_node.offsetParentMatrix.value().inverse())
+		else:
+			om_nodes.aim_nodes(
+				target_node=target.object(), driven=[self.object()], aim_vector=aim_vector, up_vector=up_vector,
+				world_up_vector=world_up_vector)
+
 	def snap_pivot(self) -> api.DagNode:
 		"""
 		Returns the locator shape node which is used to interactive viewport snapping.
@@ -689,6 +770,7 @@ class Guide(ControlNode):
 		nurbs_shapes = list()
 		for shape in self.shapes():
 			if shape.typeName == 'critPinLocator':
+				# TODO: here we should scale the internal pin locator scale?
 				continue
 			if shape.hasFn(api.kNodeTypes.kLocator):
 				shape.localScale.set(api.Vector(x, y, z))
@@ -868,6 +950,20 @@ class Guide(ControlNode):
 
 class InputNode(api.DagNode):
 
+	ATTRIBUTES_TO_SKIP = (consts.CRIT_ID_ATTR, api.TP_CONSTRAINTS_ATTR_NAME, consts.CRIT_IS_INPUT_ATTR)
+
+	@staticmethod
+	def is_input(node: api.DGNode) -> bool:
+		"""
+		Returns whether given node is a valid input node.
+
+		:param api.DGNode node: node to check.
+		:return: True if given node is a valid input node; False otherwise.
+		:rtype: bool
+		"""
+
+		return node.hasAttribute(consts.CRIT_IS_INPUT_ATTR)
+
 	@override(check_signature=False)
 	def create(self, **kwargs: Dict):
 
@@ -882,6 +978,27 @@ class InputNode(api.DagNode):
 
 		return self
 
+	@override
+	def serializeFromScene(
+			self, skip_attributes=(), include_connections=True, include_attributes=(), extra_attributes_only=False,
+			use_short_names=False, include_namespace=True):
+
+		base_data = super().serializeFromScene(
+			skip_attributes=self.ATTRIBUTES_TO_SKIP, include_connections=include_connections,
+			include_attributes=include_attributes, extra_attributes_only=extra_attributes_only,
+			use_short_names=use_short_names, include_namespace=include_namespace)
+
+		_, parent_id = self.input_parent()
+		children = [child.serializeFromScene(
+			skip_attributes=self.ATTRIBUTES_TO_SKIP, include_connections=include_connections,
+			include_attributes=include_attributes, extra_attributes_only=extra_attributes_only,
+			use_short_names=use_short_names, include_namespace=include_namespace) for child in self.iterate_child_inputs()]
+		base_data['id'] = self.id()
+		base_data['parent'] = parent_id
+		base_data['children'] = children
+
+		return base_data
+
 	def id(self) -> str:
 		"""
 		Returns the ID attribute value for this input node.
@@ -893,8 +1010,70 @@ class InputNode(api.DagNode):
 		id_attr = self.attribute(consts.CRIT_ID_ATTR)
 		return id_attr.value() if id_attr is not None else ''
 
+	def is_root(self) -> bool:
+		"""
+		Returns whether this input node is root, which means that it is not parented to other input nodes.
+
+		:return: True if input node is a root one; False otherwise.
+		:rtype: bool
+		"""
+
+		return self.input_parent()[0] is None
+
+	def input_parent(self) -> Tuple[InputNode | None, str | None]:
+		"""
+		Returns the input node parent of this node and its respective ID.
+
+		:return: tuple with the input parent as the first element and the input parent ID as the second element.
+		:rtype: Tuple[InputNode or None, str or None]
+		"""
+
+		for parent in self.iterateParents():
+			if parent.hasAttribute(consts.CRIT_IS_INPUT_ATTR):
+				return InputNode(parent.object()), parent.attribute(consts.CRIT_ID_ATTR).value()
+
+		return None, None
+
+	def iterate_child_inputs(self, recursive: bool = False) -> Iterator[InputNode]:
+		"""
+		Generator function that iterates over all child input nodes.
+
+		:param bool recursive: whether to retrieve child input nodes recursively.
+		:return: iterated input nodes.
+		:rtype: Iterator[InputNode]
+		"""
+
+		def _child_inputs(_input_node: InputNode):
+			if not recursive:
+				for _child in _input_node.iterateChildren(recursive=False, node_types=(api.kTransform,)):
+					if self.is_input(_child):
+						yield InputNode(_child.object())
+					else:
+						for _child in _child_inputs(_child):
+							yield _child
+			else:
+				for _child in _input_node.iterateChildren(recursive=recursive, node_types=(api.kTransform,)):
+					if self.is_input(_child):
+						yield InputNode(_child.object())
+
+		return _child_inputs(self)
+
 
 class OutputNode(api.DagNode):
+
+	ATTRIBUTES_TO_SKIP = (consts.CRIT_ID_ATTR, api.TP_CONSTRAINTS_ATTR_NAME, consts.CRIT_IS_OUTPUT_ATTR)
+
+	@staticmethod
+	def is_output(node: api.DGNode) -> bool:
+		"""
+		Returns whether given node is a valid output node.
+
+		:param api.DGNode node: node to check.
+		:return: True if given node is a valid output node; False otherwise.
+		:rtype: bool
+		"""
+
+		return node.hasAttribute(consts.CRIT_IS_OUTPUT_ATTR)
 
 	@override(check_signature=False)
 	def create(self, **kwargs: Dict):
@@ -917,6 +1096,27 @@ class OutputNode(api.DagNode):
 
 		return self
 
+	@override
+	def serializeFromScene(
+			self, skip_attributes=(), include_connections=True, include_attributes=(), extra_attributes_only=False,
+			use_short_names=False, include_namespace=True):
+
+		base_data = super().serializeFromScene(
+			skip_attributes=self.ATTRIBUTES_TO_SKIP, include_connections=include_connections,
+			include_attributes=include_attributes, extra_attributes_only=extra_attributes_only,
+			use_short_names=use_short_names, include_namespace=include_namespace)
+
+		_, parent_id = self.input_parent()
+		children = [child.serializeFromScene(
+			skip_attributes=self.ATTRIBUTES_TO_SKIP, include_connections=include_connections,
+			include_attributes=include_attributes, extra_attributes_only=extra_attributes_only,
+			use_short_names=use_short_names, include_namespace=include_namespace) for child in self.iterate_child_outputs()]
+		base_data['id'] = self.id()
+		base_data['parent'] = parent_id
+		base_data['children'] = children
+
+		return base_data
+
 	def id(self) -> str:
 		"""
 		Returns the ID attribute value for this input node.
@@ -928,46 +1128,64 @@ class OutputNode(api.DagNode):
 		id_attr = self.attribute(consts.CRIT_ID_ATTR)
 		return id_attr.value() if id_attr is not None else ''
 
+	def is_root(self) -> bool:
+		"""
+		Returns whether this output node is root, which means that it is not parented to other output nodes.
+
+		:return: True if output node is a root one; False otherwise.
+		:rtype: bool
+		"""
+
+		return self.output_parent()[0] is None
+
+	def output_parent(self) -> Tuple[OutputNode | None, str | None]:
+		"""
+		Returns the output node parent of this node and its respective ID.
+
+		:return: tuple with the output parent as the first element and the output parent ID as the second element.
+		:rtype: Tuple[OutputNode or None, str or None]
+		"""
+
+		for parent in self.iterateParents():
+			if parent.hasAttribute(consts.CRIT_IS_OUTPUT_ATTR):
+				return OutputNode(parent.object()), parent.attribute(consts.CRIT_ID_ATTR).value()
+
+		return None, None
+
+	def iterate_child_outputs(self, recursive: bool = False) -> Iterator[OutputNode]:
+		"""
+		Generator function that iterates over all child output nodes.
+
+		:param bool recursive: whether to retrieve child output nodes recursively.
+		:return: iterated output nodes.
+		:rtype: Iterator[OutputNode]
+		"""
+
+		def _child_outputs(_output_node: OutputNode):
+			if not recursive:
+				for _child in _output_node.iterateChildren(recursive=False, node_types=(api.kTransform,)):
+					if self.is_output(_child):
+						yield OutputNode(_child.object())
+					else:
+						for _child in _child_outputs(_child):
+							yield _child
+			else:
+				for _child in _output_node.iterateChildren(recursive=recursive, node_types=(api.kTransform,)):
+					if self.is_output(_child):
+						yield OutputNode(_child.object())
+
+		return _child_outputs(self)
+
 
 class Joint(api.DagNode):
 
 	@override(check_signature=False)
 	def create(self, **kwargs: Dict) -> Joint:
 
-		name = kwargs.get('name', 'joint')
-		joint = om_nodes.factory.create_dag_node(name, 'joint')
-		self.setObject(joint)
-		world_matrix = kwargs.get('worldMatrix', None)
-		if world_matrix is not None:
-			transform_matrix = api.TransformationMatrix(api.Matrix(world_matrix))
-			transform_matrix.setScale((1, 1, 1), api.kWorldSpace)
-			self.setWorldMatrix(transform_matrix.asMatrix())
-		else:
-			self.setTranslation(api.Vector(kwargs.get('translate', (0.0, 0.0, 0.0))), space=api.kWorldSpace)
-			self.setRotation(api.Quaternion(kwargs.get('rotate', (0.0, 0.0, 0.0, 1.0))))
-
-		self.setRotationOrder(kwargs.get('rotateOrder', api.consts.kRotateOrder_XYZ))
-		self.setParent(kwargs.get('parent', None), maintain_offset=True)
+		super().create(**kwargs)
 		self.addAttribute(consts.CRIT_ID_ATTR, api.kMFnDataString, value=kwargs.get('id', ''))
-		self.segmentScaleCompensate.set(False)
 
 		return self
-
-	def setParent(
-			self, parent: api.OpenMaya.MObject, maintain_offset: bool = True,
-			mod: api.OpenMaya.MDagModifier | None = None, apply: bool = True) -> api.OpenMaya.MDagModifier:
-
-		rotation = self.rotation(space=api.kWorldSpace)
-		result = super().setParent(parent, maintain_offset=True)
-		if parent is None:
-			return result
-
-		parent_quat = parent.rotation(api.kWorldSpace, as_quaternion=True)
-		new_rotation = rotation * parent_quat.inverse()
-		self.jointOrient.set(new_rotation.asEulerRotation())
-		self.setRotation((0.0, 0.0, 0.0), api.kTransformSpace)
-		if parent.apiType() == api.kJoint:
-			parent.attribute('scale').connect(self.inverseScale)
 
 	@override
 	def serializeFromScene(
@@ -997,29 +1215,6 @@ class Joint(api.DagNode):
 
 		id_attr = self.attribute(consts.CRIT_ID_ATTR)
 		return id_attr.value() if id_attr is not None else ''
-
-	def aim_to_child(
-			self, aim_vector: api.OpenMaya.MVector | List[float, float, float],
-			up_vector: api.OpenMaya.MVector | List[float, float, float], use_joint_orient: bool = True):
-		"""
-		Aims this joint to point to its first child in the hierarchy. If joint has no chain, rotation will be reset.
-
-		:param api.OpenMaya.MVector or List[float, float, float] aim_vector: vector to use as the aim vector.
-		:param api.OpenMaya.MVector or List[float, float, float] up_vector: vector to use as the up vector.
-		:param bool use_joint_orient: whether to move rotation values to the joint orient after aiming.
-		"""
-
-		child = self.child(0)
-		if child is None:
-			self.setRotation(api.Quaternion())
-			return
-
-		om_nodes.aim_nodes(
-			target_node=child.object(), driven=[self.object()], aim_vector=aim_vector, up_vector=up_vector)
-
-		if use_joint_orient:
-			self.jointOrient.set(self.rotation())
-			self.setRotation(api.Quaternion())
 
 
 class Connector(api.DagNode):

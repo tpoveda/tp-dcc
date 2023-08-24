@@ -1,8 +1,10 @@
 name: spineFk
 version: 1.0.0
 descriptorVersion: 1.0.0
-type: spineFk
+type: spinefk
 side: M
+markingMenuGuide: 'critFkChainGuideMenu'
+markingMenuAnim: 'critFkChainAnimMenu'
 guideLayer:
   dag:
     - id: root
@@ -17,7 +19,6 @@ guideLayer:
       matrix: [ 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1 ]
       worldMatrix: [ 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1 ]
       shape: null
-      attributes: []
       pivotShape: 2
       pivotColor: [ 0.38, 0.0, 0.0 ]
       srts:
@@ -31,6 +32,222 @@ guideLayer:
           rotateOrder: 0
           matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
           worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+      children:
+        - id: cog
+          name: cog
+          type: transform
+          critType: guide
+          parent: root
+          translate: [ 0.0, 0.0, 0.0 ]
+          rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+          scale: [ 2.0, 2.0, 2.0 ]
+          matrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 0, 0, 1 ]
+          worldMatrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 0, 0, 1 ]
+          rotateOrder: 2
+          shape: hips
+          color: [ 1.0, 1.0, 0.15 ]
+          shapeTransform:
+            translate: [ 0.0, 0.0, 0.0 ]
+            rotate: [ 0.0, 0.0, -1.0, 0.0 ]
+            scale: [ 15.0, 15.0, 15.0 ]
+          pivotShape: 0
+          pivotColor: [ 1.0, 1.0, 0.0 ]
+          srts:
+            - name: cog_guide_srt
+              parent: root
+              type: transform
+              critType: transform
+              translate: [ 0.0, 0.0, 0.0 ]
+              rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+              scale: [ 1.0, 1.0, 1.0 ]
+              rotateOrder: 0
+              matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+              worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+          children:
+            - id: gimbal
+              name: gimbal
+              type: transform
+              critType: guide
+              parent: cog
+              translate: [ 0.0, 0.0, 0.0 ]
+              rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+              scale: [ 2.0, 2.0, 2.0 ]
+              matrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 0, 0, 1 ]
+              worldMatrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 0, 0, 1 ]
+              rotateOrder: 0
+              shape: gimbal
+              color: [ 0.0, 0.55, 0.0 ]
+              shapeTransform:
+                translate: [ 0.0, 0.0, 0.0 ]
+                rotate: [ 0.0, 0.0, 0.7071067811865476, 0.7071067811865476 ]
+                scale: [ 10.0, 10.0, 10.0 ]
+              pivotShape: 0
+              pivotColor: [ 1.0, 1.0, 0.0 ]
+              srts:
+                - name: gimbal_guide_srt
+                  parent: cog
+                  type: transform
+                  critType: transform
+                  translate: [ 0.0, 0.0, 0.0 ]
+                  rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                  scale: [ 1.0, 1.0, 1.0 ]
+                  rotateOrder: 0
+                  matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+                  worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+              children:
+                - id: hips
+                  name: hips
+                  type: transform
+                  critType: guide
+                  parent: gimbal
+                  translate: [ 0.0, 0.0, 0.0 ]
+                  rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                  scale: [ 2.0, 2.0, 2.0 ]
+                  matrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 0, 0, 1 ]
+                  worldMatrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 0, 0, 1 ]
+                  rotateOrder: 0
+                  shape: circle_down_arrow
+                  color: [ 0.0, 0.55, 0.0 ]
+                  shapeTransform:
+                    translate: [ 0.0, -3.0, 0.0 ]
+                    rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                    scale: [ 8.0, 8.0, 8.0 ]
+                  pivotShape: 0
+                  pivotColor: [ 1.0, 1.0, 0.0 ]
+                  srts:
+                    - name: hips_guide_srt
+                      parent: gimbal
+                      type: transform
+                      critType: transform
+                      translate: [ 0.0, 0.0, 0.0 ]
+                      rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                      scale: [ 1.0, 1.0, 1.0 ]
+                      rotateOrder: 0
+                      matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+                      worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+                - id: fk00
+                  name: fk00
+                  type: transform
+                  critType: guide
+                  parent: gimbal
+                  translate: [ 0.0, 0.5, 0.0 ]
+                  rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                  scale: [ 2.0, 2.0, 2.0 ]
+                  matrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 0.5, 0, 1 ]
+                  worldMatrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 0.5, 0, 1 ]
+                  rotateOrder: 0
+                  shape: circle_up_arrow
+                  color: [ 0.0, 0.55, 0.0 ]
+                  shapeTransform:
+                    translate: [ 0.0, 0.5, 0.0 ]
+                    rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                    scale: [ 8.0, 8.0, 8.0 ]
+                  pivotShape: 0
+                  pivotColor: [ 1.0, 1.0, 0.0 ]
+                  srts:
+                    - name: fk00_guide_srt
+                      parent: gimbal
+                      type: transform
+                      critType: transform
+                      translate: [ 0.0, 0.0, 0.0 ]
+                      rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                      scale: [ 1.0, 1.0, 1.0 ]
+                      rotateOrder: 0
+                      matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+                      worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+                  children:
+                    - id: fk01
+                      name: fk01
+                      type: transform
+                      critType: guide
+                      parent: fk00
+                      translate: [ 0.0, 7.0, 0.0 ]
+                      rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                      scale: [ 2.0, 2.0, 2.0 ]
+                      matrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 7.0, 0, 1 ]
+                      worldMatrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 7.0, 0, 1 ]
+                      rotateOrder: 0
+                      shape: circle_up_arrow
+                      color: [ 0.0, 0.55, 0.0 ]
+                      shapeTransform:
+                        translate: [ 0.0, 7.0, 0.0 ]
+                        rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                        scale: [ 8.0, 8.0, 8.0 ]
+                      pivotShape: 0
+                      pivotColor: [ 1.0, 1.0, 0.0 ]
+                      srts:
+                        - name: fk01_guide_srt
+                          parent: fk00
+                          type: transform
+                          critType: transform
+                          translate: [ 0.0, 0.0, 0.0 ]
+                          rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                          scale: [ 1.0, 1.0, 1.0 ]
+                          rotateOrder: 0
+                          matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+                          worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+                      children:
+                        - id: fk02
+                          name: fk02
+                          type: transform
+                          critType: guide
+                          parent: fk01
+                          translate: [ 0.0, 14.0, 0.0 ]
+                          rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                          scale: [ 2.0, 2.0, 2.0 ]
+                          matrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 14.0, 0, 1 ]
+                          worldMatrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 14.0, 0, 1 ]
+                          rotateOrder: 0
+                          shape: circle_up_arrow
+                          color: [ 0.0, 0.55, 0.0 ]
+                          shapeTransform:
+                            translate: [ 0.0, 14.0, 0.0 ]
+                            rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                            scale: [ 8.0, 8.0, 8.0 ]
+                          pivotShape: 0
+                          pivotColor: [ 1.0, 1.0, 0.0 ]
+                          srts:
+                            - name: fk02_guide_srt
+                              parent: fk01
+                              type: transform
+                              critType: transform
+                              translate: [ 0.0, 0.0, 0.0 ]
+                              rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                              scale: [ 1.0, 1.0, 1.0 ]
+                              rotateOrder: 0
+                              matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+                              worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+                          children:
+                            - id: fk03
+                              name: fk03
+                              type: transform
+                              critType: guide
+                              parent: fk02
+                              translate: [ 0.0, 21.0, 0.0 ]
+                              rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                              scale: [ 2.0, 2.0, 2.0 ]
+                              matrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 21.0, 0, 1 ]
+                              worldMatrix: [ 2.0, 0, 0.0, 0, 0, 2.0, 0, 0, 0.0, 0, 2.0, 0, 0, 21.0, 0, 1 ]
+                              rotateOrder: 0
+                              shape: circle_up_arrow
+                              color: [ 0.0, 0.55, 0.0 ]
+                              shapeTransform:
+                                translate: [ 0.0, 21.0, 0.0 ]
+                                rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                                scale: [ 8.0, 8.0, 8.0 ]
+                              pivotShape: 0
+                              pivotColor: [ 1.0, 1.0, 0.0 ]
+                              srts:
+                                - name: fk03_guide_srt
+                                  parent: fk02
+                                  type: transform
+                                  critType: transform
+                                  translate: [ 0.0, 0.0, 0.0 ]
+                                  rotate: [ 0.0, 0.0, 0.0, 1.0 ]
+                                  scale: [ 1.0, 1.0, 1.0 ]
+                                  rotateOrder: 0
+                                  matrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
+                                  worldMatrix: [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
   settings:
     - name: jointCount
       type: 2
@@ -44,3 +261,31 @@ guideLayer:
       min: 3
       softMax: null
       softMin: null
+inputLayer:
+  dag:
+    - id: world
+      name: world
+      critType: input
+      root: false
+    - id: parent
+      name: parent
+      critType: input
+      root: true
+rigLayer:
+  settings:
+    controlPanel:
+      - name: _
+        type: 12
+        enums: [ 'VISIBILITY' ]
+        isDynamic: true
+        keyable: false
+        locked: true
+        channelBox: true
+      - name: cogGimbalVis
+        type: 0
+        value: false
+        default: false
+        isDynamic: true
+        keyable: false
+        locked: false
+        channelBox: true

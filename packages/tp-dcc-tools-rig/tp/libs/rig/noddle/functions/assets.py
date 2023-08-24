@@ -5,7 +5,7 @@ import maya.cmds as cmds
 from tp.core import log
 from tp.common.python import path
 
-from tp.libs.rig.crit.core import asset
+from tp.libs.rig.noddle.core import asset
 
 logger = log.rigLogger
 
@@ -29,7 +29,15 @@ def browse_model():
 	return model_path
 
 
-def import_model(browse_if_not_found=False):
+def import_model(browse_if_not_found: bool = False) -> str:
+	"""
+	Imports model of the current active asset.
+
+	:param bool browse_if_not_found: whether to show a browse window if not model file is defined within current
+		active asset metadata file.
+	:return: imported model absolute path.
+	:rtype: str
+	"""
 
 	current_asset = asset.Asset.get()
 	if not current_asset:
@@ -61,7 +69,13 @@ def import_model(browse_if_not_found=False):
 	return model_path
 
 
-def import_skeleton():
+def import_skeleton() -> str:
+	"""
+	Imports skeleton of the current active asset.
+
+	:return: imported skeleton absolute path.
+	:rtype: str
+	"""
 
 	current_asset = asset.Asset.get()
 	if not current_asset:

@@ -1,16 +1,4 @@
 settings:
-    project:
-        recentProjects: []
-        maxRecent: 3
-    naming:
-        templates:
-            default: '{side}_{name}_{suffix}'
-            alternative: '{name}_{side}_{suffix}'
-            unreal: '{suffix}_{name}_{side}'
-        profile:
-          indexPadding: 2
-          template: 'default'
-          startIndex: 0
     requiredMayaPlugins:
       - 'matrixNodes'
       - 'lookdevKit'

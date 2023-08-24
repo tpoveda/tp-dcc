@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import typing
-from typing import Tuple, List, Dict, Iterator
+from typing import Tuple, List, Dict, Iterator, Iterable
 
 from overrides import override
 
@@ -195,9 +195,9 @@ class CritLayer(base.DependentNode):
 
 	def add_extra_nodes(self, nodes: List[api.DGNode]):
 		"""
-		Connects given nodes into this meta node instance as an extra node.
+		Connects given nodes into this meta node instance as extra nodes.
 
-		:param List[api.DGNode] nodes: node to add as extra node.
+		:param List[api.DGNode] nodes: nodes to add as extra node.
 		"""
 
 		extras_array = self.attribute(consts.CRIT_EXTRA_NODES_ATTR)
@@ -538,13 +538,13 @@ class CritGuideLayer(CritLayer):
 		guide_plug = self.attribute(consts.CRIT_GUIDES_ATTR)
 		return guide_plug.evaluateNumElements()
 
-	def find_guides(self, *guide_ids: Tuple[str]) -> List[meta_nodes.Guide | None]:
+	def find_guides(self, *guide_ids: Iterable[str]) -> List[meta_nodes.Guide]:
 		"""
 		Searches and returns guides with given IDs.
 
 		:param Tuple[str] guide_ids: list of guide IDs to search for.
 		:return: list of found guides.
-		:rtype: List[meta_nodes.Guide or None]
+		:rtype: List[meta_nodes.Guide]
 		"""
 
 		if not self.exists():
@@ -881,8 +881,13 @@ class CritGuideLayer(CritLayer):
 		"""
 
 		guides = list(self.iterate_guides(include_root=False))
+
+		print('gogoggog', guides)
+
 		if not guides:
 			return
+
+		print('gogogo')
 
 		matrices = list()
 		align_guides = list()
@@ -897,6 +902,7 @@ class CritGuideLayer(CritLayer):
 			for child in guide.iterate_child_guides(recursive=False):
 				break
 			if child is None:
+				print('1')
 				parent_guide, _ = guide.guide_parent()
 				parent_matrix = new_transforms.get(parent_guide.id(), guide.worldMatrix())
 				transform_matrix = api.TransformationMatrix(parent_matrix)
@@ -904,6 +910,7 @@ class CritGuideLayer(CritLayer):
 				transform_matrix.setScale(guide.scale(api.kWorldSpace), api.kWorldSpace)
 				matrix = transform_matrix.asMatrix()
 			else:
+				print('2')
 				transform_matrix = guide.transformationMatrix()
 				rotation = om_mathlib.look_at(
 					guide.translation(), child.translation(), api.Vector(aim_vector), api.Vector(up_vector))
@@ -1074,6 +1081,16 @@ class CritInputLayer(CritLayer):
 
 		return attrs
 
+	@override
+	def serializeFromScene(self) -> Dict:
+
+		return {
+			consts.INPUT_LAYER_DESCRIPTOR_KEY: {
+				consts.SETTINGS_DESCRIPTOR_KEY: map(plugs.serialize_plug, self.root_transform().iterateExtraAttributes()),
+				consts.DAG_DESCRIPTOR_KEY: [i.serializeFromScene(include_namespace=False, use_short_names=True) for i in self.iterate_root_inputs()]
+			}
+		}
+
 	def has_input(self, name: str) -> bool:
 		"""
 		Returns whether input node with given name is attached to this layer instance.
@@ -1125,6 +1142,50 @@ class CritInputLayer(CritLayer):
 
 		return meta_nodes.InputNode(source.node().object())
 
+	def root_input_plug(self) -> api.Plug | None:
+		"""
+		Returns the plug where root input is connected to.
+
+		:return: root input plug.
+		:rtype: api.Plug or None
+		"""
+
+		found_root_plug = None
+		for element in self.attribute(consts.CRIT_INPUTS_ATTR):
+			is_root = element.child(2).value()
+			if not is_root:
+				continue
+			found_root_plug = element
+			break
+
+		return found_root_plug
+
+	def root_input(self) -> meta_nodes.InputNode | None:
+		"""
+		Returns the root input node.
+
+		:return: root input node.
+		:rtype: meta_nodes.InputNode or None
+		"""
+
+		root_input_plug = self.root_input_plug()
+		if root_input_plug is None:
+			return None
+
+		return meta_nodes.InputNode(root_input_plug.child(0).sourceNode().object())
+
+	def iterate_root_inputs(self) -> Iterator[meta_nodes.InputNode]:
+		"""
+		Generator function that iterates over all root input nodes within this layer.
+
+		:return: iterated root input nodes.
+		:rtype: Iterator[meta_nodes.InputNode]
+		"""
+
+		for input_node in self.iterate_inputs():
+			if input_node.is_root():
+				yield input_node
+
 	def iterate_inputs(self) -> Iterator[meta_nodes.InputNode]:
 		"""
 		Generator function that iterates over all input nodes within this layer.
@@ -1138,6 +1199,26 @@ class CritInputLayer(CritLayer):
 			source = element.child(0).source()
 			if source is not None:
 				yield meta_nodes.InputNode(source.node().object())
+
+	def find_inputs(self, *ids: Iterable[str]) -> List[meta_nodes.InputNode | None]:
+		"""
+		Searches and returns input nodes with given IDs.
+
+		:param Tuple[str] ids: list of input node IDs to search for.
+		:return: list of found input nodes.
+		:rtype: List[meta_nodes.InputNode]
+		"""
+
+		valid_inputs = [None] * len(ids)
+		for element in self.attribute(consts.CRIT_INPUTS_ATTR):
+			input_id = element.child(1).asString()
+			if input_id not in ids:
+				continue
+			source = element.child(0).source()
+			if source:
+				valid_inputs[ids.index(input_id)] = meta_nodes.InputNode(source.node().object())
+
+		return valid_inputs
 
 	def create_input(self, name: str, **kwargs: Dict) -> meta_nodes.InputNode:
 		"""

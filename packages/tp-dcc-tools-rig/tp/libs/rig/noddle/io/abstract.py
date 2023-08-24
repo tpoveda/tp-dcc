@@ -3,9 +3,8 @@ from __future__ import annotations
 from tp.core import log
 from tp.common.python import helpers, decorators
 
-from tp.libs.rig.crit.core import asset
-from tp.libs.rig.crit.library.functions import files
-from tp.libs.rig.crit.maya.library.functions import rigs
+from tp.libs.rig.noddle.core import asset
+from tp.libs.rig.noddle.utils import files
 
 logger = log.rigLogger
 

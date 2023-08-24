@@ -66,8 +66,7 @@ def root_by_rig_name(name: str, namespace: str | None = None) -> CritRig | None:
 			raise errors.CritRigDuplicationError(dupes)
 		for meta_rig in meta_rigs:
 			if meta_rig.attribute(consts.CRIT_NAME_ATTR).value() == name:
-				found_meta_rig = meta_rig
-				break
+				return meta_rig
 	if found_meta_rig is None and namespace:
 		namespace = namespace if namespace.startswith(':') else f':{namespace}'
 		for meta_rig in meta_rigs:

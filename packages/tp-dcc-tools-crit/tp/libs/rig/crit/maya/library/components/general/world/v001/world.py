@@ -6,12 +6,13 @@ from overrides import override
 
 from tp.maya import api
 from tp.libs.rig.crit import api as crit
+from tp.libs.rig.crit.maya.core import component
 
 
 GOD_NODE_ID = 'godnode'
 
 
-class WorldComponent(crit.Component):
+class WorldComponent(component.Component):
 
 	ID = 'world'
 	DESCRIPTION = 'Master component for all CRIT rigs'
@@ -41,9 +42,10 @@ class WorldComponent(crit.Component):
 
 	@override
 	def set_skeleton_naming(self, naming_manager: crit.NameManager, mod: api.DGModifier):
+		component_name, component_side = self.name(), self.side()
 		skeleton_layer = self.skeleton_layer()
 		name = naming_manager.resolve(
-			'skinJointName', {'componentName': self.name(), 'side': self.side(), 'id': 'root', 'type': 'joint'})
+			'skinJointName', {'componentName': component_name, 'side': component_side, 'id': 'root', 'type': 'joint'})
 		root_joint = skeleton_layer.joint(GOD_NODE_ID)
 		if root_joint is not None:
 			root_joint.rename(name, mod=mod, apply=False)

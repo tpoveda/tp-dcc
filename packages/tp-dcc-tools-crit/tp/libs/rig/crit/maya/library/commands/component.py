@@ -471,6 +471,70 @@ class SelectAllGuideShapesCommand(command.MayaCommand):
 			cmds.select([nodes.name(i.object()) for i in self._old_selection], deselect=True)
 
 
+class AlignGuidesCommand(command.MayaCommand):
+	"""
+	Realigns all guides based on auto align settings.
+	"""
+
+	id = 'crit.component.guide.align.all'
+	creator = 'Tomas Poveda'
+	is_undoable = True
+	is_enabled = True
+	use_undo_chunk = True
+	disable_queue = True
+	ui_data = {'icon': 'target', 'tooltip': __doc__, 'label': 'Auto Align Guides', 'color': '', 'backgroundColor': ''}
+
+	_changes = []				# type: List[Tuple[crit.Component, List[Dict]]]
+
+	@override
+	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+
+		requested_components = arguments.get('components')
+		if not requested_components:
+			self.display_warning('Command requires component instances to be given')
+			return
+
+		valid_components = []
+		for component in requested_components:
+			if not component.has_guide():
+				continue
+			guide_layer = component.guide_layer()
+			if not guide_layer.guide_settings().manualOrient.value():
+				valid_components.append(component)
+		if not valid_components:
+			self.display_warning('No valid components with auto align support given')
+			return
+
+		arguments['components'] = valid_components
+
+		return arguments
+
+	@override(check_signature=False)
+	def do(self, components: List[crit.Component] | None = None):
+		rig = None
+		for component in components:
+			guide_layer = component.guide_layer()
+			rig = component.rig
+			changes = []
+			for guide in guide_layer.iterate_guides(include_root=False):
+				for srt in guide.iterate_srts():
+					changes.append({'node': srt, 'translation': srt.translation(), 'rotation': srt.rotation(api.kWorldSpace)})
+				changes.append({'node': guide, 'translation': guide.translation(), 'rotation': guide.rotation(api.kWorldSpace)})
+			self._changes.append((component, changes))
+		crit.align_guides(rig, components)
+
+	@override
+	def undo(self):
+		for component, changes in self._changes:
+			with component.disconnect_component_context():
+				for change in changes:
+					guide = change['node']
+					if not guide.exists():
+						continue
+					guide.setTranslation(change['translation'], api.kWorldSpace)
+					guide.setRotation(change['rotation'])
+
+
 class DeleteComponentCommand(command.MayaCommand):
 	"""
 	Deletes a component

@@ -22,7 +22,7 @@ class CritDefaultGuideMenu(markingmenu.MarkingMenuDynamic):
 	ID = crit.consts.DEFAULT_GUIDE_MARKING_MENU
 
 	@override
-	def execute(self, layout: markingmenu.MarkingMenuLayout, arguments: Dict) -> markingmenu.MarkingMenuLayout:
+	def execute(self, layout: markingmenu.MarkingMenuLayout, arguments: Dict) -> markingmenu.MarkingMenuLayout | None:
 
 		components, rig = self._apply_crit_context_to_arguments(arguments)
 		if components is None or rig is None:
@@ -79,6 +79,27 @@ class CritDefaultGuideMenu(markingmenu.MarkingMenuDynamic):
 		]
 
 		generic.extend([
+			{
+				'type': 'command',
+				'id': 'critGuideAutoAlign',
+				'arguments': {
+					'rig': rig,
+					'components': components,
+					'alignAll': False
+				}
+			},
+			{
+				'type': 'command',
+				'id': 'critGuideAutoAlign',
+				'arguments': {
+					'rig': rig,
+					'components': components,
+					'alignAll': True
+				}
+			},
+			{
+				'type': 'separator'
+			},
 			{
 				'type': 'menu',
 				'label': 'Select',

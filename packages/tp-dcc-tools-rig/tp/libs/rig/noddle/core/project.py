@@ -1,27 +1,32 @@
+from __future__ import annotations
+
 import os
+
+from typing import Dict
 
 from tp.core import log
 from tp.common.python import path, folder, fileio, yamlio, timedate
 from tp.preferences import manager as preferences
 
-from tp.libs.rig.crit.core import asset
+from tp.libs.rig.noddle.core import asset
+from tp.libs.rig.noddle.interface import hud
 
 logger = log.rigLogger
 
 
 class Project:
 	"""
-	Base class that represents a CRIT rigging project
+	Base class that represents a Noddle rigging project
 	"""
 
-	TAG_FILE = 'crit.proj'
+	TAG_FILE = 'noddle.proj'
 	_INSTANCE = None						# type: Project
 
 	def __init__(self, directory: str):
 		super().__init__()
 
 		self._path = directory
-		self._interface = preferences.preference.interface('crit')
+		self._interface = preferences.preference.interface('noddle')
 
 	def __repr__(self):
 		return f'{self.name}({self.path}): {self.meta_data}'
@@ -35,7 +40,7 @@ class Project:
 		return path.basename(self.path)
 
 	@property
-	def tag_path(self):
+	def tag_path(self) -> str:
 		return path.join_path(self.path, self.TAG_FILE)
 
 	@property
@@ -43,8 +48,8 @@ class Project:
 		return path.join_path(self.path, f'{self.name}.meta')
 
 	@property
-	def meta_data(self) -> dict:
-		meta_dict = dict()
+	def meta_data(self) -> Dict:
+		meta_dict = {}
 		if path.is_file(self.meta_path):
 			meta_dict = yamlio.read_file(self.meta_path)
 		for category in os.listdir(self.path):
@@ -58,29 +63,29 @@ class Project:
 	@classmethod
 	def is_project(cls, directory: str) -> bool:
 		"""
-		Returns whether given path contains a valid CRIT project.
+		Returns whether given path contains a valid Noddle project.
 
 		:param str directory: absolute path pointing to a directory within disk.
-		:return: True if the given path contains a CRIT project; False otherwise.
+		:return: True if the given path contains a Noddle project; False otherwise.
 		:rtype: bool
 		"""
 
 		return path.is_file(path.join_path(directory, cls.TAG_FILE))
 
 	@classmethod
-	def create(cls, directory: str, silent: bool = False):
+	def create(cls, directory: str, silent: bool = False) -> Project | None:
 		"""
-		Creates a new CRIT project instance and all necessary files within given directory.
+		Creates a new Noddle project instance and all necessary files within given directory.
 
 		:param str directory: absolute path pointing to a directory within disk.
 		:param bool silent: whether to silent some optional operations while project creation.
 		:return: newly created project instance or None.
 		:rtype: Project or None
-		..note:: If a CRIT project already exists in the given directory, the creation will be aborted.
+		..note:: If a Noddle project already exists in the given directory, the creation will be aborted.
 		"""
 
 		if cls.is_project(directory):
-			logger.error(f'Given directory: "{directory}" already contains a CRIT project')
+			logger.error(f'Given directory: "{directory}" already contains a Noddle project')
 			return None
 
 		# create project tag and meta files
@@ -102,27 +107,27 @@ class Project:
 	@classmethod
 	def get(cls):
 		"""
-		Returns current active CRIT project instance.
+		Returns current active Noddle project instance.
 
-		:return: active CRIT project.
+		:return: active Noddle project.
 		:rtype: Project or None
 		"""
 
 		return cls._INSTANCE
 
 	@classmethod
-	def set(cls, directory: str, silent: bool = False):
+	def set(cls, directory: str, silent: bool = False) -> Project | None:
 		"""
-		Sets current CRIT active project to the given directory.
+		Sets current Noddle active project to the given directory.
 
-		:param str directory: absolute path pointing to a directory that contains a valid CRIT project.
+		:param str directory: absolute path pointing to a directory that contains a valid Noddle project.
 		:param bool silent: whether to silent some optional operations while project setting.
 		:return: newly set project instance or None.
 		:rtype: Project or None
 		"""
 
 		if not cls.is_project(directory):
-			logger.error(f'Given directory "{directory}" is not a valid CRIT project!')
+			logger.error(f'Given directory "{directory}" is not a valid Noddle project!')
 			return None
 
 		# create project instance
@@ -137,6 +142,25 @@ class Project:
 			project_instance.add_to_recent()
 
 		return project_instance
+
+	@classmethod
+	def exit(cls):
+		"""
+		Unsets current active project.
+		"""
+
+		cls._INSTANCE = None
+		asset.Asset._INSTANCE = None
+		hud.NoddleHUD.refresh()
+
+	@staticmethod
+	def refresh_recent():
+		"""
+		Refreshes recent projects by ensuring recent project folders exist.
+		"""
+
+		interface = preferences.preference.interface('noddle')
+		interface.refresh_recent_projects()
 
 	def set_data(self, key: str, value: str):
 		"""
@@ -162,4 +186,6 @@ class Project:
 		Adds current project into the list of recent projects.
 		"""
 
+		self._interface.set_previous_project(self.path)
 		self._interface.add_recent_project(self.name, self.path)
+		hud.NoddleHUD.refresh()

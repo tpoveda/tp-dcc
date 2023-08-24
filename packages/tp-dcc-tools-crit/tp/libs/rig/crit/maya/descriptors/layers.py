@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Tuple, List, Iterator, Dict
+from typing import Tuple, List, Iterator, Dict, Any
 
 from overrides import override
 
@@ -915,6 +915,121 @@ class RigLayerDescriptor(LayerDescriptor):
 		dg_graphs = kwargs.get(consts.DG_DESCRIPTOR_KEY)
 		if dg_graphs is not None:
 			self[consts.DG_DESCRIPTOR_KEY] = graphs.NamedGraphs.from_data(dg_graphs)
+
+	def setting(self, node_name: str, name: str) -> attributes.AttributeDescriptor | None:
+		"""
+		Returns the attribute descriptor instance attached to the node with and with the given name.
+
+		:param str node_name: name of the node where the setting is located ('constants, 'controlPanel', ...).
+		:param str name: name of the setting to get descriptor of.
+		:return: attribute descriptor instance.
+		:rtype: attributes.AttributeDescriptor or None
+		"""
+
+		found_descriptor = None
+		try:
+			node_settings = self[consts.SETTINGS_DESCRIPTOR_KEY][node_name]
+			for i in iter(node_settings):
+				if i.name == name:
+					found_descriptor = i
+					break
+		except KeyError:
+			return None
+
+		return found_descriptor
+
+	def add_setting(self, node_name: str, **kwargs: Dict):
+		"""
+		Adds a new setting to the node with the given attribute descriptor data.
+
+		:param str node_name: name of the node to attach the setting to.
+		:param Dict kwargs: attribute descriptor data with the attribute arguments to add.
+		"""
+
+		exists = self.setting(node_name, kwargs.get('name', ''))
+		if exists:
+			exists.value = kwargs.get('value', exists.value)
+			exists.default = kwargs.get('default', exists.default)
+			exists.min = kwargs.get('min', exists.min)
+			exists.max = kwargs.get('max', exists.max)
+			exists.softMin = kwargs.get('softMin', exists.softMin)
+			exists.softMax = kwargs.get('softMax', exists.softMax)
+			return
+
+		s = attributes.attribute_class_for_descriptor(kwargs)
+		self[consts.SETTINGS_DESCRIPTOR_KEY].setdefault(node_name, []).append(s)
+
+		return s
+
+	def add_settings(self, node_name: str, attribute_descriptors: List[attributes.AttributeDescriptor]):
+		"""
+		Adds given settings to the node with given name.
+
+		:param str node_name: name of the node to attach the setting to.
+		:param List[attributes.AttributeDescriptor] attribute_descriptors: attribute descriptors to add.
+		"""
+
+		for setting in attribute_descriptors:
+			self.add_setting(node_name, **setting)
+
+	def insert_setting_by_name(
+			self, node_name: str, name: str, setting_descriptor: attributes.AttributeDescriptor,
+			before: bool = False) -> bool:
+		"""
+		Inserts a setting either before or after the existing setting with given name.
+
+		:param str node_name:
+		:param str name:
+		:param attributes.AttributeDescriptor setting_descriptor:
+		:param bool before:
+		:return: True if setting was inserted successfully; False otherwise.
+		:rtype: bool
+		"""
+
+		if node_name not in self[consts.SETTINGS_DESCRIPTOR_KEY]:
+			return False
+
+		s = attributes.attribute_class_for_descriptor(setting_descriptor)
+		for i, attribute_descriptor in enumerate(self[consts.SETTINGS_DESCRIPTOR_KEY][node_name]):
+			if attribute_descriptor.name == name:
+				insert_index = i if before else i + 1
+				self[consts.SETTINGS_DESCRIPTOR_KEY][node_name].insert(insert_index, s)
+				return True
+
+		return False
+
+	def set_setting_value(self, node_name: str, name: str, value: Any):
+		"""
+		Sets the value for setting.
+
+		:param str node_name: name of the node where the setting is located ('constants, 'controlPanel', ...).
+		:param str name: name of the setting to set value for.
+		:param Any value: setting value.
+		"""
+
+		sets = self.setting(node_name, name)
+		if sets:
+			sets.value = value
+
+	def delete_setting(self, node_name: str, name: str) -> bool:
+		"""
+		Deletes a setting with given name from the given node.
+
+		:param str node_name: name of the node where the setting is located ('constants, 'controlPanel', ...).
+		:param str name: name of the setting to delete.
+		:return: True if the setting was deleted successfully; False otherwise.
+		:rtype: bool
+		"""
+
+		try:
+			node_settings = self[consts.SETTINGS_DESCRIPTOR_KEY][node_name]
+			for i in node_settings:
+				if i.name == name:
+					node_settings.remove(i)
+					return True
+			return False
+		except KeyError:
+			return False
 
 	def _update_settings(self, kwargs: Dict):
 		"""

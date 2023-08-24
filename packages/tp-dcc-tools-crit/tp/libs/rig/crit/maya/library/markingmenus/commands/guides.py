@@ -210,3 +210,31 @@ class ComponentToggleVisibilityMarkingMenuCommand(markingmenu.MarkingMenuCommand
 		if settings:
 			crit.commands.update_rig_configuration(rig, settings)
 			logger.info(f'Completed Toggling visibility of {visibility_type}')
+
+
+class AutoAlignGuidesMarkingMenuCommand(markingmenu.MarkingMenuCommand):
+
+	ID = 'critGuideAutoAlign'
+
+	@staticmethod
+	@override
+	def ui_data(arguments: Dict) -> Dict:
+
+		arguments.update(
+			{'icon': 'target', 'label': 'Align Selected' if not arguments.get('alignAll') else 'Align All',
+			 'bold': False, 'italic': False, 'optionBox': False})
+
+		return arguments
+
+	@override
+	def execute(self, arguments: Dict):
+		components = arguments.get('components')
+		if not components:
+			return
+
+		if arguments.get('alignAll'):
+			crit.commands.auto_align_guides(components=arguments['rig'].components())
+		else:
+			crit.commands.auto_align_guides(components=components)
+
+		logger.info('Completed align guides')

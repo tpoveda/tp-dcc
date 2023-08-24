@@ -7,14 +7,12 @@ displayName: 'tp-dcc-tools-rig'
 environment:
   PYTHONPATH:
     - '{self}'
+    - '{self}/preferences'
   TPDCC_BASE_PATHS:
     - '{self}'
   TPDCC_TOOL_DEFINITION_MODULES:
     - '{self}/tp/tools/rig/rigscript/tool.py'
-    - '{self}/tp/tools/rig/crit/maya/tool.py'
   TPDCC_META_PATHS:
-    - '{self}/tp/libs/rig/crit/maya/meta'
-  TPDCC_COMMAND_LIB:
-    - '{self}/tp/libs/rig/crit/maya/library/commands'
+    - '{self}/tp/libs/rig/noddle/meta'
 commands:
   - '{self}/startup/rig.py'

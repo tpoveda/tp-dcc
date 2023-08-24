@@ -5,10 +5,13 @@
 Module that contains Preferences manager class implementation
 """
 
+from __future__ import annotations
+
 import os
 import copy
 import timeit
 import shutil
+from typing import Any
 from collections import OrderedDict
 
 from tp.bootstrap import api
@@ -307,16 +310,18 @@ class PreferencesManager(object):
 
 		return PreferenceObject('', relative_path)
 
-	def find_setting(self, relative_path, root, name=None, default=None, extension=None):
+	def find_setting(
+			self, relative_path: str, root: str | None, name: str | None = None, default: Any = None,
+			extension: str | None = None):
 		"""
 		Searches the roots for the relative path and returns the PreferencesObject or if name is provided the value of
 		key withing the preference data.
 
 		:param str relative_path: relative path to the preference file we are looking for.
 		:param str root: the root name to search. If None, all roots will be searched until the relative path is found.
-		:param str name: optional name of a specific option within the preferences to return value of.
-		:param str or None default: optional value to return if not setting with name was found.
-		:param str extension: optional extension of the setting file we are looking for.
+		:param str or None name: optional name of a specific option within the preferences to return value of.
+		:param Any default: optional value to return if not setting with name was found.
+		:param str or None extension: optional extension of the setting file we are looking for.
 		:return: preference data or value found.
 		:rtype: PreferenceObject or object
 		"""

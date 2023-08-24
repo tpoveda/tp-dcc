@@ -227,3 +227,13 @@ def delete_components(rig: Rig, components: List[Component], children: bool = Tr
 		helpers.create_repeat_command_for_function(_repeat_delete_components)
 
 	return result
+
+
+def auto_align_guides(components: List[Component]):
+	"""
+	Realign all given component guides by realigning the rotations using the guide settings for auto align feature.
+
+	:param List[Component] components: list of components whose guides we want to align.
+	"""
+
+	command.execute('crit.component.guide.align.all', **locals())

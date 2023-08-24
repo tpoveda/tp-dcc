@@ -1,13 +1,34 @@
 from __future__ import annotations
 
+import typing
+
 from tp.common.python import path, folder, fileio, yamlio, timedate
 
-from tp.libs.rig.crit.library.functions import files
+from tp.libs.rig.noddle.utils import files
+from tp.libs.rig.noddle.interface import hud
+
+if typing.TYPE_CHECKING:
+	from tp.libs.rig.noddle.core.project import Project
 
 
 class Asset:
 
 	_INSTANCE = None			# type: Asset
+
+	class WeightDirectoryStruct:
+		def __init__(self, root):
+
+			self.blendshape = folder.ensure_folder_exists(path.join_path(root, 'weights', 'blendshape'))
+			self.delta_mush = folder.ensure_folder_exists(path.join_path(root, 'weights', 'delta_mush'))
+			self.ffd = folder.ensure_folder_exists(path.join_path(root, 'weights', 'ffd'))
+			self.ncloth = folder.ensure_folder_exists(path.join_path(root, 'weights', 'ncloth'))
+			self.skin = folder.ensure_folder_exists(path.join_path(root, 'weights', 'skin'))
+			self.nonlinear = folder.ensure_folder_exists(path.join_path(root, 'weights', 'nonlinear'))
+			self.tension = folder.ensure_folder_exists(path.join_path(root, 'weights', 'tension'))
+			self.soft_mod = folder.ensure_folder_exists(path.join_path(root, 'weights', 'soft_mod'))
+			self.ds_attract = folder.ensure_folder_exists(path.join_path(root, 'weights', 'ds_attract'))
+			self.ng_layers = folder.ensure_folder_exists(path.join_path(root, 'weights', 'ng_layers'))
+			self.ng_layers2 = folder.ensure_folder_exists(path.join_path(root, 'weights', 'ng_layers2'))
 
 	class DataDirectoryStruct:
 		def __init__(self, root):
@@ -24,11 +45,11 @@ class Asset:
 
 			self.blendshapes = fileio.create_file(path.join_path(data_struct.blendshapes, 'mapping.json'), data=r'{}')
 
-	def __init__(self, project: 'tp.libs.rig.crit.core.project.Project', name: str, asset_type: str):
+	def __init__(self, project: Project, name: str, asset_type: str):
 		super().__init__()
 
 		self._name = name
-		self._type = asset_type
+		self._type = asset_type.lower()
 		self._project = project
 		if not self._project:
 			raise Exception('Project is not given!')
@@ -41,6 +62,7 @@ class Asset:
 		self._build = folder.ensure_folder_exists(path.join_path(self._path, 'build'))
 		self._rig = folder.ensure_folder_exists(path.join_path(self._path, 'rig'))
 		self._settings = folder.ensure_folder_exists(path.join_path(self._path, 'settings'))
+		self._weights = Asset.WeightDirectoryStruct(self._path)
 		self._data = Asset.DataDirectoryStruct(self._path)
 		self._mapping = Asset.MappingFiles(self._data)
 
@@ -51,6 +73,7 @@ class Asset:
 		Asset._INSTANCE = self
 		self._project.update_meta()
 		self.update_meta()
+		hud.NoddleHUD.refresh()
 
 	def __repr__(self):
 		return f'Asset: {self.name}({self.type}), Model: {self.model_path}'
@@ -68,7 +91,7 @@ class Asset:
 		return self._type
 
 	@property
-	def project(self) -> 'tp.libs.rig.crit.core.project.Project':
+	def project(self) -> Project:
 		return self._project
 
 	@property

@@ -15,7 +15,7 @@ from tp.maya.meta import base
 from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.core import errors, naming
 from tp.libs.rig.crit.maya.descriptors import component, spaceswitch
-from tp.libs.rig.crit.maya.library.functions import names, components
+from tp.libs.rig.crit.maya.library.functions import components
 from tp.libs.rig.crit.maya.meta import layers, nodes as meta_nodes, component as meta_component
 
 if typing.TYPE_CHECKING:
@@ -411,16 +411,6 @@ class Component:
 		"""
 
 		return self.descriptor.name
-
-	def indexed_name(self) -> str:
-		"""
-		Returns indexed name from meta node name.
-
-		:return: indexed name.
-		:rtype: str
-		"""
-
-		return names.deconstruct_name(self.meta.fullPathName()).indexed_name if self.exists() else ''
 
 	def rename(self, name: str):
 		"""
@@ -1200,6 +1190,8 @@ class Component:
 		:rtype: bool
 		"""
 
+		print('chchchchchc', self.has_guide())
+
 		if not self.has_guide():
 			return False
 
@@ -1224,11 +1216,11 @@ class Component:
 			if not parent_srt:
 				continue
 			for constraint in api.iterate_constraints(parent_srt):
-				for _, driver in constraint.drivers():
+				for _, driver in constraint.iterate_drivers():
 					if driver is None:
 						continue
 					try:
-						driver_component = self._rig.component_from_node(driver)
+						driver_component = self.rig.component_from_node(driver)
 						if driver_component != component_to_disconnect:
 							continue
 					except errors.CritMissingMetaNode:
@@ -1258,6 +1250,22 @@ class Component:
 			# remove metadata connections
 			for source_guide_element in guide_compound_plug.child(4):
 				source_guide_element.child(0).disconnectAll()
+
+	@contextlib.contextmanager
+	def disconnect_component_context(self):
+		"""
+		Context manager to pin and upnin this component and all its children.
+		"""
+
+		try:
+			self.pin()
+			for child in self.iterate_children(depth_limit=1):
+				child.pin()
+			yield
+		finally:
+			self.unpin()
+			for child in self.iterate_children(depth_limit=1):
+				child.unpin()
 
 	def pin(self) -> Dict:
 		"""
@@ -1306,6 +1314,8 @@ class Component:
 		self.deserialize_component_connections(layer_type=consts.GUIDE_LAYER_TYPE)
 
 		return True
+
+
 
 	def serialize_component_guide_connections(self) -> dict:
 		"""
