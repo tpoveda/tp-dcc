@@ -7,7 +7,7 @@ from typing import Tuple, List, Iterator, Dict
 import maya.api.OpenMaya as OpenMaya
 
 from tp.core import log
-from tp.common.python import path, jsonio
+from tp.common.python import helpers, path, jsonio
 from tp.maya.api import curves
 from tp.maya.om import nodes as om_nodes
 
@@ -195,7 +195,7 @@ def save_to_directory(
 	:raises ValueError: if we try to save a curve that already exists and override argument is False
 	"""
 
-	nane = name or om_nodes.name(node, partial_name=True, include_namespace=False)
+	name = name or om_nodes.name(node, partial_name=True, include_namespace=False)
 	name = name if name.endswith(f'.{CURVE_FILE_EXTENSION}') else '.'.join([name, CURVE_FILE_EXTENSION])
 	if not override and name in names():
 		raise ValueError(f'Curve with name "{name}" already exists in the curves library!')
@@ -214,7 +214,7 @@ def save_to_directory(
 
 
 def save_to_lib(
-		node: OpenMaya.MObject, name: str | None = None, override: bool = True,
+		node: OpenMaya.MObject | None = None, name: str | None = None, override: bool = True,
 		save_matrix: bool = False, normalize: bool = True) -> Tuple[Dict, str]:
 	"""
 	Saves the given transform node shapes into the curve library, using the first library directory defined within
@@ -227,8 +227,12 @@ def save_to_lib(
 	:param bool normalize: whether to normalize curve data, so it fits in first Maya grid quadrant.
 	:return: tuple containing the save curve data and the save path.
 	:rtype: Tuple[Dict, str]
+	:raises ValueError: if no node to save curves from is given.
 	"""
 
+	node = node or helpers.first_in_list(om_nodes.selected_nodes(OpenMaya.MFn.kTransform))
+	if not node:
+		raise ValueError('No node to save curves')
 	directory = os.environ.get(CURVES_ENV_VAR, '').split(os.pathsep)[0]
 	return save_to_directory(node, directory, name, override=override, save_matrix=save_matrix, normalize=normalize)
 
