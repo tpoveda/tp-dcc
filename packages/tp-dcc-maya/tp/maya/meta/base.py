@@ -462,7 +462,7 @@ class MetaBase(base.DGNode):
 
 	def __init__(
 			self, node: OpenMaya.MObject | None = None, name: str | None = None, namespace: str | None = None,
-			init_defaults: bool = True, lock: bool = False, mod: OpenMaya.MDGModifier | None = None):
+			init_defaults: bool = True, lock: bool = False, mod: OpenMaya.MDGModifier | None = None, *args, **kwargs):
 		"""
 		Constructor.
 
@@ -490,6 +490,9 @@ class MetaBase(base.DGNode):
 			# lock meta node only if it is not already locked
 			if lock and not self.mfn().isLocked:
 				self.lock(True, mod=mod)
+
+		if node is None:
+			self.setup(*args, **kwargs)
 
 	def __repr__(self):
 		return '{} ({})'.format(self.as_str(name_only=True), self.name())
@@ -547,6 +550,17 @@ class MetaBase(base.DGNode):
 			element.disconnectAll(mod=mod)
 
 		return super(MetaBase, self).delete(mod=mod, apply=apply)
+
+	def setup(self, *args, **kwargs):
+		"""
+		Function that is called after the create function is called.
+		Can be used to customize the way a meta node is constructed.
+
+		:param Iterable args: list of positional arguments.
+		:param Dict kwargs: dictionary of keyword arguments.
+		"""
+
+		pass
 
 	def meta_attributes(self) -> List[Dict]:
 		"""
