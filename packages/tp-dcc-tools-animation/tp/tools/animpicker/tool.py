@@ -2,7 +2,7 @@ from overrides import override
 
 from tp.core import dcc, tool
 
-from tp.tools.animpicker import view
+from tp.tools.animpicker.views import main
 
 
 class AnimPickerTool(tool.Tool):
@@ -17,8 +17,9 @@ class AnimPickerTool(tool.Tool):
 		win = None
 		if dcc.is_maya():
 			from tp.tools.animpicker.maya import controller
-			win = view.AnimPickerView(
-				controller=controller.MayaAnimPickerController())
+			win = main.AnimPickerView(
+				controller=controller.MayaAnimPickerController(),
+				editor_controller=controller.MayaAnimPickerEditorController())
 			win.show()
 
 		return win
