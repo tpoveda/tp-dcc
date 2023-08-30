@@ -12,7 +12,7 @@ import sys
 import struct
 import inspect
 import contextlib
-from typing import Callable, Iterator
+from typing import Callable, List, Iterator, Type
 
 from tp.core import log, dcc
 from tp.common.python import helpers
@@ -29,7 +29,7 @@ try:
     from Qt.QtWidgets import (
         QApplication, QLayout, QVBoxLayout, QHBoxLayout, QWidget, QFrame, QLabel, QPushButton, QSizePolicy, QMessageBox,
         QInputDialog, QFileDialog, QMenu, QMenuBar, QGraphicsDropShadowEffect, QTreeWidget, QTreeWidgetItem,
-        QTreeWidgetItemIterator
+        QTreeWidgetItemIterator, QMainWindow
     )
     from Qt.QtGui import QFontDatabase, QPixmap, QIcon, QColor, QCursor
     from Qt import QtGui
@@ -294,15 +294,19 @@ def compat_ui_loader(ui_file, widget=None):
         return ui
 
 
-def get_signals(class_obj):
+def signal_names(class_obj: Type) -> List[str]:
     """
-    Returns a list with all signals of a class
-    :param class_obj: QObject
+    Returns a list with all signal names of a class.
+
+    :param Type class_obj: class to get signals from.
+    :return: list of signal names.
+    :rtype: List[str]
     """
 
-    result = filter(lambda x: isinstance(x[1], Signal), vars(class_obj).iteritems())
+    result = [x for x in vars(class_obj).items() if isinstance(x[1], Signal)]
     if class_obj.__base__ and class_obj.__base__ != QObject:
-        result.extend(get_signals(class_obj.__base__))
+        result.extend(signal_names(class_obj.__base__))
+
     return result
 
 
@@ -1445,14 +1449,32 @@ def current_screen_geometry() -> QRect:
     return QApplication.desktop().screenGeometry(screen)
 
 
-def contain_widget_in_screen(widget, pos=None):
+def available_screen_rect() -> QRect:
+    """
+    Returns the current screen rectangle.
+
+    :return: screen rectangle.
+    :rtype: QRect
+    """
+
+    desktop = QApplication.desktop()
+    r = QRect()
+    for i in range(desktop.screenCount()):
+        r = r.united(desktop.availableGeometry(i))
+
+    return r
+
+
+def contain_widget_in_screen(widget: QWidget, pos: QPoint | None = None) -> QPoint:
     """
     Contains the position of the widget within the current screen.
 
-    :param QWidget widget:
-    :param QPoint or None pos:
-    :return:
+    :param QWidget widget: widget to check.
+    :param QPoint or None pos: point to check.
+    :return: widget position within widget.
+    :rtype: QPoint
     """
+
     if not pos:
         pos = widget.mapToGlobal(QPoint(0, 0))
     else:

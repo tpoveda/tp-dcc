@@ -1765,7 +1765,7 @@ class BaseToolButton(QToolButton):
 		"""
 
 		self.setToolButtonStyle(Qt.ToolButtonIconOnly)
-		self.setFixedSize(self._size, self._size)
+		self.setFixedSize(self.theme_size, self.theme_size)
 
 		return self
 

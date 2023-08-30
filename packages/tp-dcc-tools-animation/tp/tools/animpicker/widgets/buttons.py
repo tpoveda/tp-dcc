@@ -164,14 +164,10 @@ class ColorButton(qt.QPushButton):
 		:rtype: qt.QColor
 		"""
 
-		if dcc.is_maya():
-			palette = self.palette()
-			return palette.color(qt.QPalette.Button)
-		else:
-			style = self.styleSheet()
-			index = style.index('rgb')
-			data = ast.literal_eval(style[index + 3:])
-			return qt.QColor(*data)
+		style = self.styleSheet()
+		index = style.index('rgb')
+		data = ast.literal_eval(style[index + 3:])
+		return qt.QColor(*data)
 
 	def set_color(self, color: qt.QColor):
 		"""
@@ -180,12 +176,10 @@ class ColorButton(qt.QPushButton):
 		:param qt.QColor color: color to set.
 		"""
 
-		current_color = self.color()
-		if dcc.is_maya():
-			palette = self.palette()
-			palette.setColor(qt.QPalette.Button, color)
-			self.setPalette(palette)
-		else:
-			self.setStyleSheet(f'background-color: rgb(%d, %d, %d)' % color.getRgb()[:3])
+		try:
+			current_color = self.color()
+		except ValueError:
+			current_color = None
+		self.setStyleSheet(f'background-color: rgb(%d, %d, %d)' % color.getRgb()[:3])
 		if color != current_color:
 			self.colorChanged.emit(color)

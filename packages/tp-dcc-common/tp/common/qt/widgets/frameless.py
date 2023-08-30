@@ -488,16 +488,16 @@ class FramelessOverlay(overlay.OverlayWidget):
 			self._resize_direction = self._quadrant()
 			if self._resize_direction == ResizerDirection.Top | ResizerDirection.Right:
 				self._top_right.window_resize_start()
-				self.setCurosr(Qt.CursorShape.SizeBDiagCursor)
+				self.setCursor(Qt.CursorShape.SizeBDiagCursor)
 			elif self._resize_direction == ResizerDirection.Top | ResizerDirection.Left:
 				self._top_left.window_resize_start()
-				self.setCurosr(Qt.CursorShape.SizeFDiagCursor)
+				self.setCursor(Qt.CursorShape.SizeFDiagCursor)
 			elif self._resize_direction == ResizerDirection.Bottom | ResizerDirection.Left:
 				self._bottom_left.window_resize_start()
-				self.setCurosr(Qt.CursorShape.SizeBDiagCursor)
+				self.setCursor(Qt.CursorShape.SizeBDiagCursor)
 			elif self._resize_direction == ResizerDirection.Bottom | ResizerDirection.Right:
 				self._bottom_right.window_resize_start()
-				self.setCurosr(Qt.CursorShape.SizeFDiagCursor)
+				self.setCursor(Qt.CursorShape.SizeFDiagCursor)
 
 		if (not self.is_modifier() and event.buttons() & self.MOVED_BUTTON) or (
 				not self.is_modifier() and event.buttons() & self.RESIZE_BUTTON):
@@ -1226,17 +1226,18 @@ class FramelessWindow(QWidget):
 			if self._widget_mouse_pos is None or not self._move_enabled:
 				return
 
-			moved = event.globalPos() - self._mouse_press_pos
-			if moved.manhattanLength() < self._move_threshold:
-				return
+			if self._mouse_press_pos is not None:
+				moved = event.globalPos() - self._mouse_press_pos
+				if moved.manhattanLength() < self._move_threshold:
+					return
 
-			pos = QCursor.pos()
-			new_pos = pos
-			new_pos.setX(pos.x() - self._widget_mouse_pos.x())
-			new_pos.setY(pos.y() - self._widget_mouse_pos.y())
-			delta = new_pos - self.window().pos()
-			self.moving.emit(new_pos, delta)
-			self.window().move(new_pos)
+				pos = QCursor.pos()
+				new_pos = pos
+				new_pos.setX(pos.x() - self._widget_mouse_pos.x())
+				new_pos.setY(pos.y() - self._widget_mouse_pos.y())
+				delta = new_pos - self.window().pos()
+				self.moving.emit(new_pos, delta)
+				self.window().move(new_pos)
 
 		def mouseReleaseEvent(self, event: QMouseEvent) -> None:
 			"""

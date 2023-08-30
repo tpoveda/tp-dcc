@@ -1,0 +1,9 @@
+AnimPickerView QToolBar
+{
+    padding: 1px;
+}
+
+AnimPickerView QToolTip
+{
+    padding: 0px;
+}

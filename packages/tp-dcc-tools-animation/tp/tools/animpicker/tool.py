@@ -17,9 +17,7 @@ class AnimPickerTool(tool.Tool):
 		win = None
 		if dcc.is_maya():
 			from tp.tools.animpicker.maya import controller
-			win = main.AnimPickerView(
-				controller=controller.MayaAnimPickerController(),
-				editor_controller=controller.MayaAnimPickerEditorController())
+			win = main.AnimPickerView(controller=controller.MayaAnimPickerController())
 			win.show()
 
 		return win

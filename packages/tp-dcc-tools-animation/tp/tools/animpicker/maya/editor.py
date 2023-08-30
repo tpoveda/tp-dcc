@@ -31,7 +31,7 @@ class MayaAnimPickerEditorWidget(editor.AnimPickerEditorWidget):
 		self._tab_maya_layout = ''
 		self._tab_maya_layout = gui.to_maya_object(self._tab_widget)
 
-		menu = cmds.popupMenu(
+		cmds.popupMenu(
 			'animPicker:popupMenu', parent=self._tab_maya_layout, markingMenu=True, ctrlModifier=True, button=3,
 			postMenuCommand=self._check_state_for_popup_menu)
 

@@ -1,10 +1,7 @@
 /*
  --------------------------------------------------------------------------
- Default Style
+ tp-dcc-animation custom style
  --------------------------------------------------------------------------
 */
 
-#include unreal/unreal.qss
-#include tpdcc/tpdcc.qss
-#include crit/crit.qss
-#include animation/animation.qss
+#include animpicker.qss

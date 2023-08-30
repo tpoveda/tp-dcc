@@ -161,9 +161,9 @@ class Asset:
 	@classmethod
 	def get(cls):
 		"""
-		Returns current active CRIT asset instance.
+		Returns current active Noddle asset instance.
 
-		:return: active CRIT asset instance.
+		:return: active Noddle asset instance.
 		:rtype: Asset or None
 		"""
 

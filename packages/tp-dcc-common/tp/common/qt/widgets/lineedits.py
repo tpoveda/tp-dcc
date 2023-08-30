@@ -8,13 +8,16 @@ from Qt.QtGui import QFocusEvent, QMouseEvent, QDragEnterEvent, QDragMoveEvent, 
 from tp.common.qt import validators
 
 
-def line_edit(text='', read_only=False, placeholder_text='', parent=None):
+def line_edit(
+		text: str = '', read_only: bool = False, placeholder_text: str = '', tooltip: str = '',
+		parent: QWidget | None = None) -> BaseLineEdit:
 	"""
 	Creates a basic line edit widget.
 
 	:param str text: default line edit text.
 	:param bool read_only: whether line edit is read only.
 	:param str placeholder_text: line edit placeholder text.
+	:param str tooltip: line edit tooltip text.
 	:param QWidget parent: parent widget.
 	:return: newly created combo box.
 	:rtype: BaseLineEdit
@@ -23,6 +26,8 @@ def line_edit(text='', read_only=False, placeholder_text='', parent=None):
 	new_line_edit = BaseLineEdit(text=text, parent=parent)
 	new_line_edit.setReadOnly(read_only)
 	new_line_edit.setPlaceholderText(str(placeholder_text))
+	if tooltip:
+		new_line_edit.setToolTip(tooltip)
 
 	return new_line_edit
 

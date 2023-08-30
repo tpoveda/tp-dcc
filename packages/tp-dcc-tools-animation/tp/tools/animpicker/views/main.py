@@ -15,7 +15,8 @@ if dcc.is_maya():
 	from tp.tools.animpicker.maya import editor as maya_editor
 
 if typing.TYPE_CHECKING:
-	from tp.tools.animpicker.controller import AnimPickerController, AnimPickerViewerController
+	from tp.tools.animpicker.controller import AnimPickerController
+	from tp.tools.animpicker.events import PreCreateMapEvent, CreateMapEvent
 
 
 class AnimPickerView(qt.FramelessWindow):
@@ -24,19 +25,17 @@ class AnimPickerView(qt.FramelessWindow):
 	VERSION = '0.0.1'
 
 	def __init__(
-			self, controller: AnimPickerController, editor_controller: AnimPickerViewerController,
+			self, controller: AnimPickerController,
 			parent: qt.QWidget | None = None):
 
 		self._controller = controller
-		self._viewer_controller = editor_controller
 
 		self._working_size = qt.QSize(400, 400)
+		self._bottom_menu_visible = True
+		self._map_mode = True
+		self._clipboard = []
 
-		super().__init__(title=f'Animation Picker {self.VERSION}', width=600, height=700, parent=parent)
-
-	@property
-	def group_name(self) -> str:
-		return self._group_name_line.text()
+		super().__init__(title=f'Animation Picker {self.VERSION}', width=600, height=700, overlay=False, parent=parent)
 
 	@override
 	def setup_ui(self):
@@ -58,6 +57,26 @@ class AnimPickerView(qt.FramelessWindow):
 	@override
 	def setup_signals(self):
 		super().setup_signals()
+
+		self._controller.warning.connect(self._on_warning)
+		self._group_name_line.textChanged.connect(self._controller.updater('group_name'))
+		self._controller.listen('group_name', self._group_name_line.setText, value=consts.DEFAULT_GROUP_NAME)
+		self._map_name_line.textChanged.connect(self._controller.updater('map_name'))
+		self._controller.listen('map_name', self._group_name_line.setText, value=consts.DEFAULT_MAP_NAME)
+		self._map_width_spinbox.valueChanged.connect(self._controller.updater('map_width'))
+		self._controller.listen('map_width', self._map_width_spinbox.setValue, value=consts.DEFAULT_MAP_WIDTH)
+		self._map_height_spinbox.valueChanged.connect(self._controller.updater('map_height'))
+		self._controller.listen('map_height', self._map_height_spinbox.setValue, value=consts.DEFAULT_MAP_HEIGHT)
+		self._background_image_line.textChanged.connect(self._controller.updater('image_path'))
+		self._controller.listen('image_path', self._background_image_line.setText, value='')
+
+		self._controller.preCreateMap.connect(self._on_pre_create_map_event)
+		self._controller.createMap.connect(self._on_create_map_event)
+
+		self._create_new_map_button.clicked.connect(self._on_create_new_map_button_clicked)
+		self._import_map_file_button.clicked.connect(self._on_import_map_file_button_clicked)
+		self._edit_current_map_button.clicked.connect(self._on_edit_current_map_button_clicked)
+		self._export_map_file_button.clicked.connect(self._on_export_map_file_button_clicked)
 
 	def refresh(self, *args):
 		"""
@@ -117,7 +136,7 @@ class AnimPickerView(qt.FramelessWindow):
 			'To change background color, click on the color swatch.\nOr you can move the slider to change "value" of '
 			'the color.')
 		background_color_label = qt.label('BG Color:', parent=self)
-		self._background_color_button = buttons.ColorButton(parent=self)
+		self._background_color_button = buttons.ColorButton(color=consts.DEFAULT_MAP_BACKGROUND_COLOR, parent=self)
 		self._background_color_button.setFixedSize(qt.QSize(20, 20))
 		self._background_color_slider = qt.QSlider(parent=self)
 		self._background_color_slider.setMaximum(255)
@@ -152,13 +171,13 @@ class AnimPickerView(qt.FramelessWindow):
 		self._map_width_spinbox.setButtonSymbols(qt.QSpinBox.NoButtons)
 		self._map_width_spinbox.setMinimum(120)
 		self._map_width_spinbox.setMaximum(9999)
-		self._map_width_spinbox.setValue(400)
+		self._map_width_spinbox.setValue(consts.DEFAULT_MAP_WIDTH)
 		map_height_label = qt.label('Width', parent=self)
 		map_height_label.setIndent(15)
 		self._map_height_spinbox = qt.QSpinBox(parent=self)
 		self._map_height_spinbox.setButtonSymbols(qt.QSpinBox.NoButtons)
 		self._map_height_spinbox.setMinimum(120)
-		self._map_height_spinbox.setValue(400)
+		self._map_height_spinbox.setValue(consts.DEFAULT_MAP_HEIGHT)
 		self._size_widget.layout().addWidget(map_size_label)
 		self._size_widget.layout().addWidget(map_width_label)
 		self._size_widget.layout().addWidget(self._map_width_spinbox)
@@ -168,12 +187,20 @@ class AnimPickerView(qt.FramelessWindow):
 		buttons_layout = qt.horizontal_layout()
 		self._create_new_map_button = qt.base_button('Create New Map', tooltip=consts.CREATE_NEW_MAP_TOOLTIP, parent=self)
 		self._import_map_file_button = qt.base_button('Import Map File', tooltip=consts.IMPORT_MAP_TOOLTIP, parent=self)
-		for btn in [self._create_new_map_button, self._import_map_file_button]:
+		self._edit_current_map_button = qt.base_button('Save teo Node', tooltip=consts.EDIT_MAP_TOOLTIP, parent=self)
+		self._export_map_file_button = qt.base_button('Export to Map File', tooltip=consts.EXPORT_MAP_TOOLTIP, parent=self)
+		self._edit_current_map_button.setVisible(False)
+		self._export_map_file_button.setVisible(False)
+		for btn in [
+			self._create_new_map_button, self._import_map_file_button, self._edit_current_map_button,
+			self._export_map_file_button]:
 			btn.setFixedHeight(30)
 			btn.setSizePolicy(qt.QSizePolicy.Minimum, qt.QSizePolicy.Fixed)
 			btn.setStyleSheet('QPushButton{background-color: #55bef2;color: black;}')
 		buttons_layout.addWidget(self._create_new_map_button)
 		buttons_layout.addWidget(self._import_map_file_button)
+		buttons_layout.addWidget(self._edit_current_map_button)
+		buttons_layout.addWidget(self._export_map_file_button)
 		self._cancel_button = qt.base_button('Cancel', parent=self)
 		self._cancel_button.setFixedHeight(30)
 		self._cancel_button.setSizePolicy(qt.QSizePolicy.Minimum, qt.QSizePolicy.Fixed)
@@ -206,9 +233,9 @@ class AnimPickerView(qt.FramelessWindow):
 
 		self._main_widget = qt.widget(layout=qt.vertical_layout(spacing=0, margins=(0, 0, 0, 0)))
 		if dcc.is_maya():
-			self._editor_widget = maya_editor.MayaAnimPickerEditorWidget(controller=self._viewer_controller, parent=self)
+			self._editor_widget = maya_editor.MayaAnimPickerEditorWidget(controller=self._controller, parent=self)
 		else:
-			self._editor_widget = editor.AnimPickerEditorWidget(controller=self._viewer_controller, parent=self)
+			self._editor_widget = editor.AnimPickerEditorWidget(controller=self._controller, parent=self)
 
 		self._main_widget.layout().addWidget(self._editor_widget)
 
@@ -236,20 +263,31 @@ class AnimPickerView(qt.FramelessWindow):
 
 		self._working_size = self.size()
 
-		self._type_label.setText('---- CREATE NEW MAP ----')
-		self._create_new_map_button.setText('Create New Map')
-		self._create_new_map_button.setToolTip(consts.CREATE_NEW_MAP_TOOLTIP)
-		self._import_map_file_button.setText('Import Map File')
-		self._import_map_file_button.setToolTip(consts.IMPORT_MAP_TOOLTIP)
-		if not self.group_name:
+		self._create_new_map_button.setVisible(not edit)
+		self._import_map_file_button.setVisible(not edit)
+		self._edit_current_map_button.setVisible(edit)
+		self._export_map_file_button.setVisible(edit)
+
+		if edit:
+			self._type_label.setText('---- EDIT CURRENT MAP ----')
+		else:
+			self._type_label.setText('---- CREATE NEW MAP ----')
 			# self._group_name_line.setText(utils.numeric_name(consts.DEFAULT_GROUP_NAME, self._group_name_line.labels))
-			self._group_name_line.setText(utils.numeric_name(consts.DEFAULT_GROUP_NAME, []))
-		# self._map_name_line.setText(utils.numeric_name(consts.DEFAULT_MAP_NAME, [self.map_name(i) for i in range(self._tab_widget.count())]))
-		self._map_name_line.setText(utils.numeric_name(consts.DEFAULT_MAP_NAME, []))
-		self._create_new_map_button.clicked.connect(self._on_create_new_map_button_clicked)
+			self._group_name_line.setText(utils.numeric_name(self._controller.state.group_name, []))
+			self._map_name_line.setText(utils.numeric_name(
+				self._controller.state.map_name, [self.map_name(i) for i in range(self._editor_widget.tab_widget.count())]))
 
 		self._stack_widget.setCurrentIndex(1)
 		self.resize(300, 320)
+
+	def _on_warning(self, msg: str):
+		"""
+		Internal callback function that is called each time a warning is produced by the controller.
+
+		:param str msg: warning message.
+		"""
+
+		uiutils.warning(msg, parent=self)
 
 	def _on_create_new_map_button_clicked(self):
 		"""
@@ -258,3 +296,60 @@ class AnimPickerView(qt.FramelessWindow):
 		"""
 
 		self._controller.create_new_map()
+
+	def _on_pre_create_map_event(self, event: PreCreateMapEvent):
+		"""
+		Internal callback function that is called before a new map is created by the controller.
+
+		:param  PreCreateMapEvent event: event.
+		"""
+
+		if event.group_name in self._editor_widget.group_line_edit.labels():
+			if event.map_name in [self.map_name(i) for i in range(self._editor_widget.tab_widget.count())]:
+				event.result = False
+		else:
+			self._editor_widget.group_line_edit.append_label(event.group_name)
+			self._editor_widget.tab_widget.clear()
+			event.result = True
+
+	def _on_create_map_event(self, event: CreateMapEvent):
+		"""
+		Internal callback function that is called when a new map is created by the controller.
+
+		:param CreateMapEvent event: event.
+		"""
+
+		tab = self._editor_widget.tab_widget.add_graphics_tab(event.map_name)
+		index = self._editor_widget.tab_widget.indexOf(tab)
+		scene = self._editor_widget.tab_widget.scene_at_index(index)
+		scene.color = self._background_color_button.color()
+		self._stack_widget.setCurrentIndex(0)
+		self._editor_widget.tab_widget.scene_at_index(index).map_size = qt.QSizeF(event.map_width, event.map_height)
+		self.resize(self._working_size)
+		event.scene = scene
+		event.use_background_image = bool(self._use_background_button_group.checkedId())
+		event.result = True
+
+	def _on_import_map_file_button_clicked(self):
+		"""
+		Internal callback function that is called each time Import Map File button is clicked by the user.
+		Imports a picker map file.
+		"""
+
+		self._controller.import_map()
+
+	def _on_edit_current_map_button_clicked(self):
+		"""
+		Internal callback function that is called each time Save to Node button is clicked by the user.
+		Saves current changes into scene.
+		"""
+
+		self._controller.edit_current_map()
+
+	def _on_export_map_file_button_clicked(self):
+		"""
+		Internal callback function that is called each time Export Map File button is clicked by the user.
+		Exports a picker map file.
+		"""
+
+		self._controller.export_map()

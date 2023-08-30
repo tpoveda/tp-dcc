@@ -14,7 +14,7 @@ from tp.core import log, dcc
 
 logger = log.tpLogger
 
-_REROUTE_CACHE = dict()
+_REROUTE_CACHE = {}
 
 
 def reroute_factory(module_path=None, module_name=None):
