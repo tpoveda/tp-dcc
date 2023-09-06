@@ -32,7 +32,7 @@ class CritRig(base.DependentNode):
 		super().__init__(node=node, name=name, init_defaults=init_defaults, lock=lock, mod=mod)
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 
 		attrs = super().meta_attributes()
 

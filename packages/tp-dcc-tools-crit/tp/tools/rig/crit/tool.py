@@ -27,7 +27,7 @@ class CritTool(tool.Tool):
 		win.show()
 
 
-class CritComponentsEditor(tool.Tool):
+class CritComponentsEditorTool(tool.Tool):
 
 	id = 'tp.rig.crit.componentseditor.ui'
 	creator = 'Tomi Poveda'
@@ -44,7 +44,7 @@ class CritComponentsEditor(tool.Tool):
 		win.show()
 
 
-class CritNamingConvention(tool.Tool):
+class CritNamingConventionTool(tool.Tool):
 
 	id = 'tp.rig.crit.naming'
 	creator = 'Tomi Poveda'

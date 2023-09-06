@@ -104,7 +104,9 @@ def lock_state_attr_context(node: DGNode, attr_names: List[str], state: bool):
 			attr.lock(not state)
 
 
-def node_by_object(mobj: OpenMaya.MObject) -> DGNode:
+def node_by_object(
+		mobj: OpenMaya.MObject) -> DGNode | DagNode | NurbsCurve | Mesh | Camera | IkHandle | Joint | ContainerAsset \
+									| AnimCurve | SkinCluster | AnimLayer | ObjectSet | BlendShape | DisplayLayer:
 	"""
 	Returns the correct API node for the given MObject by wrapping the MObject within an API node instance.
 
@@ -150,7 +152,9 @@ def node_by_object(mobj: OpenMaya.MObject) -> DGNode:
 	return sup(object_to_set)
 
 
-def node_by_name(node_name):
+def node_by_name(
+		node_name) -> DGNode | DagNode | NurbsCurve | Mesh | Camera | IkHandle | Joint | ContainerAsset | AnimCurve | \
+						SkinCluster | AnimLayer | ObjectSet | BlendShape | DisplayLayer | None:
 	"""
 	Returns a DAG node instance based on the given node name (expecting a full path).
 
@@ -160,6 +164,8 @@ def node_by_name(node_name):
 	"""
 
 	mobj = nodes.mobject(node_name)
+	if mobj is None:
+		return None
 	if mobj.hasFn(OpenMaya.MFn.kDagNode):
 		dag_path = OpenMaya.MDagPath.getAPathTo(mobj)
 		if mobj.hasFn(OpenMaya.MFn.kNurbsCurve):
@@ -313,8 +319,8 @@ class DGNode:
 	MFN_TYPE = OpenMaya.MFnDependencyNode
 
 	def __init__(self, node: OpenMaya.MObject | None = None):
-		self._handle = None		# type: OpenMaya.MObjectHandle or None
-		self._mfn = None		# type: OpenMaya.MFn or None
+		self._handle = None  # type: OpenMaya.MObjectHandle or None
+		self._mfn = None  # type: OpenMaya.MFn or None
 		if node is not None:
 			self.setObject(node)
 
@@ -723,9 +729,9 @@ class DGNode:
 
 		return parent
 
-	def renameNamespace(self, namespace):
+	def renameNamespace(self, namespace: str):
 		"""
-		Rename sthe current namespace with the given one.
+		Renames the current namespace with the given one.
 
 		:param str namespace: new namespace.
 		"""
@@ -1149,22 +1155,26 @@ class DGNode:
 		for attr in nodes.iterate_attributes(self.object()):
 			yield Plug(self, attr)
 
-	def iterateExtraAttributes(self, skip=None, filtered_types=None, include_attributes=None):
+	def iterateExtraAttributes(
+			self, skip: list[str] | None = None, filtered_types: list[str] | None = None,
+			include_attributes: list[str] | None = None) -> Iterator[Plug]:
 		"""
 		Generator function that iterates over all the extra attributes on this node.
 
-		:param list(str) skip: list of attributes to skip.
-		:param list(str) filtered_types: optional list of types we want to filter.
-		:param list(str) include_attributes: list of attributes to force iteration over.
+		:param list[str] or None skip: list of attributes to skip.
+		:param list[str] or None filtered_types: optional list of types we want to filter.
+		:param list[str] or None include_attributes: list of attributes to force iteration over.
 		:return: generator of iterated extra attributes.
-		:rtype: iterator(OpenMaya.MPlug)
+		:rtype: Iterator[Plug]
 		"""
 
 		for attr in nodes.iterate_extra_attributes(
 				self.object(), skip=skip, filtered_types=filtered_types, include_attributes=include_attributes):
 			yield Plug(self, attr)
 
-	def sourceNodeByName(self, plug_name):
+	def sourceNodeByName(
+			self, plug_name: str) -> DGNode | DagNode | NurbsCurve | Mesh | Camera | IkHandle | Joint | ContainerAsset \
+									| AnimCurve | SkinCluster | AnimLayer | ObjectSet | BlendShape | DisplayLayer | None:
 		"""
 		Returns the source node connected to the given plug of this node instance.
 
@@ -1466,13 +1476,13 @@ class DagNode(DGNode):
 				for child in node_by_object(child).iterateChildren(recursive, node_types):
 					yield child
 
-	def children(self, node_types=()):
+	def children(self, node_types: tuple[OpenMaya.MFn] = ()) -> list[DagNode]:
 		"""
 		Returns all immediate children objects.
 
-		:param tuple(OpenMaya.MFn.kType) node_types: node types to get children of.
+		:param tuple[OpenMaya.MFn] node_types: node types to get children of.
 		:return: found children.
-		:rtype: list(DagNode)
+		:rtype: list[DagNode]
 		"""
 
 		path = self.dagPath()
@@ -1484,13 +1494,13 @@ class DagNode(DGNode):
 
 		return children
 
-	def iterateSiblings(self, node_types=(types.kTransform,)):
+	def iterateSiblings(self, node_types: tuple[OpenMaya.MFn] = (types.kTransform,)) -> Iterator[DagNode]:
 		"""
 		Generator function that iterates over all sibling nodes of this node.
 
-		:param tuple(OpenMaya.MFn.kType) node_types: list of node types to filter.
-		:return: iterated sibilng nodes.
-		:rtype: generator(DagNode)
+		:param tuple[OpenMaya.MFn] node_types: list of node types to filter.
+		:return: iterated sibling nodes.
+		:rtype: Iterator[DagNode]
 		"""
 
 		parent = self.parent()
@@ -1795,8 +1805,8 @@ class Plug:
 		:param OpenMaya.MPlug mplug: Maya plug instance.
 		"""
 
-		self._node = node			# type: DGNode or DagNode
-		self._mplug = mplug			# type: OpenMaya.MPlug
+		self._node = node  # type: DGNode or DagNode
+		self._mplug = mplug  # type: OpenMaya.MPlug
 
 	def __repr__(self):
 		"""
@@ -2576,7 +2586,6 @@ class Camera(DagNode):
 
 
 class IkHandle(DagNode):
-
 	SCENE_UP = 0
 	OBJECT_UP = 1
 	OBJECT_UP_START_END = 2
@@ -2684,7 +2693,7 @@ class Joint(DagNode):
 
 	@override(check_signature=False)
 	def setParent(
-			self, parent: Joint, maintain_offset: bool = True,
+			self, parent: Joint | DagNode | None, maintain_offset: bool = True,
 			mod: OpenMaya.MDagModifier | None = None, apply: bool = True) -> OpenMaya.MDagModifier:
 
 		rotation = self.rotation(space=types.kWorldSpace)
@@ -2756,7 +2765,7 @@ class ContainerAsset(DGNode):
 		if not members:
 			return dict()
 
-		published_attributes =self.publishedAttributes()
+		published_attributes = self.publishedAttributes()
 		published_nodes = self.publishedNodes()
 
 		return {
@@ -3000,7 +3009,6 @@ class ContainerAsset(DGNode):
 
 
 class AnimCurve(DGNode):
-
 	MFN_TYPE = OpenMayaAnim.MFnAnimCurve
 
 	@property
@@ -3026,7 +3034,6 @@ class AnimCurve(DGNode):
 
 
 class SkinCluster(DGNode):
-
 	MFN_TYPE = OpenMayaAnim.MFnSkinCluster
 
 
@@ -3038,7 +3045,8 @@ class ObjectSet(DGNode):
 	MFN_TYPE = OpenMaya.MFnSet
 
 	@override(check_signature=False)
-	def create(self, name: str, mod: OpenMaya.MDGModifier | None = None, members: List[DGNode] | None = None) -> ObjectSet:
+	def create(self, name: str, mod: OpenMaya.MDGModifier | None = None,
+			   members: List[DGNode] | None = None) -> ObjectSet:
 		"""
 		Creates the MFnSet and sets this instance MObject to the new node.
 

@@ -1,19 +1,20 @@
+from __future__ import annotations
+
 from tp.core import log, dcc
 from tp.preferences.interfaces import crit
+from tp.bootstrap.core import exceptions, package
 
 if dcc.is_maya():
 	from tp.maya.plugins import rigloader
+	from tp.libs.rig.freeform import startup as freeform_startup
 
 
 logger = log.tpLogger
 
 
-def startup(package_manager):
+def startup(_: package.Package):
 	"""
 	This function is automatically called by tpDcc packages Manager when environment setup is initialized.
-
-	:param package_manager: current tpDcc packages Manager instance.
-	:return: tpDccPackagesManager
 	"""
 
 	logger.info('Loading tp-dcc-tools-rig package...')
@@ -23,15 +24,22 @@ def startup(package_manager):
 
 	if dcc.is_maya():
 		rigloader.load_all_plugins()
+		freeform_startup.startup()
 
 
-def shutdown(package_manager):
+def shutdown(bootstrap_package: package.Package):
 	"""
 	Shutdown function that is called during tpDcc framework shutdown.
 	This function is called at the end of tpDcc framework shutdown.
+
+	:param Package bootstrap_package: package instance.
 	"""
+
+	if not bootstrap_package:
+		raise exceptions.MissingPackage(package)
 
 	logger.info('Shutting down tp-dcc-tools-rig package...')
 
 	if dcc.is_maya():
+		freeform_startup.shutdown()
 		rigloader.unload_all_plugins()

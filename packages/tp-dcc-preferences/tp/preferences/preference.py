@@ -56,7 +56,7 @@ class PreferenceInterface:
 
 	def settings(
 			self, relative_path: str | None = None, root: str | None = None, name: str | None = None,
-			refresh: bool = False) -> PreferenceObject or Dict:
+			refresh: bool = False) -> PreferenceObject or dict:
 		"""
 		Returns the settings stored within the preference interface.
 
@@ -74,7 +74,7 @@ class PreferenceInterface:
 			self._SETTINGS = self._manager.find_setting(relative_path, root=root)
 
 		if name is not None:
-			settings = self._SETTINGS.get(consts.PREFERENCE_SETTINGS_KEY, dict())
+			settings = self._SETTINGS.get(consts.PREFERENCE_SETTINGS_KEY, {})
 			if name not in settings:
 				raise exceptions.SettingsNameDoesNotExistError(
 					'Failed to find setting: {} in file: {}'.format(name, relative_path))

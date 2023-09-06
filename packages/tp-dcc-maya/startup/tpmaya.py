@@ -23,6 +23,7 @@ from tp.bootstrap.core import manager, exceptions as bootstrap_exceptions
 from tp.common.python import path
 from tp.common.resources import api as resources
 from tp.maya.meta import base
+from tp.maya.managers import scene
 from tp.maya.plugins import loader
 from tp.maya.libs.triggers import markingmenuoverride, triggercallbacks
 
@@ -33,12 +34,9 @@ ORIGINAL_FORMAT_EXCEPTION = None
 
 
 @profile.profile
-def startup(package: Package):
+def startup(_: Package):
 	"""
 	This function is automatically called by tpDcc packages Manager when environment setup is initialized.
-
-	:param Package package: package instance.
-	:return: Package
 	"""
 
 	root_file_path = path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -74,6 +72,9 @@ def startup(package: Package):
 	markingmenuoverride.setup()
 	triggercallbacks.create_selection_callback()
 
+	# setup scene manager
+	scene.SceneManager()
+
 
 def shutdown(package: Package):
 	"""
@@ -81,7 +82,6 @@ def shutdown(package: Package):
 	This function is called at the end of tpDcc framework shutdown.
 
 	:param Package package: package instance.
-	:return: Package
 	"""
 
 	if not package:
@@ -90,6 +90,9 @@ def shutdown(package: Package):
 	logger = log.tpLogger
 
 	logger.info('Shutting down tp-dcc-maya Package...')
+
+	# unload scene manager
+	scene.SceneManager().stop_all_jobs()
 
 	# reset custom marking menu
 	triggercallbacks.remove_selection_callback()

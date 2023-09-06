@@ -51,7 +51,7 @@ class TwistComponent(animcomponent.AnimComponent):
 		return self.sourceNodeByName('skelEndJoint')
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 
 		attrs = super().meta_attributes()
 

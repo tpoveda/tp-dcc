@@ -459,6 +459,7 @@ class MetaBase(base.DGNode):
 	"""
 
 	ID = ''
+	DEFAULT_NAME = ''
 
 	def __init__(
 			self, node: OpenMaya.MObject | None = None, name: str | None = None, namespace: str | None = None,
@@ -478,7 +479,7 @@ class MetaBase(base.DGNode):
 		# if not Maya node is given, a new network one will be created.
 		if node is None:
 			self.create(
-				name or '_'.join([registry_name_for_class(self.__class__), 'meta']),
+				name or self.DEFAULT_NAME or '_'.join([registry_name_for_class(self.__class__), 'meta']),
 				node_type='network', namespace=namespace, mod=mod)
 
 		# meta attribute are only if the meta node is not a referenced
@@ -562,7 +563,7 @@ class MetaBase(base.DGNode):
 
 		pass
 
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 		"""
 		Returns the list of default meta attributes that should be added into the meta node during creation.
 
@@ -689,11 +690,11 @@ class MetaBase(base.DGNode):
 
 		return destination_plug
 
-	def downstream(self, check_type: str) -> MetaBase:
+	def downstream(self, check_type: str | type) -> MetaBase:
 		"""
 		Returns the first network node by following the .message attribute connections.
 
-		:param str check_type: meta node instance type to search.
+		:param str or type check_type: meta node instance type to search.
 		:return: first found meta node instance that matches given type.
 		:rtype: MetaBase
 		"""
@@ -710,11 +711,11 @@ class MetaBase(base.DGNode):
 
 		return helpers.first_in_list(list(self.iterate_meta_parents(recursive=True, check_type=check_type)))
 
-	def upstream(self, check_type: str) -> MetaBase:
+	def upstream(self, check_type: str | type) -> MetaBase:
 		"""
 		Returns the first network node by following the children attribute connection.
 
-		:param str check_type: meta node instance type to search.
+		:param str or type check_type: meta node instance type to search.
 		:return: first found meta node instance that matches given type.
 		:rtype: MetaBase
 		"""
@@ -803,7 +804,7 @@ class MetaBase(base.DGNode):
 					yield child_meta
 				elif helpers.is_string(check_type) and check_type == child_meta.attribute(MCLASS_ATTR_NAME).value():
 					yield child_meta
-			for sub_child in child_meta.iterate_meta_children(depth_limit=depth_limit - 1):
+			for sub_child in child_meta.iterate_meta_children(depth_limit=depth_limit - 1, check_type=check_type):
 				yield sub_child
 
 	def iterate_children(
@@ -933,8 +934,9 @@ class Core(MetaBase):
 
 	def __init__(
 			self, node: OpenMaya.MObject | None = None, name: str | None = None, init_defaults: bool = True,
-			lock: bool = False, mod: OpenMaya.MDGModifier | None = None):
-		super(Core, self).__init__(node=node, name=name, init_defaults=init_defaults, lock=lock, mod=mod)
+			lock: bool = False, mod: OpenMaya.MDGModifier | None = None, *args, **kwargs):
+		super(Core, self).__init__(
+			node=node, name=name, init_defaults=init_defaults, lock=lock, mod=mod, *args, **kwargs)
 
 
 class DependentNode(MetaBase):
@@ -947,9 +949,9 @@ class DependentNode(MetaBase):
 	DEPENDENT_NODE_CLASS = None
 
 	def __init__(
-			self, node: OpenMaya.MObject | None = None, name: str | None = None, parent: OpenMaya.MObject | None = None,
-			init_defaults: bool = True, lock: bool = False, mod: OpenMaya.MDGModifier | None = None):
-		super().__init__(node=node, name=name, init_defaults=init_defaults, lock=lock, mod=mod)
+			self, node: OpenMaya.MObject | None = None, name: str | None = None, parent: MetaBase | None = None,
+			init_defaults: bool = True, lock: bool = False, mod: OpenMaya.MDGModifier | None = None, *args, **kwargs):
+		super().__init__(node=node, name=name, init_defaults=init_defaults, lock=lock, mod=mod, *args, **kwargs)
 
 		if node is None and self.DEPENDENT_NODE_CLASS is not None:
 			parent_node = parent if parent else core_meta_node()

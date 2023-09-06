@@ -46,7 +46,7 @@ class Component(base.MetaBase):
 		self.set_tag(tag)
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 
 		attrs = super().meta_attributes()
 

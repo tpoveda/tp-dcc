@@ -341,7 +341,6 @@ class MarkingMenu:
 		self.show(self._layout, menu, parent)
 
 
-
 class MarkingMenuDynamic(plugin.Plugin):
 	"""
 	Dynamic marking menu that allows for subclasses to dynamic generate the marking menu layout.

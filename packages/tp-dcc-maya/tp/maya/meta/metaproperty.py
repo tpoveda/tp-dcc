@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import maya.cmds as cmds
 
 from tp.core import log
-from tp.common.python import helpers, decorators
+from tp.common.python import helpers
 from tp.maya import api
 from tp.maya.meta import base
 
@@ -10,7 +12,7 @@ AFFECTED_BY_ATTR_NAME = 'affectedBy'
 logger = log.tpLogger
 
 
-def is_in_network(node):
+def is_in_network(node: api.DGNode):
 	"""
 	Returns whether a given object is connected to the meta node graph.
 
@@ -22,7 +24,7 @@ def is_in_network(node):
 	return True if node.hasAttribute(AFFECTED_BY_ATTR_NAME) else False
 
 
-def get_network_entries(node, in_network_type=None):
+def get_network_entries(node: api.DGNode | api.DagNode, in_network_type: type | None = None):
 	"""
 	Returns all network nodes that are connected to given node.
 
@@ -47,7 +49,7 @@ def get_network_entries(node, in_network_type=None):
 	return entry_network_list
 
 
-def first_network_entry(node, in_network_type=None):
+def first_network_entry(node: api.DGNode | api.DagNode, in_network_type: type | None = None):
 	"""
 	Returns the first network node connected to the given node.
 
@@ -61,7 +63,7 @@ def first_network_entry(node, in_network_type=None):
 	return helpers.first_in_list(get_network_entries(node, in_network_type=in_network_type))
 
 
-def properties_dict(node):
+def properties_dict(node: api.DGNode):
 	"""
 	Returns all properties from a scene node and store them in a dict.
 
@@ -82,7 +84,7 @@ def properties_dict(node):
 	return property_dict
 
 
-def all_properties(node):
+def all_properties(node: api.DGNode):
 	"""
 	Returns all properties from given node as a list.
 
@@ -92,24 +94,24 @@ def all_properties(node):
 	"""
 
 	property_dict = properties_dict(node)
-	properties_list = list()
+	properties_list = []
 	for properties in property_dict.values():
 		properties_list += properties
 
 	return properties_list
 
 
-def properties(nodes, property_type):
+def properties(nodes: list[api.DGNode], property_type: type) -> list[MetaProperty]:
 	"""
 	Returns all properties for given Maa nodes.
 
-	:param list(base.DGNode) nodes: list of Maya nodes we want to get properties from.
+	:param list[api.DGNode] nodes: list of Maya nodes we want to get properties from.
 	:param type property_type: type of property to get.
 	:return: list of properties found.
-	:rtype: list(MetaProperty).
+	:rtype: list[MetaProperty].
 	"""
 
-	found_properties = list()
+	found_properties = []
 	for node in nodes:
 		new_properties = properties_dict(node).get(property_type, list())
 		found_properties = found_properties + new_properties if new_properties else found_properties
@@ -117,13 +119,14 @@ def properties(nodes, property_type):
 	return found_properties
 
 
-def add_property(node, property_type):
+def add_property(node: api.DGNode | api.DagNode, property_type: type) -> MetaProperty | None:
 	"""
 	Adds a property to the given Maya scene object.
 
-	:param base.MetaBase node: node we want to add property to.
+	:param api.DGNode or api.DagNode node: node we want to add property to.
 	:param type property_type: type of the property to add.
 	:return: property added.
+	:rtype: MetaProperty or None
 	"""
 
 	if property_type.MULTI_ALLOWED or not properties_dict(node).get(property_type):
@@ -161,10 +164,6 @@ class MetaProperty(base.MetaBase):
 	MULTI_ALLOWED = False
 	PRIORITY = 0
 
-	# =================================================================================================================
-	# STATIC METHODS
-	# =================================================================================================================
-
 	@staticmethod
 	def inherited_classes():
 		"""
@@ -180,29 +179,22 @@ class MetaProperty(base.MetaBase):
 
 		return class_list
 
-	# =================================================================================================================
-	# ABSTRACT FUNCTIONS
-	# =================================================================================================================
-
-	@decorators.abstractmethod
-	def on_add(self, node):
+	def on_add(self, node: api.DGNode):
 		"""
 		Function that is called when a node is connected to a meta property.
 
-		:param tp.maya.api.base.DGNode node: node connected.
+		:param api.DGNode node: node connected.
 		"""
 
-		raise NotImplementedError
+		return None
 
-	@decorators.abstractmethod
 	def act(self):
 		"""
 		Performs the action for the specific node.
 		"""
 
-		raise NotImplementedError
+		return None
 
-	@decorators.abstractmethod
 	def act_post(self, asset, event_args, **kwargs):
 		"""
 		Performs the post action for the specific node.
@@ -213,11 +205,7 @@ class MetaProperty(base.MetaBase):
 		:return:
 		"""
 
-		raise NotImplementedError
-
-	# =================================================================================================================
-	# BASE
-	# =================================================================================================================
+		return None
 
 	def data(self):
 		"""
@@ -275,10 +263,6 @@ class MetaProperty(base.MetaBase):
 
 		self.message.disconnectAll()
 
-	# =================================================================================================================
-	# OVERRIDES
-	# =================================================================================================================
-
 	def downstream(self, check_type):
 		"""
 		Returns the first network node by following the .message attribute connections.
@@ -298,10 +282,6 @@ class MetaProperty(base.MetaBase):
 		"""
 
 		return base.find_meta_node_from_node(self, check_type, attribute=AFFECTED_BY_ATTR_NAME)
-
-	# =================================================================================================================
-	# BASE
-	# =================================================================================================================
 
 	def connections(self, node_type=None, attribute_name=None):
 		"""

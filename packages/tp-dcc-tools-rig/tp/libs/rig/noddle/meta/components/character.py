@@ -58,7 +58,7 @@ class Character(component.Component):
 		return self.sourceNodeByName('worldLocator')
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 
 		attrs = super().meta_attributes()
 

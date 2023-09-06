@@ -112,7 +112,7 @@ class NoddleInterface(preference.PreferenceInterface):
 		self.settings().setdefault('settings', {}).setdefault('project', {})['recentProjects'] = existing_projects
 		self.save_settings()
 
-	def naming_templates(self, root: str | None = None) -> Dict:
+	def naming_templates(self, root: str | None = None) -> dict:
 		"""
 		Returns CRIT naming templates.
 

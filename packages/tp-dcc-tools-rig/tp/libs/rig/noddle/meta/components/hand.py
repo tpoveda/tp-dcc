@@ -32,7 +32,7 @@ class HandComponent(animcomponent.AnimComponent):
 			yield base.MetaBase(node=finger_node.object())
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 
 		attrs = super().meta_attributes()
 

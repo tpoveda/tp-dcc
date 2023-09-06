@@ -33,7 +33,7 @@ from Qt.QtGui import (
 
 from tp.common.resources import api as resources
 from tp.common.qt import consts
-from tp.common.qt.mvc import Controller
+from tp.common.qt.mvc import Model
 from tp.common.qt.contexts import block_signals
 from tp.common.qt.dpi import dpi_scale, dpi_scale_divide, dpi_multiplier, margins_dpi_scale, size_by_dpi, point_by_dpi
 from tp.common.qt.qtutils import (
@@ -56,12 +56,12 @@ from tp.common.qt.widgets.labels import (
 )
 
 from tp.common.qt.widgets.frameless import FramelessWindow, FramelessWindowThin
-from tp.common.qt.widgets.comboboxes import combobox, ComboBoxRegularWidget
+from tp.common.qt.widgets.comboboxes import combobox, BaseComboBox, ComboBoxRegularWidget
 from tp.common.qt.widgets.lineedits import line_edit, text_browser, BaseLineEdit
 from tp.common.qt.widgets.dividers import divider, Divider, DividerLayout, LabelDivider
 from tp.common.qt.widgets.buttons import (
 	styled_button, base_button, regular_button, rounded_button, shadowed_button, tool_button, left_aligned_button,
-	BaseButton, IconMenuButton, OkCancelButtons
+	BaseButton, BasePushButton, BaseToolButton, IconMenuButton, OkCancelButtons
 )
 from tp.common.qt.widgets.listviews import ExtendedListView
 from tp.common.qt.widgets.tableviews import BaseTableView, ExtendedTableView

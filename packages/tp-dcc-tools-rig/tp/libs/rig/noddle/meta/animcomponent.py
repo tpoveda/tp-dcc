@@ -52,7 +52,7 @@ class AnimComponent(component.Component):
 		return self.sourceNodeByName('outGroup')
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 
 		attrs = super().meta_attributes()
 

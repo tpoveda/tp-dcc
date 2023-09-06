@@ -33,7 +33,7 @@ class CritLayer(base.DependentNode):
 		super().__init__(node=node, name=name, parent=parent, init_defaults=init_defaults, lock=lock, mod=mod)
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 		"""
 		Overrides base meta_attributes function.
 		Returns the list of default meta attributes that should 	be added into the meta node during creation.
@@ -275,7 +275,7 @@ class CritComponentsLayer(CritLayer):
 	ID = consts.COMPONENTS_LAYER_TYPE
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 		"""
 		Overrides base meta_attributes function.
 		Returns the list of default meta attributes that should be added into the meta node during creation.
@@ -340,7 +340,7 @@ class CritGuideLayer(CritLayer):
 	ID = consts.GUIDE_LAYER_TYPE
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 		"""
 		Overrides base meta_attributes function.
 		Returns the list of default meta attributes that should be added into the meta node during creation.
@@ -881,13 +881,8 @@ class CritGuideLayer(CritLayer):
 		"""
 
 		guides = list(self.iterate_guides(include_root=False))
-
-		print('gogoggog', guides)
-
 		if not guides:
 			return
-
-		print('gogogo')
 
 		matrices = list()
 		align_guides = list()
@@ -1056,7 +1051,7 @@ class CritInputLayer(CritLayer):
 	ID = consts.INPUT_LAYER_TYPE
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 
 		attrs = super().meta_attributes()
 
@@ -1300,7 +1295,7 @@ class CritOutputLayer(CritLayer):
 	ID = consts.OUTPUT_LAYER_TYPE
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 
 		attrs = super().meta_attributes()
 
@@ -1483,7 +1478,7 @@ class CritSkeletonLayer(CritLayer):
 	ID = consts.SKELETON_LAYER_TYPE
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 		attrs = super().meta_attributes()
 
 		attrs.extend(
@@ -1725,7 +1720,7 @@ class CritRigLayer(CritLayer):
 	ID = consts.RIG_LAYER_TYPE
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 		attrs = super().meta_attributes()
 
 		attrs.extend(

@@ -94,13 +94,14 @@ def mobject(node_name: Any) -> OpenMaya.MObject | None:
 		try:
 			selection_list.add(node_name)
 		except RuntimeError:
-			raise exceptions.MissingObjectByNameError(name)
+			logger.warning(f'Node "{node_name}" does not exist or multiple nodes with same name within scene')
+			return None
 		try:
 			return selection_list.getDagPath(0).node()
 		except TypeError:
 			return selection_list.getDependNode(0)
 		except Exception as exc:
-			cmds.warning('Impossible to get MObject from name {} : {}'.format(node_name, exc))
+			logger.warning(f'Impossible to get MObject from name {node_name} : {exc}')
 			return None
 	else:
 		try:
@@ -1429,7 +1430,11 @@ def iterate_extra_attributes(mobj, skip=None, filtered_types=None, include_attri
 	include_attributes = include_attributes or ()
 	dep = OpenMaya.MFnDependencyNode(mobj)
 	for i in range(dep.attributeCount()):
-		attr = dep.attribute(i)
+		try:
+			attr = dep.attribute(i)
+		except RuntimeError:
+			logger.error(f'Was not possible to retrieve attribute with index {i} from attribute {dep}')
+			continue
 		plug_found = OpenMaya.MPlug(mobj, attr)
 		if not plug_found.isDynamic:
 			continue

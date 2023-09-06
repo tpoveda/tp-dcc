@@ -313,7 +313,7 @@ def shadowed_button(
 	return new_button
 
 
-def tool_button(text: str = '', icon: str = '', tooltip: str = '', parent: QWidget | None = None):
+def tool_button(text: str = '', icon: str = '', tooltip: str = '', parent: QWidget | None = None) -> BaseToolButton:
 	"""
 	Creates a new QToolButton instance.
 

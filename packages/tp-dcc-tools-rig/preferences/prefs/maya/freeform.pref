@@ -1,0 +1,37 @@
+settings:
+  project:
+    drive: ""
+    rootPath: ""
+    engineContentPath: ""
+    characterFolder: ""
+    useProject: false
+  rigging:
+    autoFreezeSkeleton: true
+  character:
+    autoUpdateSettings: false
+    lightweightRigging: false
+    overdriverRemoveParentSpace: false
+    bakeComponent: false
+    noBakeOverdrivers: false
+    bakeDrivers: false
+    revertAnimation: false
+    forceRemove: false
+    removeExisting: true
+    worldOrientIk: true
+  overdriver:
+    bakeOverdriver: true
+  bake:
+    sampleBy: 1
+    startFrame: 0
+    endFrame: 10
+    currentFrame: false
+    timeRange: true
+    frameRange: false
+    keyRange: false
+    smartBake: false
+    bakeNewLayer: false
+  optimization:
+      uiManualUpdate: false
+  exporter:
+    assetSort: 'index'
+    definitionSort: 'index'

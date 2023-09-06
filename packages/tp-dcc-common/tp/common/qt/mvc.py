@@ -7,7 +7,7 @@ from Qt.QtCore import QObject
 from tp.common.python import helpers
 
 
-class Controller(QObject):
+class Model(QObject):
 
 	def __init__(self):
 		super().__init__()

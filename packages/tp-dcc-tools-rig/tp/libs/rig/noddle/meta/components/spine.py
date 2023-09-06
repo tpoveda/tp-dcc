@@ -34,7 +34,7 @@ class SpineComponent(animcomponent.AnimComponent):
 		return control.Control(self.sourceNodeByName('chestControl').object())
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 
 		attrs = super().meta_attributes()
 
@@ -66,7 +66,7 @@ class FKIKSpineComponent(SpineComponent):
 		CHEST = 3
 
 	@override
-	def meta_attributes(self) -> List[Dict]:
+	def meta_attributes(self) -> list[dict]:
 
 		attrs = super().meta_attributes()
 

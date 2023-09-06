@@ -30,14 +30,6 @@ class CritComponent(base.DependentNode):
 
 	@override
 	def meta_attributes(self) -> list[dict]:
-		"""
-		Overrides base meta_attributes function.
-		Returns the list of default meta attributes that should be added into the meta node during creation.
-
-		:return: list of attributes data within a dictionary.
-		:rtype: list[dict]
-		"""
-
 		attrs = super().meta_attributes()
 
 		descriptor_attrs = [{'name': i, 'type': api.kMFnDataString} for i in consts.CRIT_DESCRIPTOR_CACHE_ATTR_NAMES]
