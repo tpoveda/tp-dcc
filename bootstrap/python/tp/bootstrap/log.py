@@ -54,7 +54,7 @@ def global_log_level_override(logger):
 		logger.setLevel(env_level)
 
 
-def get_logger(name):
+def get_logger(name: str) -> logging.Logger:
 	"""
 	Returns tp-dcc-tools framework log name in the form tp.dcc.tools.*
 

@@ -28,7 +28,7 @@ from Qt.QtGui import (
 	QContextMenuEvent, QShowEvent, QKeyEvent, QFocusEvent, QMoveEvent, QEnterEvent, QCloseEvent, QMouseEvent,
 	QPaintEvent, QExposeEvent, QHoverEvent, QHelpEvent, QHideEvent, QInputEvent, QWheelEvent, QDropEvent,
 	QDragMoveEvent, QDragEnterEvent, QResizeEvent, QActionEvent, QDesktopServices, QTextCursor, QTextDocument,
-	QVector2D, QVector3D, QVector4D, QFontDatabase
+	QVector2D, QVector3D, QVector4D, QFontDatabase, QStandardItem, QStandardItemModel
 )
 
 from tp.common.resources import api as resources

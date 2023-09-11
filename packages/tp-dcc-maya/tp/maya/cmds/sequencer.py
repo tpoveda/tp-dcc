@@ -7,6 +7,8 @@ This module contains functions and classes to handle Maya Camera Sequencer funct
 
 from Qt.QtWidgets import QApplication
 
+import maya.cmds as cmds
+
 from tp.core import log
 
 logger = log.tpLogger
@@ -24,7 +26,7 @@ def open_camera_sequencer_window():
     Opens Maya Camera Sequencer tool
     :return:
     """
-    maya.cmds.SequenceEditor()
+    cmds.SequenceEditor()
 
 
 def close_camera_sequencer_window():
@@ -65,11 +67,11 @@ def get_camera_sequencer_window(try_to_open=True):
 def get_camera_sequencer_panel():
     """
     Returns Maya Camera Sequencer Panel as a QtWidget
-    :return: QtWidget or None
+    :return: QWidget or None
     """
     from tp.maya.cmds import gui
     open_camera_sequencer_window()
-    sequencer = maya.cmds.getPanel(scriptType='sequenceEditorPanel')[0]
+    sequencer = cmds.getPanel(scriptType='sequenceEditorPanel')[0]
     qt_obj = gui.to_qt_object(sequencer)
 
     return qt_obj
@@ -81,7 +83,7 @@ def get_all_scene_shots():
     :return: list(str)
     """
 
-    return maya.cmds.ls(type='shot') or list()
+    return cmds.ls(type='shot') or list()
 
 
 def get_shot_is_muted(shot_node):
@@ -91,7 +93,7 @@ def get_shot_is_muted(shot_node):
     :return: bool
     """
 
-    return maya.cmds.shot(str(shot_node), query=True, mute=True)
+    return cmds.shot(str(shot_node), query=True, mute=True)
 
 
 def get_shot_track_number(shot_node):
@@ -101,7 +103,7 @@ def get_shot_track_number(shot_node):
     :return: int
     """
 
-    return maya.cmds.getAttr('{}.track'.format(shot_node))
+    return cmds.getAttr('{}.track'.format(shot_node))
 
 
 def get_shot_start_frame_in_sequencer(shot_node):
@@ -111,7 +113,7 @@ def get_shot_start_frame_in_sequencer(shot_node):
     :return: int
     """
 
-    return int(maya.cmds.shot(shot_node, query=True, sequenceStartTime=True))
+    return int(cmds.shot(shot_node, query=True, sequenceStartTime=True))
 
 
 def get_shot_end_frame_in_sequencer(shot_node):
@@ -121,7 +123,7 @@ def get_shot_end_frame_in_sequencer(shot_node):
     :return: int
     """
 
-    return int(maya.cmds.shot(shot_node, query=True, sequenceEndTime=True))
+    return int(cmds.shot(shot_node, query=True, sequenceEndTime=True))
 
 
 def get_shot_pre_hold(shot_node):
@@ -131,7 +133,7 @@ def get_shot_pre_hold(shot_node):
     :return: int
     """
 
-    return maya.cmds.getAttr('{}.preHold'.format(shot_node))
+    return cmds.getAttr('{}.preHold'.format(shot_node))
 
 
 def get_shot_post_hold(shot_node):
@@ -141,7 +143,7 @@ def get_shot_post_hold(shot_node):
     :return: int
     """
 
-    return maya.cmds.getAttr('{}.postHold'.format(shot_node))
+    return cmds.getAttr('{}.postHold'.format(shot_node))
 
 
 def get_shot_scale(shot_node):
@@ -151,7 +153,7 @@ def get_shot_scale(shot_node):
     :return: int
     """
 
-    return maya.cmds.getAttr('{}.scale'.format(shot_node))
+    return cmds.getAttr('{}.scale'.format(shot_node))
 
 
 def get_shot_start_frame(shot_node):
@@ -161,7 +163,7 @@ def get_shot_start_frame(shot_node):
     :return: int
     """
 
-    return maya.cmds.getAttr('{}.startFrame'.format(shot_node))
+    return cmds.getAttr('{}.startFrame'.format(shot_node))
 
 
 def get_shot_end_frame(shot_node):
@@ -171,7 +173,7 @@ def get_shot_end_frame(shot_node):
     :return: int
     """
 
-    return maya.cmds.getAttr('{}.endFrame'.format(shot_node))
+    return cmds.getAttr('{}.endFrame'.format(shot_node))
 
 
 def get_shot_camera(shot_node):
@@ -181,7 +183,7 @@ def get_shot_camera(shot_node):
     :return: str
     """
 
-    camera_connections = maya.cmds.listConnections('{}.currentCamera'.format(shot_node), source=True)
+    camera_connections = cmds.listConnections('{}.currentCamera'.format(shot_node), source=True)
     if not camera_connections:
         return None
 

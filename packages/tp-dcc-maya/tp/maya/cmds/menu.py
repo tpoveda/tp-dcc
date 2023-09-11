@@ -5,134 +5,156 @@
 Module that contains functions and classes related with Maya menus
 """
 
-import os
-import json
-from collections import OrderedDict
+from __future__ import annotations
 
-import maya.cmds
-import maya.mel
+import re
+
+import maya.cmds as cmds
+import maya.mel as mel
 
 from tp.core import log
-from tp.core.abstract import menu as abstract_menu
 
 logger = log.tpLogger
 
 
-class MayaMenu(abstract_menu.AbstractMenu, object):
-    def __init__(self, name='MayaMenu'):
-        super(MayaMenu, self).__init__()
-
-        self.name = name
-
-    def create_menu(self, file_path=None, parent_menu=None):
-        """
-        Creates a new DCC menu app
-        If file path is not given the menu is created without items
-        :param name: str, name for the menu
-        :param file_path: str, path where JSON menu file is located
-        :param parent_menu: str, Name of the menu to append this menu to
-        :return: variant, nativeMenu || None
-        """
-
-        if check_menu_exists(self.name):
-            return
-
-        menu_created = False
-
-        if parent_menu:
-            m = find_menu(parent_menu)
-            if m:
-                self._native_pointer = maya.cmds.menuItem(subMenu=True, parent=m, tearOff=True, label=self.name)
-                menu_created = True
-
-        s_menu = None
-        if not menu_created:
-            s_menu = maya.cmds.menu(parent=main_menu(), tearOff=True, label=self.name)
-
-        if not file_path or not s_menu:
-            return
-
-        if not os.path.isfile(file_path):
-            logger.warning('Menu was not created because menu file is not valid or does not exists!')
-            return
-
-        with open(file_path, 'r') as f:
-            menu_data = json.load(f, object_pairs_hook=OrderedDict)
-
-        if menu_data:
-            menu_categories = list(menu_data.keys())
-            for category in menu_categories:
-                self.create_category(category_name=category, category_items=menu_data[category], parent_menu=s_menu)
-
-    @staticmethod
-    def create_category(category_name, category_items, parent_menu):
-        """
-        Creates a new category on the passed menu. If not menu specified this menu is used, if exists
-        :param parent_menu: str, menu to add category to
-        :param category_name: str, name of the category
-        :param category_items: list<str>, list of items to add to the category
-        :return: variant, nativeMenu || None
-        """
-
-        submenu = maya.cmds.menuItem(subMenu=True, tearOff=True, parent=parent_menu, label=category_name)
-        for item in category_items:
-            maya.cmds.menuItem(parent=submenu, label=item['label'], command=item['command'])
-
-
-def main_menu():
+def main_menu() -> str:
     """
-    Returns Maya main menu
+    Returns Maya main menu name.
+
+    :return: main menu name.
+    :rtype: str
     """
 
-    return maya.mel.eval('$tmp=$gMainWindow')
+    return mel.eval('$tmp=$gMainWindow')
 
 
-def get_menus():
+def menus(long_path: bool = False) -> list[str]:
     """
-    Return a list with all Maya menus
-    :return: list<str>
-    """
+    Return a list with all Maya menus.
 
-    return maya.cmds.lsUI(menus=True)
-
-
-def remove_menu(menu_name):
-    """
-    Removes, if exists, a menu of Max
-    :param menu_name: str, menu name
+    :param bool long_path: whether to return menu names or menu paths.
+    :return: list of all Maya menu names.
+    :rtype: list[str]
     """
 
-    for m in get_menus():
-        lbl = maya.cmds.menu(m, query=True, label=True)
+    return cmds.lsUI(menus=True, long=long_path)
+
+
+def compatible_name(name: str) -> str:
+    """
+    Returns a compatible Maya menu internal name from given one.
+
+    :param str name: Maya menu name.
+    :return: compatible Maya menu name.
+    :rtype: str
+    """
+
+    return re.sub('[^0-9a-zA-Z]+', '_', name).strip('_')
+
+
+def unique_compatible_name(name: str, parent: str) -> str:
+    """
+    Recursive function that returns a unique compatible Maya menu internal name from given one.
+
+    :param str name: Maya menu name.
+    :param str parent: parent menu name.
+    :return: unique compatible Maya menu name.
+    :rtype: str
+    """
+
+    name = compatible_name(name)
+    long_name = f'{parent}|{name}'
+    long_menu_names = menus(long_path=True)
+    long_menu_item_names = cmds.lsUI(menuItems=True, long=True)
+    if any(long_name == long_menu_name for long_menu_name in long_menu_names + long_menu_item_names):
+        name = f'{name}_1'
+        name = unique_compatible_name(name, parent)
+
+    return name
+
+
+def create_root_menu(label: str, window_name: str | None = None, kwargs: dict | None = None) -> str:
+    """
+    Creates a new root menu in Maya.
+
+    :param str label: label for the menu.
+    :param str or None window_name: optional name of the window where we want to create the root menu in.
+    :param dict or None kwargs: optional keyword arguments.
+    :return: newly created root menu path.
+    :rtype: str
+    """
+
+    # TODO: Add support for menus in other windows (e.g: Script Editor).
+    # window_name = window_name or "gMainWindow"  # default value
+    # menu_path = mel.eval(f'$temp=${window_name}')
+
+    menu_path = main_menu()
+    kwargs = kwargs or {}
+    kwargs.setdefault('parent', menu_path)
+    kwargs.setdefault('tearOff', True)
+    name = label.replace('_', ' ')
+    return cmds.menu(name, **kwargs)
+
+
+def remove_menu(menu_name: str):
+    """
+    Removes, if exists, menu with given name.
+
+    :param str menu_name: name of the menu to delete.
+    """
+
+    for m in menus():
+        lbl = cmds.menu(m, query=True, label=True)
         if lbl == menu_name:
-            maya.cmds.deleteUI(m, menu=True)
+            cmds.deleteUI(m, menu=True)
 
 
-def check_menu_exists(menu_name):
+def check_menu_exists(menu_name: str) -> bool:
     """
-    Returns True if a menu with the given name already exists
-    :param menu_name: str, menu name
-    :return: bol
+    Returns whether a menu with the given name already exists.
+
+    :param str menu_name: name of the menu to check.
+    :return: True if menu with given name exists; False otherwise.
+    :rtype: bool
     """
 
-    for m in get_menus():
-        lbl = maya.cmds.menu(m, query=True, label=True)
+    for m in menus():
+        lbl = cmds.menu(m, query=True, label=True)
         if lbl == menu_name:
             return True
 
     return False
 
 
-def find_menu(menu_name):
+def find_menu_by_path(menu_name: str) -> str | None:
     """
-    Returns Menu instance by the given name
-    :param menu_name: str, menu of the name to search for
-    :return: nativeMenu
+    Returns full name of the menu with given path.
+
+    :param str menu_name: path of the menu to search.
+    :return: found menu path.
+    :rtype: str or None
     """
 
-    for m in get_menus():
-        lbl = maya.cmds.menu(m, query=True, label=True)
-        if lbl == menu_name:
+    long_name = f'{main_menu()}|{menu_name}'        # for now, we assume menu is a child of the main window
+    for long_menu_name in menus(long_path=True):
+        if long_menu_name == long_name:
+            return long_menu_name
+
+    return None
+
+
+def find_menu_by_label(menu_label: str) -> str | None:
+    """
+    Returns full name of the menu with given name.
+
+    :param str menu_label: label of the menu to search.
+    :return: found menu path.
+    :rtype: str or None
+    """
+
+    for m in menus(long_path=True):
+        lbl = cmds.menu(m, query=True, label=True)
+        if lbl == menu_label:
             return m
 
     return None
