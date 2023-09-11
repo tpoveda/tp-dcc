@@ -114,7 +114,7 @@ class ToolsManager:
 
 	def launch_tool_by_id(self, tool_id: str, package_name: str | None = None, *args: Tuple, **kwargs: Dict) -> Any:
 		"""
-		Exectues the tool plugin from the given id.
+		Executes the tool plugin from the given id.
 
 		:param str tool_id: ID of the tool to execute.
 		:param str package_name: optional package name of the tool to execute.

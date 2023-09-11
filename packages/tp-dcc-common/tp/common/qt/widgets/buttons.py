@@ -372,7 +372,8 @@ def left_aligned_button(
 	return new_button
 
 
-class AbstractButton(QAbstractButton, dpi.DPIScaling):
+# class AbstractButton(QAbstractButton, dpi.DPIScaling):
+class AbstractButton(dpi.DPIScaling):
 	"""
 	Abstract class for all custom Qt buttons.
 	Adds the ability to change button icon based on button press status.
@@ -386,31 +387,31 @@ class AbstractButton(QAbstractButton, dpi.DPIScaling):
 	_icon_colors = (128, 128, 128)
 	_icon_scaling = []
 
-	@override
+	# @override
 	def enterEvent(self, event: QEvent) -> None:
 		if self._hover_icon is not None and self.isEnabled():
 			self.setIcon(self._hover_icon)
 
-	@override
+	# @override
 	def leaveEvent(self, event: QEvent) -> None:
 		if self._idle_icon is not None and self.isEnabled():
 			self.setIcon(self._idle_icon)
 
-	@override(check_signature=False)
+	# @override(check_signature=False)
 	def setEnabled(self, flag: bool) -> None:
 		super().setEnabled(flag)
 
 		# force update of the icons after resizing
 		self.update_icons()
 
-	@override(check_signature=False)
+	# @override(check_signature=False)
 	def setDisabled(self, flag: bool) -> None:
 		super().setDisabled(flag)
 
 		# force update of the icons after resizing
 		self.update_icons()
 
-	@override
+	# @override
 	def setIconSize(self, size: QSize) -> None:
 		super().setIconSize(dpi.size_by_dpi(size))
 
@@ -601,14 +602,20 @@ class BaseButton(QPushButton, AbstractButton):
 	def __init__(
 			self, text: str = '', icon: QIcon | str | None = None, icon_hover: QIcon | str | None = None,
 			icon_color_theme: str | None =None, elided: bool = False, theme_updates: bool = True, menu_padding: int = 5,
-			menu_align: Qt.AlignmentFlag = Qt.AlignLeft, double_click_enabled: bool = False, parent: QWidget | None = None):
+			menu_align: Qt.AlignmentFlag = Qt.AlignLeft, double_click_enabled: bool = False,
+			parent: QWidget | None = None):
 
 		self._idle_icon = resources.icon(icon) if icon and helpers.is_string(icon) else (icon or QIcon())
 		self._hover_icon = resources.icon(icon_hover) if icon_hover and helpers.is_string(icon_hover) else icon_hover
 		self._icon_color_theme = icon_color_theme
 		self._text = text
 
-		super().__init__(icon=self._idle_icon, text=self._text, parent=parent)
+		QPushButton.__init__(self)
+		self.setParent(parent)
+		if self._idle_icon:
+			self.setIcon(self._idle_icon)
+		self.setText(self._text)
+		# super().__init__(icon=self._idle_icon, text=self._text, parent=parent)
 
 		self._menu_padding = menu_padding
 		self._menu_align = menu_align
@@ -620,22 +627,22 @@ class BaseButton(QPushButton, AbstractButton):
 
 		self._menu_active = {  # defines which menus are active
 			Qt.LeftButton: True,
-			Qt.MidButton: True,
+			Qt.MiddleButton: True,
 			Qt.RightButton: True
 		}
 		self._click_menu = {  # stores available menus
 			Qt.LeftButton: None,									# type: BaseButton.BaseMenuButtonMenu
-			Qt.MidButton: None,										# type: BaseButton.BaseMenuButtonMenu
+			Qt.MiddleButton: None,										# type: BaseButton.BaseMenuButtonMenu
 			Qt.RightButton: None									# type: BaseButton.BaseMenuButtonMenu
 		}
 		self._menu_searchable = {  # defines which menus are searchable
 			Qt.LeftButton: False,
-			Qt.MidButton: False,
+			Qt.MiddleButton: False,
 			Qt.RightButton: False
 		}
 
 		self.leftClicked.connect(partial(self._on_context_menu, Qt.LeftButton))
-		self.middleClicked.connect(partial(self._on_context_menu, Qt.MidButton))
+		self.middleClicked.connect(partial(self._on_context_menu, Qt.MiddleButton))
 		self.rightClicked.connect(partial(self._on_context_menu, Qt.RightButton))
 
 		self._theme_pref = core_interfaces.theme_preference_interface()
@@ -674,7 +681,7 @@ class BaseButton(QPushButton, AbstractButton):
 		:return:
 		"""
 
-		if e.button() == Qt.MidButton:
+		if e.button() == Qt.MiddleButton:
 			self.setDown(True)
 		elif e.button() == Qt.RightButton:
 			self.setDown(True)
@@ -821,7 +828,7 @@ class BaseButton(QPushButton, AbstractButton):
 		Adds a new menu item through an action.
 
 		:param str name: text for the new menu item.
-		:param Qt.LeftButton or Qt.RightButton or Qt.MidButton mouse_menu: mouse button.
+		:param Qt.LeftButton or Qt.RightButton or Qt.MiddleButton mouse_menu: mouse button.
 		:param Callable or None connect: function to connect when the menu item is pressed.
 		:param bool checkable: whether menu item is checkable.
 		:param bool checked: if checkable is True, whether menu item is checked by default.
@@ -1059,7 +1066,7 @@ class BaseButton(QPushButton, AbstractButton):
 		"""
 		Clears all the menu items of the specified menu.
 
-		:param Qt.LeftButton or Qt.MidButton or Qt.RightButton mouse_menu: mouse button.
+		:param Qt.LeftButton or Qt.MiddleButton or Qt.RightButton mouse_menu: mouse button.
 		"""
 
 		if self._click_menu[mouse_menu] is not None:
@@ -1078,7 +1085,7 @@ class BaseButton(QPushButton, AbstractButton):
 			if mouse_button == Qt.LeftButton:
 				self.leftClicked.emit()
 				return True
-			elif mouse_button == Qt.MidButton:
+			elif mouse_button == Qt.MiddleButton:
 				self.middleClicked.emit()
 				return True
 			elif mouse_button == Qt.RightButton:

@@ -208,6 +208,15 @@ def is_pyside2():
     return __binding__ == 'PySide2'
 
 
+def is_pyside6():
+    """
+    Returns True if the current Qt binding is PySide6
+    :return: bool
+    """
+
+    return __binding__ == 'PySide6'
+
+
 def dpi_multiplier():
     """
     Returns current application DPI multiplier
@@ -238,7 +247,7 @@ def find_rcc_executable_file():
     # TODO: Implement PyQt RCC search
     # TODO: Make it work in a cross platform way. For now this only works in Windows.
 
-    if is_pyside() or is_pyside2():
+    if is_pyside() or is_pyside2() or is_pyside6():
         rcc_exe_path = os.environ.get('PYSIDE_RCC_EXE_PATH', None)
         if rcc_exe_path:
             rcc_exe_path = path.clean_path(rcc_exe_path)
@@ -254,13 +263,18 @@ def find_rcc_executable_file():
             os.path.join(os.path.dirname(sys.executable), 'Lib', 'site-packages', 'PySide'),
             os.path.join(os.path.dirname(os.path.dirname(sys.executable)), 'Lib', 'site-packages', 'PySide')
         ])
-    elif is_pyside2():
-        exe_name = 'rcc.exe'
+    elif is_pyside2() or is_pyside6():
+        exe_name = 'pyside2-rcc.exe'
         folders_to_find.extend([
             'C:\\Python38\\Lib\\site-packages\\PySide2\\',
-            os.path.join(os.path.dirname(sys.executable), 'Lib', 'site-packages', 'PySide2'),
-            os.path.join(os.path.dirname(os.path.dirname(sys.executable)), 'Lib', 'site-packages', 'PySide2')
+            os.path.join(os.path.dirname(sys.executable)),
         ])
+    # elif is_pyside6():
+    #     exe_name = 'pyside6-rcc.exe'
+    #     folders_to_find.extend([
+    #         'C:\\Python310\\Lib\\site-packages\\PySide6\\',
+    #         os.path.join(os.path.dirname(sys.executable)),
+    #     ])
     if not exe_name:
         logger.warning('No valid RCC executable find found!')
         return
@@ -274,48 +288,54 @@ def find_rcc_executable_file():
     return None
 
 
-def create_python_qrc_file(qrc_file, py_file):
+def create_python_qrc_file(qrc_file: str, py_file: str):
     """
-    Creates a Python file from a QRC file
-    :param qrc_file: str, QRC file name
-    :param py_file: str
+    Creates a Python file from a QRC file.
+
+    :param str qrc_file: QRC file name.
+    :param str py_file: str
     """
 
     if not os.path.isfile(qrc_file):
         return
 
     pyside_rcc_exe_path = find_rcc_executable_file()
-    if not os.path.isfile(pyside_rcc_exe_path):
+    if not pyside_rcc_exe_path or not os.path.isfile(pyside_rcc_exe_path):
         logger.warning('Impossible to generate Python QRC file because no PySide RCC executable path found!')
         return
 
     try:
-        subprocess.check_output('"{0}" -o "{1}" "{2}"'.format(pyside_rcc_exe_path, py_file, qrc_file))
+        subprocess.check_output(f'"{pyside_rcc_exe_path}" -o "{py_file}" "{qrc_file}"')
     except subprocess.CalledProcessError as e:
         raise RuntimeError('command {0} returned with error (code: {1}): {2}'.format(e.cmd, e.returncode, e.output))
     if not os.path.isfile(py_file):
         return
 
-    # We update file to make sure it works with Qt.py and it works with both Python 2 and Python 3
-    fileio.replace(py_file, "from PySide import QtCore", "from Qt import QtCore")
-    lines = fileio.get_file_lines(py_file)
-    lines = lines[:-8]
-    fileio.write_lines(py_file, lines)
-    lines_to_append = [
-        'def qInitResources():',
-        '\ttry:',
-        '\t\tQtCore.qRegisterResourceData(0x01, qt_resource_struct, qt_resource_name, qt_resource_data)',
-        '\texcept Exception:',
-        '\t\tQtCore.qRegisterResourceData(0x01, qt_resource_struct.encode(), '
-        'qt_resource_name.encode(), qt_resource_data.encode())',
-        '\ndef qCleanupResources():',
-        '\ttry:',
-        '\t\tQtCore.qUnregisterResourceData(0x01, qt_resource_struct, qt_resource_name, qt_resource_data)',
-        '\texcept Exception:',
-        '\t\tQtCore.qUnregisterResourceData(0x01, qt_resource_struct.encode(), '
-        'qt_resource_name.encode(), qt_resource_data.encode())',
-    ]
-    fileio.write_lines(py_file, lines_to_append, append=True)
+    # We update file to make sure it works with Qt.py, and it works with both Python 2 and Python 3
+    # if is_pyside6():
+    #     fileio.replace(py_file, "from PySide6 import QtCore", "from Qt import QtCore")
+    if is_pyside2():
+        fileio.replace(py_file, "from PySide2 import QtCore", "from Qt import QtCore")
+    else:
+        fileio.replace(py_file, "from PySide import QtCore", "from Qt import QtCore")
+        lines = fileio.get_file_lines(py_file)
+        lines = lines[:-8]
+        fileio.write_lines(py_file, lines)
+        lines_to_append = [
+            'def qInitResources():',
+            '\ttry:',
+            '\t\tQtCore.qRegisterResourceData(0x01, qt_resource_struct, qt_resource_name, qt_resource_data)',
+            '\texcept Exception:',
+            '\t\tQtCore.qRegisterResourceData(0x01, qt_resource_struct, '
+            'qt_resource_name, qt_resource_data)',
+            '\ndef qCleanupResources():',
+            '\ttry:',
+            '\t\tQtCore.qUnregisterResourceData(0x01, qt_resource_struct, qt_resource_name, qt_resource_data)',
+            '\texcept Exception:',
+            '\t\tQtCore.qUnregisterResourceData(0x01, qt_resource_struct, '
+            'qt_resource_name, qt_resource_data)\n',
+        ]
+        fileio.write_lines(py_file, lines_to_append, append=True)
 
 
 def create_qrc_file(src_paths, dst_file):

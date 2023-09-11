@@ -64,7 +64,6 @@ class Tool(plugin.Plugin):
         pass
 
     def _execute(self, *args, **kwargs):
-
         try:
             tool = self.execute(*args, **kwargs)
             if tool is not None:

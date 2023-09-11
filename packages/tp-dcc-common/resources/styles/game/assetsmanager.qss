@@ -1,0 +1,6 @@
+AssetsManager QPushButton#ProjectsButton::menu-indicator
+{
+    subcontrol-position: right center;
+    subcontrol-origin: padding;
+    left: -5px;
+}

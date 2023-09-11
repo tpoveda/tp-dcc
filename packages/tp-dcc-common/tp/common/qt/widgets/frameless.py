@@ -8,6 +8,7 @@ Module that contains frameless related widgets implementations.
 from __future__ import annotations
 
 import uuid
+import weakref
 import webbrowser
 from typing import Tuple, List, Type
 
@@ -295,7 +296,10 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
 		if dcc.is_blender():
 			self._on_top = True
 
-		super().__init__(parent=parent)
+		QMainWindow.__init__(self)
+		if parent:
+			self.setParent(parent)
+		# super().__init__()
 
 		if osplatform.is_mac():
 			# macOS needs it the saveWindowPref all the time otherwise it will be behind the other windows.
@@ -420,7 +424,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
 		"""
 
 		self.setAttribute(Qt.WA_TranslucentBackground)
-		if qtutils.is_pyside2() or qtutils.is_pyqt5():
+		if qtutils.is_pyside6() or qtutils.is_pyside2() or qtutils.is_pyqt5():
 			window_flags = self.windowFlags() | Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint
 		else:
 			window_flags = self.windowFlags() | Qt.FramelessWindowHint
@@ -1465,6 +1469,7 @@ class FramelessWindow(QWidget):
 	WINDOW_SETTINGS_PATH = ''				# Window settings registry path (e.g: tp/dcc/window)
 	HELP_URL = ''							# Web URL to use when displaying the help documentation for this window
 	MINIMIZED_WIDTH = 390
+	_INSTANCES: list[FramelessWindow] = []
 
 	beginClosing = Signal()
 	closed = Signal()
@@ -1477,6 +1482,10 @@ class FramelessWindow(QWidget):
 			on_top: bool = False, save_window_pref: bool = False, minimize_enabled: bool = True,
 			minimize_button: bool = False, maximize_button: bool = False, parent: QWidget | None = None):
 		super().__init__(parent=None)
+
+		FramelessWindow.delete_instances()
+
+		self.__class__._INSTANCES.append(weakref.proxy(self))
 
 		self.setObjectName(name or title)
 		width, height = dpi.dpi_scale(width or 0), dpi.dpi_scale(height or 0)
@@ -1550,6 +1559,18 @@ class FramelessWindow(QWidget):
 			widget = widget.parentWidget()
 
 		return None
+
+	@classmethod
+	def delete_instances(cls):
+		for instance in cls._INSTANCES:
+			logger.info(f'Deleting {instance}')
+			try:
+				instance.setParent(None)
+				instance.deleteLater()
+			except:
+				pass
+			cls._INSTANCES.remove(instance)
+			del instance
 
 	@property
 	def title_bar(self) -> TitleBar:
@@ -1714,14 +1735,17 @@ class FramelessWindow(QWidget):
 
 		return self._main_contents.layout()
 
-	def set_main_layout(self, layout: QVBoxLayout | QHBoxLayout):
+	def set_main_layout(self, layout: QVBoxLayout | QHBoxLayout) -> QVBoxLayout | QHBoxLayout | QLayout:
 		"""
 		Sets main window layout.
 
 		:param QVBoxLayout or QHBoxLayout layout: main window contents layout.
+		:return: contents layout.
+		:rtype: QVBoxLayout or QHBoxLayout or QLayout
 		"""
 
 		self._main_contents.setLayout(layout)
+		return self.main_layout()
 
 	def set_title(self, title: str):
 		"""
@@ -2121,7 +2145,7 @@ class SpawnerIcon(buttons.IconMenuButton):
 	undocked = Signal()
 
 	def __init__(self, window: FramelessWindow, parent: QWidget | None = None):
-		super(SpawnerIcon, self).__init__(parent=parent)
+		super().__init__(parent=parent)
 
 		self._window = window
 		self._docking_container = None						# type: DockingContainer
@@ -2144,7 +2168,7 @@ class SpawnerIcon(buttons.IconMenuButton):
 			self._init_dock = True
 			self._start_pos = QCursor.pos()
 
-		if self._tooltip_action and dcc.is_maya():
+		if dcc.is_maya() and self._tooltip_action:
 			self._tooltip_action.setChecked(tooltips.tooltip_state())
 
 	@override
@@ -2300,7 +2324,6 @@ class SpawnerIcon(buttons.IconMenuButton):
 		"""
 
 		if not dcc.is_maya():
-			logger.warning('Docking functionality is only available in Maya')
 			return
 
 		self._workspace_control_name, self._workspace_control, self._docking_container = docking.dock_to_container(

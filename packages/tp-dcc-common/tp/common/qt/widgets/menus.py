@@ -138,9 +138,9 @@ def mixin(cls):
 		"""
 
 		self._menu_vertical_offset = menu_vertical_offset
-		self._menu_active = {Qt.LeftButton: False, Qt.MidButton: False, Qt.RightButton: False}
-		self._click_menu = {Qt.LeftButton: None, Qt.MidButton: None, Qt.RightButton: None}
-		self._menu_searchable = {Qt.LeftButton: False, Qt.MidButton: False, Qt.RightButton: False}
+		self._menu_active = {Qt.LeftButton: False, Qt.MiddleButton: False, Qt.RightButton: False}
+		self._click_menu = {Qt.LeftButton: None, Qt.MiddleButton: None, Qt.RightButton: None}
+		self._menu_searchable = {Qt.LeftButton: False, Qt.MiddleButton: False, Qt.RightButton: False}
 
 	def _add_action_list(self, actions_list, mouse_button=Qt.RightButton):
 		"""

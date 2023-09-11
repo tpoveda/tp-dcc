@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from overrides import override
-from Qt.QtCore import Qt, QRegExp, QModelIndex, QAbstractItemModel, QSortFilterProxyModel
+from Qt.QtCore import Qt, QRegularExpression, QModelIndex, QAbstractItemModel, QSortFilterProxyModel
 from Qt.QtWidgets import QWidget
 
 from tp.common.qt.models import datasources, treemodel, tablemodel
@@ -38,19 +38,20 @@ class LeafTreeFilterProxyModel(QSortFilterProxyModel):
 	def setFilterFixedString(self, pattern: str) -> None:
 		return super().setFilterFixedString(pattern if len(pattern) >= 2 else '')
 
-	def _match(self, search_expr: QRegExp, item: datasources.BaseDataSource, column: int) -> bool:
+	def _match(self, search_expr: QRegularExpression, item: datasources.BaseDataSource, column: int) -> bool:
 		"""
 		Internal function that recursively checks whether the given regex expression matches the given item
 		or its children.
 
-		:param QRegExp search_expr: regular expression to match.
+		:param QRegularExpression search_expr: regular expression to match.
 		:param datasource.BaseDataSource item: data source item.
 		:param int column: filter key column index.
 		:return: True if item matches regular expression; False otherwise.
 		:rtype: bool
 		"""
 
-		if search_expr.indexIn(item.data(column)) != -1:
+		match = search_expr.match(item.data(column))
+		if match.hasMatch():
 			return True
 		for index in range(item.row_count()):
 			child_item = item.child(index)

@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Tuple
 
 from Qt.QtCore import Qt
-from Qt.QtWidgets import QApplication, QDesktopWidget, QWidget, QDialog
-from Qt.QtGui import QIcon
+from Qt.QtWidgets import QApplication, QWidget, QDialog
+from Qt.QtGui import QIcon, QGuiApplication
 
 from tp.preferences.interfaces import core
 from tp.common.resources import api as resources
@@ -47,10 +47,10 @@ class BaseDialog(QDialog):
 
 		frame_geo = self.frameGeometry()
 		if to_cursor:
-			screen = QApplication.desktop().screenNumber(QApplication.desktop().cursor().pos())
-			center_point = QApplication.desktop().screenGeometry(screen).center()
+			screen = QGuiApplication().screenAt(QApplication.desktop().cursor().pos())
+			center_point = screen.availableGeometry().center()
 		else:
-			center_point = QDesktopWidget().availableGeometry().center()
+			center_point = QGuiApplication.primaryScreen().availableGeometry().center()
 		frame_geo.moveCenter(center_point)
 		self.move(frame_geo.topLeft())
 

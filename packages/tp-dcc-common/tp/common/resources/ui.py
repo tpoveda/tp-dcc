@@ -10,7 +10,7 @@ from __future__ import print_function, division, absolute_import
 import os
 import importlib
 from xml.etree.ElementTree import ElementTree
-from PySide2.QtCore import QFile
+from Qt.QtCore import QFile
 
 try:
 	from cStringIO import StringIO
@@ -35,6 +35,13 @@ except ImportError as exc:
 	_PYSIDEUIC_AVAILABLE = False
 
 if _QT_AVAILABLE:
+	if __binding__ == 'PySide6':
+		from PySide6.QtCore import QMetaObject # do not remove
+		try:
+			from PySide6.QtUiTools import QUiLoader
+		except ImportError:
+			_UILOADER_AVAILABLE = False
+		_PYSIDEUIC_AVAILABLE = False
 	if __binding__ == 'PySide2':
 		from PySide2.QtCore import QMetaObject  # do not remove
 
@@ -45,13 +52,9 @@ if _QT_AVAILABLE:
 		try:
 			import pyside2uic as pysideuic
 		except ImportError:
-			try:
-				from cpg.common.qt.vendors import pyside2uic as pysideuic
-			except ImportError:
-				_PYSIDEUIC_AVAILABLE = False
+			_PYSIDEUIC_AVAILABLE = False
 	elif __binding__ == 'PySide':
 		from PySide.QtCore import QMetaObject  # do not remove
-
 		try:
 			from PySide.QtUiTools import QUiLoader
 		except ImportError:

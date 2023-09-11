@@ -1,11 +1,7 @@
 /*
  --------------------------------------------------------------------------
- Default Style
+ tp-dcc-game custom style
  --------------------------------------------------------------------------
 */
 
-#include unreal/unreal.qss
-#include tpdcc/tpdcc.qss
-#include crit/crit.qss
-#include animation/animation.qss
-#include game/game.qss
+#include assetsmanager.qss

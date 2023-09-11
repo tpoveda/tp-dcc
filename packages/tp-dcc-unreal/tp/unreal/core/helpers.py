@@ -8,22 +8,26 @@ Module that contains Unreal utility functions and classes
 import unreal
 
 
-def get_unreal_version_name():
+def unreal_version_name() -> str:
     """
-    Returns the version name of Unreal engine
-    :return: str
+    Returns the version name of Unreal engine.
+
+    :return: version name.
+    :rtype: str
     """
 
     return unreal.SystemLibrary.get_engine_version()
 
 
-def get_unreal_version():
+def unreal_version() -> list[int]:
     """
-    Returns current version of Unreal engine
-    :return: list(int)
+    Returns current version of Unreal engine.
+
+    :return: Unreal Engine version as list of integers.
+    :rtype: list[int]
     """
 
-    version_name = get_unreal_version_name()
+    version_name = unreal_version_name()
     version_split = version_name.split('+++')[0]
     versions = version_split.split('-')
     main_version = versions[0].split('.')

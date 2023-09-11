@@ -31,14 +31,14 @@ try:
         QInputDialog, QFileDialog, QMenu, QMenuBar, QGraphicsDropShadowEffect, QTreeWidget, QTreeWidgetItem,
         QTreeWidgetItemIterator, QMainWindow
     )
-    from Qt.QtGui import QFontDatabase, QPixmap, QIcon, QColor, QCursor
+    from Qt.QtGui import QFontDatabase, QPixmap, QIcon, QColor, QCursor, QGuiApplication, QScreen
     from Qt import QtGui
     from Qt import QtCompat
     from Qt import __binding__
     from tp.common.qt import dpi
 except ImportError as e:
     QT_AVAILABLE = False
-    logger.warning('Impossible to load Qt libraries. Qt dependant functionality will be disabled!')
+    logger.warning(f'Impossible to load Qt libraries. Qt dependant functionality will be disabled: {e}')
 try:
     from Qt import QtTest
 except ImportError:
@@ -50,6 +50,11 @@ if QT_AVAILABLE:
             import shiboken2 as shiboken
         except ImportError:
             from PySide2 import shiboken2 as shiboken
+    elif __binding__ == 'PySide6':
+        try:
+            import shiboken6 as shiboken
+        except ImportError:
+            from PySide6 import shiboken6 as shiboken
     elif __binding__ == 'PySide':
         try:
             import shiboken
@@ -119,6 +124,15 @@ def is_pyside2():
     """
 
     return __binding__ == 'PySide2'
+
+
+def is_pyside6():
+    """
+    Returns True if the current Qt binding is PySide6
+    :return: bool
+    """
+
+    return __binding__ == 'PySide6'
 
 
 def get_ui_library():
@@ -668,6 +682,36 @@ def close_and_cleanup(widget):
         if widget.isVisible():
             widget.close()
         widget.deleteLater()
+
+
+def close_widgets_with_title(title: str, parent: None | QWidget = None):
+    """
+    Closes all widgets with given title.
+
+    :param str title: widget title.
+    :param QWidget | None = None parent: optional parent widget. If not given, current main window will be used.
+    """
+
+    parent = parent or dcc.main_window()
+    if not parent:
+        return
+    for child in [ch for ch in parent.findChildren(QWidget) if ch.windowTitle() == title]:
+        close_and_cleanup(child)
+
+
+def close_widgets_of_class(widget_class: type, parent: None | QWidget = None):
+    """
+    Closes all widgets with given title.
+
+    :param type widget_class: widget class to find.
+    :param QWidget | None = None parent: optional parent widget. If not given, current main window will be used.
+    """
+
+    parent = parent or dcc.main_window()
+    if not parent:
+        return
+    for child in [ch for ch in parent.findChildren(widget_class)]:
+        close_and_cleanup(child)
 
 
 def get_string_input(message, title='Rename', old_name=None, parent=None):
@@ -1425,16 +1469,16 @@ def get_current_screen(global_pos=None):
     return screen
 
 
-def current_screen_number(global_pos=None):
+def current_screen(global_pos: QPoint | None = None) -> QScreen:
     """
-    Returns current screen number.
+    Returns current screen instance.
 
-    :return: current screen number.
-    :rtype: int
+    :return: current screen.
+    :rtype: QScreen
     """
 
-    global_pos = global_pos if global_pos is not None else QApplication.desktop().cursor().pos()
-    return QApplication.desktop().screenNumber(global_pos)
+    global_pos = global_pos if global_pos is not None else QCursor.pos()
+    return QGuiApplication.screenAt(global_pos)
 
 
 def current_screen_geometry() -> QRect:
@@ -1445,8 +1489,8 @@ def current_screen_geometry() -> QRect:
     :rtype: QRect
     """
 
-    screen = current_screen_number()
-    return QApplication.desktop().screenGeometry(screen)
+    screen = current_screen()
+    return screen.geometry()
 
 
 def available_screen_rect() -> QRect:

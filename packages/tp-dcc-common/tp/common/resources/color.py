@@ -8,7 +8,7 @@ Module that defines that extends QColor functionality
 import math
 import random
 
-from Qt.QtCore import Qt, QRegExp, qFuzzyCompare
+from Qt.QtCore import Qt, QRegularExpression, qFuzzyCompare
 from Qt.QtGui import QColor
 
 from tp.common.python import helpers
@@ -267,10 +267,10 @@ def string_is_hex(color_str):
 
     if color_str.startswith('#'):
         color_str = color_str[1:]
-    hex_regex1 = QRegExp('^[0-9A-F]{3}$', Qt.CaseInsensitive)
-    hex_regex2 = QRegExp('^[0-9A-F]{6}$', Qt.CaseInsensitive)
-    hex_regex3 = QRegExp('^[0-9A-F]{8}$', Qt.CaseInsensitive)
-    if hex_regex1.exactMatch(color_str) or hex_regex2.exactMatch(color_str) or hex_regex3.exactMatch(color_str):
+    hex_regex1 = QRegularExpression('^[0-9A-F]{3}$', QRegularExpression.CaseInsensitiveOption)
+    hex_regex2 = QRegularExpression('^[0-9A-F]{6}$', QRegularExpression.CaseInsensitiveOption)
+    hex_regex3 = QRegularExpression('^[0-9A-F]{8}$', QRegularExpression.CaseInsensitiveOption)
+    if hex_regex1.match(color_str).hasMatch() or hex_regex2.match(color_str).hasMatch() or hex_regex3.match(color_str).hasMatch():
         return True
 
     return False
@@ -389,27 +389,27 @@ def color_from_string(string, alpha=True):
     """
 
     xs = string.strip()
-    regex = QRegExp(REGEX_QCOLOR)
-    match = regex.exactMatch(xs)
-    if match:
+    regex = QRegularExpression(REGEX_QCOLOR)
+    match = regex.match(xs)
+    if match.hasMatch():
         return QColor(xs)
 
-    regex = QRegExp(REGEX_FN_RGB)
-    match = regex.exactMatch(xs)
-    if match:
-        captured_texts = regex.capturedTexts()
+    regex = QRegularExpression(REGEX_FN_RGB)
+    match = regex.match(xs)
+    if match.hasMatch():
+        captured_texts = match.capturedTexts()
         return QColor(int(captured_texts[-3]), int(captured_texts[-2]), int(captured_texts[-1]))
 
     if alpha:
-        regex = QRegExp(REGEX_HEX_RGBA)
-        match = regex.exactMatch(xs)
-        if match:
+        regex = QRegularExpression(REGEX_HEX_RGBA)
+        match = regex.match(xs)
+        if match.hasMatch():
             return QColor(_HEXDEC[xs[1:3]], _HEXDEC[xs[3:5]], _HEXDEC[xs[5:7]], _HEXDEC[xs[7:9]])
 
-        regex = QRegExp(REGEX_FN_RGBA)
-        match = regex.exactMatch(xs)
-        if match:
-            captured_texts = regex.capturedTexts()
+        regex = QRegularExpression(REGEX_FN_RGBA)
+        match = regex.match(xs)
+        if match.hasMatch():
+            captured_texts = match.capturedTexts()
             return QColor(
                 int(captured_texts[-4]), int(captured_texts[-3]), int(captured_texts[-2]), int(captured_texts[-1]))
 

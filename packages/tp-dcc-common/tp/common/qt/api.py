@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from Qt import QtCompat
 from Qt.QtCore import (
 	Qt, Signal, Property, QObject, QPoint, QPointF, QRect, QRectF, QSize, QSizeF, QItemSelectionModel,
 	QAbstractListModel, QAbstractTableModel, QAbstractItemModel, QStringListModel, QModelIndex, QPersistentModelIndex,
-	QEvent, QMimeData, QTimer, QRegExp, QMargins, QSortFilterProxyModel, QPropertyAnimation, QAbstractAnimation,
-	QEasingCurve, QSequentialAnimationGroup, QThread, QThreadPool, QStandardPaths, QFile, QFileInfo, QUrl, QByteArray,
-	QBuffer, QLine, QLineF, QLocale, QChildEvent, QTimerEvent, QSettings
+	QEvent, QMimeData, QTimer, QRegularExpression, QMargins, QSortFilterProxyModel, QPropertyAnimation,
+	QAbstractAnimation,QEasingCurve, QSequentialAnimationGroup, QThread, QThreadPool, QStandardPaths, QFile, QFileInfo,
+	QUrl, QByteArray, QBuffer, QLine, QLineF, QLocale, QChildEvent, QTimerEvent, QSettings
 )
 from Qt.QtWidgets import (
 	QApplication, QSizePolicy, QWidget, QFrame, QDialog, QButtonGroup, QMenu, QAction, QActionGroup, QMenuBar, QToolBar,
@@ -24,7 +25,7 @@ from Qt.QtWidgets import (
 from Qt.QtGui import (
 	QCursor, QKeySequence, QFont, QFontMetrics, QFontMetricsF, QColor, QIcon, QPixmap, QImage, QPen, QBrush, QPainter,
 	QPainterPath, QRadialGradient, QPalette, qRgba, qAlpha, QClipboard, QSyntaxHighlighter, QTextCharFormat, QPolygon,
-	QPolygonF, QIntValidator, QDoubleValidator, QRegExpValidator, QTransform, QImageReader, QDrag, QMovie,
+	QPolygonF, QIntValidator, QDoubleValidator, QRegularExpressionValidator, QTransform, QImageReader, QDrag, QMovie,
 	QContextMenuEvent, QShowEvent, QKeyEvent, QFocusEvent, QMoveEvent, QEnterEvent, QCloseEvent, QMouseEvent,
 	QPaintEvent, QExposeEvent, QHoverEvent, QHelpEvent, QHideEvent, QInputEvent, QWheelEvent, QDropEvent,
 	QDragMoveEvent, QDragEnterEvent, QResizeEvent, QActionEvent, QDesktopServices, QTextCursor, QTextDocument,
@@ -40,7 +41,7 @@ from tp.common.qt.qtutils import (
 	get_widget_at_mouse, compat_ui_loader, clear_layout, to_qt_object, set_stylesheet_object_name, process_ui_events,
 	clear_focus_widgets, get_or_create_menu, single_shot_timer, safe_tree_widget_iterator, safe_disconnect_signal,
 	safe_delete_later, restore_cursor, layout_items, layout_widgets, update_widget_sizes, update_widget_style,
-	signal_names, current_screen_geometry, available_screen_rect
+	signal_names, current_screen_geometry, available_screen_rect, close_widgets_with_title, close_widgets_of_class
 )
 from tp.common.qt.models.datasources import BaseDataSource
 from tp.common.qt.models.listmodel import BaseListModel
@@ -52,7 +53,7 @@ from tp.common.qt.widgets.layouts import (
 )
 from tp.common.qt.widgets.frames import BaseFrame, CollapsableFrame, CollapsableFrameThin
 from tp.common.qt.widgets.labels import (
-	label, h1_label, h2_label, h3_label, h4_label, h5_label, clipped_label, icon_label
+	label, h1_label, h2_label, h3_label, h4_label, h5_label, clipped_label, icon_label, BaseLabel
 )
 
 from tp.common.qt.widgets.frameless import FramelessWindow, FramelessWindowThin

@@ -91,7 +91,7 @@ class BaseCheckBoxWidget(QWidget):
 		if enable_menu:
 			self._setup_menu_class(menu_vertical_offset=menu_vertical_offset)
 			self.leftClicked.connect(partial(self.show_context_menu, Qt.LeftButton))
-			self.middleClicked.connect(partial(self.show_context_menu, Qt.MidButton))
+			self.middleClicked.connect(partial(self.show_context_menu, Qt.MiddleButton))
 			self.rightClicked.connect(partial(self.show_context_menu, Qt.RightButton))
 
 	def __getattr__(self, item: str) -> Any:
@@ -105,7 +105,7 @@ class BaseCheckBoxWidget(QWidget):
 			if menu_instance and event.button() == mouse_button:
 				if mouse_button == Qt.LeftButton:
 					return self.leftClicked.emit()
-				elif mouse_button == Qt.MidButton:
+				elif mouse_button == Qt.MiddleButton:
 					return self.middleClicked.emit()
 				elif mouse_button == Qt.RightButton:
 					return self.rightClicked.emit()

@@ -78,8 +78,8 @@ def dpi_multiplier() -> float:
     :rtype: float
     """
 
-    desktop = QApplication.desktop()
-    logical_y = desktop.logicalDpiY() if desktop is not None else DPI
+    desktop = QApplication.primaryScreen()
+    logical_y = desktop.logicalDotsPerInchY() if desktop is not None else DPI
 
     return max(1, int(float(logical_y) / float(DPI))) * float(UI_SCALE)
 

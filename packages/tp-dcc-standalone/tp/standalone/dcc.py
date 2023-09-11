@@ -136,7 +136,7 @@ def main_window() -> None:
     :rtype: QMainWindow or None
     """
 
-    raise None
+    return None
 
 
 def main_menubar() -> None:
@@ -147,7 +147,7 @@ def main_menubar() -> None:
     :rtype: QMenuBar or None
     """
 
-    raise None
+    return None
 
 
 def register_resource_path(resources_path: str):

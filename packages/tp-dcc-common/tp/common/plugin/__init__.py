@@ -5,6 +5,8 @@
 Module that contains implementations for Plugin Factory mechanism
 """
 
+from __future__ import annotations
+
 import os
 import re
 import sys
@@ -33,6 +35,10 @@ class Plugin:
     def __init__(self, factory=None):
         self._factory = factory
         self._stats = PluginStats(self)
+
+    @property
+    def stats(self) -> PluginStats:
+        return self._stats
 
 
 class PluginStats:
