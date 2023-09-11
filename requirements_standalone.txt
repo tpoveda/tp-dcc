@@ -17,3 +17,4 @@ natsort
 overrides
 pywin32
 PySide2
+scipy
