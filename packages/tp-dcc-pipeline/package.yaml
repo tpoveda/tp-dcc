@@ -1,0 +1,13 @@
+name: 'tp-dcc-pipeline'
+version: '1.0.0'
+author: 'Tomas Poveda'
+authorEmail: 'tpovedatd@gmail.com'
+description: 'Pipeline package framework'
+displayName: 'tp-dcc-pipeline'
+environment:
+  PYTHONPATH:
+    - '{self}'
+  TPDCC_BASE_PATHS:
+    - '{self}'
+commands:
+  - '{self}/startup/pipeline.py'

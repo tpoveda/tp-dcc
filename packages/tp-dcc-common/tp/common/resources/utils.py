@@ -263,18 +263,18 @@ def find_rcc_executable_file():
             os.path.join(os.path.dirname(sys.executable), 'Lib', 'site-packages', 'PySide'),
             os.path.join(os.path.dirname(os.path.dirname(sys.executable)), 'Lib', 'site-packages', 'PySide')
         ])
-    elif is_pyside2() or is_pyside6():
+    elif is_pyside2():
         exe_name = 'pyside2-rcc.exe'
         folders_to_find.extend([
             'C:\\Python38\\Lib\\site-packages\\PySide2\\',
             os.path.join(os.path.dirname(sys.executable)),
         ])
-    # elif is_pyside6():
-    #     exe_name = 'pyside6-rcc.exe'
-    #     folders_to_find.extend([
-    #         'C:\\Python310\\Lib\\site-packages\\PySide6\\',
-    #         os.path.join(os.path.dirname(sys.executable)),
-    #     ])
+    elif is_pyside6():
+        exe_name = 'pyside6-rcc.exe'
+        folders_to_find.extend([
+            'C:\\Python310\\Lib\\site-packages\\PySide6\\',
+            os.path.join(os.path.dirname(sys.executable)),
+        ])
     if not exe_name:
         logger.warning('No valid RCC executable find found!')
         return
@@ -312,9 +312,7 @@ def create_python_qrc_file(qrc_file: str, py_file: str):
         return
 
     # We update file to make sure it works with Qt.py, and it works with both Python 2 and Python 3
-    # if is_pyside6():
-    #     fileio.replace(py_file, "from PySide6 import QtCore", "from Qt import QtCore")
-    if is_pyside2():
+    elif is_pyside2() or is_pyside6():
         fileio.replace(py_file, "from PySide2 import QtCore", "from Qt import QtCore")
     else:
         fileio.replace(py_file, "from PySide import QtCore", "from Qt import QtCore")

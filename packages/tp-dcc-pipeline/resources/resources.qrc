@@ -1,0 +1,12 @@
+<RCC>
+  <qresource prefix="/icons">
+    <file alias="app">icons/app.png</file>
+    <file alias="login_sl">icons/login_sl.svg</file>
+    <file alias="settings">icons/settings.svg</file>
+  </qresource>
+  <qresource prefix="/styles">
+    <file alias="default">styles/style.css</file>
+    <file alias="default-values">styles/style-values.rui</file>
+    <file alias="default-pipeline-client">styles/style-pipeline.css</file>
+  </qresource>
+</RCC>
