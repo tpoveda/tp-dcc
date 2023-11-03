@@ -9,6 +9,19 @@ from __future__ import annotations
 
 import maya.cmds as cmds
 
+from tp.core import dcc
+
+
+def file_extensions() -> list[str]:
+	"""
+	Returns supported file extensions of the DCC.
+
+	:return: list of DCC file extensions (['.mb', '.ma'], ['.max'], ...).
+	:rtype: list[str]
+	"""
+
+	return dcc.file_extensions()
+
 
 def make_cube() -> str:
 	"""

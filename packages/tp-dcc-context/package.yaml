@@ -1,0 +1,12 @@
+name: 'tp-dcc-context'
+version: '1.0.0'
+required: True
+author: 'Tomas Poveda'
+authorEmail: 'tpovedatd@gmail.com'
+description: 'DCC agnostic package for tpDcc Tools framework'
+displayName: 'tpDcc Context'
+environment:
+  PYTHONPATH:
+    - '{self}'
+  TPDCC_BASE_PATHS:
+    - '{self}'

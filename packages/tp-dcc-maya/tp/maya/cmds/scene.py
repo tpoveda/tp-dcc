@@ -22,6 +22,17 @@ from tp.maya.cmds import workspace
 logger = log.tpLogger
 
 
+def is_new_scene() -> bool:
+	"""
+	Returns whether current Maya scene is an untitled one.
+
+	:return: True if current Maya scene is new; False otherwise.
+	:rtype: bool
+	"""
+
+	return len(cmds.file(query=True, sceneName=True)) == 0
+
+
 def current_scene_name() -> str | None:
 	"""
 	Returns the name of the current scene opened in Maya.

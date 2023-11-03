@@ -42,7 +42,7 @@ logger = log.tpLogger
 
 # ===================================================================================
 
-_DPI_SCALE = 1.0 if not hasattr(cmds, "mayaDpiSetting") else cmds.mayaDpiSetting(query=True, realScaleValue=True)
+_DPI_SCALE = 1.0 if not hasattr(cmds, 'mayaDpiSetting') else cmds.mayaDpiSetting(query=True, realScaleValue=True)
 current_progress_bar = None
 
 # ===================================================================================

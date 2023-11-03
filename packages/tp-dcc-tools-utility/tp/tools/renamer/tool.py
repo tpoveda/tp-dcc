@@ -19,3 +19,7 @@ class RenamerTool(tool.Tool):
 			win.show()
 
 		return win
+
+
+from tp.core.managers import tools
+tools.ToolsManager().launch_tool_by_id('tp.utility.renamer')

@@ -12,7 +12,7 @@ import sys
 import importlib
 import traceback
 from functools import wraps
-from typing import Callable, List, Any
+from typing import Callable, Any
 from importlib.util import find_spec
 
 from Qt.QtWidgets import QMainWindow, QMenuBar
@@ -142,15 +142,15 @@ def reroute(fn: Callable):
 	return wrapper
 
 
-def callbacks() -> List[str]:
+def callbacks() -> list[str]:
 	"""
 	Return a full list of callbacks based on DccCallbacks dictionary.
 
 	:return: list of callback names.
-	:rtype: List[str]
+	:rtype: list[str]
 	"""
 
-	new_list = list()
+	new_list = []
 	for k, v in dccs.Callbacks.__dict__.items():
 		if k.startswith('__') or k.endswith('__'):
 			continue
@@ -309,7 +309,7 @@ def name() -> str:
 
 
 @reroute
-def file_extensions() -> List[str]:
+def file_extensions() -> list[str]:
 	"""
 	Returns supported file extensions of the DCC.
 

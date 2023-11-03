@@ -5,19 +5,27 @@
 Module that contains functions related with Maya MPlugs
 """
 
+from __future__ import annotations
+
+import re
 import copy
 import contextlib
+from typing import Any
 
 import maya.api.OpenMaya as OpenMaya
 
 from tp.core import log
+from tp.common.python import strings
+from tp.maya.om import dagpath, attributes
 from tp.maya.api import attributetypes
 
 logger = log.tpLogger
 
+__plug_parser__ = re.compile(r'([a-zA-Z0-9_]+)(?:\[([0-9]+)\])?')
+
 
 @contextlib.contextmanager
-def set_locked_context(plug):
+def set_locked_context(plug: OpenMaya.MPlug):
     """
     Context manager to set the plug lock state to False then reset back to its original lock state.
 
@@ -31,11 +39,13 @@ def set_locked_context(plug):
     plug.isLocked = current
 
 
-def as_mplug(attr_name):
+def as_mplug(attr_name: str) -> OpenMaya.MPlug:
     """
-    Returns the MPlug instance of the given name
-    :param attr_name: str, name of the Maya node to convert to MPlug
-    :return: MPlug
+    Returns the MPlug instance of the given name.
+
+    :param str attr_name: name of the Maya node to convert to MPlug
+    :return: plug with given name.
+    :rtype: OpenMaya.MPlug
     """
 
     try:
@@ -50,14 +60,16 @@ def as_mplug(attr_name):
         return sel.getPlug(0)
 
 
-def numeric_value(plug, ctx=OpenMaya.MDGContext.kNormal):
+def numeric_value(
+        plug: OpenMaya.MPlug,
+        ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal) -> tuple[int | None, bool | int | float]:
     """
     Returns the numeric value of the given plug.
 
     :param OpenMaya.MPlug plug: plug to get numeric value of.
     :param OpenMaya.MDGContext ctx: context to use.
-    :return: plug numeric value.
-    :rtype: int or float
+    :return: tuple containing the plug type and its numeric value.
+    :rtype: tuple[int, bool or int or float]
     """
 
     obj = plug.attribute()
@@ -107,14 +119,14 @@ def numeric_value(plug, ctx=OpenMaya.MDGContext.kNormal):
     return None, None
 
 
-def typed_value(plug, ctx=OpenMaya.MDGContext.kNormal):
+def typed_value(plug: OpenMaya.MPlug, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal) -> tuple[int | None, Any]:
     """
     Returns Maya type from the given plug.
 
     :param OpenMaya.MPlug plug: plug instance to get type of.
     :param OpenMaya.MDGContext ctx: context to use.
-    :return: Maya type
-    :rtype: tuple
+    :return: tuple containing the plug type and its typed value.
+    :rtype: tuple[int or None, Any]
     """
 
     typed_attr = OpenMaya.MFnTypedAttribute(plug.attribute())
@@ -145,14 +157,15 @@ def typed_value(plug, ctx=OpenMaya.MDGContext.kNormal):
     return None, None
 
 
-def plug_value_and_type(plug, ctx=OpenMaya.MDGContext.kNormal):
+def plug_value_and_type(
+        plug: OpenMaya.MPlug, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal) -> tuple[int | None, Any]:
     """
     Returns the value and the type of the given plug.
 
     :param OpenMaya.MPlug plug: plug to get value and type of.
     :param OpenMaya.MDGContext ctx: context to use.
     :return: plug value and its data type (if possible Python default types).
-    :rtype: tuple(int, any)
+    :rtype: tuple[int | None, Any]
     """
 
     obj = plug.attribute()
@@ -200,13 +213,13 @@ def plug_value_and_type(plug, ctx=OpenMaya.MDGContext.kNormal):
     return None, None
 
 
-def plug_type(plug):
+def plug_type(plug: OpenMaya.MPlug) -> int | None:
     """
     Returns the type of the give plug.
 
     :param OpenMaya.MPlug plug: plug to get type of.
     :return: plug type.
-    :rtype: str
+    :rtype: int or None
     """
 
     obj = plug.attribute()
@@ -234,14 +247,15 @@ def plug_type(plug):
     return None
 
 
-def python_type_from_plug_value(plug, ctx=OpenMaya.MDGContext.kNormal):
+def python_type_from_plug_value(
+        plug: OpenMaya.MPlug, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal) -> type | None | tuple | list:
     """
     Returns the Python for the given plug value.
 
     :param OpenMaya.MPlug plug: Plug to get python type from its value.
-    :param OpenMay.MDGContext ctx: optional context.
+    :param OpenMaya.MDGContext ctx: optional context.
     :return: Python type.
-    :rtype: int, float, bool or list
+    :rtype: type or None or tuple or list
     """
 
     data_type, value = plug_value_and_type(plug, ctx)
@@ -280,25 +294,77 @@ def python_type_from_plug_value(plug, ctx=OpenMaya.MDGContext.kNormal):
     return value
 
 
-def plug_value(plug, ctx=OpenMaya.MDGContext.kNormal):
+def find_plug(node: OpenMaya.MObject, path: str) -> OpenMaya.MPlug:
+    """
+    Returns the plug derived from the given path relative to the given node.
+    Unliked OpenMaya API method derived from MFnDependencyNode this function supports both, indices and children.
+    Also accepts partial paths in that a parent attribute can be omitted and still resolved.
+
+    :param OpenMaya.MObject node: node to get plug from.
+    :param str path: plug path relative to node.
+    :return: found plug instance.
+    :rtype: OpenMaya.MPlug
+    :raises TypeError: if attribute name does not exist within node.
+    """
+
+    node = dagpath.mobject(node)
+    groups = __plug_parser__.findall(path)
+    num_groups = len(groups)
+    if num_groups == 0:
+        raise TypeError('findPlug() unable to split path: "%s"!' % path)
+
+    # Evaluate if attribute exists
+    fn_depend_node = OpenMaya.MFnDependencyNode(node)
+    node_name = fn_depend_node.name()
+    attribute_name = groups[-1][0]
+    attribute = fn_depend_node.attribute(attribute_name)
+    if attribute.isNull():
+        raise TypeError(f'findPlug() cannot find "{node_name}.{attribute_name}" attribute!')
+
+    # Trace plug path
+    found_attributes = list(attributes.trace(attribute))
+    indices = {attribute: int(index) for (attribute, index) in groups if not stringutils.isNullOrEmpty(index)}
+
+    fn_attribute = OpenMaya.MFnAttribute()
+    plug = None
+    for (i, attribute) in enumerate(found_attributes):
+        # Get next child plug
+        if i == 0:
+            plug = OpenMaya.MPlug(node, attribute)
+        else:
+            plug = plug.child(attribute)
+        # Check if plug was indexed and make sure to check both the short and long names!
+        fn_attribute.setObject(attribute)
+        index = indices.get(fn_attribute.name, indices.get(fn_attribute.shortName, None))
+        if index is not None:
+            plug = plug.elementByLogicalIndex(index)
+        else:
+            continue
+
+    return plug
+
+
+def plug_value(plug: OpenMaya.MPlug, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal) -> Any:
     """
     Returns value of the given plug.
 
     :param OpenMaya.MPlug plug: plug to get value of.
     :param OpenMaya.MDGContext ctx: context to use.
     :return: plug value.
-    :rtype: any
+    :rtype: Any
     """
 
     return plug_value_and_type(plug, ctx=ctx)[1]
 
 
-def set_plug_value(plug, value, mod=None, apply=True):
+def set_plug_value(
+        plug: OpenMaya.MPlug, value: Any,
+        mod: OpenMaya.MDGModifier | None = None, apply: bool = True) -> OpenMaya.MDGModifier:
     """
     Sets the given lugs value to the given passed value.
 
     :param OpenMaya.MPlug plug: plug to set value of.
-    :param any value: value to set.
+    :param Any value: value to set.
     :param OpenMaya.MDGModifier mod: optional Maya modifier to apply.
     :param bool apply: whether to apply the modifier instantly or leave it to the caller
     :return: modifier used to set plug value.

@@ -3,16 +3,19 @@ from overrides import override
 import typing
 
 from tp.core import log, dcc, tool
-from tp.maya import api
-from tp.maya.meta import base, metaproperty
 from tp.common.python import helpers
 from tp.common.qt import api as qt
 
 from tp.libs.rig.freeform import consts
-from tp.libs.rig.freeform.library.functions import skeleton
-from tp.libs.rig.freeform.meta import properties
+
 from tp.tools.rig.freeform.rigger import ui as rigger
 from tp.tools.rig.freeform.regionseditor import ui as regionseditor
+
+if dcc.is_maya():
+	from tp.maya import api
+	from tp.maya.meta import base, metaproperty
+	from tp.libs.rig.freeform.library.functions import skeleton
+	from tp.libs.rig.freeform.meta import properties
 
 if typing.TYPE_CHECKING:
 	from tp.libs.rig.freeform.meta.character import FreeformCharacter

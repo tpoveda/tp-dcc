@@ -16,5 +16,5 @@ numpy
 natsort
 overrides
 pywin32
-PySide6
+PySide2
 scipy

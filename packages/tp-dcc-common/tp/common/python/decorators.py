@@ -5,13 +5,18 @@
 Module that contains utility functions decorators
 """
 
+from __future__ import annotations
+
 import os
 import abc
 import time
 import inspect
 import traceback
 import threading
+from typing import Callable, Any
 from functools import wraps, update_wrapper
+
+from overrides import override
 
 from tp.core import log
 from tp.common.python import debug
@@ -356,6 +361,19 @@ def add_metaclass(metaclass):
     return wrapper
 
 
+def classproperty(func: Callable) -> ClassProperty:
+    """
+    Custom decorator that returns a class property object to be used as a decorator.
+
+    :param Callable func: decorated function.
+    :return: class property.
+    :rtype: ClassProperty
+    """
+
+    func = classmethod(func) if not isinstance(func, classmethod) else func
+    return ClassProperty(func)
+
+
 class Singleton(type):
 
     """
@@ -458,3 +476,64 @@ class LazyWritableProperty(LazyProperty):
             setattr(instance, self.cache_name, value)
         else:
             self.fset(instance, value)
+
+
+class ClassProperty:
+    """
+    Class used to decorate class properties
+    https://stackoverflow.com/questions/5189699/how-to-make-a-class-property
+    """
+
+    __slots__ = ('fget', 'fset', 'fdel')
+
+    def __init__(self, fget: classmethod, fset: classmethod | None = None, fdel: classmethod | None = None):
+        super().__init__()
+
+        self.fget = fget
+        self.fset = fset
+        self.fdel = fdel
+
+    @override(check_signature=False)
+    def __get__(self, instance: object, owner: type) -> Any:
+        owner = type(instance) if owner is None else owner
+        return self.fget.__get__(instance, owner)
+
+    @override(check_signature=False)
+    def __set__(self, instance: object, value: Any):
+        if not self.fset:
+            raise AttributeError("can't set attribute")
+
+        return self.fset.__get__(instance, type(instance))(value)
+
+    @override(check_signature=False)
+    def __delete__(self, instance: object):
+        if not self.fdel:
+            raise AttributeError("can't delete attribute")
+
+        return self.fdel.__get__(instance, type(instance))()
+
+    def setter(self, func: Callable) -> ClassProperty:
+        """
+        Decorator hook used to override setter function.
+
+        :param Callable func: function.
+        :return: class property instance
+        :rtype: ClassProperty
+        """
+
+        func = classmethod(func) if not isinstance(func, classmethod) else func
+        self.fset = func
+        return self
+
+    def deleter(self, func: Callable) -> ClassProperty:
+        """
+        Decorator hook used to override delete function.
+
+        :param Callable func: function.
+        :return: class property instance
+        :rtype: ClassProperty
+        """
+
+        func = classmethod(func) if not isinstance(func, classmethod) else func
+        self.fdel = func
+        return self

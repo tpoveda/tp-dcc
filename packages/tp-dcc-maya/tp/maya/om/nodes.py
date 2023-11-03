@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import List, Any
+from typing import List, Iterator
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
@@ -77,41 +77,116 @@ def is_valid_mobject(node: OpenMaya.MObject) -> bool:
 	return handle.isValid() and handle.isAlive()
 
 
-def mobject(node_name: Any) -> OpenMaya.MObject | None:
+def mobject_by_name(node_name: str) -> OpenMaya.MObject | None:
+	"""
+	Returns an MObject from the given node name.
+
+	:param str node_name: name of the node to get.
+	:return: Maya object instance from give name.
+	:rtype: OpenMaya.MObject or None
+	"""
+
+	selection_list = OpenMaya.MSelectionList()
+	try:
+		selection_list.add(node_name)
+	except RuntimeError:
+		logger.warning(f'Node "{node_name}" does not exist or multiple nodes with same name within scene')
+		return None
+	try:
+		return selection_list.getDagPath(0).node()
+	except TypeError:
+		return selection_list.getDependNode(0)
+	except Exception as exc:
+		logger.warning(f'Impossible to get MObject from name {node_name} : {exc}')
+		return None
+
+
+def mobject_by_uuid(uuid: OpenMaya.MUuid) -> OpenMaya.MObject | list[OpenMaya.MObject] | None:
+	"""
+	Returns an MObject from the given UUID.
+	If multiples nodes are found with the same UUID, a list will be returned.
+
+	:param OpenMaya.MUuid uuid: UUID to get object for.
+	:return: Maya object instance from given uuid.
+	:rtype: OpenMaya.MObject or list[OpenMaya.MObject] or None
+	"""
+
+	nodes = list(iterate_nodes_by_uuid(uuid))
+	if not nodes:
+		return None
+
+	if len(nodes) == 1:
+		return nodes[0]
+
+	return nodes
+
+
+def mobject_by_handle(handle: OpenMaya.MObjectHandle) -> OpenMaya.MObject:
+	"""
+	Returns an MObject from given MObjectHandle.
+
+	:param OpenMaya.MObjectHandle handle: Maya object handle.
+	:return: Maya object instance from given handle.
+	:rtype: OpenMaya.MObject
+	"""
+
+	return handle.object()
+
+
+def mobject_by_dag_path(dag_path: OpenMaya.MDagPath) -> OpenMaya.MObject:
+	"""
+	Returns an MObject from given MDagPath.
+
+	:param OpenMaya.MDagPath dag_path: DAG path instance.
+	:return: Maya object instance from given dag path.
+	:rtype: OpenMaya.MObject
+	"""
+
+	return dag_path.node()
+
+
+__get_mobject__ = {
+	'str': mobject_by_name,
+	'MUuid': mobject_by_uuid,
+	'MObjectHandle': mobject_by_handle,
+	'MDagPath': mobject_by_dag_path
+}
+
+
+def mobject(
+		value: str | OpenMaya.MObject | OpenMaya.MObjectHandle | OpenMaya.MDagPath,
+		validate_node: bool = False) -> OpenMaya.MObject | None:
 	"""
 	Returns an MObject for the input scene object.
 
-	:param Any node_name: name of the Maya node to get MObject for
+	:param str or OpenMaya.MObject or OpenMaya.MObjectHandle or OpenMaya.MDagPath value: Maya node to get MObject for.
+	:param bool validate_node: whether validate node.
 	:return: Maya object instance from given name.
 	:rtype: OpenMaya.MObject or None
 	:raises exceptions.MissingObjectByNameError: if no node with given name exists.
+	:raises TypeError: if given node is not a valid Maya node.
 	"""
 
-	check_node(node_name)
+	if validate_node:
+		check_node(value)
 
-	if helpers.is_string(node_name):
-		selection_list = OpenMaya.MSelectionList()
-		try:
-			selection_list.add(node_name)
-		except RuntimeError:
-			logger.warning(f'Node "{node_name}" does not exist or multiple nodes with same name within scene')
-			return None
-		try:
-			return selection_list.getDagPath(0).node()
-		except TypeError:
-			return selection_list.getDependNode(0)
-		except Exception as exc:
-			logger.warning(f'Impossible to get MObject from name {node_name} : {exc}')
-			return None
-	else:
-		try:
-			if node_name.__module__.startswith('pymel'):
-				return node_name.__apimfn__().object()
-		except AttributeError:
-			if node_name.__class__.__module__.startswith('pymel'):
-				return node_name.__apimfn__().object()
+	if isinstance(value, OpenMaya.MObject):
+		return value
 
-	return node_name
+	type_name = type(value).__name__
+	func = __get_mobject__.get(type_name, None)
+	if func is not None:
+		return func(value)
+	# else:
+	# 	# TODO: PyMEL returns OpenMaya1 MObject, we need to convert them into OpenMaya 2.0 objects
+	# 	try:
+	# 		if value.__module__.startswith('pymel'):
+	# 			return value.__apimfn__().object()
+	# 	except AttributeError:
+	# 		if value.__class__.__module__.startswith('pymel'):
+	# 			return value.__apimfn__().object()
+
+	raise TypeError(f'mobject() expects {tuple(__get_mobject__.keys())} ({type(value).__name__} given)')
 
 
 def name(mobj: OpenMaya.MObject, partial_name: bool = False, include_namespace: bool = True) -> str:
@@ -326,39 +401,56 @@ def shape(node, intermediate=False):
 	return node
 
 
-def selected_nodes(filter=None):
-	"""
-	Returns current selected nodes.
-
-	:param tuple(OpenMaya.MFn.kType) or None filter: list of node types to filter by.
-	:return: list of selected nodes.
-	:rtype: list(OpenMaya.MObject)
-	"""
-
-	return list(iterate_selected_nodes(filter))
-
-
-def iterate_selected_nodes(filter=None):
+def iterate_selected_nodes(filter_to_apply: tuple[int] | None = None) -> Iterator[OpenMaya.MObject]:
 	"""
 	Generator function that iterates over selected nodes.
 
-	:param tuple(OpenMaya.MFn.kType) or None filter: list of node types to filter by.
-	:return: list of selected nodes.
-	:rtype: generator(OpenMaya.MObject)
+	:param tuple[int] or None filter_to_apply: list of node types to filter by.
+	:return: iterated selected nodes.
+	:rtype: Iterator[OpenMaya.MObject]
 	"""
 
-	def _type_conditional(filters, node_type):
+	def _type_conditional(_filters: tuple[int] | None, _node_type: int):
 		try:
-			iter(filters)
-			return node_type in filters or not filters
+			iter(_filters)
+			return _node_type in _filters or not _filters
 		except TypeError:
-			return node_type == filters or not filters
+			return _node_type == _filters or not _filters
 
 	selection = OpenMaya.MGlobal.getActiveSelectionList()
 	for i in range(selection.length()):
 		node = selection.getDependNode(i)
-		if _type_conditional(filter, node.apiType()):
+		if _type_conditional(filter_to_apply, node.apiType()):
 			yield node
+
+
+def selected_nodes(filter_to_apply: tuple[int] | None = None) -> list[OpenMaya.MObject]:
+	"""
+	Returns current selected nodes.
+
+	:param tuple[int] or None filter_to_apply: list of node types to filter by.
+	:return: list of selected nodes.
+	:rtype: list[OpenMaya.MObject]
+	"""
+
+	return list(iterate_selected_nodes(filter_to_apply))
+
+
+def iterate_nodes_by_uuid(*uuids: str | OpenMaya.MUuid | tuple[str | OpenMaya.MUuid]) -> Iterator[OpenMaya.MObject]:
+	"""
+	Generator function that yields dependency nodes with the given UUID.
+
+	:param tuple[str or OpenMaya.MUuid] uuids: uuids.
+	:return: list of nodes.
+	:rtype: list[OpenMaya.MObject]
+	"""
+
+	for uuid in uuids:
+		uuid = OpenMaya.MUuid(uuid) if isinstance(uuid, str) else uuid
+		selection = OpenMaya.MSelectionList()
+		selection.add(uuid)
+		for i in range(selection.length()):
+			yield selection.getDependNode(i)
 
 
 def iterate_parents(node):

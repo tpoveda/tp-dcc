@@ -6,7 +6,8 @@ from Qt.QtCore import (
 	QAbstractListModel, QAbstractTableModel, QAbstractItemModel, QStringListModel, QModelIndex, QPersistentModelIndex,
 	QEvent, QMimeData, QTimer, QRegularExpression, QMargins, QSortFilterProxyModel, QPropertyAnimation,
 	QAbstractAnimation,QEasingCurve, QSequentialAnimationGroup, QThread, QThreadPool, QStandardPaths, QFile, QFileInfo,
-	QUrl, QByteArray, QBuffer, QLine, QLineF, QLocale, QChildEvent, QTimerEvent, QSettings
+	QUrl, QByteArray, QBuffer, QLine, QLineF, QLocale, QChildEvent, QTimerEvent, QSettings, QRegExp, QDataStream,
+	QIODevice
 )
 from Qt.QtWidgets import (
 	QApplication, QSizePolicy, QWidget, QFrame, QDialog, QButtonGroup, QMenu, QAction, QActionGroup, QMenuBar, QToolBar,
@@ -20,7 +21,8 @@ from Qt.QtWidgets import (
 	QGraphicsProxyWidget, QMdiArea, QMdiSubWindow, QGraphicsColorizeEffect, QTabWidget, QTabBar, QRadioButton, QSpinBox,
 	QDoubleSpinBox, QSlider, QLayout, QStyleOptionViewItem, QHeaderView, QGraphicsSceneMouseEvent, QGraphicsItem,
 	QToolTip, QGraphicsSceneDragDropEvent, QGraphicsSceneHelpEvent, QGraphicsSceneContextMenuEvent,
-	QGraphicsSceneHoverEvent, QRubberBand, QScrollBar, QStyleOptionGraphicsItem, QGraphicsBlurEffect
+	QGraphicsSceneHoverEvent, QRubberBand, QScrollBar, QStyleOptionGraphicsItem, QGraphicsBlurEffect, QGraphicsPathItem,
+	QGraphicsTextItem
 )
 from Qt.QtGui import (
 	QCursor, QKeySequence, QFont, QFontMetrics, QFontMetricsF, QColor, QIcon, QPixmap, QImage, QPen, QBrush, QPainter,
@@ -29,7 +31,7 @@ from Qt.QtGui import (
 	QContextMenuEvent, QShowEvent, QKeyEvent, QFocusEvent, QMoveEvent, QEnterEvent, QCloseEvent, QMouseEvent,
 	QPaintEvent, QExposeEvent, QHoverEvent, QHelpEvent, QHideEvent, QInputEvent, QWheelEvent, QDropEvent,
 	QDragMoveEvent, QDragEnterEvent, QResizeEvent, QActionEvent, QDesktopServices, QTextCursor, QTextDocument,
-	QVector2D, QVector3D, QVector4D, QFontDatabase, QStandardItem, QStandardItemModel
+	QVector2D, QVector3D, QVector4D, QFontDatabase, QStandardItem, QStandardItemModel, QTextBlockFormat
 )
 
 from tp.common.resources import api as resources
@@ -41,7 +43,8 @@ from tp.common.qt.qtutils import (
 	get_widget_at_mouse, compat_ui_loader, clear_layout, to_qt_object, set_stylesheet_object_name, process_ui_events,
 	clear_focus_widgets, get_or_create_menu, single_shot_timer, safe_tree_widget_iterator, safe_disconnect_signal,
 	safe_delete_later, restore_cursor, layout_items, layout_widgets, update_widget_sizes, update_widget_style,
-	signal_names, current_screen_geometry, available_screen_rect, close_widgets_with_title, close_widgets_of_class
+	signal_names, current_screen_geometry, available_screen_rect, close_widgets_with_title, close_widgets_of_class,
+	center_widget_on_screen, center_window_on_screen
 )
 from tp.common.qt.models.datasources import BaseDataSource
 from tp.common.qt.models.listmodel import BaseListModel

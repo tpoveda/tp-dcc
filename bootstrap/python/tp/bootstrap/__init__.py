@@ -54,7 +54,7 @@ def init(**kwargs):
 	if not root_python_path:
 		raise ValueError('tp-dcc-tools framework is missing "TPDCC_TOOLS_ROOT" environment variable.')
 	elif not os.path.isdir(root_python_path):
-		raise ValueError('Failed to find valid tp-dcc-tools Python folder.')
+		raise ValueError(f'Failed to find valid tp-dcc-tools Python folder. Found "{root_python_path}"')
 	if root_python_path not in sys.path:
 		sys.path.append(root_python_path)
 

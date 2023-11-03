@@ -5,6 +5,8 @@
 Modules that contains utility functions related with Python
 """
 
+from __future__ import annotations
+
 import os
 import re
 import sys
@@ -15,117 +17,39 @@ import types
 import inspect
 import traceback
 import collections
+from typing import Any
 from itertools import groupby
 from operator import itemgetter
 from collections import OrderedDict
+from collections.abc import Sequence
 
 from tp.common.python import strings, osplatform
 
 
-class RollbackImporter(object):
+def is_null_or_empty(value: Any) -> bool:
     """
-    This class is used to restore the loaded modules in a certain time after the rollback is instantiated
-    It does by storing the list of loaded Python modules when rollback is initialized and if the rollback
-    is uninstalled, the modules loaded after rollback creation will be deleted, forcing Python to reload
-    them when the module is next imported
-    """
+    Returns whether given value is null or empty.
 
-    def __init__(self):
-        """
-        Creates an instance and installs and store the current imported modules list
-        """
-
-        self._prev_modules = set(sys.modules.keys())
-
-    def uninstall(self):
-        """
-        Removes current loaded modules loaded after RollbackImporter was instantiated
-        """
-
-        sys_modules_copy = sys.modules.copy()
-        for mod_name in sys_modules_copy:
-            if mod_name not in self._prev_modules:
-                del sys.modules[mod_name]
-
-
-# Python 2 & 3 compatible implementation
-# https://stackoverflow.com/questions/6760685/creating-a-singleton-in-python
-
-class _Singleton(type):
-    _instances = dict()
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(_Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-
-class Singleton(_Singleton('SingletonMeta', (object,), {})):
-    pass
-
-
-class classproperty(object):
-    """
-    Simplified way of creating getter and setters in Python
+    :param Any value: value to check.
+    :return: True if given value is null or empty; False otherwise.
+    :rtype: bool
     """
 
-    def __init__(self, getter):
-        self.getter = getter
+    if isinstance(value, Sequence):
+        return len(value) == 0
+    else:
+        return value is None
 
-    def __get__(self, instance, owner):
-        return self.getter(owner)
 
-
-class ObjectDict(dict):
+def add_to_python_path(path: str, check: bool = True, insert: bool = True) -> bool:
     """
-    Wrapper of a standard Python dict that operates like an object
-    """
+    Adds a path to the Python path, only if it is not present in the Python path.
 
-    def __getattr__(self, item):
-        try:
-            return self[item]
-        except KeyError:
-            return super(ObjectDict, self).__getattribute__(item)
-
-    def __setattr__(self, key, value):
-        self[key] = value
-
-    def __delattr__(self, item):
-        if item in self:
-            del self[item]
-            return
-        super(ObjectDict, self).__delattr__(item)
-
-
-class UniqueDict(dict):
-    """
-    Wrapper of a standard Python dict that ensures that dictionary keys are unique
-    """
-
-    def __setitem__(self, key, value):
-        if key not in self:
-            dict.__setitem__(self, key, value)
-        else:
-            raise KeyError("Key already exists")
-
-
-class UniqueOrderedDict(OrderedDict):
-    """
-    Wrapper of a standard Python dict that ensures that dictionary keys are unique
-    """
-
-    def __setitem__(self, key, value):
-        if key not in self:
-            OrderedDict.__setitem__(self, key, value)
-        else:
-            raise KeyError("Key already exists")
-
-
-def add_to_python_path(path, check=True, insert=True):
-    """
-    Adds a path to the Python path, only if it is not present in the Python path
-    :param path: str, path to add to the Python path
-    :param insert: bool
+    :param str path: path to add to the Python path.
+    :param bool check: whether to check path existence before adding it.
+    :param bool insert: whether to insert path at the beginning or append it at the end.
+    :returns: True if path was added to PYTHONPATH successfully; False otherwise.
+    :rtype: bool
     """
 
     if not path:
@@ -1348,3 +1272,102 @@ def get_args(local_dict):
     local_dict.pop('__class__', None)
 
     return local_dict
+
+
+class RollbackImporter(object):
+    """
+    This class is used to restore the loaded modules in a certain time after the rollback is instantiated
+    It does by storing the list of loaded Python modules when rollback is initialized and if the rollback
+    is uninstalled, the modules loaded after rollback creation will be deleted, forcing Python to reload
+    them when the module is next imported
+    """
+
+    def __init__(self):
+        """
+        Creates an instance and installs and store the current imported modules list
+        """
+
+        self._prev_modules = set(sys.modules.keys())
+
+    def uninstall(self):
+        """
+        Removes current loaded modules loaded after RollbackImporter was instantiated
+        """
+
+        sys_modules_copy = sys.modules.copy()
+        for mod_name in sys_modules_copy:
+            if mod_name not in self._prev_modules:
+                del sys.modules[mod_name]
+
+
+# Python 2 & 3 compatible implementation
+# https://stackoverflow.com/questions/6760685/creating-a-singleton-in-python
+
+class _Singleton(type):
+    _instances = dict()
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(_Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class Singleton(_Singleton('SingletonMeta', (object,), {})):
+    pass
+
+
+class classproperty(object):
+    """
+    Simplified way of creating getter and setters in Python
+    """
+
+    def __init__(self, getter):
+        self.getter = getter
+
+    def __get__(self, instance, owner):
+        return self.getter(owner)
+
+
+class ObjectDict(dict):
+    """
+    Wrapper of a standard Python dict that operates like an object
+    """
+
+    def __getattr__(self, item):
+        try:
+            return self[item]
+        except KeyError:
+            return super(ObjectDict, self).__getattribute__(item)
+
+    def __setattr__(self, key, value):
+        self[key] = value
+
+    def __delattr__(self, item):
+        if item in self:
+            del self[item]
+            return
+        super(ObjectDict, self).__delattr__(item)
+
+
+class UniqueDict(dict):
+    """
+    Wrapper of a standard Python dict that ensures that dictionary keys are unique
+    """
+
+    def __setitem__(self, key, value):
+        if key not in self:
+            dict.__setitem__(self, key, value)
+        else:
+            raise KeyError("Key already exists")
+
+
+class UniqueOrderedDict(OrderedDict):
+    """
+    Wrapper of a standard Python dict that ensures that dictionary keys are unique
+    """
+
+    def __setitem__(self, key, value):
+        if key not in self:
+            OrderedDict.__setitem__(self, key, value)
+        else:
+            raise KeyError("Key already exists")

@@ -1652,9 +1652,10 @@ def get_main_qt_window():
     return parent
 
 
-def center_widget_on_screen(widget):
+def center_widget_on_screen(widget: QWidget):
     """
-    Centers a given QWidget on the active screen
+    Centers a given QWidget on the active screen.
+
     :param widget: QWidget
     """
 
@@ -1663,6 +1664,17 @@ def center_widget_on_screen(widget):
     center_point = QApplication.desktop().screenGeometry(screen).center()
     frame_geo.moveCenter(center_point)
     widget.move(frame_geo.topLeft())
+
+
+def center_window_on_screen(main_window: QMainWindow):
+    """
+    Centers given window to the center of primary screen.
+
+    :param QMainWindow main_window: main window.
+    """
+
+    center_position = main_window.pos() + QApplication.primaryScreen().geometry().center() - main_window.geometry().center()
+    main_window.move(center_position)
 
 
 def restore_cursor():

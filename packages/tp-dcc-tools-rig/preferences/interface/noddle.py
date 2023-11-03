@@ -71,6 +71,16 @@ class NoddleInterface(preference.PreferenceInterface):
 
 		return deque(projects, maxlen=max_length)
 
+	def previous_project(self) -> str:
+		"""
+		Returns previous project path.
+
+		:return: previous project path.
+		:rtype: str
+		"""
+
+		return self.settings().get('settings', {}).get('project', {}).get('previousProject', '')
+
 	def set_previous_project(self, project_path: str):
 		"""
 		Sets given path as the previous project path.
@@ -111,6 +121,50 @@ class NoddleInterface(preference.PreferenceInterface):
 			existing_projects.append(recent_project)
 		self.settings().setdefault('settings', {}).setdefault('project', {})['recentProjects'] = existing_projects
 		self.save_settings()
+
+	def asset_types(self, root: str | None = None) -> list[str]:
+		"""
+		Returns list of asset types.
+
+		:param str root: root name to search. If None, then all roots will be searched until relativePath is found.
+		:return: list of asset type names.
+		:rtype: list[str]
+		"""
+
+		return self.settings(root=root).get('settings', {}).get('assets', {}).get('types', [])
+
+	def builder_history_enabled(self, root: str | None = None) -> bool:
+		"""
+		Returns whether builder history is enabled.
+
+		:param str root: root name to search. If None, then all roots will be searched until relativePath is found.
+		:return: True if builder history is enabled; False otherwise.
+		:rtype: bool
+		"""
+
+		return self.settings(root=root).get('settings', {}).get('builder', {}).get('history', {}).get('enabled', True)
+
+	def builder_history_size(self, root: str | None = None) -> int:
+		"""
+		Returns builder history size.
+
+		:param str root: root name to search. If None, then all roots will be searched until relativePath is found.
+		:return: builder history size.
+		:rtype: bool
+		"""
+
+		return self.settings(root=root).get('settings', {}).get('builder', {}).get('history', {}).get('size', 32)
+
+	def builder_node_title_font(self, root: str | None = None) -> tuple[str, int]:
+		"""
+		Returns default node title font.
+
+		:param str root: root name to search. If None, then all roots will be searched until relativePath is found.
+		:return: tuple with the name of the default font and its size.
+		:rtype: tuple[str, int]
+		"""
+
+		return self.settings(root=root).get('settings', {}).get('builder', {}).get('titleFont', ['Roboto', 10])
 
 	def naming_templates(self, root: str | None = None) -> dict:
 		"""
@@ -161,6 +215,7 @@ class NoddleInterface(preference.PreferenceInterface):
 		"""
 		Returns the default display line width for newly created rig controls.
 
+		:param str root: root name to search. If None, then all roots will be searched until relativePath is found.
 		:return: display line width.
 		:rtype: float
 		"""

@@ -226,14 +226,16 @@ def rename_namespace(namespace, new_namespace, parent_namespace=None):
     return new_namespace
 
 
-def strip_namespace(obj):
+def strip_namespace(node_name: str) -> str:
     """
-    Returns the given object name after striping the namespace
-    :param obj: str, object to strip namespace from
-    :return: str
+    Returns the given object name after striping the namespace.
+
+    :param str node_name: name to strip namespace from.
+    :return: node name without namespace.
+    :rtype: str
     """
 
-    return obj.split(':')[-1]
+    return node_name.split(':')[-1]
 
 
 def get_all_in_namespace(namespace_name):
