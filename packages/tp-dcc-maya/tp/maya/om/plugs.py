@@ -10,12 +10,12 @@ from __future__ import annotations
 import re
 import copy
 import contextlib
-from typing import Any
+from typing import Iterator, Any
 
 import maya.api.OpenMaya as OpenMaya
 
 from tp.core import log
-from tp.common.python import strings
+from tp.common.python import helpers
 from tp.maya.om import dagpath, attributes
 from tp.maya.api import attributetypes
 
@@ -323,7 +323,7 @@ def find_plug(node: OpenMaya.MObject, path: str) -> OpenMaya.MPlug:
 
     # Trace plug path
     found_attributes = list(attributes.trace(attribute))
-    indices = {attribute: int(index) for (attribute, index) in groups if not stringutils.isNullOrEmpty(index)}
+    indices = {attribute: int(index) for (attribute, index) in groups if not helpers.is_null_or_empty(index)}
 
     fn_attribute = OpenMaya.MFnAttribute()
     plug = None
@@ -1227,27 +1227,51 @@ def has_child_plug_by_name(parent_plug, child_name):
     return False
 
 
-def iterate_children(plug):
+def iterate_children(plug: OpenMaya.MPlug, recursive: bool = True, **kwargs) -> Iterator[OpenMaya.MPlug]:
     """
-    Iterator function to iterate over all children plugs of the given plug (it should be an array or compound plug).
+    Recursive Iterator function to iterate over all children plugs of the given plug
+    (it should be an array or compound plug).
 
-    :param MPlug plug: array/compound plug to iterate.
-    :return: generator of iterated plugs.
-    :rtype: iterator(OpenMaya.MPlug)
+    :param OpenMaya.MPlug plug: array/compound plug to iterate.
+    :param bool recursive: whether to retrieve child plugs iteratively.
+    :return: iterated plugs.
+    :rtype:  Iterator[OpenMaya.MPlug]
     """
+
+    writable = kwargs.get('writable', False)
+    non_default = kwargs.get('non_default', False)
+    keyable = kwargs.get('keyable', False)
+    channel_box = kwargs.get('channel_box', False)
 
     if plug.isArray:
         for plug_found in range(plug.evaluateNumElements()):
-            child = plug.elementByPhysicalIndex(plug_found)
+            child = plug.elementByPhysicalIndex(plug_found)     # type: OpenMaya.MPlug
+            if writable and not (child.isFreeToChange() == OpenMaya.MPlug.kFreeToChange):
+                continue
+            if non_default and child.isDefaultValue():
+                continue
+            if keyable and not child.isKeyable:
+                continue
+            if channel_box and (not child.isChannelBox and not child.isKeyable):
+                continue
             yield child
-            for leaf in iterate_children(child):
+            for leaf in iterate_children(child, recursive=recursive, **kwargs):
                 yield leaf
     elif plug.isCompound:
         for plug_found in range(plug.numChildren()):
-            child = plug.child(plug_found)
+            child = plug.child(plug_found)                      # type: OpenMaya.MPlug
+            if writable and not (child.isFreeToChange() == OpenMaya.MPlug.kFreeToChange):
+                continue
+            if non_default and child.isDefaultValue():
+                continue
+            if keyable and not child.isKeyable:
+                continue
+            if channel_box and (not child.isChannelBox and not child.isKeyable):
+                continue
             yield child
-            for leaf in iterate_children(child):
-                yield leaf
+            if recursive:
+                for leaf in iterate_children(child, recursive=recursive, **kwargs):
+                    yield leaf
 
 
 def remove_element_plug(plug, element_number, mod=None, apply=False):
@@ -1426,3 +1450,99 @@ def set_compound_as_proxy(compound_plug, source_plug):
         child_attr = child_plug.attribute()
         plug_fn(child_attr)(child_attr).isProxyAttribute = True
         connect_plugs(source_plug.child(child_index), child_plug)
+
+
+def is_constrained(plug: OpenMaya.MPlug) -> bool:
+    """
+    Returns whether given plug is constrained.
+
+    :param OpenMaya.MPlug plug: plug to check.
+    :return: True if given plug is constrained; False otherwise.
+    :rtype: bool
+    """
+
+    if not plug.isDestination:
+        return False
+
+    node = plug.source().node()
+    return any(map(node.hasFn, (OpenMaya.MFn.kConstraint, OpenMaya.MFn.kPluginConstraintNode)))
+
+
+def is_animated(plug: OpenMaya.MPlug) -> bool:
+    """
+    Returns whether given plug is animated.
+
+    :param OpenMaya.MPlug plug: plug to check.
+    :return: True if given plug is animated; False otherwise.
+    :rtype: bool
+    """
+
+    if not plug.isKeyable or plug.isDestination:
+        return False
+
+    # Evaluate connected node.
+    fn_node = OpenMaya.MFnDependencyNode(plug.source().node())
+    classification = fn_node.classification(fn_node.typeName)
+
+    return classification == 'animation' and not is_constrained(plug)  # Constraints are classified under `animation`
+
+
+def is_animatable(plug: OpenMaya.MPlug) -> bool:
+    """
+    Returns whether given plug is animatable.
+
+    :param OpenMaya.MPlug plug: plug to check.
+    :return: True if given plug is animatable; False otherwise.
+    :rtype: bool
+    """
+
+    if not (plug.isKeyable or plug.isDestination):
+        return False
+
+    # Evaluate connections. If connected, make sure source node accepts keyframe data!
+    if plug.isDestination:
+        return is_animated(plug)
+
+    return True
+
+
+def is_numeric(plug: OpenMaya.MPlug) -> bool:
+    """
+    Returns whether given plug represents a numeric value.
+
+    :param OpenMaya.MPlug plug: plug to check.
+    :return: True if given plug is a numerical plug; False otherwise.
+    :rtype: bool
+    """
+
+    return any(
+        map(plug.attribute().hasFn, (
+            OpenMaya.MFn.kNumericAttribute, OpenMaya.MFn.kUnitAttribute, OpenMaya.MFn.kEnumAttribute)))
+
+
+def is_compound_numeric(plug: OpenMaya.MPlug) -> bool:
+    """
+    Returns whether given plug represents a compound numeric value.
+
+    :param OpenMaya.MPlug plug: plug to check.
+    :return: True if given plug is a compound numerical plug; False otherwise.
+    :rtype: bool
+    """
+
+    return all([is_numeric(child) for child in iterate_children(plug, recursive=False)]) if plug.isCompound else False
+
+
+def is_string(plug: OpenMaya.MPlug) -> bool:
+    """
+    Returns whether given plug represents a string value.
+
+    :param OpenMaya.MPlug plug: plug to check.
+    :return: True if given plug is a string plug; False otherwise.
+    :rtype: bool
+    """
+
+    attribute = plug.attribute()
+    if attribute.hasFn(OpenMaya.MFn.kTypedAttribute):
+        return OpenMaya.MFnTypedAttribute(attribute).attrType() == OpenMaya.MFnData.kString
+
+    return False

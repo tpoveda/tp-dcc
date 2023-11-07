@@ -8,6 +8,7 @@ Module that contains utilities functions and classes related with Maya API MDagP
 import re
 from typing import Iterator
 
+import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
 
 from tp.core import log
@@ -250,6 +251,32 @@ def iterate_nodes_by_uuid(*uuids: str | OpenMaya.MUuid | tuple[str | OpenMaya.MU
 		selection.add(uuid)
 		for i in range(selection.length()):
 			yield selection.getDependNode(i)
+
+
+def iterate_nodes(
+		api_type: int = OpenMaya.MFn.kDependencyNode, type_name: str | None = None) -> Iterator[OpenMaya.MObject]:
+	"""
+	Returns a generator that yields dependency nodes.
+	Default arguments will yield all nodes derived from the given type.
+
+	:param int api_type: dependency API type
+	:param str or None type_name: optional type name to filter by.
+	:return: iterated nodes.
+	:rtype: Iterator[OpenMaya.MObject]
+	"""
+
+	if not helpers.is_null_or_empty(type_name):
+		# Yield nodes from `ls` command.
+		node_names = cmds.ls(type=type_name, long=True)
+		for node_name in node_names:
+			yield mobject_by_name(node_name)
+	else:
+		# Initialize dependency node iterator.
+		iter_depend_nodes = OpenMaya.MItDependencyNodes(api_type)
+		while not iter_depend_nodes.isDone():
+			current_node = iter_depend_nodes.thisNode()
+			yield current_node
+			iter_depend_nodes.next()
 
 
 def dag_path(value: str | OpenMaya.MObject | OpenMaya.MObjectHandle | OpenMaya.MDagPath) -> OpenMaya.MDagPath:

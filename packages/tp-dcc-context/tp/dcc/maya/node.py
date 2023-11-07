@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Generator, Any
 
 from overrides import override
@@ -5,7 +7,7 @@ from overrides import override
 import maya.api.OpenMaya as OpenMaya
 
 from tp.dcc.abstract import node
-from tp.maya.om import nodes, dagpath
+from tp.maya.om import nodes, plugs, plugmutators
 from tp.maya.cmds import namespace
 
 
@@ -178,4 +180,5 @@ class MayaNode(node.AbstractNode):
 
     @override
     def attr(self, name: str) -> Any:
-        plug =
+        plug = plugs.find_plug(self.object(), name)
+        return plugmutators.value(plug)
