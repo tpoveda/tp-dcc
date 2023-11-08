@@ -1463,7 +1463,7 @@ class FramelessWindow(QWidget):
 
 			self.open_help()
 
-	WINDOW_SETTINGS_PATH = ''				# Window settings registry path (e.g: tp/dcc/window)
+	WINDOW_SETTINGS_PATH = 'tp'				# Window settings path (e.g: tp)
 	HELP_URL = ''							# Web URL to use when displaying the help documentation for this window
 	MINIMIZED_WIDTH = 390
 	_INSTANCES: list[FramelessWindow] = []
@@ -1492,7 +1492,8 @@ class FramelessWindow(QWidget):
 		self._title = title
 		self._on_top = on_top
 		self._minimized = False
-		self._settings = QSettings()
+		self._settings = QSettings(
+			QSettings.IniFormat, QSettings.UserScope, self.WINDOW_SETTINGS_PATH, name or self.__class__.__name__)
 		self._save_window_pref = save_window_pref
 		self._parent_container: DockingContainer | FramelessWindowContainer | None = None
 		self._window_resizer: WindowResizer | None = None
@@ -1705,19 +1706,29 @@ class FramelessWindow(QWidget):
 		Load settings located within window settings file path (if it exists).
 		"""
 
-		init_pos = self._init_pos
-		if self.WINDOW_SETTINGS_PATH:
-			position = QPoint(*(self._init_pos or ()))
-			init_pos = position or self._settings.value('/'.join((self.WINDOW_SETTINGS_PATH, 'pos')))
+		position = QPoint(*(self._init_pos or ()))
+		init_pos = position or self._settings.value('pos')
 		self._init_pos = init_pos
+
+		if self._parent_container:
+			self._parent_container.restoreGeometry(self._settings.value('geometry', self._parent_container.saveGeometry()))
+			self._parent_container.restoreState(self._settings.value('saveState', self._parent_container.saveState()))
+			self._parent_container.resize(self._settings.value('size', self._parent_container.size()))
+			if self._settings.value('maximized', self._parent_container.isMaximized()):
+				self._parent_container.showMaximized()
 
 	def save_settings(self):
 		"""
 		Saves settings into window settings file path.
 		"""
 
-		if not self.is_docked() and self.WINDOW_SETTINGS_PATH and self._parent_container:
-			self._settings.setValue('/'.join((self.WINDOW_SETTINGS_PATH, 'pos')), self._parent_container.pos())
+		if not self.is_docked() and self._parent_container:
+			self._settings.setValue('geometry', self._parent_container.saveGeometry())
+			self._settings.setValue('saveState', self._parent_container.saveState())
+			self._settings.setValue('maximized', self._parent_container.isMaximized())
+			if not self._parent_container.isMaximized():
+				self._settings.setValue('pos', self._parent_container.pos())
+				self._settings.setValue('size', self._parent_container.size())
 
 	def main_layout(self) -> QVBoxLayout | QHBoxLayout | QLayout:
 		"""
