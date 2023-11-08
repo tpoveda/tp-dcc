@@ -95,8 +95,8 @@ class ThemePreferenceInterface(preference.PreferenceInterface):
 		:rtype: StyleSheet
 		"""
 
-		theme = theme or self.current_theme()
-		return self.stylesheet_for_theme(theme)
+		current_theme = theme or self.current_theme()
+		return self.stylesheet_for_theme(current_theme)
 
 	def stylesheet_for_theme(self, theme):
 		"""

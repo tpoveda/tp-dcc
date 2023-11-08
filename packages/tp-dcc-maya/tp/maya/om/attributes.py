@@ -5,6 +5,8 @@
 Module that contains functions related with OpenMaya attributes
 """
 
+from __future__ import annotations
+
 import re
 from typing import Iterator
 

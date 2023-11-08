@@ -5,11 +5,16 @@
 Module that contains utilities functions and classes related with Maya API MDagPaths
 """
 
+from __future__ import annotations
+
 import re
 from typing import Iterator
+from itertools import chain
+from collections import deque
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
+import maya.api.OpenMayaAnim as OpenMayaAnim
 
 from tp.core import log
 from tp.common.python import helpers
@@ -19,6 +24,35 @@ logger = log.tpLogger
 __name_regex__ = re.compile(r'^(?:\:?([a-zA-Z0-9_]))+$')
 __uuid_regex__ = re.compile(r'^[A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12}$')
 __path_regex__ = re.compile(r'^(.*\|)([^\|]*)$')
+
+
+def iterate_active_selection(api_type: int = OpenMaya.MFn.kDependencyNode) -> Iterator[OpenMaya.MObject]:
+	"""
+	Returns a generator that yields the active selection.
+
+	:param int api_type: API to filter selection by.
+	:return: iterated active selected nodes.
+	:rtype: Iterator[OpenMaya.MObject]
+	"""
+
+	selection = OpenMaya.MGlobal.getActiveSelectionList()
+	selection_count = selection.length()
+	for i in range(selection_count):
+		depend_node = selection.getDependNode(i)
+		if depend_node.hasFn(api_type):
+			yield depend_node
+
+
+def active_selection(api_type: int = OpenMaya.MFn.kDependencyNode) -> list[OpenMaya.MObject]:
+	"""
+	Returns active selection.
+
+	:param int api_type: API to filter selection by.
+	:return: list of selected nodes.
+	:rtype: list[OpenMaya.MObject]
+	"""
+
+	return list(iterate_active_selection(api_type=api_type))
 
 
 def mobject_by_name(name: str) -> OpenMaya.MObject | None:
@@ -199,6 +233,34 @@ def mobject(
 		raise TypeError(f'mobject() expects {tuple(__get_mobject__.keys())} ({type(value).__name__} given)')
 
 
+def mobject_handle(node: str | OpenMaya.MObject | OpenMaya.MObjectHandle | OpenMaya.MDagPath) -> OpenMaya.MObjectHandle:
+	"""
+	Returns object handle for the given node.
+
+	:param str or OpenMaya.MObject or OpenMaya.MObjectHandle or OpenMaya.MDagPath node: node to get handle of.
+	:return: node handle.
+	:rtype: OpenMaya.MObjectHandle
+	"""
+
+	if isinstance(node, OpenMaya.MObjectHandle):
+		return node
+	else:
+		return OpenMaya.MObjectHandle(mobject(node))
+
+
+def uniquify_objects(objects: list[OpenMaya.MObject]) -> OpenMaya.MObjectArray:
+	"""
+	Returns a unique list of objects from the given list of objects.
+
+	:param list[OpenMaya.MObject] objects: list of objects.
+	:return: unique list of objects from the given list of objects.
+	:rtype: OpenMaya.MObjectArray
+	"""
+
+	handles = list(map(OpenMaya.MObjectHandle, objects))
+	return OpenMaya.MObjectArray(list({handle.hashCode(): handle.object() for handle in handles}.values()))
+
+
 def node_name(
 		node: str | OpenMaya.MObject | OpenMaya.MDagPath, include_path: bool = False,
 		include_namespace: bool = False) -> str:
@@ -236,21 +298,15 @@ def node_namespace(node: str | OpenMaya.MObject | OpenMaya.MDagPath) -> str:
 	return OpenMaya.MFnDependencyNode(mobject(node)).namespace
 
 
-def iterate_nodes_by_uuid(*uuids: str | OpenMaya.MUuid | tuple[str | OpenMaya.MUuid]) -> Iterator[OpenMaya.MObject]:
+def world_node() -> OpenMaya.MObject:
 	"""
-	Generator function that yields dependency nodes with the given UUID.
+	Return world node.
 
-	:param tuple[str or OpenMaya.MUuid] uuids: uuids.
-	:return: iterated nodes.
-	:rtype: Iterator[OpenMaya.MObject]
+	:return: world node.
+	:rtype: OpenMaya.MObject
 	"""
 
-	for uuid in uuids:
-		uuid = OpenMaya.MUuid(uuid) if isinstance(uuid, str) else uuid
-		selection = OpenMaya.MSelectionList()
-		selection.add(uuid)
-		for i in range(selection.length()):
-			yield selection.getDependNode(i)
+	return list(iterate_nodes(api_type=OpenMaya.MFn.kWorld))[0]
 
 
 def iterate_nodes(
@@ -279,6 +335,162 @@ def iterate_nodes(
 			iter_depend_nodes.next()
 
 
+def iterate_nodes_by_namespace(*namespaces: str | list[str], recurse: bool = False) -> Iterator[OpenMaya.MObject]:
+	"""
+	Returns a generator that yields dependency nodes from the given namespace.
+
+	:param str or list[str] namespaces: namespace(s) to find dependency nodes from.
+	:param bool recurse: whether to recursively find nodes.
+	:return: iterated dependency nodes from given namespace(s).
+	:rtype: Iterator[OpenMaya.MObject]
+	"""
+
+	for name in namespaces:
+		if not OpenMaya.MNamespace.namespaceExists(name):
+			logger.warning(f'Cannot locate "{name}" namespace!')
+			continue
+
+		# Iterate through namespace objects.
+		namespace = OpenMaya.MNamespace.getNamespaceFromName(name)
+		for depend_node in namespace.getNamespaceObjects(recurse=recurse):
+			yield depend_node
+
+
+def iterate_nodes_by_uuid(*uuids: str | OpenMaya.MUuid | tuple[str | OpenMaya.MUuid]) -> Iterator[OpenMaya.MObject]:
+	"""
+	Generator function that yields dependency nodes with the given UUID.
+
+	:param tuple[str or OpenMaya.MUuid] uuids: uuids.
+	:return: iterated nodes.
+	:rtype: Iterator[OpenMaya.MObject]
+	"""
+
+	for uuid in uuids:
+		uuid = OpenMaya.MUuid(uuid) if isinstance(uuid, str) else uuid
+		selection = OpenMaya.MSelectionList()
+		selection.add(uuid)
+		for i in range(selection.length()):
+			yield selection.getDependNode(i)
+
+
+def iterate_nodes_by_pattern(
+		*patterns: str | list[str], api_type: int = OpenMaya.MFn.kDependencyNode,
+		exact_type: bool = False) -> Iterator[OpenMaya.MObject]:
+	"""
+	Returns a generator that yields any nodes whose name matches the given patterns.
+
+	:param str or list[str] patterns: pattern(s) to filter by.
+	:param int api_type: API type to filter nodes by.
+	:param bool exact_type: whether to ignore subtypes.
+	:return: iterated nodes whose name matches the given patterns.
+	:rtype: Iterator[OpenMaya.MObject]
+	"""
+
+	selection_list = OpenMaya.MSelectionList()
+	for pattern in patterns:
+		try:
+			selection_list.add(pattern)
+		except RuntimeError:
+			continue
+
+	selection_count = selection_list.length()
+	for i in range(selection_count):
+		node = selection_list.getDependNode(i)
+		if exact_type and node.apiType() == api_type:
+			yield node
+		elif not exact_type and node.hasFn(api_type):
+			yield node
+
+
+def iterate_visible_nodes() -> Iterator[OpenMaya.MObject]:
+	"""
+	Returns a generator that yields transform with visible shapes.
+
+	:return: iterated transform with visible shapes.
+	:rtype: Iterator[OpenMaya.MObject]
+	"""
+
+	for node in iterate_nodes(api_type=OpenMaya.MFn.kTransform):
+		is_visible = [dag_path(shape).isVisible() for shape in iterate_shapes(node)]
+		if all(is_visible) and len(is_visible) > 0:
+			yield node
+
+
+def iterate_plugin_nodes(type_name: str) -> Iterator[OpenMaya.MObject]:
+	"""
+	Returns a generator that yields plugin derived nodes based on the given type name.
+
+	:param str type_name:plugin type name to filter by.
+	:return: iterated plugin derived nodes based on the given type name.
+	:rtype: Iterator[OpenMaya.MObject]
+	..note:: The type name is defined through the "MFnPlugin::registerNode()" method as the first argument.
+	..warning:: This method will not respect subclasses on user plugins!
+	"""
+
+	iter_depend_nodes = OpenMaya.MItDependencyNodes(OpenMaya.MFn.kPluginDependNode)
+	fn_depend_node = OpenMaya.MFnDependencyNode()
+	while not iter_depend_nodes.isDone():
+		current_node = iter_depend_nodes.thisNode()
+		fn_depend_node.setObject(current_node)
+		if fn_depend_node.typeName == type_name:
+			yield current_node
+		iter_depend_nodes.next()
+
+
+def iterate_dependencies(
+		node: OpenMaya.MObject, api_type: int, type_name: str = '',
+		direction: int = OpenMaya.MItDependencyGraph.kDownstream,
+		traversal: int = OpenMaya.MItDependencyGraph.kDepthFirst) -> Iterator[OpenMaya.MObject]:
+	"""
+	Returns a generator that yields dependencies based on the given criteria.
+
+	:param OpenMaya.MObject node: node to find dependencies of.
+	:param int api_type: API type to filter by.
+	:param str type_name: optional type name to filter by.
+	:param int direction: direction to traverse in the node graph.
+	:param int traversal: order of traversal.
+	:return: iterated dependencies based on the given criteria.
+	:rtype: Iterator[OpenMaya.MObject]
+	"""
+
+	iter_dep_graph = OpenMaya.MItDependencyGraph(
+		node, filter=api_type, direction=direction, traversal=traversal, level=OpenMaya.MItDependencyGraph.kNodeLevel)
+
+	fn_depend_node = OpenMaya.MFnDependencyNode()
+	while not iter_dep_graph.isDone():
+		current_node = iter_dep_graph.currentNode()
+		fn_depend_node.setObject(current_node)
+		if fn_depend_node.typeName == type_name or helpers.is_null_or_empty(type_name):
+			yield current_node
+		iter_dep_graph.next()
+
+
+def depends_on(node: OpenMaya.MObject, api_type: int = OpenMaya.MFn.kDependencyNode) -> list[OpenMaya.MObject]:
+	"""
+	Returns a list of nodes that this object is dependent on.
+
+	:param OpenMaya.MObject node: node to get dependents nodes of.
+	:param int api_type: API type to filter nodes by.
+	:return: list of nodes that this object is dependent on.
+	:rtype: list[OpenMaya.MObject]
+	"""
+
+	return list(iterate_dependencies(node, api_type, direction=OpenMaya.MItDependencyGraph.kUpstream))
+
+
+def dependents(node: OpenMaya.MObject, api_type: int = OpenMaya.MFn.kDependencyNode) -> list[OpenMaya.MObject]:
+	"""
+	Returns a list of nodes that are dependent of this object.
+
+	:param OpenMaya.MObject node: node to get dependents nodes of.
+	:param int api_type: API type to filter nodes by.
+	:return: list of nodes that are dependent of this object.
+	:rtype: list[OpenMaya.MObject]
+	"""
+
+	return list(iterate_dependencies(node, api_type, direction=OpenMaya.MItDependencyGraph.kDownstream))
+
+
 def dag_path(value: str | OpenMaya.MObject | OpenMaya.MObjectHandle | OpenMaya.MDagPath) -> OpenMaya.MDagPath:
 	"""
 	Returns the MDagPath for the given value.
@@ -290,6 +502,26 @@ def dag_path(value: str | OpenMaya.MObject | OpenMaya.MObjectHandle | OpenMaya.M
 	"""
 
 	return value if isinstance(value, OpenMaya.MDagPath) else OpenMaya.MDagPath.getAPathTo(mobject(value))
+
+
+def shape_directly_below(node: OpenMaya.MObject | OpenMaya.MDagPath) -> OpenMaya.MObject | None:
+	"""
+	Returns the shape node directly below the given transform.
+
+	:param OpenMaya.MObject or OpenMaya.MDagPath node: node to get shape of.
+	:return: shape directly below given transform node.
+	:rtype: OpenMaya.MObject or None
+	:raises TypeError: if more than 1 shape is found.
+	"""
+
+	shapes = list(iterate_shapes(node))
+	num_shapes = len(shapes)
+	if num_shapes == 0:
+		return None
+	elif num_shapes == 1:
+		return shapes[0]
+	else:
+		raise TypeError(f'shape_directly_below() expects to find 1 shape ({num_shapes}s found)!')
 
 
 def parent(node: OpenMaya.MObject) -> OpenMaya.MObject | None:
@@ -315,6 +547,18 @@ def parent(node: OpenMaya.MObject) -> OpenMaya.MObject | None:
 	return OpenMaya.MObject.kNullObj
 
 
+def trace_hierarchy(node: OpenMaya.MObject) -> Iterator[OpenMaya.MObject]:
+	"""
+	Returns a generator that yields the nodes leading up to, and including, the given transform node.
+
+	:param OpenMaya.MObject node: node to get hierarchy of.
+	:return: Iterator[OpenMaya.MObject]
+	"""
+
+	yield from reversed(list(iterate_ancestors(node)))
+	yield node
+
+
 def iterate_ancestors(
 		node: str | OpenMaya.MObject | OpenMaya.MDagPath,
 		api_type: int = OpenMaya.MFn.kTransform) -> Iterator[OpenMaya.MObject]:
@@ -336,16 +580,243 @@ def iterate_ancestors(
 			break
 
 
-def trace_hierarchy(node: OpenMaya.MObject) -> Iterator[OpenMaya.MObject]:
+def iterate_children(
+		node: str | OpenMaya.MObject | OpenMaya.MDagPath,
+		api_type: int = OpenMaya.MFn.kTransform) -> Iterator[OpenMaya.MObject]:
 	"""
-	Returns a generator that yields the nodes leading up to, and including, the given transform node.
+	Returns a generator that yields children from the given dag node.
 
-	:param OpenMaya.MObject node: node to get hierarchy of.
-	:return: Iterator[OpenMaya.MObject]
+	:param str or OpenMaya.MObject or OpenMaya.MDagPath node: node to iterate children of.
+	:param int api_type: optional API type to filter children by.
+	:return: iterated children.
+	:rtype: Iterator[OpenMaya.MObject]
 	"""
 
-	yield from reversed(list(iterate_ancestors(node)))
-	yield node
+	node = mobject(node)
+	if not node.hasFn(OpenMaya.MFn.kDagNode):
+		return iter([])
+
+	# Iterate through children.
+	found_dag_path = dag_path(node)
+	fn_dag_node = OpenMaya.MFnDagNode(found_dag_path)
+
+	child_count = fn_dag_node.childCount()
+	for i in range(child_count):
+		child = fn_dag_node.child(i)
+		if child.hasFn(api_type):
+			yield child
+
+
+def iterate_descendants(
+		node: str | OpenMaya.MObject | OpenMaya.MDagPath,
+		api_type: int = OpenMaya.MFn.kTransform) -> Iterator[OpenMaya.MObject]:
+	"""
+	Returns a generator that yields descendants from the given dag node.
+
+	:param str or OpenMaya.MObject or OpenMaya.MDagPath node: node to iterate descendants of.
+	:param int api_type: optional API type to filter descendants by.
+	:return: iterated descendants.
+	:rtype: Iterator[OpenMaya.MObject]
+	"""
+
+	queue = deque([node])
+	while len(queue) > 0:
+		# Pop descendant and yield children
+		descendant = queue.popleft()
+		children = list(iterate_children(descendant, api_type=api_type))
+		queue.extend(children)
+		yield from children
+
+
+def iterate_shapes(
+		node: OpenMaya.MObject | OpenMaya.MDagPath,
+		api_type: int = OpenMaya.MFn.kShape) -> Iterator[OpenMaya.MObject]:
+	"""
+	Returns a generator that yields shapes from the given dag node.
+
+	:param str or OpenMaya.MObject or OpenMaya.MDagPath node: node to iterate shapes of.
+	:param int api_type: optional API type to filter shapes by.
+	:return: iterated descendants.
+	:rtype: Iterator[OpenMaya.MObject]
+	"""
+
+	fn_dag_node = OpenMaya.MFnDagNode()
+	for child in iterate_children(node, api_type=api_type):
+		# Check if child is intermediate object.
+		fn_dag_node.setObject(child)
+		if not fn_dag_node.isIntermediateObject:
+			yield child
+
+
+def iterate_intermediate_objects(
+		node: OpenMaya.MObject | OpenMaya.MDagPath,
+		api_type: int = OpenMaya.MFn.kShape) -> Iterator[OpenMaya.MObject]:
+	"""
+	Returns a generator that yields intermediate objects from the given dag node.
+
+	:param str or OpenMaya.MObject or OpenMaya.MDagPath node: node to iterate intermediate objects of.
+	:param int api_type: optional API type to filter intermediate objects by.
+	:return: iterated descendants.
+	:rtype: Iterator[OpenMaya.MObject]
+	"""
+
+	fn_dag_node = OpenMaya.MFnDagNode()
+	for child in iterate_children(node, api_type=api_type):
+		# Check if child is intermediate object.
+		fn_dag_node.setObject(child)
+		if fn_dag_node.isIntermediateObject:
+			yield child
+
+
+def iterate_function_sets() -> Iterator[OpenMaya.MObject]:
+	"""
+	Returns a generator that yields function sets compatible with dependency nodes.
+
+	:return: iterated function sets.
+	:rtype: Iterator[OpenMaya.MObject]
+	"""
+
+	for (key, value) in chain(OpenMaya.__dict__.items(), OpenMayaAnim.__dict__.items()):
+		# Check if pair matches criteria
+		if key.startswith('MFn') and issubclass(value, OpenMaya.MFnDependencyNode):
+			yield value
+
+
+def iterate_active_component_selection() -> Iterator[tuple[OpenMaya.MDagPath, OpenMaya.MObject]]:
+	"""
+	Returns a generator that yields the active component selection.
+
+	:return: tuple containing a dag path and a component object.
+	:rtype: Iterator[tuple[OpenMaya.MDagPath, OpenMaya.MObject]]
+	"""
+
+	# Get active selection
+	# Unfortunately the rich selection method will raise a runtime error if the selection is empty
+	# So we have to wrap this in a try/catch in order to preserve weighted component data
+
+	try:
+		selection = OpenMaya.MGlobal.getRichSelection().getSelection()
+	except RuntimeError as exception:
+		logger.debug(exception)
+		selection = OpenMaya.MGlobal.getActiveSelectionList()
+
+	# Iterate through selection.
+	iter_selection = OpenMaya.MItSelectionList(selection, OpenMaya.MFn.kMeshComponent)
+	while not iter_selection.isDone():
+		# Check if item has a valid component.
+		found_dag_path, component = iter_selection.getComponent()
+		if found_dag_path.isValid() and not component.isNull():
+			yield found_dag_path, component
+		else:
+
+			logger.debug(f'Skipping invalid component selection on {found_dag_path.partialPathName()}.')
+		iter_selection.next()
+
+
+def iterate_associated_deformers(
+		node: OpenMaya.MObject | OpenMaya.MDagPath,
+		api_type: int = OpenMaya.MFn.kGeometryFilt) -> Iterator[OpenMaya.MObject]:
+	"""
+	Returns a generator that yields deformers associated with the given object.
+
+	:param OpenMaya.MObject or OpenMaya.MDagPath node: node to iterate deformers of.
+	:param int api_type: API type to filter deformers by.
+	:return: iterated deformers associated with the given object.
+	:rtype: Iterator[OpenMaya.MObject]
+	..note:: It is safe to supply either the transform, shape or deformer component.
+	"""
+
+	node = mobject(node)
+	if node.hasFn(OpenMaya.MFn.kTransform):
+		return iterate_associated_deformers(shape_directly_below(node), api_type=api_type)
+	elif node.hasFn(OpenMaya.MFn.kGeometryFilt):
+		return iterate_associated_deformers(dependents(node, api_type=OpenMaya.MFn.kShape)[0], api_type=api_type)
+	elif node.hasFn(OpenMaya.MFn.kShape):
+		return iterate_dependencies(node, api_type, direction=OpenMaya.MItDependencyGraph.kUpstream)
+	else:
+		logger.warning(f'iterate_associated_deformers() expects a shape node ({node.apiTypeStr} given)!')
+
+
+def associated_deformers(
+		node: str | OpenMaya.MObject | OpenMaya.MDagPath,
+		api_type: int = OpenMaya.MFn.kGeometryFilt) -> list[OpenMaya.MObject]:
+	"""
+	Returns a list of deformers associated to given shape node.
+
+	:param str or OpenMaya.MObject or OpenMaya.MDagPath node: node to get associated deformers of.
+	:param int api_type: API type to filter deformers by.
+	:return: list of associated deformers.
+	:rtype: list[OpenMaya.MObject]
+	"""
+
+	return list(iterate_associated_deformers(node, api_type=api_type))
+
+
+def iterate_deformers_from_selection(api_type: int = OpenMaya.MFn.kGeometryFilt) -> Iterator[OpenMaya.MObject]:
+	"""
+	Returns a generator that yields deformers from the active selection.
+
+	:param int api_type: API type to filter deformers by.
+	:return: iterated deformers from current selection.
+	:rtype: Iterator[OpenMaya.MObject]
+	"""
+
+	for depend_node in iterate_active_selection(api_type=OpenMaya.MFn.kDagNode):
+		for deformer in iterate_associated_deformers(depend_node, api_type=api_type):
+			yield deformer
+
+
+def find_deformer_by_type(node: OpenMaya.MObject | OpenMaya.MDagPath, api_type: int) -> OpenMaya.MObject | None:
+	"""
+	Returns the deformer with given from the given node.
+
+	:param OpenMaya.MObject or OpenMaya.MDagPath node: node to get deformer from.
+	:param int api_type: API type of the deformer to retrieve.
+	:return: found deformer of given type.
+	:rtype: OpenMaya.MObject or None
+	:raises TypeError: ig more that one deformer found.
+	"""
+
+	deformers = associated_deformers(node, api_type=api_type)
+	num_deformers = len(deformers)
+	if num_deformers == 0:
+		return None
+	elif num_deformers == 1:
+		return deformers[0]
+	else:
+		raise TypeError(f'find_deformer_by_type() expects 1 deformer ({num_deformers} given)!')
+
+
+def decompose_deformer(deformer: OpenMaya.MObject) -> tuple[OpenMaya.MObject, OpenMaya.MObject, OpenMaya.MObject]:
+	"""
+	Breaks down a deformer into 3 components: transform, shape and intermediate object.
+
+	:param OpenMaya.MObject deformer: deformer to decompose.
+	:return: decomposed deformer.
+	:rtype: tuple[OpenMaya.MObject, OpenMaya.MObject, OpenMaya.MObject]
+	:raises TypeError:  if the deformer was not setup correctly.
+	"""
+
+	transform, shape, intermediate_object = None, None, None
+	shapes = dependents(deformer, api_type=OpenMaya.MFn.kShape)
+	num_shapes = len(shapes)
+	if num_shapes == 1:
+		shape = shapes[0]
+	else:
+		raise TypeError(f'decompose_deformer() expects 1 shape node ({num_shapes} found)!')
+
+	# Locate transform from shape node.
+	transform = OpenMaya.MFnDagNode(shape).parent(0)
+
+	# Locate intermediate objects upstream.
+	intermediate_objects = depends_on(deformer, api_type=OpenMaya.MFn.kShape)
+	num_intermediate_objects = len(intermediate_objects)
+	if num_intermediate_objects == 1:
+		intermediate_object = intermediate_objects[0]
+	else:
+		raise TypeError(f'decompose_deformer() expects 1 intermediate object ({num_intermediate_objects} found)!')
+
+	return transform, shape, intermediate_object
 
 
 def strip_dag_path(name: str) -> str:
@@ -385,6 +856,22 @@ def strip_all(name: str) -> str:
 	name = strip_namespace(name)
 
 	return name
+
+
+def absolutify(name: str, namespace: str = '') -> str:
+	"""
+	Ensures the given name starts with the root namespace.
+
+	:param str name: name.
+	:param str namespace: namespace.
+	:return: name with namespace.
+	:rtype: str
+	"""
+
+	if not name.startswith(':'):
+		return f'{namespace}:{name}'
+	else:
+		return name
 
 
 def child_paths(dag_path):
