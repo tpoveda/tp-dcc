@@ -296,10 +296,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
 		if dcc.is_blender():
 			self._on_top = True
 
-		QMainWindow.__init__(self)
-		if parent:
-			self.setParent(parent)
-		# super().__init__()
+		QMainWindow.__init__(self, parent=parent)
 
 		if osplatform.is_mac():
 			# macOS needs it the saveWindowPref all the time otherwise it will be behind the other windows.
@@ -1481,7 +1478,8 @@ class FramelessWindow(QWidget):
 			title_bar_class: Type | None = None, overlay: bool = True, always_show_all_title: bool = False,
 			on_top: bool = False, save_window_pref: bool = False, minimize_enabled: bool = True,
 			minimize_button: bool = False, maximize_button: bool = False, parent: QWidget | None = None):
-		super().__init__(parent=None)
+
+		super().__init__()
 
 		FramelessWindow.delete_instances()
 
@@ -1496,8 +1494,8 @@ class FramelessWindow(QWidget):
 		self._minimized = False
 		self._settings = QSettings()
 		self._save_window_pref = save_window_pref
-		self._parent_container = None								# type: DockingContainer | FramelessWindowContainer
-		self._window_resizer = None									# type: WindowResizer
+		self._parent_container: DockingContainer | FramelessWindowContainer | None = None
+		self._window_resizer: WindowResizer | None = None
 		self._minimize_enabled = minimize_enabled
 		self._modal = modal
 		self._parent = parent
@@ -1809,7 +1807,7 @@ class FramelessWindow(QWidget):
 			result = theme_interface.stylesheet()
 			self.setStyleSheet(result.data)
 		except ImportError:
-			logger.erro('Error while setting default stylesheet ...')
+			logger.error('Error while setting default stylesheet ...')
 
 	def center_to_parent(self):
 		"""
