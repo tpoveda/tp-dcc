@@ -13,7 +13,7 @@ import time
 import inspect
 import traceback
 import threading
-from typing import Callable, Any
+from typing import Any
 from functools import wraps, update_wrapper
 
 from overrides import override
@@ -361,11 +361,11 @@ def add_metaclass(metaclass):
     return wrapper
 
 
-def classproperty(func: Callable) -> ClassProperty:
+def classproperty(func: callable) -> ClassProperty:
     """
     Custom decorator that returns a class property object to be used as a decorator.
 
-    :param Callable func: decorated function.
+    :param callable func: decorated function.
     :return: class property.
     :rtype: ClassProperty
     """
@@ -512,11 +512,11 @@ class ClassProperty:
 
         return self.fdel.__get__(instance, type(instance))()
 
-    def setter(self, func: Callable) -> ClassProperty:
+    def setter(self, func: callable) -> ClassProperty:
         """
         Decorator hook used to override setter function.
 
-        :param Callable func: function.
+        :param callable func: function.
         :return: class property instance
         :rtype: ClassProperty
         """
@@ -525,11 +525,11 @@ class ClassProperty:
         self.fset = func
         return self
 
-    def deleter(self, func: Callable) -> ClassProperty:
+    def deleter(self, func: callable) -> ClassProperty:
         """
         Decorator hook used to override delete function.
 
-        :param Callable func: function.
+        :param callable func: function.
         :return: class property instance
         :rtype: ClassProperty
         """
@@ -537,3 +537,105 @@ class ClassProperty:
         func = classmethod(func) if not isinstance(func, classmethod) else func
         self.fdel = func
         return self
+
+
+class AbstractDecorator(abc.ABC):
+    """
+    Abstract base class used to standardize decorator behaviour.
+    This pattern can also be used alongside 'with' statements.
+    """
+
+    __slots__ = ('_instance', '_owner', '_func')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+        self._instance: object | None = None
+        self._owner: type[AbstractDecorator] | None = None
+        self._func: callable | None = None
+
+        num_args = len(args)
+        if num_args == 1:
+            self._func = args[0]
+
+    def __get__(self, instance: object, owner: type[AbstractDecorator]) -> AbstractDecorator:
+        """
+        Private method called whenever this object is accessed via attribute lookup.
+
+        :param object instance: object instance.
+        :param type[AbstractDecorator] owner: decorator type.
+        :return: abstract decorator instance.
+        :rtype: AbstractDecorator
+        """
+
+        self._instance = instance
+        self._owner = owner
+
+        return self
+
+    def __call__(self, *args, **kwargs) -> Any:
+        """
+        Private method that is called whenever this instance is evoked.
+
+        :return: call result.
+        :rtype: Any
+        """
+
+        self.__enter__(*args, **kwargs)
+        results = self.func(*args, **kwargs)
+        self.__exit__(None, None, None)
+
+        return results
+
+    @abc.abstractmethod
+    def __enter__(self, *args, **kwargs):
+        """
+        Private method that is called when this instance is entered using a with statement.
+        """
+
+        pass
+
+    @abc.abstractmethod
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any):
+        """
+        Private method that is called when this instance is exited using a with statement.
+
+        :param Any exc_type: exception type.
+        :param Any exc_val: exception value.
+        :param Any exc_tb: exception traceback.
+        """
+
+        pass
+
+    @property
+    def instance(self) -> object:
+        """
+        Returns the instance currently bound to this decorator.
+
+        :return: instance currently bound to this decorator.
+        :rtype: object
+        """
+
+        return self._instance
+
+    @property
+    def owner(self) -> type[AbstractDecorator]:
+        """
+        Getter method that returns the class associated with the bound instance.
+
+        :return: class associated with the bound instance.
+        :rtype: type[AbstractDecorator]
+        """
+
+        return self._owner
+
+    @property
+    def func(self) -> callable:
+        """
+        Getter method used to return the wrapped function.
+
+        :return: wrapped function.
+        ..note:: If this is a descriptor object then the function will be bound to the instance.
+        """
+
+        return self._func.__get__(self._instance, self._owner) if self._instance is not None else self._func
