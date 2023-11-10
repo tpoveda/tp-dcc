@@ -1510,6 +1510,7 @@ class FramelessWindow(QWidget):
         title_bar_class = title_bar_class or FramelessWindow.TitleBar
         self._title_bar = title_bar_class(always_show_all=always_show_all_title, parent=self)
 
+        # TODO: Keep here to keep backward compatibility. This function will be removed in the future
         self._setup_ui()
         self.set_title(title)
         self._setup_signals()
@@ -1533,6 +1534,8 @@ class FramelessWindow(QWidget):
             self.set_maximize_button_visible(False)
 
         self.setup_ui()
+        self.setup_widgets()
+        self.setup_layouts()
         self.setup_signals()
 
         self.set_title_style(FramelessWindow.TitleBar.TitleStyle.DEFAULT)
@@ -1618,13 +1621,28 @@ class FramelessWindow(QWidget):
     def setup_ui(self):
         """
         Function that can be overriden to add custom widgets and layouts.
+        # TODO: This function will be removed in the future. Keep here for backward compatibility for now.
+        """
+
+        pass
+
+    def setup_widgets(self):
+        """
+        Function that can be overriden to add custom widgets.
+        """
+
+        pass
+
+    def setup_layouts(self):
+        """
+        Function that can be overriden to add custom layouts.
         """
 
         pass
 
     def setup_signals(self):
         """
-        Function that can be overriden to setup widget signals.
+        Function that can be overriden to set up widget signals.
         """
 
         pass

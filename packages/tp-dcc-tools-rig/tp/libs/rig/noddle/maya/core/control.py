@@ -16,10 +16,10 @@ from tp.preferences.interfaces import noddle
 from tp.maya.libs import curves as curves_lib
 
 from tp.libs.rig.noddle import consts
-from tp.libs.rig.noddle.functions import naming, outliner, attributes, curves
+from tp.libs.rig.noddle.maya.functions import naming, outliner, attributes, curves
 
 if typing.TYPE_CHECKING:
-    from tp.libs.rig.noddle.meta.component import Component
+    from tp.libs.rig.noddle.maya.meta.component import Component
 
 logger = log.rigLogger
 

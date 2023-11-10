@@ -248,6 +248,13 @@ class Socket(serializable.Serializable):
 
         return connected_sockets
 
+    def update_affected(self):
+        """Updates affected nodes with the current node value.
+        """
+
+        for affected_socket in self._affected_sockets:
+            affected_socket.set_value(self.value())
+
     def has_edge(self) -> bool:
         """
         Returns whether this socket is connected.

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from overrides import override
 
-from tp.core import dcc, tool
+from tp.core import tool
 
 from tp.tools.rig.transferskinweights import consts, view
 

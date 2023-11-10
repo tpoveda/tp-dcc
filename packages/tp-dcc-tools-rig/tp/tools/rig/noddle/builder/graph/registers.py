@@ -109,6 +109,15 @@ def node_class_from_id(node_id: int) -> type:
     return NODES_REGISTER[node_id]
 
 
+def function_from_signature(signature: str) -> dict | None:
+
+    for dt_func_map in FUNCTIONS_REGISTER.values():
+        if signature in dt_func_map:
+            return dt_func_map[signature]
+
+    return None
+
+
 def load_plugins():
     """
     Loads Noddle Rig editor plugins

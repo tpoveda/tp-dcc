@@ -5,8 +5,6 @@ import abc
 from tp.dcc import mesh, skin as skin_ctx
 from tp.common.python import decorators
 
-from tp.dcc.maya import skin as skin_maya
-
 
 class AbstractTransfer(abc.ABC):
     """

@@ -22,6 +22,7 @@ def update_misplaced_members(members):
     members['PySide2']['QtGui.QGuiApplication'] = 'QtGui.QGuiApplication'
     members['PySide2']['QtGui.QScreen'] = 'QtGui.QScreen'
     members['PySide2']['QtWidgets.QDesktopWidget'] = 'QtWidgets.QDesktopWidget'
+    members['PySide2']['QtWidgets.QOpenGLWidget'] = 'QtWidgets.QOpenGLWidget'
 
     # # PySide6
     # members['PySide6']['QtCore.QStandardPaths'] = 'QtCore.QStandardPaths'

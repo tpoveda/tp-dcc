@@ -16,7 +16,7 @@ from tp.tools.rig.noddle.builder.menus import file_menu
 from tp.tools.rig.noddle.builder.graph import editor
 
 if typing.TYPE_CHECKING:
-    from tp.tools.rig.noddle.builder.clients.maya.client import NoddleBuilderClient
+    from tp.tools.rig.noddle.builder.client import NoddleBuilderClient
 
 logger = log.rigLogger
 

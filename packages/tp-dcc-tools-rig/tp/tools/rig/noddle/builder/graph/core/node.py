@@ -210,6 +210,54 @@ class Node(serializable.Serializable):
 
         pass
 
+    def exec_queue(self) -> deque[Node]:
+        """
+        Recursive function that returns executable queue, that defines the order of execution for nodes.
+
+        :return: nodes executable queue.
+        :rtype: deque[Node]
+        """
+
+        exec_queue = deque([self])
+        for exec_output in self.list_exec_outputs():
+            if not exec_output.list_connections():
+                continue
+            exec_queue.extend(exec_output.list_connections()[0].node.exec_queue())
+
+        return exec_queue
+
+    def execute(self) -> Any:
+        """
+        Executes node logic.
+        """
+
+        return 0
+
+    def execute_children(self):
+        """
+        Executes children nodes.
+        """
+
+        for child_node in self.list_exec_children():
+            child_node._exec()
+
+    def value(self, socket_name: str) -> Any:
+        """
+        Returns the internal value of given socket name.
+
+        :param str socket_name: socket name to get value of.
+        :return: socket value.
+        :rtype: Any
+        :raises AttributeError: if socket with given name does not exist.
+        """
+
+        found_socket = getattr(self, socket_name)
+        if not found_socket or not isinstance(found_socket, socket.Socket):
+            logger.error(f'Socket "{socket_name}" does not exist!')
+            raise AttributeError
+
+        return found_socket.value()
+
     def socket_position(
             self, index: int, position: socket.Socket.Position, count_on_this_side: int = 1) -> list[int, int]:
         """
@@ -366,6 +414,36 @@ class Node(serializable.Serializable):
                 break
         return found_output_socket
 
+    def list_exec_outputs(self) -> list[socket.OutputSocket]:
+        """
+        Returns list of executable output sockets.
+
+        :return: executable output sockets.
+        :rtype: list[socket.OutputSocket]
+        """
+
+        return [found_socket for found_socket in self.outputs if found_socket.data_type == datatypes.Exec]
+
+    def list_non_exec_inputs(self) -> list[socket.InputSocket]:
+        """
+        Returns list of non executable input sockets.
+
+        :return: nont executable input sockets.
+        :rtype: list[socket.InputSocket]
+        """
+
+        return [found_socket for found_socket in self.inputs if found_socket.data_type != datatypes.Exec]
+
+    def list_non_exec_outputs(self) -> list[socket.OutputSocket]:
+        """
+        Returns list of non executable outputs sockets.
+
+        :return: nont executable outputs sockets.
+        :rtype: list[socket.OutputSocket]
+        """
+
+        return [found_socket for found_socket in self.outputs if found_socket.data_type != datatypes.Exec]
+
     def find_first_output_of_datatype(self, datatype: dict):
         """
         Returns first output socket with given data type.
@@ -497,6 +575,46 @@ class Node(serializable.Serializable):
                 continue
             output_socket.remove_all_edges(silent=silent)
 
+    def list_children(self, recursive: bool = False) -> list[Node]:
+        """
+        Recursive function that return a list with all connected children nodes.
+
+        :param bool recursive: whether to return children recursively.
+        :return: children nodes.
+        :rtype: list[Node]
+        """
+
+        children: list[Node] = []
+        for output in self.outputs:
+            for child_socket in output.list_connections():
+                children.append(child_socket.node)
+        if recursive:
+            for child_node in children:
+                children += child_node.list_children(recursive=True)
+
+        return children
+
+    def list_exec_children(self) -> list[Node]:
+        """
+        Returns list with all connected executable children.
+
+        :return: children executable nodes.
+        :rtype: list[Node]
+        """
+
+        executable_children: list[Node] = []
+        for exec_output in self.list_exec_outputs():
+            executable_children += [child_socket.node for child_socket in exec_output.list_connections()]
+
+        return executable_children
+
+    def update_affected_outputs(self):
+        """Updates affected output sockets for each one of the inputs.
+        """
+
+        for input_socket in self.inputs:
+            input_socket.update_affected()
+
     def remove(self, silent: bool = False):
         """
         Removes node from scene.
@@ -511,6 +629,38 @@ class Node(serializable.Serializable):
             self.scene.remove_node(self)
         except Exception:
             logger.exception(f'Failed to delete node {self}', exc_info=True)
+
+    def append_tooltip(self, text: str):
+        """
+        Appends given text to node tooltip.
+
+        :param str text: tooltip to append.
+        """
+
+        self._graphics_node.setToolTip(self._graphics_node.toolTip() + text)
+
+    def _exec(self) -> int:
+        """
+        Internal function that handles node execution logic shared by all nodes.
+
+        :return: execution code.
+        :rtype: int
+        """
+
+        logger.debug(f'Executing {self}....')
+        try:
+            self.execute()
+            self.update_affected_outputs()
+        except Exception:
+            logger.exception(f'Failed to execute {self.title} {self}')
+            self.append_tooltip('Execution error (Check script editor for details)\n')
+            self.set_invalid(True)
+            raise
+
+        self.set_compiled(True)
+        self.set_invalid(True)
+
+        return 0
 
     def _setup_settings(self):
         """
