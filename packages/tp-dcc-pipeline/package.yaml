@@ -9,5 +9,7 @@ environment:
     - '{self}'
   TPDCC_BASE_PATHS:
     - '{self}'
+  TPDCC_TOOL_DEFINITION_MODULES:
+    - '{self}/tp/tools/viewer/tool.py'
 commands:
   - '{self}/startup/pipeline.py'
