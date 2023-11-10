@@ -5,6 +5,8 @@
 Module that contains tpDcc log manager
 """
 
+from __future__ import annotations
+
 import os
 import logging
 

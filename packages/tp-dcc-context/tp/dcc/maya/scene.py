@@ -19,7 +19,7 @@ class FileExtensions(enum.IntEnum):
     ma = 1
 
 
-class MayaScene(scene.Scene):
+class MayaScene(scene.AbstractScene):
 
     __slots__ = ()
     __extensions__ = FileExtensions

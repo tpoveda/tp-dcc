@@ -7,7 +7,6 @@ Module that contains collections of decorators related with Maya
 
 from __future__ import annotations
 
-import os
 import sys
 import traceback
 from typing import Any

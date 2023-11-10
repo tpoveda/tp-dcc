@@ -4,8 +4,6 @@ import math
 import dataclasses
 from typing import Iterator
 
-from overrides import override
-
 from tp.core import log
 from tp.common.python import decorators
 from tp.dcc.abstract import dataclass
@@ -24,7 +22,6 @@ class Vector(dataclass.AbstractDataClass):
     y: float = 0.0
     z: float = 0.0
 
-    @override
     def __post_init__(self):
 
         # Validate vector.
@@ -40,38 +37,30 @@ class Vector(dataclass.AbstractDataClass):
         else:
             raise TypeError(f'__post_init__() expects either an int or float ({type(args).__name__} given)!')
 
-    @override
     def __eq__(self, other: Vector) -> bool:
         return self.is_equivalent(other)
 
-    @override
     def __ne__(self, other: Vector) -> bool:
         return not self.is_equivalent(other)
 
-    @override
     def __lt__(self, other: Vector) -> bool:
         return self.x < other.x and self.y < other.y and self.z < other.z
 
-    @override
     def __le__(self, other: Vector) -> bool:
         return self < other or self.is_equivalent(other)
 
-    @override
     def __gt__(self, other: Vector) -> bool:
         return self.x > other.x and self.y > other.y and self.z > other.z
 
-    @override
     def __ge__(self, other: Vector) -> bool:
         return self > other or self.is_equivalent(other)
 
-    @override
     def __add__(self, other: Vector) -> Vector:
         copy = self.copy()
         copy += other
 
         return copy
 
-    @override
     def __radd__(self, other: int | float) -> Vector:
         if isinstance(other, (int, float)):
             other = Vector(other, other, other)
@@ -80,7 +69,6 @@ class Vector(dataclass.AbstractDataClass):
         else:
             raise NotImplemented(f'__radd__() expects either an int or float ({type(other).__name__} given)!')
 
-    @override
     def __iadd__(self, other: int | float | Vector) -> Vector:
         if isinstance(other, Vector):
             self.x += other.x
@@ -95,14 +83,12 @@ class Vector(dataclass.AbstractDataClass):
 
         return self
 
-    @override
     def __sub__(self, other: int | float | Vector) -> Vector:
         copy = self.copy()
         copy -= other
 
         return copy
 
-    @override
     def __rsub__(self, other: int | float) -> Vector:
         if isinstance(other, (int, float)):
             other = Vector(other, other, other)
@@ -110,7 +96,6 @@ class Vector(dataclass.AbstractDataClass):
         else:
             raise NotImplemented(f'__rsub__() expects either an int or float ({type(other).__name__} given)!')
 
-    @override
     def __isub__(self, other: int | float | Vector) -> Vector:
         if isinstance(other, Vector):
             self.x -= other.x
@@ -125,7 +110,6 @@ class Vector(dataclass.AbstractDataClass):
 
         return self
 
-    @override
     def __mul__(self, other: int | float | Vector) -> float | Vector:
         if isinstance(other, Vector):
             return self.dot(other)

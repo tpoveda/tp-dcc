@@ -10,13 +10,15 @@ from __future__ import annotations
 import re
 import copy
 import contextlib
+from collections import deque
 from typing import Iterator, Any
 
+import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
 
 from tp.core import log
 from tp.common.python import helpers
-from tp.maya.om import dagpath, attributes
+from tp.maya.om import dagpath, attributes, undo
 from tp.maya.api import attributetypes
 
 logger = log.tpLogger
@@ -37,6 +39,23 @@ def set_locked_context(plug: OpenMaya.MPlug):
         plug.isLocked = False
     yield
     plug.isLocked = current
+
+
+def api_type(obj: OpenMaya.MObject | OpenMaya.MPlug) -> int:
+    """
+    Returns the attribute type from the given plug.
+
+    :param OpenMaya.MObject or OpenMaya.MPlug obj: object or plug to get attribute type of.
+    :return: attribute type.
+    :rtype: int
+    """
+
+    if isinstance(obj, OpenMaya.MObject):
+        return obj.apiType()
+    elif isinstance(obj, OpenMaya.MPlug):
+        return obj.attribute().apiType()
+
+    return OpenMaya.MFn.kUnknown
 
 
 def as_mplug(attr_name: str) -> OpenMaya.MPlug:
@@ -342,6 +361,27 @@ def find_plug(node: OpenMaya.MObject, path: str) -> OpenMaya.MPlug:
             continue
 
     return plug
+
+
+def find_plug_index(plug: OpenMaya.MPlug, logical: bool = True) -> int | None:
+    """
+    Returns the index of the given plug.
+
+    :param OpenMaya.MPlug plug: plug to get index of.
+    :param bool logical: whether to check logical index or element index.
+    :return: plug index.
+    :rtype: int or None
+    """
+
+    if plug.isNull:
+        return
+
+    if plug.isArray and plug.isElement:
+        return plug.logicalIndex() if logical else list(iterate_elements(plug.parent())).index(plug)
+    elif plug.isChild:
+        return list(iterate_children(plug.parent())).index(plug)
+    else:
+        return list(attributes.iterate_top_level_attributes(plug.node())).index(plug.attribute())
 
 
 def plug_value(plug: OpenMaya.MPlug, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal) -> Any:
@@ -1037,28 +1077,43 @@ def set_max(plug, value):
     return set_attr_max(plug.attribute(), value)
 
 
-def connect_plugs(source, target, mod=None, force=True, apply=True):
+def connect_plugs(
+        source: OpenMaya.MPlug, target: OpenMaya.MPlug, mod: OpenMaya.MDGModifier | None = None,
+        force: bool = True, apply: bool = True) -> OpenMaya.MDGModifier:
     """
     Connects given plugs together.
 
     :param OpenMaya.MPlug source: plug to connect.
     :param OpenMaya.MPlug target: target plag to connect into.
-    :param OpenMaya.MDGModifier mod: optional Maya modifier to apply.
+    :param OpenMaya.MDGModifier or None mod: optional Maya modifier to apply.
     :param bool force: whether to force the connection.
     :param bool apply: whether to apply the modifier instantly or leave it to the caller.
-    :return:
+    :return: modifier used to connect plugs.
+    :rtype: OpenMaya.MDGModifier
+    :raises TypeError: if one of the given plugs is not valid.
+
     """
 
-    modifier = mod or OpenMaya.MDGModifier()
+    if not isinstance(source, OpenMaya.MPlug) or not isinstance(target, OpenMaya.MPlug):
+        raise TypeError('connect_plugs() expects 2 plugs!')
+    if source.isNull or target.isNull:
+        raise TypeError('connect_plugs() expects 2 valid plugs!')
 
     if target.isDestination:
         target_source = target.source()
-        if force:
-            modifier.disconnect(target_source, target)
-        else:
-            raise ValueError('Plug {} has incoming connection {}'.format(target.name(), target_source.name()))
+        if not target_source.isNull:
+            if force:
+                break_connections(target, source=True, destination=False)
+                # modifier.disconnect(target_source, target)
+            else:
+                raise ValueError(f'connect_plugs() {target.info} plug has an incoming connection!')
+
+    modifier = mod or OpenMaya.MDGModifier()
+    logger.debug(f'Connecting "{source.info}" > "{target.info}"')
     modifier.connect(source, target)
+
     if mod is None and apply:
+        undo.commit(modifier.doIt, modifier.undoIt)
         modifier.doIt()
 
     return modifier
@@ -1107,13 +1162,15 @@ def connect_vector_plugs(source_compound, destination_compound, connection_value
     return mod
 
 
-def disconnect_plug(plug, source=True, destination=True, modifier=None):
+def disconnect_plug(
+        plug: OpenMaya.MPlug, source: bool = True, destination: bool = True,
+        modifier: OpenMaya.MDGModifier | None = None) -> tuple[bool, OpenMaya.MDGModifier]:
     """
     Disconnects the plug connections, if "source" is True and the plug is a destination then disconnect the source
     from this plug. If destination is True and plug is a source the disconnect this plug from the destination.
     Plugs are also locked (to avoid Maya raises an error).
 
-    :param OpenMaya.MpLUG plug: plug to disconnect.
+    :param OpenMaya.MPlug plug: plug to disconnect.
     :param bool source: if True, disconnect from the connected source plug if it has one.
     :param bool destination: if True, disconnect from the connected destination plug if it has one.
     :param maya.api.OpenMaya.MDGModifier modifier: optional Maya modifier to apply.
@@ -1139,17 +1196,365 @@ def disconnect_plug(plug, source=True, destination=True, modifier=None):
     return True, mod
 
 
-def next_available_element_plug(array_plug):
+def disconnect_plugs(source: OpenMaya.MPlug, destination: OpenMaya.MPlug, modifier: OpenMaya.MDGModifier | None = None):
+    """
+    Disconnects two plugs using a DG modifier.
+
+    :param OpenMaya.MPlug source: source plug to disconnect.
+    :param OpenMaya.MPlug destination: destination plug to disconnect.
+    :param OpenMaya.MDGModifier or None modifier: optional modifier to use to disconnect plugs.
+    :raises TypeError: if one of the given plugs is not valid.
+    """
+
+    if not isinstance(source, OpenMaya.MPlug) or not isinstance(destination, OpenMaya.MPlug):
+        raise TypeError('disconnect_plugs() expects 2 plugs!')
+    if source.isNull or destination.isNull:
+        raise TypeError('disconnect_plugs() expects 2 valid plugs!')
+
+    # Check if disconnection is legal.
+    other_plug = destination.source()
+    if other_plug != source or other_plug.isNull:
+        logger.debug(f'{source.info} is not connected to {destination.info}!')
+        return
+
+    modifier = modifier or OpenMaya.MDGModifier()
+    modifier.disconnect(source, destination)
+    undo.commit(modifier.doIt, modifier.undoIt)
+    modifier.doIt()
+
+
+def break_connections(
+        plug: OpenMaya.MPlug, source: bool = True, destination: bool = True, recursive: bool = False,
+        modifier: OpenMaya.MDGModifier | None = None):
+    """
+    Breaks the connections to the given plug.
+
+    :param OpenMaya.MPlug plug: plug to break connections of.
+    :param bool source: if True, disconnect from the connected source plug if it has one.
+    :param bool destination: if True, disconnect from the connected destination plug if it has one.
+    :param bool recursive: whether to break connections in a recursive way.
+    :param OpenMaya.MDGModifier or None modifier: optional modifier to use to break plug connections.
+    """
+
+    modifier = modifier or OpenMaya.MDGModifier()
+
+    # Check if the source plug should be broken.
+    other_plug = plug.source()
+    if source and not other_plug.isNull:
+        modifier.disconnect(other_plug, plug)
+
+    # Check if the destination plugs should be broken
+    other_plugs = plug.destinations()
+    if destination and len(other_plugs) > 0:
+        for other_plug in other_plugs:
+            modifier.disconnect(plug, other_plug)
+
+    # Check if children should be broken as well
+    if recursive:
+        for child_plug in walk(plug):
+            # Check if the source plug and destination plugs should be broken
+            other_plug = child_plug.source()
+            if source and not other_plug.isNull:
+                modifier.disconnect(other_plug, child_plug)
+            other_plugs = child_plug.destinations()
+            if destination and len(other_plugs) > 0:
+                for other_plug in other_plugs:
+                    modifier.disconnect(child_plug, other_plug)
+
+    undo.commit(modifier.doIt, modifier.undoIt)
+    modifier.doIt()
+
+
+def iterate_top_level_plugs(node: OpenMaya.MObject, **kwargs) -> Iterator[OpenMaya.MPlug]:
+    """
+    Returns a generator that yields top-level plugs from the given node.
+
+    :param OpenMaya.MObject node: object to get top level plugs from.
+    :key bool readable: whether to retrieve readable plugs.
+    :key bool writable: whether to retrieve writable plugs.
+    :key bool keyable: whether to retrieve keyable plugs.
+    :key bool affect_world_space: whether to retrieve world space related plugs.
+    :key bool skip_user_attributes: whether to skip user created plugs.
+    :return: iterated top-level plugs from the given node.
+    :rtype: Iterator[OpenMaya.MPlug]
+    """
+
+    fn_attribute = OpenMaya.MFnAttribute()
+    readable = kwargs.get('readable', False)
+    writable = kwargs.get('writable', False)
+    keyable = kwargs.get('keyable', False)
+    affects_world_space = kwargs.get('affect_world_space', False)
+    skip_user_attributes = kwargs.get('skip_user_attributes', False)
+
+    for attribute in attributes.iterate_top_level_attributes(node):
+        fn_attribute.setObject(attribute)
+        if readable and not fn_attribute.readable:
+            continue
+        if writable and not fn_attribute.writable:
+            continue
+        if keyable and not fn_attribute.keyable:
+            continue
+        if affects_world_space and not fn_attribute.affectsWorldSpace:
+            continue
+        if skip_user_attributes and fn_attribute.dynamic:
+            continue
+        yield OpenMaya.MPlug(node, attribute)
+
+
+def iterate_channel_box_plugs(node: OpenMaya.MPlug, **kwargs) -> Iterator[OpenMaya.MPlug]:
+    """
+    Returns a generator that yields plugs that are in the channel-box.
+
+    :param OpenMaya.MObject node: object to get channel-box plugs from.
+    :key bool readable: whether to retrieve readable plugs.
+    :key bool writable: whether to retrieve writable plugs.
+    :key bool keyable: whether to retrieve keyable plugs.
+    :key bool non_default: whether to retrieve plugs that has no default value.
+    :key bool affect_world_space: whether to retrieve world space related plugs.
+    :key bool skip_user_attributes: whether to skip user created plugs.
+    :return: iterated top-level plugs from the given node.
+    :rtype: Iterator[OpenMaya.MPlug]
+    """
+
+    for plug in iterate_top_level_plugs(node, **kwargs):
+        if plug.isCompound and not plug.isArray:
+            yield from iterate_children(plug, keyable=True, channelBox=True)
+        elif (plug.isKeyable or plug.isChannelBox) and is_numeric(plug):
+            yield plug
+
+
+def iterate_elements(plug: OpenMaya.MPlug, **kwargs) -> Iterator[OpenMaya.MPlug]:
+    """
+    Returns a generator that yields all elements from the given plug.
+
+    :param OpenMaya.MPlug plug: plug to iterate elements from.
+    :key bool writable: whether to retrieve writable plugs.
+    :key bool non_default: whether to retrieve plugs that has no default value.
+    :return: iterated element plugs from the given plug.
+    ..warning:: This generator only works on array plugs and not elements!
+    """
+
+    if not plug.isArray or plug.isElement:
+        return iter([])
+
+    # Iterate through plug elements.
+    writable = kwargs.get('writable', False)
+    non_default = kwargs.get('non_default', False)
+    indices = plug.getExistingArrayAttributeIndices()
+    for physical_index, logical_index in enumerate(indices):
+        element = plug.elementByPhysicalIndex(physical_index)
+        if writable and not (element.isFreeToChange() == OpenMaya.MPlug.kFreeToChange):
+            continue
+        if non_default and element.isDefaultValue:
+            continue
+        yield element
+
+
+def iterate_children(plug: OpenMaya.MPlug, recursive: bool = False, **kwargs) -> Iterator[OpenMaya.MPlug]:
+    """
+    Recursive function that returns a generator that yields the children plugs from the given plug.
+
+    :param OpenMaya.MPlug plug: plug to iterate children plugs from.
+    :param bool recursive: whether to return children recursively.
+    :key bool readable: whether to retrieve readable plugs.
+    :key bool writable: whether to retrieve writable plugs.
+    :key bool keyable: whether to retrieve keyable plugs.
+    :key bool non_default: whether to retrieve plugs that has no default value.
+    :key bool channel_box: whether to retrieve plugs that are in channel-box.
+    :return: iterated children plugs from the given plug.
+    :rtype: Iterator[OpenMaya.MPlug]
+    """
+
+    writable = kwargs.get('writable', False)
+    non_default = kwargs.get('non_default', False)
+    keyable = kwargs.get('keyable', False)
+    channel_box = kwargs.get('channel_box', False)
+
+    if plug.isArray:
+        # num_children = plug.numChildren()
+        # for i in range(num_children):
+        #     child = plug.child(i)
+        #     if writable and not (child.isFreeToChange() == om.MPlug.kFreeToChange):
+        #         continue
+        #     if non_default and child.isDefaultValue:
+        #         continue
+        #     if keyable and not child.isKeyable:
+        #         continue
+        #     if channel_box and (not child.isChannelBox and not child.isKeyable):
+        #         continue
+        #     yield child
+        for plug_found in range(plug.evaluateNumElements()):
+            child = plug.elementByPhysicalIndex(plug_found)     # type: OpenMaya.MPlug
+            if writable and not (child.isFreeToChange() == OpenMaya.MPlug.kFreeToChange):
+                continue
+            if non_default and child.isDefaultValue():
+                continue
+            if keyable and not child.isKeyable:
+                continue
+            if channel_box and (not child.isChannelBox and not child.isKeyable):
+                continue
+            yield child
+            for leaf in iterate_children(child, recursive=recursive, **kwargs):
+                yield leaf
+    elif plug.isCompound:
+        for plug_found in range(plug.numChildren()):
+            child = plug.child(plug_found)                      # type: OpenMaya.MPlug
+            if writable and not (child.isFreeToChange() == OpenMaya.MPlug.kFreeToChange):
+                continue
+            if non_default and child.isDefaultValue():
+                continue
+            if keyable and not child.isKeyable:
+                continue
+            if channel_box and (not child.isChannelBox and not child.isKeyable):
+                continue
+            yield child
+            if recursive:
+                for leaf in iterate_children(child, recursive=recursive, **kwargs):
+                    yield leaf
+
+
+def walk(
+        plug: OpenMaya.MPlug, writable: bool = False, channel_box: bool = False,
+        keyable: bool = False) -> Iterator[OpenMaya.MPlug]:
+    """
+    Returns a generator that yields descendants from the given plug.
+
+    :param OpenMaya.MPlug plug: plug to iterate descendants plugs from.
+    :param bool writable: whether to retrieve writable plugs.
+    :param bool channel_box: whether to retrieve plugs that are in channel-box.
+    :param bool keyable: whether to retrieve keyable plugs.
+    :return: iterated descendants plugs from the given plug.
+    :rtype: Iterator[OpenMaya.MPlug]
+    """
+
+    elements = list(iterate_elements(plug, writable=writable))
+    children = list(iterate_children(plug, writable=writable, channel_box=channel_box, keyable=keyable))
+
+    queue = deque(elements + children)
+    while len(queue):
+        plug = queue.popleft()
+        yield plug
+        if plug.isArray and not plug.isElement:
+            queue.extend(list(iterate_elements(plug, writable=writable)))
+        elif plug.isCompound:
+            queue.extend(list(iterate_children(plug, writable=writable, channel_box=channel_box, keyable=keyable)))
+
+
+def remove_multi_instances(plug: OpenMaya.MPlug, indices: list[int]):
+    """
+    Removes the indexed elements from the given plug.
+
+    :param OpenMaya.MPlug plug: plug to remove indexed elements of.
+    :param list[int] indices: list of element indexes to remove.
+    ..warning:: This method expects the plug to be an array and not an element!
+    """
+
+    plug_name = plug.partialName(includeNodeName=True, useFullAttributePath=True, useLongNames=True)
+    for index in indices:
+        element_name = f'{plug_name}[{index}]'
+        logger.info(f'Removing {element_name} element...')
+        cmds.removeMultiInstance(element_name)
+
+
+def connected_nodes(
+        plug: OpenMaya.MPlug, include_null_objects: bool = False) -> OpenMaya.MObject | OpenMaya.MObjectArray:
+    """
+    Returns the nodes connected to the given plug.
+
+    :param OpenMaya.MPlug plug: plug to get connected nodes of.
+    :param bool include_null_objects: whether to skip null objects.
+    :return: list of connected nodes.
+    :rtype: OpenMaya.MObject or OpenMaya.MObjectArray
+    ..warning:: If the plug is an array or compound then a list of nodes is returned instead!
+    """
+
+    nodes = OpenMaya.MObjectArray()
+    if plug.isArray and not plug.isElement:
+        # Iterate through plug elements
+        for element in iterate_elements(plug):
+            nodes += connected_nodes(element, include_null_objects=include_null_objects)
+    elif plug.isCompound:
+        # Iterate through plug children.
+        for child in iterate_children(plug):
+            nodes += connected_nodes(child, include_null_objects=include_null_objects)
+    else:
+        # Get source plug.
+        other_plug = plug.source()
+        if not other_plug.isNull:
+            nodes.append(other_plug.node())
+        elif include_null_objects:
+            nodes.append(OpenMaya.MObject.kNullObj)
+
+    return nodes
+
+
+def find_connected_message(
+        depend_node: OpenMaya.MObject,
+        attribute: OpenMaya.MObject = OpenMaya.MObject.kNullObj) -> OpenMaya.MPlug | None:
+    """
+    Locates the connected destination plug for the given dependency node.
+
+    :param OpenMaya.MObject depend_node: dependency node to get connected message node of.
+    :param OpenMaya.MObject attribute: attribute to get connected message of.
+    :return: found connected message plug.
+    :rtype: OpenMaya.MPlug or None
+    """
+
+    fn_depdend_node = OpenMaya.MFnDependencyNode(depend_node)
+    plug = fn_depdend_node.findPlug('message', True)
+    destinations = plug.destinations()
+    destination_count = len(destinations)
+    attribute_supplied = not attribute.isNull()
+    if destination_count == 0:
+        return None
+    elif destination_count == 1:
+        destination = destinations[0]
+        if attribute_supplied:
+            return destination if (destination.attribute() == attribute) else None
+        else:
+            return destination
+    elif attribute_supplied:
+        for destination in destinations:
+            if destination.attribute() == attribute:
+                return destination
+        return None
+
+    return None
+
+
+def next_available_element(plug: str | OpenMaya.MPlug) -> int | None:
+    """
+    Finds the next available plug element a value can be set to.
+    If there are no gaps then the last element will be returned.
+
+    :param str or OpenMaya.MPlug plug: plug to get next available element for.
+    :return: next available element plug.
+    :rtype: int or None
+    """
+
+    if not plug.isArray:
+        return None
+
+    indices = plug.getExistingArrayAttributeIndices()
+    num_indices = len(indices)
+    for physical_index, logical_index in enumerate(indices):
+        # Check if physical index does not match logical index
+        if physical_index != logical_index:
+            return physical_index
+
+    return indices[-1] + 1 if num_indices > 0 else 0
+
+
+def next_available_element_plug(array_plug: OpenMaya.MPlug) -> OpenMaya.MPlug | None:
     """
     Returns the next available element plug from the plug array.
-
     Loops through all current elements looking for an out connection, if one does not exist then this element plug is
     returned. If the plug array is a compound one then the children of immediate children of the compound are searched
     and the element parent plug will be returned if there is a connection.
 
     :param OpenMaya.MPlug array_plug: plug array to search.
     :return: next plug.
-    :rtype: OpenMaya.MPlug
+    :rtype: OpenMaya.MPlug or None
     """
 
     indices = array_plug.getExistingArrayAttributeIndices() or [0]
@@ -1174,6 +1579,39 @@ def next_available_element_plug(array_plug):
         return available_plug
 
     return None
+
+
+def next_available_connection(
+        plug: str | OpenMaya.MPlug, child_attribute: OpenMaya.MObject = OpenMaya.MObject.kNullObj) -> int | None:
+    """
+    Finds the next available plug element a connection can be made to.
+    If there are no gaps then the last element will be returned.
+
+    :param str or OpenMaya.MPlug plug: plug to get next available connection of.
+    :param OpenMaya.MObject child_attribute: optional attribute if the element to test is nested.
+    :return: next available plug element a connection can be made to.
+    :rtype: int | None
+    """
+
+    if not plug.isArray:
+        return None
+
+    indices = plug.getExistingArrayAttributeIndices()
+    num_indices = len(indices)
+    for physical_index, logical_index in enumerate(indices):
+        # Check if physical index matched logical index.
+        element = plug.elementByLogicalIndex(logical_index)
+        if not child_attribute.isNull():
+            element = element.child(child_attribute)
+
+        # Check if physical index does not match logical index.
+        # Otherwise, check if element is connected.
+        if physical_index != logical_index:
+            return physical_index
+        elif not element.isConnected:
+            return logical_index
+
+    return indices[-1] + 1 if num_indices > 0 else 0
 
 
 def next_available_dest_element_plug(array_plug):
@@ -1225,53 +1663,6 @@ def has_child_plug_by_name(parent_plug, child_name):
             return True
 
     return False
-
-
-def iterate_children(plug: OpenMaya.MPlug, recursive: bool = True, **kwargs) -> Iterator[OpenMaya.MPlug]:
-    """
-    Recursive Iterator function to iterate over all children plugs of the given plug
-    (it should be an array or compound plug).
-
-    :param OpenMaya.MPlug plug: array/compound plug to iterate.
-    :param bool recursive: whether to retrieve child plugs iteratively.
-    :return: iterated plugs.
-    :rtype:  Iterator[OpenMaya.MPlug]
-    """
-
-    writable = kwargs.get('writable', False)
-    non_default = kwargs.get('non_default', False)
-    keyable = kwargs.get('keyable', False)
-    channel_box = kwargs.get('channel_box', False)
-
-    if plug.isArray:
-        for plug_found in range(plug.evaluateNumElements()):
-            child = plug.elementByPhysicalIndex(plug_found)     # type: OpenMaya.MPlug
-            if writable and not (child.isFreeToChange() == OpenMaya.MPlug.kFreeToChange):
-                continue
-            if non_default and child.isDefaultValue():
-                continue
-            if keyable and not child.isKeyable:
-                continue
-            if channel_box and (not child.isChannelBox and not child.isKeyable):
-                continue
-            yield child
-            for leaf in iterate_children(child, recursive=recursive, **kwargs):
-                yield leaf
-    elif plug.isCompound:
-        for plug_found in range(plug.numChildren()):
-            child = plug.child(plug_found)                      # type: OpenMaya.MPlug
-            if writable and not (child.isFreeToChange() == OpenMaya.MPlug.kFreeToChange):
-                continue
-            if non_default and child.isDefaultValue():
-                continue
-            if keyable and not child.isKeyable:
-                continue
-            if channel_box and (not child.isChannelBox and not child.isKeyable):
-                continue
-            yield child
-            if recursive:
-                for leaf in iterate_children(child, recursive=recursive, **kwargs):
-                    yield leaf
 
 
 def remove_element_plug(plug, element_number, mod=None, apply=False):
@@ -1546,3 +1937,5 @@ def is_string(plug: OpenMaya.MPlug) -> bool:
         return OpenMaya.MFnTypedAttribute(attribute).attrType() == OpenMaya.MFnData.kString
 
     return False
+
+

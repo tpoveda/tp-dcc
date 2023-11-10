@@ -4,19 +4,19 @@ from overrides import override
 
 from tp.core import dcc, tool
 
-from tp.tools.rig.skeletor import consts, view
+from tp.tools.rig.transferskinweights import consts, view
 
 
-class SkeletorTool(tool.Tool):
+class TransferSkinWeightsTool(tool.Tool):
 
     id = consts.TOOL_ID
     creator = 'Tomi Poveda'
-    tags = ['skeleton', 'rig']
+    tags = ['skin', 'weights', 'transfer']
 
     @override
     def execute(self, *args, **kwargs):
 
-        win = view.SkeletorView()
+        win = view.TransferSkinWeightsView()
         win.show()
 
         return win

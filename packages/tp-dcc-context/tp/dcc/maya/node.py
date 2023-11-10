@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from typing import Generator, Any
+from typing import Generator, Iterator, Any
 
+from six import integer_types
 from overrides import override
 
+import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
 
 from tp.dcc.abstract import node
-from tp.maya.om import nodes, plugs, plugmutators
+from tp.dcc.maya.collections import userproperties
+from tp.maya.om import dagpath, attributes, plugs, plugmutators
 from tp.maya.cmds import namespace
 
 
@@ -42,11 +45,11 @@ class MayaNode(node.AbstractNode):
     @override(check_signature=False)
     def object(self) -> OpenMaya.MObject | None:
         handle = super().object()
-        return self.node_by_handle(handle) if isinstance(handle, int) else None
+        return self.node_by_handle(handle) if isinstance(handle, integer_types) else handle
 
     @override(check_signature=False)
     def set_object(self, obj: str | OpenMaya.MObject | OpenMaya.MDagPath):
-        depend_node = nodes.mobject(obj)
+        depend_node = dagpath.mobject(obj)
         if not depend_node.isNull():
             handle = OpenMaya.MObjectHandle(depend_node)
             self.__handles__[handle.hashCode()] = handle
@@ -179,6 +182,103 @@ class MayaNode(node.AbstractNode):
         return list(self.iterate_intermediate_objects())
 
     @override
+    def has_attr(self, name: str) -> bool:
+        return OpenMaya.MFnDependencyNode(self.object()).hasAttribute(name)
+
+    @override
     def attr(self, name: str) -> Any:
         plug = plugs.find_plug(self.object(), name)
         return plugmutators.value(plug)
+
+    @override
+    def set_attr(self, name: str, value: Any):
+        plug = plugs.find_plug(self.object(), name)
+        plugmutators.set_value(plug, value)
+
+    @override
+    def iterate_attrs(self) -> Generator[str, None, None]:
+        return attributes.iterate_attribute_names(self.object())
+
+    @override
+    def is_transform(self) -> bool:
+        return self.object().hasFn(OpenMaya.MFn.kTransform)
+
+    @override
+    def is_joint(self) -> bool:
+        return self.is_transform() and not any(
+            map(self.object().hasFn, (OpenMaya.MFn.kConstraint, OpenMaya.MFn.kPluginConstraintNode)))
+
+    @override
+    def is_mesh(self) -> bool:
+        return self.object().hasFn(OpenMaya.MFn.kMesh)
+
+    @override(check_signature=False)
+    def user_properties(self) -> userproperties.UserProperties:
+        return userproperties.UserProperties(self.object())
+
+    @override
+    def associated_reference(self) -> Any:
+        return dagpath.associated_reference_node(self.object())
+
+    def depends_on(self, api_type: int = OpenMaya.MFn.kDependencyNode) -> list[OpenMaya.MObject]:
+        """
+        Returns a list of nodes that this object depends on.
+
+        :param int api_type: dependent node types to filter by.
+        :return: list of dependent nodes.
+        :rtype: list[OpenMaya.MObject]
+        """
+
+        return dagpath.depends_on(self.object(), api_type=api_type)
+
+    def dependents(self, api_type: int = OpenMaya.MFn.kDependencyNode) -> list[OpenMaya.MObject]:
+        """
+        Returns a list of nodes that are dependent on this object.
+
+        :param int api_type: dependent node types to filter by.
+        :return: list of dependent nodes.
+        :rtype: list[OpenMaya.MObject]
+        """
+
+        return dagpath.dependents(self.object(), api_type=api_type)
+
+    @classmethod
+    @override
+    def does_node_exist(cls, name: str) -> bool:
+        return cmds.objExists(name)
+
+    @classmethod
+    @override(check_signature=False)
+    def node_by_name(cls, name: str) -> OpenMaya.MObject | None:
+        found_node = dagpath.mobject_by_name(name)
+        return found_node if not found_node.isNull() else None
+
+    @classmethod
+    def node_by_handle(cls, handle: str | int) -> OpenMaya.MObject | None:
+        """
+        Returns a node with the given handle.
+        If no node is associated with the given handle, None is returned.
+
+        :param str or int handle: handle to get node from.
+        :return: node associated with given handle.
+        :rtype: OpenMaya.MObject or None
+        """
+
+        handle = cls.__handles__.get(handle, OpenMaya.MObjectHandle())
+        return handle.object() if handle.isAlive() else None
+
+    @classmethod
+    @override(check_signature=False)
+    def nodes_by_attribute(cls, name: str) -> list[OpenMaya.MObject]:
+        try:
+            selection = OpenMaya.MSelectionList()
+            selection.add('*.{name}'.format(name=name))
+            return [selection.getDependNode(i) for i in range(selection.length())]
+        except RuntimeError:
+
+            return []
+
+    @classmethod
+    @override(check_signature=False)
+    def iterate_instances(cls, api_type: int = OpenMaya.MFn.kDependencyNode) -> Iterator[OpenMaya.MObject]:
+        return dagpath.iterate_nodes(api_type=api_type)

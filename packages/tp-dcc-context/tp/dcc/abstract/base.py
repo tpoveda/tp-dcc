@@ -57,7 +57,7 @@ class AbstractBase(abc.ABC):
         if is_valid:
             return super().__getattribute__(name)
         else:
-            raise TypeError('__getattribute__() function set object does not exist!')
+            raise TypeError(f'__getattribute__() function set object does not exist for {func.__name__}!')
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, AbstractBase):

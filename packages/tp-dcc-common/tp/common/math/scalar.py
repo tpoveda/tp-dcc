@@ -5,22 +5,41 @@
 Module that contains functions and class related with maths
 """
 
+from __future__ import annotations
+
 import math
 import struct
 
 MAX_INT = 2 ** (struct.Struct('i').size * 8 - 1) - 1
 
 
-def is_equal(x, y, tolerance=0.000001):
+def is_equal(x, y, tolerance=0.000001) -> bool:
     """
-    Checks if 2 float values are equal withing a given tolerance
-    :param x: float, first float value to compare
-    :param y: float, second float value to compare
-    :param tolerance: float, comparison tolerance
-    :return: bool
+    Checks if 2 float values are equal withing a given tolerance.
+
+    :param float x: first value to compare.
+    :param float y: second value to compare.
+    :param float tolerance: comparison tolerance.
+    :return: True if both values are equal.
+    :rtype: bool
     """
 
     return abs(x - y) < tolerance
+
+
+def is_close(x: float, y: float, relative_tolerance: float = 1e-03, absolute_tolerance: float = 1e-03) -> bool:
+    """
+    Returns whether two given numbers are relatively close.
+
+    :param float x: first value to compare.
+    :param float y: second value to compare.
+    :param float relative_tolerance: relative tolerance.
+    :param float absolute_tolerance: absolute tolerance.
+    :return: True if both numbers are relatively close; False otherwise.
+    :rtype: bool
+    """
+
+    return abs(x - y) <= max(relative_tolerance * max(abs(x), abs(y)), absolute_tolerance)
 
 
 def lerp(start, end, alpha):

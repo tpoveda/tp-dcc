@@ -170,11 +170,11 @@ class MayaMesh(node.Node, mesh.AbstractMesh):
 
         num_indices = len(indices)
         if num_indices == 0:
-            indices = range(self.numVertices())
+            indices = range(self.num_vertices())
 
         # Iterate through vertices.
         iter_vertices = OpenMaya.MItMeshVertex(self.object())
-        object_matrix = self.objectMatrix()
+        object_matrix = self.object_matrix()
         for index in indices:
             iter_vertices.setIndex(index)
             point = iter_vertices.position()
@@ -268,4 +268,3 @@ class MayaMesh(node.Node, mesh.AbstractMesh):
         """
 
         return iter([])
-    

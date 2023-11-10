@@ -21,7 +21,7 @@ from typing import Any
 from itertools import groupby
 from operator import itemgetter
 from collections import OrderedDict
-from collections.abc import Sequence
+from collections.abc import Sequence, Iterator
 
 from tp.common.python import strings, osplatform
 
@@ -1272,6 +1272,55 @@ def get_args(local_dict):
     local_dict.pop('__class__', None)
 
     return local_dict
+
+
+def is_array(obj: Any) -> bool:
+    """
+    Returns whether given object is an array.
+
+    :param Any obj: object to check.
+    :return: True if given object is an array; False otherwise.
+    :rtype: bool
+    """
+
+    return isinstance(obj, Sequence) and not isinstance(obj, str)
+
+
+def is_array_like(obj: Any) -> bool:
+    """
+    Returns whether given object is like an array.
+    This is useful for C++ array wrappers that aren't derived from the abstract sequence class.
+
+    :param Any obj: object to check.
+    :return: True if given object is like an array; False otherwise.
+    :rtype: bool
+    """
+
+    return (hasattr(obj, '__getitem__') and hasattr(obj, '__len__')) and not isinstance(obj, str)
+
+
+def is_iterator(obj: Any) -> bool:
+    """
+    Returns whether given object is an iterator.
+
+    :param Any obj: object to check.
+    :return: True if given object is an iterator; False otherwise.
+    :rtype: bool
+    """
+
+    return isinstance(obj, Iterator) and not isinstance(obj, str)
+
+
+def is_iterator_like(obj: Any) -> bool:
+    """
+    Returns whether given object is like an iterator.
+
+    :param Any obj: object to check.
+    :return: True if given object is like an iterator; False otherwise.
+    :rtype: bool
+    """
+
+    return (hasattr(obj, '__iter__') and hasattr(obj, '__next__')) and not isinstance(obj, str)
 
 
 class RollbackImporter(object):
