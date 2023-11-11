@@ -10,29 +10,29 @@ from tp.common.qt import api as qt
 from tp.libs.rig.noddle.core import asset
 from tp.tools.rig.noddle.builder.graph.core import scene
 from tp.tools.rig.noddle.builder.graph.graphics import view
-from tp.tools.rig.noddle.builder.widgets import palette
+from tp.tools.rig.noddle.builder.graph.widgets import palette
 
 logger = log.rigLogger
 
 if typing.TYPE_CHECKING:
-    from tp.tools.rig.noddle.builder.client import NoddleBuilderClient
+    from tp.tools.rig.noddle.builder.controller import NoddleController
 
 
 class NodeEditor(qt.QWidget):
 
     aboutToClose = qt.Signal(qt.QWidget, qt.QCloseEvent)
 
-    def __init__(self, client: NoddleBuilderClient, parent: qt.QWidget | None = None):
+    def __init__(self, controller: NoddleController, parent: qt.QWidget | None = None):
         super().__init__(parent=parent)
 
-        self._client = client
+        self._controller = controller
 
         self._setup_ui()
         self.scene.set_history_init_point()
 
     @property
-    def client(self) -> NoddleBuilderClient:
-        return self._client
+    def controller(self) -> NoddleController:
+        return self._controller
 
     @property
     def scene(self) -> scene.Scene:
@@ -95,6 +95,40 @@ class NodeEditor(qt.QWidget):
 
         return self.scene.has_been_modified
 
+    def maybe_save(self) -> bool:
+        """
+        Shows a warning message if save is modified and not saved.
+
+        :return: True is scene was saved or has  not been modified; False otherwise.
+        :rtype: bool
+        """
+
+        if not self.is_modified():
+            return True
+
+        res = qt.QMessageBox.warning(
+            self, 'Build not saved', 'Save Changes to current build?',
+            qt.QMessageBox.Save | qt.QMessageBox.No | qt.QMessageBox.Cancel)
+        if res == qt.QMessageBox.Save:
+            return self.save_build()
+        elif res == qt.QMessageBox.No:
+            return True
+        elif res == qt.QMessageBox.Cancel:
+            return False
+
+        return True
+
+    def new_build(self):
+        """
+        Clears current scene and shows a warning message if current build has not been modified.
+        """
+
+        if not self.maybe_save():
+            return
+
+        self.scene.clear()
+        self.scene.file_name = None
+
     def save_build(self):
         """
         Saves current build graph into disk.
@@ -133,6 +167,29 @@ class NodeEditor(qt.QWidget):
         if not file_path:
             return False
         self.scene.save_to_file(file_path)
+        return True
+
+    def open_build(self) -> bool:
+        """
+        Opens a build for the active asset.
+
+        :return: True if build was opened successfully; False otherwise.
+        :rtype: bool
+        """
+
+        if not asset.Asset.get():
+            logger.warning('Asset is not set!')
+            return False
+        if not self.maybe_save():
+            return False
+
+        rig_filter = 'Rig Build (*.rig)'
+        file_path = qt.QFileDialog.getOpenFileName(self, 'Open rig build scene', asset.Asset.get().build, rig_filter)[0]
+        if not file_path:
+            return False
+
+        self.scene.load_from_file(file_path)
+
         return True
 
     def _setup_ui(self):

@@ -11,7 +11,7 @@ if typing.TYPE_CHECKING:
 
 class EditMenu(qt.QMenu):
     def __init__(self, main_window: NoddleBuilderWindow, parent: qt.QWidget | None = None):
-        super().__init__(parent=parent or main_window)
+        super().__init__('Edit', parent=parent or main_window)
 
         self._main_window = main_window
         self._workspace_widget = main_window.workspace_widget

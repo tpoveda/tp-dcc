@@ -12,19 +12,14 @@ class NoddleBuilderTool(tool.Tool):
     @override
     def execute(self, *args, **kwargs):
 
-        from tp.tools.rig.noddle.builder import client, window
+        from tp.tools.rig.noddle.builder import controller, window
         from tp.tools.rig.noddle.builder.graph import registers
 
         # Load nodes locally
         registers.load_plugins()
 
-        # Force client to load nodes
-        client = client.NoddleBuilderMayaClient()
-        if client.is_host_online():
-            client.execute('TP_DCC_RELOAD_MODULES')
-            client.load_plugins()
-
-        win = window.NoddleBuilderWindow(client=client)
+        noddle_controller = controller.NoddleController()
+        win = window.NoddleBuilderWindow(controller=noddle_controller)
         win.show()
 
         return win

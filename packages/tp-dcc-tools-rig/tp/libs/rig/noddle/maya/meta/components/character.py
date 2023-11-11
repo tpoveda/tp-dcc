@@ -132,7 +132,7 @@ class Character(component.Component):
         :param int or str or Iterable[float, float, float] color: outliner color to set.
         """
 
-        outliner.set_color(self.root_control, color)
+        outliner.set_color(self.root_control(), color)
 
     def size(self, axis: str = 'y') -> float:
         """
@@ -143,7 +143,7 @@ class Character(component.Component):
         :rtype: float
         """
 
-        bounding_box = cmds.exactWorldBoundingBox(self.geometry_group.fullPathName())
+        bounding_box = cmds.exactWorldBoundingBox(self.geometry_group().fullPathName())
         if axis == 'x':
             return bounding_box[3] - bounding_box[0]
         elif axis == 'y':
@@ -187,7 +187,7 @@ class Character(component.Component):
 
         root_joint = api.node_by_name(root_joint) if root_joint else None
         root_joint = root_joint or joints.create_root_joint(children=children)
-        root_joint.setParent(self.deformation_rig_group)
+        root_joint.setParent(self.deformation_rig_group())
         attributes.add_meta_parent_attribute([root_joint])
         _, point_constraint_nodes = api.build_constraint(
             root_joint,

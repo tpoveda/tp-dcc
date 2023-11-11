@@ -97,11 +97,11 @@ class FileMenu(qt.QMenu):
         self._open_build_tab_action.triggered.connect(self._main_window.open_build_tabbed)
         self._save_build_action.triggered.connect(self._main_window.save_build)
         self._save_build_as_action.triggered.connect(self._main_window.save_build_as)
-        self._save_skeleton_as_action.triggered.connect(partial(self._main_window.client.save_file_as, 'skeleton'))
+        self._save_skeleton_as_action.triggered.connect(partial(self._main_window.controller.save_file_as, 'skeleton'))
         self._save_new_skeleton_action.triggered.connect(self._save_new_skeleton_action_triggered)
-        self._save_rig_as_action.triggered.connect(partial(self._main_window.client.save_file_as, 'rig'))
-        self._model_reference_action.triggered.connect(self._main_window.client.reference_model)
-        self._clear_references_action.triggered.connect(self._main_window.client.clear_all_references)
+        self._save_rig_as_action.triggered.connect(partial(self._main_window.controller.save_file_as, 'rig'))
+        self._model_reference_action.triggered.connect(self._main_window.controller.reference_model)
+        self._clear_references_action.triggered.connect(self._main_window.controller.clear_all_references)
 
     def _update_actions_state(self):
         """

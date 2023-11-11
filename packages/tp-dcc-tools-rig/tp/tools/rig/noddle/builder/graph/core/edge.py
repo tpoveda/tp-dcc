@@ -34,7 +34,7 @@ class Edge(serializable.Serializable):
 
         self.set_start_socket(start_socket, silent=silent)
         self.set_end_socket(end_socket, silent=silent)
-        self._update_edge_graphics_type()
+        self.update_edge_graphics_type()
         self._scene.add_edge(self)
 
     def __str__(self) -> str:
@@ -98,7 +98,7 @@ class Edge(serializable.Serializable):
             self.uid = data.get('id')
         self.start_socket = hashmap[data['start']]
         self.end_socket = hashmap[data['end']]
-        self._update_edge_graphics_type()
+        self.update_edge_graphics_type()
 
     def set_start_socket(self, value: socket.Socket | None, silent: bool = False):
         """
@@ -182,6 +182,13 @@ class Edge(serializable.Serializable):
             self._graphics_edge.set_destination(*source_pos)
         self._graphics_edge.update()
 
+    def update_edge_graphics_type(self):
+        """
+        Internal function that forces the update of the graphics type.
+        """
+
+        self.edge_type = self._scene.edge_type
+
     def remove_from_sockets(self, silent: bool = False):
         """
         Removes this edge from current start and end sockets.
@@ -204,10 +211,3 @@ class Edge(serializable.Serializable):
         self._graphics_edge = None
         if self in self._scene.edges:
             self._scene.remove_edge(self)
-
-    def _update_edge_graphics_type(self):
-        """
-        Internal function that forces the update of the graphics type.
-        """
-
-        self.edge_type = self._scene.edge_type

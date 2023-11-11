@@ -16,7 +16,7 @@ from tp.libs.rig.noddle.core import asset, project
 from tp.tools.rig.noddle.builder.widgets import shared
 
 if typing.TYPE_CHECKING:
-    from tp.tools.rig.noddle.builder.clients.maya.client import NoddleBuilderClient
+    from tp.tools.rig.noddle.builder.controller import NoddleController
 
 logger = log.rigLogger
 
@@ -25,10 +25,10 @@ class WorkspaceWidget(qt.QWidget):
 
     LABEL = 'Workspace'
 
-    def __init__(self, client: NoddleBuilderClient, parent: qt.QWidget | None = None):
+    def __init__(self, controller: NoddleController, parent: qt.QWidget | None = None):
         super().__init__(parent=parent)
 
-        self._client = client
+        self._controller = controller
 
         self._setup_widgets()
         self._setup_layouts()
@@ -60,7 +60,7 @@ class WorkspaceWidget(qt.QWidget):
 
         self._scroll_widget = shared.ScrollWidget(parent=self)
         self._project_group = ProjectGroup(parent=self)
-        self._asset_group = AssetGroup(client=self._client, parent=self)
+        self._asset_group = AssetGroup(client=self._controller, parent=self)
         self._scroll_widget.add_widget(self._project_group)
         self._scroll_widget.add_widget(self._asset_group)
         self._scroll_widget.content_layout.addStretch()

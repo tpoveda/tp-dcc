@@ -11,6 +11,7 @@ from tp.common.qt import api as qt
 from tp.tools.rig.noddle.builder.graph import datatypes
 from tp.tools.rig.noddle.builder.graph.core import serializable, socket
 from tp.tools.rig.noddle.builder.graph.graphics import node
+from tp.tools.rig.noddle.builder.graph.widgets import attributes
 
 if typing.TYPE_CHECKING:
     from tp.tools.rig.noddle.builder.graph.core.scene import Scene
@@ -19,6 +20,8 @@ logger = log.rigLogger
 
 
 class Node(serializable.Serializable):
+
+    ATTRIBUTES_WIDGET = attributes.AttributesWidget
 
     class Signals(qt.QObject):
         compiledChanged = qt.Signal(bool)
@@ -64,7 +67,6 @@ class Node(serializable.Serializable):
 
         self.signals.numSocketsChanged.connect(self._on_num_sockets_changed)
         self._setup_sockets()
-        self.setup_sockets()
         self._setup_signals()
 
     def __str__(self) -> str:
@@ -257,6 +259,41 @@ class Node(serializable.Serializable):
             raise AttributeError
 
         return found_socket.value()
+
+    def verify_inputs(self) -> bool:
+        """
+        Verifies that input sockets are valid for this node.
+
+        :return: True if inputs are valid; False otherwise.
+        :rtype: bool
+        """
+
+        invalid_inputs: deque[socket.Socket] = deque()
+        for input_socket in self._required_inputs:
+            if not input_socket.has_edge() and not input_socket.value():
+                invalid_inputs.append(input_socket)
+
+        if invalid_inputs:
+            tooltip = ''
+            for invalid_input in invalid_inputs:
+                tooltip += f'Invalid input: {invalid_input.label}\n'
+            self.append_tooltip(tooltip)
+            return False
+
+        return True
+
+    def verify(self) -> bool:
+        """
+        Verifies whether node can be compiled.
+
+        :return: True if node can be compiled; False otherwise.
+        :rtype: bool
+        """
+
+        self._graphics_node.setToolTip('')
+        result = self.verify_inputs()
+
+        return result
 
     def socket_position(
             self, index: int, position: socket.Socket.Position, count_on_this_side: int = 1) -> list[int, int]:
@@ -536,11 +573,12 @@ class Node(serializable.Serializable):
 
         return self._is_compiled
 
-    def set_compiled(self, flag: bool = False):
+    def set_compiled(self, flag: bool = False, emit_signal: bool = True):
         """
         Sets node compile status.
 
         :param bool flag: True to set node as compiled; False otherwise.
+        :param bool emit_signal: whether to notify that compile status changed.
         """
 
         if self._is_compiled == flag:
@@ -639,6 +677,16 @@ class Node(serializable.Serializable):
 
         self._graphics_node.setToolTip(self._graphics_node.toolTip() + text)
 
+    def attributes_widget(self) -> attributes.AttributesWidget:
+        """
+        Returns attribute editor widget for this node.
+
+        :return: attribute editor widget.
+        :rtype: attributes.AttributesWidget
+        """
+
+        return self.ATTRIBUTES_WIDGET(self)
+
     def _exec(self) -> int:
         """
         Internal function that handles node execution logic shared by all nodes.
@@ -692,6 +740,8 @@ class Node(serializable.Serializable):
         if self.__class__.IS_EXEC and self.__class__.AUTO_INIT_EXECS:
             self._exec_in_socket = self.add_input(datatypes.Exec)
             self._exec_out_socket = self.add_output(datatypes.Exec, max_connections=1)
+
+        self.setup_sockets()
 
     def _setup_signals(self):
         """

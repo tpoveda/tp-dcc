@@ -15,7 +15,6 @@ from tp.tools.rig.noddle.builder.graph import registers
 from tp.tools.rig.noddle.builder.graph.core import edge
 
 if typing.TYPE_CHECKING:
-    from tp.tools.rig.noddle.builder.client import NoddleBuilderClient
     from tp.tools.rig.noddle.builder.graph.core.scene import Scene
     from tp.tools.rig.noddle.builder.graph.editor import NodeEditor
     from tp.tools.rig.noddle.builder.graph.graphics.view import GraphicsView
@@ -25,11 +24,10 @@ logger = log.rigLogger
 
 class NodesPalette(qt.QWidget):
     def __init__(
-            self, client: NoddleBuilderClient, icon_size: int = 32, data_type_filter: dict | None = None,
+            self, icon_size: int = 32, data_type_filter: dict | None = None,
             functions_first: bool = False, parent: qt.QWidget | None = None):
         super().__init__(parent=parent)
 
-        self._client = client
         self._icon_size = qt.QSize(icon_size, icon_size)
         self._data_filter_type = data_type_filter
         self._functions_first = functions_first
@@ -41,10 +39,6 @@ class NodesPalette(qt.QWidget):
         self.setMinimumWidth(190)
 
         self.update_nodes_tree()
-
-    @property
-    def client(self) -> NoddleBuilderClient:
-        return self._client
 
     @property
     def data_type_filter(self) -> dict:
@@ -175,55 +169,50 @@ class NodesTreeWidget(qt.QTreeWidget):
             self._add_registered_functions(search_filter=search_filter)
 
     def _add_registered_nodes(self, search_filter: str = ''):
-        if self._nodes_palette.client.is_host_online():
-            registered_nodes = self._nodes_palette.client.registered_nodes() or {}
-        else:
-            registered_nodes = {}
-        keys = list(registered_nodes.keys())
+        keys = list(registers.NODES_REGISTER.keys())
         keys.sort()
         for node_id in keys:
-            category = registered_nodes[node_id]['category']
-            if category == 'INTERNAL':
+            node_class = registers.NODES_REGISTER[node_id]
+            if node_class.CATEGORY == 'INTERNAL':
                 continue
-            palette_label = registered_nodes[node_id]['palette_label']
+            palette_label = node_class.PALETTE_LABEL if hasattr(
+                node_class, 'PALETTE_LABEL') else node_class.DEFAULT_TITLE
             filter_matched = bool(search_filter) and (
                     re.search(search_filter, palette_label, re.IGNORECASE) is not None or
-                    re.search(search_filter, category, re.IGNORECASE) is not None)
+                    re.search(search_filter, node_class.CATEGORY, re.IGNORECASE) is not None)
             if search_filter and not filter_matched:
                 continue
-            icon_name = registered_nodes[node_id]['icon']
-            self._add_node_item(node_id, palette_label, category=category, icon_name=icon_name)
+            self._add_node_item(node_id, palette_label, category=node_class.CATEGORY, icon_name=node_class.ICON)
 
     def _add_registered_functions(self, search_filter: str = ''):
-        if self._nodes_palette.client.is_host_online():
-            keys = list(registers.FUNCTIONS_REGISTER.keys())
-            keys.sort()
-            for data_type_name in keys:
-                if data_type_name != 'UNBOUND' and self._nodes_palette.data_type_filter:
-                    if not issubclass(
-                            self._nodes_palette.data_type_filter.get('class'),
-                            registers.DataType.type_from_name(data_type_name).get('class')):
-                        continue
-                func_map = registers.FUNCTIONS_REGISTER[data_type_name]
-                func_signatures_list = func_map.keys()
-                func_signatures_list = list(func_signatures_list) if not isinstance(
-                    func_signatures_list, list) else func_signatures_list
-                for func_sign in func_signatures_list:
-                    expanded = self._nodes_palette.functions_first or bool(search_filter)
-                    func_dict = func_map[func_sign]
-                    icon_name = func_dict['icon']
-                    nice_name = func_dict.get('nice_name')
-                    sub_category_name = func_dict.get('category', 'General')
-                    palette_name = nice_name if nice_name else func_sign
-                    filter_matched = bool(search_filter) and (
-                            re.search(search_filter, palette_name, re.IGNORECASE) is not None or
-                            re.search(search_filter, sub_category_name, re.IGNORECASE is not None))
-                    if search_filter and not filter_matched:
-                        continue
+        keys = list(registers.FUNCTIONS_REGISTER.keys())
+        keys.sort()
+        for data_type_name in keys:
+            if data_type_name != 'UNBOUND' and self._nodes_palette.data_type_filter:
+                if not issubclass(
+                        self._nodes_palette.data_type_filter.get('class'),
+                        registers.DataType.type_from_name(data_type_name).get('class')):
+                    continue
+            func_map = registers.FUNCTIONS_REGISTER[data_type_name]
+            func_signatures_list = func_map.keys()
+            func_signatures_list = list(func_signatures_list) if not isinstance(
+                func_signatures_list, list) else func_signatures_list
+            for func_sign in func_signatures_list:
+                expanded = self._nodes_palette.functions_first or bool(search_filter)
+                func_dict = func_map[func_sign]
+                icon_name = func_dict['icon']
+                nice_name = func_dict.get('nice_name')
+                sub_category_name = func_dict.get('category', 'General')
+                palette_name = nice_name if nice_name else func_sign
+                filter_matched = bool(search_filter) and (
+                        re.search(search_filter, palette_name, re.IGNORECASE) is not None or
+                        re.search(search_filter, sub_category_name, re.IGNORECASE is not None))
+                if search_filter and not filter_matched:
+                    continue
 
-                    self._add_node_item(
-                        100, palette_name, func_signature=func_sign, category=F'Functions/{sub_category_name}',
-                        icon_name=icon_name, expanded=expanded)
+                self._add_node_item(
+                    100, palette_name, func_signature=func_sign, category=F'Functions/{sub_category_name}',
+                    icon_name=icon_name, expanded=expanded)
                     
     def _add_node_item(
             self, node_id: int, label_text: str, func_signature: str = '', category: str = 'Undefined',
@@ -277,20 +266,19 @@ class PopupNodesPalette(qt.QDialog):
 
         action = qt.QAction(node_editor)
         action.setShortcut(shortcut)
-        action.triggered.connect(lambda: cls.create(node_editor.client, graphics_view))
+        action.triggered.connect(lambda: cls.create(graphics_view))
 
         return action
 
     @classmethod
-    def create(cls, client: NoddleBuilderClient, graphics_view: GraphicsView):
-        popup_dialog = cls(client, graphics_view)
+    def create(cls, graphics_view: GraphicsView):
+        popup_dialog = cls(graphics_view)
         popup_dialog.move(qt.QCursor.pos())
         popup_dialog.exec_()
 
-    def __init__(self, client: NoddleBuilderClient, view: GraphicsView, parent: qt.QWidget | None = None):
+    def __init__(self, view: GraphicsView, parent: qt.QWidget | None = None):
         super().__init__(parent=parent or view)
 
-        self._client = client
         self._view = view
         self._scene: Scene = self._view.scene
         self._nodes_palette: NodesPalette | None = None
@@ -337,8 +325,7 @@ class PopupNodesPalette(qt.QDialog):
         """
 
         data_type_filter = self._view.dragging.source_socket_datatype()
-        self._nodes_palette = NodesPalette(
-            client=self._client, icon_size=16, data_type_filter=data_type_filter, functions_first=True)
+        self._nodes_palette = NodesPalette(icon_size=16, data_type_filter=data_type_filter, functions_first=True)
         self._nodes_palette.nodes_tree.setDragEnabled(False)
         self._nodes_palette.nodes_tree.installEventFilter(self)
 
@@ -372,6 +359,10 @@ class PopupNodesPalette(qt.QDialog):
         node_id = item.data(0, NodesTreeWidget.NODE_ID_ROLE)
         json_data = item.data(0, NodesTreeWidget.JSON_DATA_ROLE)
         new_node = self._scene.spawn_node_from_data(node_id, json_data, self._view.last_scene_mouse_pos)
+        if not new_node:
+            logger.warning('Was not possible to create node!')
+            self.close()
+            return
 
         # Connect dragging edge
         # Output -> Input

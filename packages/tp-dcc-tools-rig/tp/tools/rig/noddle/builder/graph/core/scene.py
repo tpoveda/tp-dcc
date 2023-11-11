@@ -11,11 +11,12 @@ from tp.core import log
 from tp.common.qt import api as qt
 from tp.common.python import jsonio
 from tp.tools.rig.noddle.builder.graph import registers
-from tp.tools.rig.noddle.builder.graph.core import serializable, history, clipboard, node, edge
+from tp.tools.rig.noddle.builder.graph.core import serializable, history, clipboard, node, edge, vars, executor
 from tp.tools.rig.noddle.builder.graph.graphics import scene
 
 if typing.TYPE_CHECKING:
     from tp.tools.rig.noddle.builder.graph.graphics.view import GraphicsView
+    from tp.tools.rig.noddle.builder.graph.nodes.node_getset import GetNode, SetNode
 
 logger = log.rigLogger
 
@@ -42,6 +43,8 @@ class Scene(serializable.Serializable):
         self._is_executing = False
         self._nodes: list[node.Node] = []
         self._edges: list[edge.Edge] = []
+        self._vars = vars.SceneVars(self)
+        self._executor = executor.GraphExecutor(self)
         self._edge_type = edge.Edge.Type.BEZIER
         self._graphics_scene: scene.GraphicsScene | None = None
         self._last_selected_items: list[qt.QGraphicsItem] = []
@@ -77,6 +80,14 @@ class Scene(serializable.Serializable):
     @property
     def view(self) -> GraphicsView:
         return self._graphics_scene.views()[0]
+
+    @property
+    def vars(self) -> vars.SceneVars:
+        return self._vars
+
+    @property
+    def executor(self) -> executor.GraphExecutor:
+        return self._executor
 
     @property
     def history(self) -> history.SceneHistory:
@@ -128,6 +139,35 @@ class Scene(serializable.Serializable):
     def edge_type(self) -> edge.Edge.Type:
         return self._edge_type
 
+    @edge_type.setter
+    def edge_type(self, value: edge.Edge.Type):
+        fallback_type = edge.Edge.Type.BEZIER
+        if isinstance(value, int):
+            try:
+                value = list(edge.Edge.Type)[value]
+            except IndexError:
+                value = fallback_type
+        elif isinstance(value, edge.Edge.Type):
+            pass
+        else:
+            try:
+                value = edge.Edge.Type[str(value)]
+            except Exception:
+                logger.error(f'Scene: Invalid edge type value: {value}')
+                value = fallback_type
+        if self._edge_type == value:
+            return
+        self._edge_type = value
+        self.update_edge_types()
+
+    @property
+    def is_executing(self) -> bool:
+        return self._is_executing
+
+    @is_executing.setter
+    def is_executing(self, flag: bool):
+        self._is_executing = flag
+
     @override
     def serialize(self) -> dict:
         nodes: list[dict] = []
@@ -148,6 +188,59 @@ class Scene(serializable.Serializable):
             'edges': edges,
             'edge_type': self._edge_type.name
         }
+
+    @override(check_signature=False)
+    def deserialize(self, data: dict, hashmap: dict | None = None, restore_id: bool = True):
+        hashmap = hashmap or {}
+
+        if restore_id:
+            self.uid = data['id']
+
+        # Deserialize variables
+        self.vars.deserialize(data.get('vars', {}))
+
+        # Deserialize nodes
+        all_nodes = self.nodes[:]
+        for node_data in data['nodes']:
+            found = False
+            for scene_node in all_nodes:
+                if scene_node.uid == node_data['id']:
+                    found = scene_node
+                    break
+            if not found:
+                new_node = self.class_from_node_data(node_data)(self)
+                new_node.deserialize(node_data, hashmap, restore_id=restore_id)
+            else:
+                found.deserialize(node_data, hashmap, restore_id=restore_id)
+                all_nodes.remove(found)
+        while all_nodes:
+            node_to_remove = all_nodes.pop()
+            node_to_remove.remove()
+
+        # Deserialize edges
+        all_edges = self.edges[:]
+        for edge_data in data['edges']:
+            found = False
+            for scene_edge in all_edges:
+                if scene_edge.uid == edge_data['id']:
+                    found = scene_edge
+                    break
+            if not found:
+                new_edge = edge.Edge(self)
+                new_edge.deserialize(edge_data, hashmap, restore_id)
+            else:
+                found.deserialize(edge_data, hashmap, restore_id)
+                all_edges.remove(found)
+        while all_edges:
+            edge_to_delete = all_edges.pop()
+            try:
+                self.edges.index(edge_to_delete)
+            except ValueError:
+                continue
+            edge_to_delete.remove()
+
+        # Set edge type
+        self.edge_type = data.get('edge_type', edge.Edge.Type.BEZIER)
 
     def item_at(self, position: qt.QPoint) -> qt.QGraphicsItem | None:
         """
@@ -178,6 +271,15 @@ class Scene(serializable.Serializable):
 
         self._nodes.append(node_to_add)
 
+    def list_node_ids(self) -> list[str]:
+        """
+        Returns list of node IDs within the scene.
+
+        :return: scene node IDs.
+        """
+
+        return [scene_node.uid for scene_node in self.nodes]
+
     def remove_node(self, node_to_remove: node.Node):
         """
         Removes given node from list of scene nodes.
@@ -198,6 +300,15 @@ class Scene(serializable.Serializable):
 
         self._edges.append(edge_to_add)
 
+    def list_edge_ids(self) -> list[str]:
+        """
+        Returns list of edge IDs within the scene.
+
+        :return: scene edge IDs.
+        """
+
+        return [scene_edge.uid for scene_edge in self.edges]
+
     def remove_edge(self, edge_to_remove: edge.Edge):
         """
         Removes given edge from list of scene edges.
@@ -208,7 +319,25 @@ class Scene(serializable.Serializable):
 
         self._edges.remove(edge_to_remove)
 
+    def update_edge_types(self):
+        """
+        Updates all scene edge style based on current scene edge style.
+        """
+
+        for scene_edge in self.edges:
+            scene_edge.update_edge_graphics_type()
+
     def spawn_node_from_data(self, node_id: int, json_data: dict, position: qt.QPointF) -> node.Node | None:
+        """
+        Spawns a new node into scene based on given ID and serialized node data.
+
+        :param int node_id: ID of the node to create.
+        :param dict json_data: serialized node data.
+        :param qt.QPointF position: position of the node within the scene.
+        :return: newly created node.
+        :rtype: node.Node or None
+        """
+
         try:
             new_node = registers.node_class_from_id(node_id)(self)
             if node_id == 100:      # function
@@ -216,6 +345,27 @@ class Scene(serializable.Serializable):
                 new_node.func_signature = json_data.get('func_signature', '')
             new_node.set_position(position.x(), position.y())
             self.history.store_history('Created Node {0}'.format(new_node.as_str(name_only=True)))
+            return new_node
+        except Exception:
+            logger.exception('Failed to instance node', exc_info=True)
+
+    def spawn_getset(self, var_name: str, position: qt.QPointF, setter: bool = False) -> GetNode | SetNode | None:
+        """
+        Spawns a new getter/setter into scene based on given ID and serialized node data.
+
+        :param str var_name: name of the variable to create getter/setter node for.
+        :param qt.QPointF position: position of the node within the scene.
+        :param bool setter: whether to create a setter or getter node.
+        :return: newly created getter/setter node.
+        :rtype: GetNode or SetNode or None
+        """
+
+        node_id = 104 if setter else 103
+        try:
+            new_node = registers.node_class_from_id(node_id)(self)
+            new_node.set_var_name(var_name, init_sockets=True)
+            new_node.set_position(position.x(), position.y())
+            self.history.store_history(f'Created Node {new_node.as_str(name_only=True)}')
             return new_node
         except Exception:
             logger.exception('Failed to instance node', exc_info=True)
@@ -323,7 +473,7 @@ class Scene(serializable.Serializable):
             self.deserialize(data)
             logger.info("Rig build loaded in {0:.2f}s".format(timeit.default_timer() - start_time))
             self.history.clear()
-            self._executor.reset_stepped_execution()
+            self.executor.reset_stepped_execution()
             self.file_name = file_path
             self.has_been_modified = False
             self.set_history_init_point()

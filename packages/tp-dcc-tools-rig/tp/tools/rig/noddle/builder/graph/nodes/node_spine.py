@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 from overrides import override
 
 from tp.libs.rig.noddle.core.components import spine
@@ -9,6 +13,7 @@ class SpineNode(noddle_component.AnimComponentNode):
 
     ID = None
     IS_EXEC = True
+    ICON = 'body.png'
     DEFAULT_TITLE = 'Spine'
     CATEGORY = 'Components'
     UNIQUE = False
@@ -49,7 +54,11 @@ class FKIKSpineNode(SpineNode):
             api.dt.Numeric, label='Hook Mid', value=self.COMPONENT_CLASS.Hooks.MID.value)
         self.out_hook_chest = self.add_output(
             api.dt.Numeric, label='Hook Chest', value=self.COMPONENT_CLASS.Hooks.CHEST.value)
-        
+
+    @override
+    def execute(self) -> Any:
+        print('Googogogogogo')
+
 
 def register_plugin(register_node: callable, register_function: callable, register_data_type: callable):
     register_data_type(
