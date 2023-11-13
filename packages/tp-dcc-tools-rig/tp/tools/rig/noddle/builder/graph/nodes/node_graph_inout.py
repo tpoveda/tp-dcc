@@ -1,6 +1,14 @@
+from __future__ import annotations
+
+from typing import Any
+
 from overrides import override
 
+from tp.core import log
+from tp.libs.rig.noddle.core import asset
 from tp.tools.rig.noddle.builder import api
+
+logger = log.tpLogger
 
 
 class GraphInputNode(api.NoddleNode):
@@ -21,6 +29,14 @@ class GraphInputNode(api.NoddleNode):
     def setup_sockets(self):
         self._exec_out_socket = self.add_output(api.dt.Exec)
         self._out_asset_name = self.add_output(api.dt.String, label='Asset Name', value='')
+
+    @override
+    def execute(self) -> Any:
+        if not asset.Asset.get():
+            logger.error('Asset is not set')
+            raise ValueError
+
+        self.out_asset_name.set_value(asset.Asset.get().name)
 
 
 class GraphOutputNode(api.NoddleNode):

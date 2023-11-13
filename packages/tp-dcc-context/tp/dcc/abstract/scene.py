@@ -54,7 +54,7 @@ class AbstractScene(base.AbstractBase):
         Returns current active selection.
 
         :return: list of active nodes.
-        :rtype: list[Node]
+        :rtype: list[Any]
         """
 
         pass
@@ -64,7 +64,7 @@ class AbstractScene(base.AbstractBase):
         """
         Updates active selection.
 
-        :param list[Node] selection: list of nodes to set as the active ones.
+        :param list[Any] selection: list of nodes to set as the active ones.
         :param bool replace: whether to replace selection or add to current one.
         """
 
@@ -77,4 +77,3 @@ class AbstractScene(base.AbstractBase):
         """
 
         pass
-Any

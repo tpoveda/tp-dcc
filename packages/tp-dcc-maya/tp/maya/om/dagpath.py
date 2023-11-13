@@ -8,10 +8,10 @@ Module that contains utilities functions and classes related with Maya API MDagP
 from __future__ import annotations
 
 import re
-from typing import Iterator
 from itertools import chain
 from collections import deque
 from six import integer_types
+from typing import Iterator, Any
 
 import maya.cmds as cmds
 import maya.OpenMaya as OpenMaya1
@@ -1002,6 +1002,29 @@ def is_dag_type(type_name: str | int) -> bool:
         return OpenMaya.MFnDagNode().hasObj(type_name)
     else:
         raise TypeError(f'is_dag_type() expects either a str or int ({type(type_name).__name__} given)!')
+
+
+def create_selection_list(items: list[Any]) -> OpenMaya.MSelectionList:
+    """
+    Retursn a selection list from the given objects.
+
+    :param list[Any] items: lits of objects.
+    :return: selection list instance.
+    :rtype: OpenMaya.MSelectionList
+    """
+
+    selection = OpenMaya.MSelectionList()
+    for item in items:
+        depend_node = mobject(item)
+        if depend_node.isNull():
+            continue
+        if depend_node.hasFn(OpenMaya.MFn.kDagNode):
+            found_dag_path = OpenMaya.MDagPath.getAPathTo(depend_node)
+            selection.add(found_dag_path)
+        else:
+            selection.add(depend_node)
+
+    return selection
 
 
 def create_node(

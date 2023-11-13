@@ -5,6 +5,8 @@
 Module that contains functions to handle Python modules
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import uuid
@@ -12,6 +14,8 @@ import pkgutil
 import inspect
 import importlib
 import traceback
+from types import ModuleType
+from typing import Iterator, Any
 
 from tp.core import log
 from tp.common.python import helpers, path as path_utils
@@ -61,6 +65,33 @@ def convert_to_dotted_path(path):
         package_path.append(name)
 
     return '.'.join(reversed(package_path))
+
+
+def file_path_to_module_path(file_path: str) -> str:
+    """
+    Converts a file path into a module path compatible with import statements.
+
+    :param str file_path: file path to convert to module path.
+    :return: module path.
+    :rtype: str
+    """
+
+    python_paths = [os.path.normpath(x) for x in sys.path]
+    file_path = os.path.normpath(os.path.expandvars(file_path))
+    if file_path.endswith('__init__.py') or file_path.endswith('__init__.pyc'):
+        file_path = os.path.dirname(file_path)
+    elif os.path.isfile(file_path):
+        file_path, extension = os.path.splitext(file_path)
+
+    found = [x for x in python_paths if file_path.startswith(x)]
+    num_found = len(found)
+    if num_found == 0:
+        return ''
+
+    start_path = max(found)
+    relative_path = os.path.relpath(file_path, start_path)
+
+    return '.'.join(relative_path.split(os.sep))
 
 
 def import_module(module_path, name=None, skip_warnings=True, skip_errors=False, force_reload=False):
@@ -154,6 +185,67 @@ def resolve_module(name, log_error=False):
             found = getattr(found, n)
 
     return found
+
+
+def iterate_module(
+        module: ModuleType, include_abstract: bool = False, class_filter: type = object) -> Iterator[tuple[str, type]]:
+    """
+    Returns a generator that yields all the classes from the given module.
+
+    :param ModuleType module: module to iterate.
+    :param bool include_abstract: whether to include abstract classes.
+    :param type class_filter: class to filter by.
+    :return: iterated classes.
+    :rtype: Iterator[tuple[str, type]
+    """
+
+    for key, item in module.__dict__.items():
+        if not inspect.isclass(item):
+            continue
+        if inspect.isabstract(item) and not include_abstract:
+            continue
+        if issubclass(item, class_filter) or item in class_filter:
+            yield key, item
+        else:
+            logger.debug(f'Skipping {key} class')
+
+
+def iterate_package(package_path: str, force_reload: bool = False) -> Iterator[ModuleType]:
+    """
+    Returns a generator that yields all the modules from the given package folder.
+
+    :param str package_path: package path to iterate.
+    :param bool force_reload: whether to reload module.
+    :return: iterated modules.
+    :rtype: Iterator[ModuleType]
+    :raises TypeError: if the given package path does not exist.
+    """
+
+    if not os.path.exists(package_path):
+        raise TypeError(f'iterate_package() cannot locate package: {package_path}')
+
+    if os.path.isfile(package_path):
+        package_path = os.path.dirname(package_path)
+
+    for file_name in os.listdir(package_path):
+        module_name, extension = os.path.splitext(file_name)
+        if module_name == '__init__' or extension != '.py':
+            continue
+
+        # Try and import module
+        file_path = os.path.join(package_path, f'{module_name}.py')
+        module_path = file_path_to_module_path(file_path)
+        logger.info(f'Attempting to import: "{module_path}" module, from: {file_path}')
+        try:
+            # Import module and check if it should be reloaded
+            module = __import__(module_path, locals=locals(), globals=globals(), fromlist=[file_path], level=0)
+            if force_reload:
+                logger.info('Reloading module...')
+                importlib.reload(module)
+            yield module
+        except ImportError as exception:
+            logger.warning(exception)
+            continue
 
 
 def iterate_modules(path, exclude=None, skip_inits=True, recursive=True, return_pyc=False):
@@ -271,3 +363,47 @@ def load_module_from_source(file_path, unique_namespace=False):
     except BaseException:
         logger.info('Failed trying to direct load : {} | {}'.format(file_path, traceback.format_exc()))
         return None
+
+
+def find_class(
+        class_name: str, module_path: str, __locals__: dict | None = None,
+        __globals__: dict | None = None) -> type | None:
+    """
+    Returns the class associated with the given string.
+
+    :param str class_name: class name to find.
+    :param str module_path: module path.
+    :param dict or None __locals__: locals dictionary.
+    :param dict or None __globals__: globals dictionary.
+    :return: found class.
+    :rtype: type or None
+    """
+
+    if helpers.is_null_or_empty(class_name):
+        return None
+
+    from_list = module_path.split('.', 1)
+    module = __import__(module_path, locals=__locals__, globals=__globals__, fromlist=from_list, level=0)
+
+    return getattr(module, class_name)
+
+
+def try_import(path: str, default: Any = None, __locals__: dict | None = None, __globals__: dict | None = None) -> Any:
+    """
+    Tries to import the given module path.
+
+    :param str path: moduel path to import.
+    :param default: value to return if no module exists.
+    :param dict or None __locals__: locals dictionary.
+    :param dict or None __globals__: globals dictionary.
+    :return: import module.
+    :rtype: ModuleType or None
+    """
+
+    try:
+
+        from_list = path.split('.', 1)
+        return __import__(path, locals=__locals__, globals=__globals__, fromlist=from_list, level=0)
+    except ImportError as exception:
+        logger.info(exception)
+        return default
