@@ -287,7 +287,26 @@ class NodeEditor(qt.QWidget):
             event.accept()
 
         def _handle_variable_drop():
-            pass
+            event_data = event.mimeData().data('noddle/x-vars_item')
+            data_stream = qt.QDataStream(event_data, qt.QIODevice.ReadOnly)
+            json_data = json.loads(data_stream.readQString())
+            mouse_pos = event.pos()
+            scene_pos = self.scene.view.mapToScene(mouse_pos)
+            logger.debug('''Dropped Varible:
+                            > DATA: {data}
+                            > SCENE POS {scene_pos}'''.format(data=json_data, scene_pos=scene_pos))
+            var_name = json_data['var_name']
+            get_set_menu = qt.QMenu(self)
+            getter_action = qt.QAction('Get', get_set_menu)
+            setter_action = qt.QAction('Set', get_set_menu)
+            get_set_menu.addAction(getter_action)
+            get_set_menu.addAction(setter_action)
+            result_action = get_set_menu.exec_(self.mapToGlobal(event.pos()))
+            if result_action is None:
+                return
+            self.scene.spawn_getset(var_name, scene_pos, setter=result_action==setter_action)
+            event.setDropAction(qt.Qt.MoveAction)
+            event.accept()
 
         logger.debug('On item drop')
         if event.mimeData().hasFormat('noddle/x-node-palette_item'):

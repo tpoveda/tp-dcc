@@ -74,6 +74,10 @@ class Socket(serializable.Serializable):
     def index(self) -> int:
         return self._index
 
+    @index.setter
+    def index(self, value: int):
+        self._index = value
+
     @property
     def node_position(self) -> Socket.Position:
         return self._node_position
@@ -188,6 +192,7 @@ class Socket(serializable.Serializable):
             return
         if self._value == value:
             return
+
         self._value = value
         self._signals.valueChanged.emit()
 

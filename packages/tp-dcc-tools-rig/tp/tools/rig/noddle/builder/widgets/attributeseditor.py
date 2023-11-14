@@ -49,7 +49,7 @@ class AttributesEditor(qt.QWidget):
         if widget:
             self.current_widget = widget
 
-    def update_current_variable_widget(self, list_item: qt.QListWidgetItem):
+    def update_current_variable_widget(self, list_item: qt.QListWidgetItem | None):
         self.clear()
         if not list_item or not self.current_editor:
             return

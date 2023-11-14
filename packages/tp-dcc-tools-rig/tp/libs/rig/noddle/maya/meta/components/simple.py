@@ -40,7 +40,7 @@ class SimpleComponent(animcomponent.AnimComponent):
         in_hook = self.in_hook()
         if in_hook:
             _, parent_constraint_nodes = api.build_constraint(
-                self.controls_group,
+                self.controls_group(),
                 drivers={
                     'targets': ((in_hook.fullPathName(partial_name=True, include_namespace=False), in_hook),)},
                 constraint_type='parent'
@@ -64,7 +64,7 @@ class SimpleComponent(animcomponent.AnimComponent):
         parent = kwargs.pop('parent', None)
 
         new_control = control.Control.create(
-            name=[self.indexed_name, name], guide=guide_object, parent=self.controls_group, *args, **kwargs
+            name=[self.indexed_name, name], guide=guide_object, parent=self.controls_group(), *args, **kwargs
         )
         self._connect_controls([new_control])
 
@@ -105,7 +105,7 @@ class SimpleComponent(animcomponent.AnimComponent):
 
         control_to_add.rename(name='_'.join([self.indexed_name, control_to_add.control_name]))
         if not control_to_add.parent():
-            control_to_add.setParent(self.controls_group)
+            control_to_add.setParent(self.controls_group())
 
         self._connect_controls([control_to_add])
 

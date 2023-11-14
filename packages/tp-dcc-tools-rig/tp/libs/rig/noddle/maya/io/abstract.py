@@ -1,10 +1,17 @@
 from __future__ import annotations
 
+import typing
+
 from tp.core import log
 from tp.common.python import helpers, decorators
 
 from tp.libs.rig.noddle.core import asset
 from tp.libs.rig.noddle.utils import files
+from tp.libs.rig.noddle.maya.functions import rig
+
+if typing.TYPE_CHECKING:
+    from tp.libs.rig.noddle.core.character import Character
+
 
 logger = log.rigLogger
 
@@ -21,7 +28,7 @@ class AbstractIOManager:
         super().__init__()
 
         self._asset = asset.Asset.get()
-        self._rig = helpers.first_in_list(list(rigs.iterate_scene_rigs()))
+        self._character = rig.get_build_character()
         if not self._asset:
             logger.error('Asset is not set!')
             raise RuntimeError
@@ -65,8 +72,8 @@ class AbstractIOManager:
         return self._asset
 
     @property
-    def rig(self) -> 'tp.libs.rig.crit.maya.core.rig.Rig':
-        return self._rig
+    def character(self) -> Character:
+        return self._character
 
     @property
     def versioned_files(self) -> dict[str, list[str, str]]:

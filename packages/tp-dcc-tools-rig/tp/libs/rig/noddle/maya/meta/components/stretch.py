@@ -50,7 +50,7 @@ class IKSplineStretchComponent(component.Component):
         curve_info.arcLength.connect(final_scale_mdv.input1X)
 
         counter_scale_mdv = nodes.create('multiplyDivide', [self.component_name, 'scaled'], side=self.side, suffix='mdv')
-        parent.character.root_control.attribute('Scale').connect(counter_scale_mdv.input1X)
+        parent.character().root_control().attribute('Scale').connect(counter_scale_mdv.input1X)
         counter_scale_mdv.input2X.set(curve_info.arcLength.asFloat())
         counter_scale_mdv.outputX.connect(final_scale_mdv.input2X)
 

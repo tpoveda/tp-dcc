@@ -53,6 +53,10 @@ class NoddleBuilderWindow(qt.FramelessWindow):
     def current_editor(self) -> editor.NodeEditor | None:
         return self.current_window.widget() if self.current_window else None
 
+    @property
+    def attributes_editor(self) -> attributeseditor.AttributesEditor:
+        return self._attributes_editor
+
     @override
     def _setup_ui(self):
         super()._setup_ui()
@@ -214,8 +218,6 @@ class NoddleBuilderWindow(qt.FramelessWindow):
         Saves current build into disk.
         """
 
-        print('saving ...')
-
         if not self.current_editor:
             return
 
@@ -226,12 +228,17 @@ class NoddleBuilderWindow(qt.FramelessWindow):
         Saves current build into disk in a new file.
         """
 
-        print('yeyeyeeye')
-
         if not self.current_editor:
             return
 
         self.current_editor.save_build_as()
+
+    def refresh_variables(self):
+        """
+        Refreshes variables widget.
+        """
+
+        self._vars_widget.refresh()
 
     def _setup_menubar(self):
         """

@@ -101,7 +101,7 @@ class ReverseFootComponent(animcomponent.AnimComponent):
         inner_locator.setParent(outer_locator)
         rv_chain[0].setParent(inner_locator)
 
-        parent.param_control.attribute('fkik').connect(self.controls_group.visibility)
+        parent.param_control.attribute('fkik').connect(self.controls_group().visibility)
 
         fk_control = control.Control.create(
             name=f'{self.indexed_name}_fk', side=self.side, guide=control_chain[0], parent=parent.fk_controls()[-1],

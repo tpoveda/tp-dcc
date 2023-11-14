@@ -32,7 +32,7 @@ class FKComponent(animcomponent.AnimComponent):
         attributes.add_meta_parent_attribute(joint_chain)
         control_chain = joints.duplicate_chain(
             new_joint_name=[self.indexed_name, 'fk', 'ctl'], new_joint_side=self.side, original_chain=joint_chain,
-            new_parent=self.joints_group)
+            new_parent=self.joints_group())
 
         fk_controls = []
         next_parent = self.controls_group
@@ -68,8 +68,8 @@ class FKComponent(animcomponent.AnimComponent):
         self.scale_controls(scale_dict)
 
         if self.character:
-            self.parts_group.setVisible(False)
-            self.joints_group.setVisible(False)
+            self.parts_group().setVisible(False)
+            self.joints_group().setVisible(False)
 
     @override
     def attach_to_component(

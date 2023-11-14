@@ -20,18 +20,6 @@ class SpineComponent(animcomponent.AnimComponent):
 
     ID = 'noddleSpine'
 
-    @property
-    def root_control(self) -> control.Control:
-        return control.Control(self.sourceNodeByName('rootControl').object())
-
-    @property
-    def hips_control(self) -> control.Control:
-        return control.Control(self.sourceNodeByName('hipsControl').object())
-
-    @property
-    def chest_control(self) -> control.Control:
-        return control.Control(self.sourceNodeByName('chestControl').object())
-
     @override
     def meta_attributes(self) -> list[dict]:
 
@@ -51,6 +39,36 @@ class SpineComponent(animcomponent.AnimComponent):
             tag: str = 'body', character: Character | None = None):
 
         super().setup(parent=parent, component_name=component_name, side=side, tag=tag, character=character)
+
+    def root_control(self) -> control.Control:
+        """
+        Returns this component root control.
+
+        :return: root control.
+        :rtype: control.Control
+        """
+
+        return control.Control(self.sourceNodeByName('rootControl').object())
+
+    def hips_control(self) -> control.Control:
+        """
+        Returns this component hips control.
+
+        :return: root control.
+        :rtype: control.Control
+        """
+
+        return control.Control(self.sourceNodeByName('hipsControl').object())
+
+    def chest_control(self) -> control.Control:
+        """
+        Returns this component chest control.
+
+        :return: root control.
+        :rtype: control.Control
+        """
+
+        return control.Control(self.sourceNodeByName('chestControl').object())
 
 
 class FKIKSpineComponent(SpineComponent):
@@ -90,12 +108,12 @@ class FKIKSpineComponent(SpineComponent):
         attributes.add_meta_parent_attribute(joint_chain)
         control_chain = joints.duplicate_chain(
             new_joint_name=[self.indexed_name, 'ctl'], new_joint_side=self.side, original_chain=joint_chain,
-            new_parent=self.joints_group)
+            new_parent=self.joints_group())
 
         ik_curve_points = [list(joint.translation(space=api.kWorldSpace)) for joint in joint_chain]
         ik_curve = curves.curve_from_points(
             name=naming.generate_name([self.indexed_name, 'ik'], side=self.side, suffix='crv'),
-            points=ik_curve_points, parent=self.no_scale_group)
+            points=ik_curve_points, parent=self.no_scale_group())
         attributes.add_meta_parent_attribute([ik_curve])
         cmds.rebuildCurve(ik_curve.fullPathName(), d=3, kep=True, rpo=True, ch=False, tol=0.01, spans=4)
         ik_handle = api.node_by_name(
@@ -104,13 +122,13 @@ class FKIKSpineComponent(SpineComponent):
                 startJoint=control_chain[0].fullPathName(), endEffector=control_chain[-1].fullPathName(),
                 curve=ik_curve.fullPathName(), sol='ikSplineSolver', rootOnCurve=True, parentCurve=False,
                 createCurve=False, simplifyCurve=False)[0])
-        ik_handle.setParent(self.parts_group)
+        ik_handle.setParent(self.parts_group())
 
         control_locator = api.node_by_name(cmds.spaceLocator(n='temp_control_loc')[0])
         control_locator.setTranslation(api.Vector(*cmds.pointOnCurve(ik_curve.fullPathName(), pr=0.0, top=True)))
         root_control = control.Control.create(
             name=f'{self.indexed_name}_root', side=self.side, guide=control_locator, delete_guide=False,
-            parent=self.controls_group, joint=False, not_locked_attributes='tr', color='red', shape='root',
+            parent=self.controls_group(), joint=False, not_locked_attributes='tr', color='red', shape='root',
             orient_axis=up_axis)
         hips_control = control.Control.create(
             name=f'{self.indexed_name}_hips', side=self.side, guide=control_chain[0], delete_guide=False,
@@ -222,5 +240,48 @@ class FKIKSpineComponent(SpineComponent):
         self.scale_controls(scale_dict)
 
         ik_handle.setVisible(False)
-        self.parts_group.setVisible(False)
-        self.joints_group.setVisible(False)
+        self.parts_group().setVisible(False)
+        self.joints_group().setVisible(False)
+
+    def mid_control(self) -> control.Control:
+        """
+        Returns this component mid-control.
+
+        :return: mid control.
+        :rtype: control.Control
+        """
+
+        return control.Control(self.sourceNodeByName('rootControl').object())
+
+    def fk1_control(self) -> control.Control:
+        """
+        Returns this component FK first control.
+
+        :return: FK first control.
+        :rtype: control.Control
+        """
+
+        return control.Control(self.attribute('fkControls')[0].sourceNode().object())
+
+    def fk2_control(self) -> control.Control:
+        """
+        Returns this component FK second control.
+
+        :return: FK second control.
+        :rtype: control.Control
+        """
+
+        return control.Control(self.attribute('fkControls')[1].sourceNode().object())
+
+    def pivot_control(self) -> control.Control | None:
+        """
+        Returns this component pivot control.
+
+        :return: pivot control.
+        :rtype: control.Control
+        """
+
+        if not self.hasAttribute('pivotControl'):
+            return None
+
+        return control.Control(self.sourceNodeByName('pivotControl').object())

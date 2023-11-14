@@ -51,6 +51,7 @@ class Node(serializable.Serializable):
         self._title: str | None = None
         self._is_compiled = False
         self._is_invalid = False
+        self._is_executing = False
         self._graphics_node: node.GraphicsNode | None = None
         self._inputs: list[socket.InputSocket] = []
         self._outputs: list[socket.OutputSocket] = []
@@ -119,6 +120,10 @@ class Node(serializable.Serializable):
     def exec_out_socket(self) -> socket.OutputSocket | None:
         return self._exec_out_socket
 
+    @property
+    def is_executing(self) -> bool:
+        return self._is_executing
+
     @override
     def serialize(self) -> dict:
         inputs = [input_socket.serialize() for input_socket in self._inputs]
@@ -158,7 +163,9 @@ class Node(serializable.Serializable):
                     found_input_socket = input_socket
                     break
             if found_input_socket is None:
-                logger.warning(f'Deserialization of socket data has not found socket with index {socket_data["index"]}')
+                logger.warning(
+                    f'Deserialization of input socket data for node {self.title} has not found socket with '
+                    f'index {socket_data["index"]}')
                 logger.debug(f'Missing socket data: {socket_data}')
                 data_type = datatypes.type_from_name(socket_data['data_type'])
                 value = socket_data.get('value', data_type['default'])
@@ -172,7 +179,9 @@ class Node(serializable.Serializable):
                     found_output_socket = output_socket
                     break
             if found_output_socket is None:
-                logger.warning(f'Deserialization of socket data has not found socket with index {socket_data["index"]}')
+                logger.warning(
+                    f'Deserialization of output socket data for node {self.title} has not found socket with '
+                    f'index {socket_data["index"]}')
                 logger.debug(f'Missing socket data: {socket_data}')
                 # we can create new socket for this
                 data_type = datatypes.type_from_name(socket_data['data_type'])
@@ -376,6 +385,16 @@ class Node(serializable.Serializable):
             self._required_inputs.append(input_socket_to_mark_as_required)
         else:
             logger.error(f'Invalid required "input socket" argument {input_socket_to_mark_as_required}')
+
+    def mark_inputs_as_required(self, input_sockets: list[socket.InputSocket]):
+        """
+        Marks given input sockets as required sockets for the node to be executed.
+
+        :param list[socket.InputSocket] input_sockets: list of input sockets to mark as required.
+        """
+
+        for input_socket in input_sockets:
+            self.mark_input_as_required(input_socket)
 
     def add_output(
             self, data_type: dict, label: str | None = None, max_connections: int = 0, value: Any = None, *args,
@@ -586,6 +605,46 @@ class Node(serializable.Serializable):
         self._is_compiled = flag
         self.signals.compiledChanged.emit(self._is_compiled)
 
+    def mark_children_compiled(self, state: bool):
+        """
+        Marks all children nodes with given compile status.
+
+        :param bool state: compile status.
+        """
+
+        if state:
+            return
+
+        for child_node in self.list_children():
+            child_node.set_compiled(state)
+            child_node.mark_children_compiled(state)
+
+    def remove_socket(self, name: str, is_input: bool = True):
+        """
+        Removes socket with given name from node.
+
+        :param str name: name of the socket to remove.
+        :param bool is_input: whether the input to remove is an input one or an output one.
+        """
+
+        try:
+            if is_input:
+                socket_to_remove = [socket for socket in self.inputs if socket.label == name][0]
+                self.inputs.remove(socket_to_remove)
+                if socket_to_remove in self._required_inputs:
+                    self._required_inputs.remove(socket_to_remove)
+                for index, socket in enumerate(self.inputs):
+                    socket.index = index
+            else:
+                socket_to_remove = [socket for socket in self.outputs if socket.label == name][0]
+                self.outputs.remove(socket_to_remove)
+                for index, socket in enumerate(self.outputs):
+                    socket.index = index
+            socket_to_remove.remove()
+            self.signals.numSocketsChanged.emit()
+        except Exception:
+            logger.exception('Failed to delete socket {}'.format(name), exc_info=True)
+
     def remove_existing_sockets(self):
         """
         Deletes all sockets that already exist for this node.
@@ -653,6 +712,17 @@ class Node(serializable.Serializable):
         for input_socket in self.inputs:
             input_socket.update_affected()
 
+    def edit_title(self):
+        """
+        Enables node title edit mode.
+        """
+
+        if not self.TITLE_EDITABLE:
+            logger.warning(f'Title for node {self.title} is not editable')
+            return
+
+        self.graphics_node.title_item.edit()
+
     def remove(self, silent: bool = False):
         """
         Removes node from scene.
@@ -696,17 +766,24 @@ class Node(serializable.Serializable):
         """
 
         logger.debug(f'Executing {self}....')
+        self._is_executing = True
+
+        qt.QApplication.processEvents()
+        self._graphics_node.update()
+
         try:
             self.execute()
             self.update_affected_outputs()
+            self.set_compiled(True)
+            self.set_invalid(False)
         except Exception:
             logger.exception(f'Failed to execute {self.title} {self}')
             self.append_tooltip('Execution error (Check script editor for details)\n')
             self.set_invalid(True)
             raise
-
-        self.set_compiled(True)
-        self.set_invalid(True)
+        finally:
+            self._is_executing = False
+            self._graphics_node.update()
 
         return 0
 
@@ -803,18 +880,26 @@ class Node(serializable.Serializable):
         :param bool state: node compile status.
         """
 
-        pass
+        self.mark_children_compiled(state)
 
-    def _on_invalid_change(self):
+    def _on_invalid_change(self, state: bool):
         """
         Internal callback function that is called each time node invalid status changes.
+
+        :param bool state: node invalid status.
         """
 
-        pass
+        if state:
+            logger.warning(f'{self} marked as invalid')
 
-    def _on_title_edited(self):
+    def _on_title_edited(self, new_title: str):
         """
         Internal callback function that is called each time node title changes.
+
+        :param str new_title: new node title.
         """
 
-        pass
+        new_title = new_title or self.DEFAULT_TITLE
+        old_title = self.title
+        self.title = new_title
+        self.scene.history.store_history(f'Renamed Node {old_title} -> {new_title}')

@@ -33,14 +33,15 @@ class CharacterNode(api.ComponentNode):
 
     def execute(self) -> Any:
         self.component_instance = self.COMPONENT_CLASS(
-            self.in_meta_parent.value(), name=self.in_name.value(), tag=self.in_tag.value())
+            component_name=self.in_name.value(), tag=self.in_tag.value(), parent=self.in_meta_parent.value())
 
         self.out_self.set_value(self.component_instance)
-        # self.out_meta_parent.set_value(self.component_instance.meta_parent)
-        # self.out_root_control.set_value(self.component_instance.root_control.transform)
-        # self.out_deform_rig.set_value(self.component_instance.deformation_rig)
-        # self.out_control_rig.set_value(self.component_instance.control_rig)
-        # self.out_geometry_group.set_value(self.component_instance.geometry_grp)
+        self.out_meta_parent.set_value(
+            self.component_instance.meta_parent().fullPathName() if self.component_instance.meta_parent() else None)
+        self.out_root_control.set_value(self.component_instance.root_control().fullPathName())
+        self.out_deform_rig.set_value(self.component_instance.deformation_rig_group().fullPathName())
+        self.out_control_rig.set_value(self.component_instance.control_rig_group().fullPathName())
+        self.out_geometry_group.set_value(self.component_instance.geometry_group().fullPathName())
 
 
 def register_plugin(register_node: callable, register_function: callable, register_data_type: callable):

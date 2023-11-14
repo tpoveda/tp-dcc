@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 import json
 import timeit
 import typing
@@ -181,7 +182,7 @@ class Scene(serializable.Serializable):
 
         return {
             'id': self.uid,
-            'vars': [],
+            'vars': self._vars.serialize(),
             'scene_width': self._scene_width,
             'scene_height': self._scene_height,
             'nodes': nodes,
@@ -370,6 +371,18 @@ class Scene(serializable.Serializable):
         except Exception:
             logger.exception('Failed to instance node', exc_info=True)
 
+    def rename_selected_node(self):
+        """
+        Rename selected node.
+        """
+
+        selection = self.selected_nodes
+        if not selection:
+            logger.warning('Select a node to rename.')
+            return
+
+        selection[-1].edit_title()
+
     def copy_selected(self):
         """
         Copies selected nodes into clipboard.
@@ -451,7 +464,15 @@ class Scene(serializable.Serializable):
         """
 
         try:
-            jsonio.write_to_file(self.serialize(), file_path, sort_keys=False)
+            data = self.serialize()
+            if not jsonio.validate_json(data):
+                logger.error('Scene data is not valid')
+                logger.info(data)
+                return
+            result = jsonio.write_to_file(data, file_path, sort_keys=False)
+            if not result:
+                logger.error('Was not possible to save build')
+                return
             logger.info(f'Saved build {file_path}')
             self.file_name = file_path
             self.has_been_modified = False
@@ -469,7 +490,7 @@ class Scene(serializable.Serializable):
         try:
             self.clear()
             start_time = timeit.default_timer()
-            data = jsonio.read_file(file_path, maintain_order=True)
+            data = jsonio.read_file(file_path)
             self.deserialize(data)
             logger.info("Rig build loaded in {0:.2f}s".format(timeit.default_timer() - start_time))
             self.history.clear()
@@ -480,6 +501,24 @@ class Scene(serializable.Serializable):
             self.signals.fileLoadFinished.emit()
         except Exception:
             logger.exception('Failed to load scene build file', exc_info=True)
+
+    def regenerate_uuids(self):
+        """
+        Regenerate UUIDs for all nodes within scene.
+        """
+
+        obj_count = 1
+        self.uid = str(uuid.uuid4())
+        for scene_node in self.nodes:
+            scene_node.uid = str(uuid.uuid4())
+            obj_count += 1
+            for socket in scene_node.inputs + scene_node.outputs:
+                socket.uid = str(uuid.uuid4())
+                obj_count += 1
+        for scene_edge in self.edges:
+            scene_edge.uid = str(uuid.uuid4())
+            obj_count += 1
+        logger.info(f'Generated new UUIDs for {obj_count} objects')
 
     def clear(self):
         """

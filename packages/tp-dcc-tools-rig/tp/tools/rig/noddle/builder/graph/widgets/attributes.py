@@ -129,7 +129,7 @@ class AttributesWidget(qt.QGroupBox):
 
         try:
             if issubclass(socket_to_update.data_class, registers.DataType.STRING.get('class')):
-                widget.setText(socket_to_update.value())
+                widget.setText(str(socket_to_update.value()))
             elif issubclass(socket_to_update.data_class, registers.DataType.BOOLEAN.get('class')):
                 widget.setChecked(socket_to_update.value())
             elif issubclass(socket_to_update.data_class, registers.DataType.NUMERIC.get('class')):

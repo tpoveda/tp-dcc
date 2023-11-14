@@ -210,7 +210,7 @@ class LogsManager:
             return None
         handler = logging.StreamHandler()
         handler.setFormatter(logging.Formatter(self.shell_formatter))
-        logger.addHandler(handler)
+        found_log.addHandler(handler)
 
         return handler
 
@@ -224,13 +224,13 @@ class LogsManager:
         :rtype: logging.StreamHandler or None
         """
 
-        log = self._logs.get(logger_name)
-        if log is None:
+        found_log = self._logs.get(logger_name)
+        if found_log is None:
             return None
 
         formatter = logging.Formatter(self.shell_formatter)
         handler.setFormatter(formatter)
-        log.addHandler(handler)
+        found_log.addHandler(handler)
 
         return handler
 
@@ -243,13 +243,22 @@ class LogsManager:
         :rtype: bool
         """
 
-        log = self._logs.get(logger_name)
-        if log is None:
+        found_log = self._logs.get(logger_name)
+        if found_log is None:
             return False
 
-        log.handlers = []
+        found_log.handlers = []
 
         return True
+
+    def clear_logs(self):
+        """
+        Clears all logs.
+        """
+
+        for _, found_log in self._logs.items():
+            found_log.handlers = []
+        self._logs.clear()
 
 
 tpLogger = get_logger(LOGGER_NAME)

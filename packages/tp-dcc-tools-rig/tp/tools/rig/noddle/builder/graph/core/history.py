@@ -100,6 +100,70 @@ class SceneHistory:
         self._signals.changed.emit()
         self._signals.stepChanged.emit(self._current_step)
 
+    def set_current_step(self, value: int):
+        """
+        Sets current active step.
+
+        :param int value: current step index.
+        """
+
+        if value > len(self._stack) - 1:
+            logger.error(f'Out of bounds step: {value}')
+            return
+
+        logger.debug(f'New step {value}, current step {self._current_step}')
+        if self._current_step < value:
+            while self._current_step < value:
+                self.redo()
+        elif self._current_step > value:
+            while self._current_step > value:
+                self.undo()
+
+    def undo(self):
+        """
+        Undoes last history step.
+        """
+
+        if not self._enabled:
+            logger.warning('History is disabled')
+            return
+
+        if self._current_step > 0:
+            logger.info(f'> Undo {self._stack[self._current_step]["desc"]}')
+            self._current_step -= 1
+            self.restore_history()
+            self.signals.stepChanged.emit(self._current_step)
+        else:
+            logger.warning('No more steps to undo')
+
+    def redo(self):
+        """
+        Redoes previous history step.
+        """
+
+        if not self._enabled:
+            logger.warning('History is disabled')
+            return
+
+        if self._current_step + 1 < len(self._stack):
+            self._current_step += 1
+            self.restore_history()
+            self.signals.stepChanged.emit(self._current_step)
+        else:
+            logger.warning('No more steps to redo')
+
+    def restore_history(self):
+        """
+        Restores history based on current step.
+        """
+
+        self._enabled = False
+        try:
+            self._restore_stamp(self._stack[self._current_step])
+            self._scene.has_been_modified = True
+        finally:
+            self._enabled = True
+
     def clear(self):
         """
         Clears history.
@@ -107,3 +171,27 @@ class SceneHistory:
 
         self._stack.clear()
         self._current_step = -1
+
+    def _restore_stamp(self, stamp: dict):
+        """
+        Restores given scene stamp.
+
+        :param dict stamp: scene stamp to restore.
+        """
+
+        try:
+            self._scene.deserialize(stamp['snapshot'])
+            self._scene.graphics_scene.clearSelection()
+            for edge_uid in stamp['selection']['edges']:
+                for edge in self._scene.edges:
+                    if edge.uid == edge_uid:
+                        edge.graphics_edge.setSelected(True)
+                        break
+            for node_uid in stamp['selection']['nodes']:
+                for node in self._scene.nodes:
+                    if node.uid == node_uid:
+                        node.graphics_node.setSelected(True)
+                    break
+        except Exception:
+            logger.exception('Restore history stamp exception.')
+            raise

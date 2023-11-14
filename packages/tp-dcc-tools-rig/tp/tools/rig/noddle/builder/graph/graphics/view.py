@@ -176,10 +176,10 @@ class GraphicsView(qt.QGraphicsView):
             super(GraphicsView, self).mouseReleaseEvent(release_event)
             self.setDragMode(qt.QGraphicsView.ScrollHandDrag)
             self.setInteractive(False)
-            # fake_event = qt.QMouseEvent(
-            #     event.type(), event.localPos(), event.screenPos(),
-            #     qt.Qt.LeftButton, event.buttons() | qt.Qt.LeftButton, event.modifiers())
-            # super(GraphicsView, self).mousePressEvent(fake_event)
+            fake_event = qt.QMouseEvent(
+                event.type(), event.localPos(), event.screenPos(),
+                qt.Qt.LeftButton, event.buttons() | qt.Qt.LeftButton, event.modifiers())
+            super(GraphicsView, self).mousePressEvent(fake_event)
 
         if event.button() == qt.Qt.LeftButton:
             self._left_mouse_button_state = True
@@ -204,13 +204,6 @@ class GraphicsView(qt.QGraphicsView):
     def mouseMoveEvent(self, event: qt.QMouseEvent) -> None:
         scene_pos = self.mapToScene(event.pos())
         self._is_view_dragging = not self.isInteractive()
-
-        if self._middle_mouse_button_state and self._alt_state:
-            pass
-        elif self._right_mouse_button_state or (self._left_mouse_button_state and self._alt_state):
-            previous_pos = self.mapToScene(self._prev_mouse_pos)
-            delta = previous_pos - scene_pos
-            self._set_pan(delta.x(), delta.y())
         try:
             if self._edge_mode == GraphicsView.EdgeMode.Drag:
                 pos = scene_pos
@@ -225,6 +218,15 @@ class GraphicsView(qt.QGraphicsView):
             elif self._edge_mode == GraphicsView.EdgeMode.CutFreehand and self._freehand_slicer is not None:
                 self._freehand_slicer.add_point(scene_pos)
                 self._edges_ready_to_slice(self._freehand_slicer.path())
+            else:
+                if self._is_view_dragging:
+                    if self._middle_mouse_button_state and self._alt_state:
+                        pass
+                    elif self._right_mouse_button_state or (self._left_mouse_button_state and self._alt_state):
+                        previous_pos = self.mapToScene(self._prev_mouse_pos)
+                        delta = previous_pos - scene_pos
+                        self._set_pan(delta.x(), delta.y())
+
         except Exception:
             logger.exception('mouseMoveEvent exception', exc_info=True)
 
@@ -267,6 +269,7 @@ class GraphicsView(qt.QGraphicsView):
                     self._slicer.draw_path(qt.QPointF(0.0, 0.0), qt.QPointF(0.0, 0.0))
                     self._slicer.setVisible(False)
                     self._edge_mode = GraphicsView.EdgeMode.Noop
+                    return
                 if self._edge_mode == GraphicsView.EdgeMode.CutFreehand:
                     cut_result = self._freehand_slicer.cut()
                     if cut_result:
@@ -633,7 +636,7 @@ class GraphicsView(qt.QGraphicsView):
                 edges_to_clean.append(over_edge)
         for over_edge in edges_to_clean:
             over_edge.ready_to_slice = False
-            
+
 
 class GraphTitleLabel(qt.QGraphicsTextItem):
 

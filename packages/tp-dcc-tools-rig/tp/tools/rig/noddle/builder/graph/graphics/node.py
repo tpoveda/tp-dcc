@@ -137,7 +137,7 @@ class BaseGraphicsNode(qt.QGraphicsItem):
         """
 
         self.setFlags(self.ItemIsSelectable | self.ItemIsMovable)
-        self.setCacheMode(consts.ITEM_CACHE_MODE)
+        # self.setCacheMode(consts.ITEM_CACHE_MODE)
         self.setZValue(consts.NODE_Z_VALUE)
 
 

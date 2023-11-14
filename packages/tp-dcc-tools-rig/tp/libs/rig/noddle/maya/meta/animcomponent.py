@@ -23,32 +23,74 @@ class AnimComponent(component.Component):
 
     ID = 'noddleAnimComponent'
 
-    @property
     def character(self) -> Character:
+        """
+        Returns character this animation component belongs to.
+
+        :return: character instance.
+        :rtype: Character
+        """
+
         return base.MetaBase(list(self.attribute('character').destinationNodes())[0].object())
 
-    @property
     def root_group(self) -> api.DagNode:
+        """
+        Returns this animation component root group.
+
+        :return: root group.
+        :rtype: api.DagNode
+        """
+
         return self.sourceNodeByName('rootGroup')
 
-    @property
     def controls_group(self) -> api.DagNode:
+        """
+        Returns this animation component controls group.
+
+        :return: root group.
+        :rtype: api.DagNode
+        """
+
         return self.sourceNodeByName('controlsGroup')
 
-    @property
     def joints_group(self) -> api.DagNode:
+        """
+        Returns this animation component joints group.
+
+        :return: root group.
+        :rtype: api.DagNode
+        """
+
         return self.sourceNodeByName('jointsGroup')
 
-    @property
     def parts_group(self) -> api.DagNode:
+        """
+        Returns this animation component parts group.
+
+        :return: root group.
+        :rtype: api.DagNode
+        """
+
         return self.sourceNodeByName('partsGroup')
 
-    @property
     def no_scale_group(self) -> api.DagNode:
+        """
+        Returns this animation component no scale group.
+
+        :return: root group.
+        :rtype: api.DagNode
+        """
+
         return self.sourceNodeByName('noScaleGroup')
 
-    @property
     def out_group(self) -> api.DagNode:
+        """
+        Returns this animation component output group.
+
+        :return: root group.
+        :rtype: api.DagNode
+        """
+
         return self.sourceNodeByName('outGroup')
 
     @override
@@ -151,7 +193,7 @@ class AnimComponent(component.Component):
         :param int or str or Iterable[float, float, float] color: outliner color to set.
         """
 
-        outliner.set_color(self.root_group, color)
+        outliner.set_color(self.root_group(), color)
 
     def scale_controls(self, scale_dict: Dict[control.Control, float]):
         """
@@ -161,8 +203,8 @@ class AnimComponent(component.Component):
         """
 
         clamped_size = 1.0
-        if self.character and self.character.clamped_size() > 1.0:
-            clamped_size = self.character.clamped_size()
+        if self.character() and self.character().clamped_size() > 1.0:
+            clamped_size = self.character().clamped_size()
 
         for control, factor in scale_dict.items():
             control.scale_shapes(clamped_size, factor=factor)
@@ -320,7 +362,7 @@ class AnimComponent(component.Component):
         :raises RuntimeError: if given character is not a valid one.
         """
 
-        from tp.libs.rig.noddle.meta.components import character
+        from tp.libs.rig.noddle.maya.meta.components import character
 
         if not character_component:
             if character_name:
@@ -342,7 +384,7 @@ class AnimComponent(component.Component):
                 character_component.attribute(consts.MCHILDREN_ATTR_NAME).nextAvailableDestElementPlug())
 
         if parent:
-            self.root_group.setParent(character_component.control_rig_group)
+            self.root_group().setParent(character_component.control_rig_group())
 
     def attach_to_skeleton(self):
         """
@@ -351,7 +393,7 @@ class AnimComponent(component.Component):
 
         logger.info(f'{self} Attaching to skeleton...')
         for control_joint, bind_joint in zip(self.control_joints(), self.bind_joints()):
-            if not self.character.IGNORE_EXISTING_CONSTRAINTS_ON_SKELETON_ATTACHMENT:
+            if not self.character().IGNORE_EXISTING_CONSTRAINTS_ON_SKELETON_ATTACHMENT:
                 found_parent_constraint = None
                 for _, destination_plug in bind_joint.iterateConnections(source=False):
                     node = destination_plug.node()

@@ -41,6 +41,6 @@ class MayaBuild(build.Build):
     def post(self):
         cmds.select(clear=True)
         gui.set_xray_joints(True)
-        cmds.viewFit(self.character.root_control.group.fullPathName())
+        cmds.viewFit(self.character.root_control().group.fullPathName())
         self.character.geometry_group.overrideEnabled.set(True)
         self.character.geometry_group.overrideColor.set(1)

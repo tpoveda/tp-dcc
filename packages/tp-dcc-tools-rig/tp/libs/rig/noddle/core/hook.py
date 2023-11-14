@@ -37,7 +37,7 @@ class Hook(api.DagNode):
 
         hook_transform = nodes.create(
             'transform', [anim_component.indexed_name, name], anim_component.side, suffix='hook')
-        hook_transform.setParent(anim_component.out_group)
+        hook_transform.setParent(anim_component.out_group())
         _, point_constraint_nodes = api.build_constraint(
             hook_transform,
             drivers={'targets': ((node.fullPathName(partial_name=True, include_namespace=False), node),)},

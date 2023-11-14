@@ -78,7 +78,7 @@ class FKIKComponent(animcomponent.AnimComponent):
         attributes.add_meta_parent_attribute(joint_chain)
         control_chain = joints.duplicate_chain(
             new_joint_name=[self.indexed_name, 'ctl'], new_joint_side=self.side, original_chain=joint_chain,
-            new_parent=self.joints_group)
+            new_parent=self.joints_group())
 
         joint_offset_group = nodes.create(
             'transform', [self.indexed_name, 'constr'], self.side, suffix='grp', p=self.joints_group.fullPathName())
@@ -106,7 +106,7 @@ class FKIKComponent(animcomponent.AnimComponent):
 
         ik_control = control.Control.create(
             name=f'{self.indexed_name}_ik', side=self.side, guide=control_chain[-1], match_orient=not ik_world_orient,
-            delete_guide=False, parent=self.controls_group, not_locked_attributes='tr', shape='cube', tag='ik')
+            delete_guide=False, parent=self.controls_group(), not_locked_attributes='tr', shape='cube', tag='ik')
         ik_handle = api.node_by_name(
             cmds.ikHandle(
                 name=naming.generate_name(self.component_name, side=self.side, suffix='ikh'),
@@ -123,7 +123,7 @@ class FKIKComponent(animcomponent.AnimComponent):
         pole_locator = joints.pole_vector_locator(control_chain)
         pole_vector_control = control.Control.create(
             name=f'{self.indexed_name}_pv', side=self.side, guide=pole_locator, delete_guide=True,
-            parent=self.controls_group, not_locked_attributes='tr', shape='pole_vector', tag='poleVector')
+            parent=self.controls_group(), not_locked_attributes='tr', shape='pole_vector', tag='poleVector')
         pole_vector_constraint = api.node_by_name(cmds.poleVectorConstraint(
             pole_vector_control.fullPathName(), ik_handle.fullPathName())[0])
         self.add_util_nodes([pole_vector_constraint])
@@ -136,7 +136,7 @@ class FKIKComponent(animcomponent.AnimComponent):
 
         param_control = control.Control.create(
             name=f'{self.indexed_name}_param', side=self.side, guide=control_chain[-1], match_orient=False,
-            delete_guide=False, offset_group=False, parent=self.controls_group, not_locked_attributes='',
+            delete_guide=False, offset_group=False, parent=self.controls_group(), not_locked_attributes='',
             shape='small_cog', orient_axis='y')
         _, parent_constraint_nodes = api.build_constraint(
             param_control.group,
@@ -212,8 +212,8 @@ class FKIKComponent(animcomponent.AnimComponent):
 
         ik_handle.setVisible(False)
         if self.character:
-            self.parts_group.setVisible(False)
-            self.joints_group.setVisible(False)
+            self.parts_group().setVisible(False)
+            self.joints_group().setVisible(False)
 
     @override
     def attach_to_component(

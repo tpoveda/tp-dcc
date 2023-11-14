@@ -74,9 +74,9 @@ class HandComponent(animcomponent.AnimComponent):
 
         in_hook = self.in_hook()
         if in_hook:
-            cmds.matchTransform(self.root_group.fullPathName(), in_hook.fullPathName())
+            cmds.matchTransform(self.root_group().fullPathName(), in_hook.fullPathName())
             _, parent_constraint_nodes = api.build_constraint(
-                self.controls_group,
+                self.controls_group(),
                 drivers={
                     'targets': ((in_hook.fullPathName(partial_name=True, include_namespace=False), in_hook),)},
                 constraint_type='parent'
@@ -110,7 +110,7 @@ class HandComponent(animcomponent.AnimComponent):
             hook=None,
             parent=self
         )
-        fk_component.root_group.setParent(self.controls_group)
+        fk_component.root_group().setParent(self.controls_group())
         fk_component.attribute(consts.MPARENT_ATTR_NAME).connect(
             self.attribute('fingers').nextAvailableDestElementPlug())
         fk_component.controls()[0].set_shape('pin')

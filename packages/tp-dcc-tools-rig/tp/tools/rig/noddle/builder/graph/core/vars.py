@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing
 from typing import Any
+from collections import OrderedDict
 
 from overrides import override
 
@@ -65,7 +66,66 @@ class SceneVars(serializable.Serializable):
         self._vars.clear()
         self._vars.update(data)
 
-    def value(self, name) -> Any:
+    def unique_variable_name(self, name: str) -> str:
+        """
+        Returns unique variable name.
+
+        :param str name: variable name.
+        :return: unique variable name.
+        :rtype: str
+        """
+
+        index = 1
+        if name in self._vars:
+            while f'{name}{index}' in self._vars:
+                index += 1
+            name = f'{name}{index}'
+
+        return name
+
+    def add_new_variable(self, name: str):
+        """
+        Adds a new variable.
+
+        :param str name: variable name.
+        """
+
+        name = self.unique_variable_name(name)
+        self._vars[name] = [0.0, 'NUMERIC']
+        self.scene.history.store_history(f'Added variable {name}')
+
+    def rename_variable(self, old_name: str, new_name: str):
+        """
+        Renames existing variable with new given name.
+
+        :param str old_name: variable to rename.
+        :param str new_name: new variable name.
+        """
+
+        new_name = self.unique_variable_name(new_name)
+        old_value = self._vars[old_name]
+        self._vars = OrderedDict(
+            [(new_name, old_value) if k == old_name else (k, v) for k, v in self._vars.items()])
+        for node in self.list_setters(old_name) + self.list_getters(old_name):
+            node.set_var_name(new_name)
+        self.scene.history.store_history(f'Renamed variable {old_name} -> {new_name}')
+
+    def delete_variable(self, name: str):
+        """
+        Removes variable.
+
+        :param str name: name of the variable to delete.
+        """
+
+        if name not in self._vars:
+            logger.error(f'Cannot delete non existing variable: {name}')
+            return
+        for node in self.list_setters(name) + self.list_getters(name):
+            node.set_invalid(True)
+        self._vars.pop(name)
+        self.scene.history.store_history(f'Deleted variable: {name}')
+
+    def value(self, name: str) -> Any:
         """
         Returns value of the variable with given name.
 
@@ -170,11 +230,11 @@ class SceneVars(serializable.Serializable):
 
         self._signals.dataTypeChanged.connect(self._on_data_type_changed)
 
-    def _on_data_type_changed(self):
+    def _on_data_type_changed(self, variable_name: str):
         """
         Internal callback function that is called each time dataTypeChanged signal is emitted.
         Updates getters and setters.
         """
 
-        self.update_getters()
-        self.update_setters()
+        self.update_getters(variable_name)
+        self.update_setters(variable_name)

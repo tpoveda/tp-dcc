@@ -47,18 +47,24 @@ def get_build_character() -> Character | None:
     :rtype: character.Character or None
     """
 
-    from tp.libs.rig.noddle.meta.components import character
+    from tp.libs.rig.noddle.maya.meta.components import character
 
     found_character = None
     current_asset = asset.Asset.get()
+    if not current_asset:
+        logger.warning('No asset set')
+        return None
+
+    character_name = current_asset.name if current_asset else None
     all_characters = base.find_meta_nodes_by_class_type(character.Character)
+
     for character_meta in all_characters:
-        if character_meta.characterName.value() == current_asset.name:
+        if character_meta.characterName.value() == character_name:
             found_character = character_meta
             break
 
     if found_character is None:
-        logger.error('Failed to find build character!')
+        logger.error(f'Failed to find build character with name "{character_name}"!')
 
     return found_character
 

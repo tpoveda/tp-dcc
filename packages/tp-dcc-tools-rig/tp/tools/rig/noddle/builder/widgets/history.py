@@ -18,6 +18,7 @@ class SceneHistoryWidget(qt.QListWidget):
 
         self._main_window = main_window
         self._tracked_history: SceneHistory | None = None
+        self._block_signals = False
 
     def update_history_connection(self):
 
@@ -35,15 +36,21 @@ class SceneHistoryWidget(qt.QListWidget):
         self._update_current_step(self._tracked_history.current_step)
         logger.debug(f'Tracking history: {self._tracked_history}')
 
+        self.itemSelectionChanged.connect(self._on_item_selection_changed)
+
     def _update_view(self):
         """
         Updates scene history view based on tracked history.
         """
 
+        self._block_signals = True
         self.clear()
-        for stamp in self._tracked_history.stack:
-            list_item = qt.QListWidgetItem(stamp.get('desc', 'History edit'))
-            self.addItem(list_item)
+        try:
+            for stamp in self._tracked_history.stack:
+                list_item = qt.QListWidgetItem(stamp.get('desc', 'History edit'))
+                self.addItem(list_item)
+        finally:
+            self._block_signals = False
 
     def _update_current_step(self, step_value: int):
         """
@@ -52,5 +59,25 @@ class SceneHistoryWidget(qt.QListWidget):
         :param int step_value: step index.
         """
 
-        if step_value >= 0:
-            self.setCurrentRow(step_value)
+        self._block_signals = True
+        try:
+            if step_value >= 0:
+                self.setCurrentRow(step_value)
+        finally:
+            self._block_signals = False
+
+    def _on_item_selection_changed(self):
+        """
+        Internal callback function that is called each time users select an item from list.
+        """
+
+        #
+        # if self._block_signals or not self._tracked_history:
+        #     return
+        # index = self.currentIndex()
+        # if not index.isValid():
+        #     return
+        #
+        # self._tracked_history.set_current_step(index.row())
+
+        pass

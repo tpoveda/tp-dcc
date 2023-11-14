@@ -100,8 +100,20 @@ class AnimComponentNode(ComponentNode):
         self.out_character = self.add_output(api.dt.Character, label='Character')
         self.out_in_hook = self.add_output(api.dt.Numeric, label='In Hook')
 
+        self.in_character.affects(self.out_character)
+        self.in_hook.affects(self.out_in_hook)
+
         self.in_hook.set_value(None)
 
 
 def register_plugin(register_node: callable, register_function: callable, register_data_type: callable):
-    pass
+
+    register_function(
+        AnimComponentNode.COMPONENT_CLASS.character, api.dt.AnimComponent,
+        inputs={'AnimComponent': api.dt.AnimComponent}, outputs={'Character': api.dt.Character},
+        nice_name='Get Character', category='Anim Component')
+
+    register_function(
+        AnimComponentNode.COMPONENT_CLASS.controls, api.dt.AnimComponent,
+        inputs={'AnimComponent': api.dt.AnimComponent}, outputs={'Controls': api.dt.List},
+        nice_name='List Controls', category='Anim Component')

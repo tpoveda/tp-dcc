@@ -77,7 +77,7 @@ class GraphOutputNode(api.NoddleNode):
                 import maya.cmds as cmds
                 from tp.maya.cmds import gui
                 gui.switch_xray_joints()
-                cmds.viewFit(self.in_character.value().root_control.group)
+                cmds.viewFit(self.in_character.value().root_control().group)
             self.in_character.value().geometry_group.overrideEnabled.set(True)
             self.in_character.value().geometry_group.overrideColor.set(True)
             return 0

@@ -93,7 +93,7 @@ class TwistComponent(animcomponent.AnimComponent):
         curve_points = [list(jnt.translation(api.kWorldSpace)) for jnt in [start_joint, end_joint]]
         ik_curve = curves.curve_from_points(
             name=naming.generate_name(self.indexed_name, side=self.side, suffix='crv'), degree=1,
-            points=curve_points, parent=self.no_scale_group)
+            points=curve_points, parent=self.no_scale_group())
         cmds.rebuildCurve(ik_curve.fullPathName(), d=3, ch=False)
 
         control_chain = joints.create_along_curve(
@@ -105,7 +105,7 @@ class TwistComponent(animcomponent.AnimComponent):
             cmds.makeIdentity(jnt.fullPathName(), apply=True)
 
         joints.create_chain(control_chain)
-        control_chain[0].setParent(self.joints_group)
+        control_chain[0].setParent(self.joints_group())
 
         ik_handle = api.node_by_name(
             cmds.ikHandle(
@@ -113,7 +113,7 @@ class TwistComponent(animcomponent.AnimComponent):
                 startJoint=control_chain[0].fullPathName(), endEffector=control_chain[-1].fullPathName(),
                 curve=ik_curve.fullPathName(), sol='ikSplineSolver', rootOnCurve=True, parentCurve=False,
                 createCurve=False, simplifyCurve=False)[0])
-        ik_handle.setParent(self.parts_group)
+        ik_handle.setParent(self.parts_group())
 
         curve_ik_joint = api.node_by_name(
             cmds.joint(n=naming.generate_name([self.indexed_name, 'ik'], side=self.side, suffix='jnt')))
@@ -141,7 +141,7 @@ class TwistComponent(animcomponent.AnimComponent):
 
         output_joints = joints.duplicate_chain(
             new_joint_name=[self.indexed_name, 'out'], new_joint_side=self.side, start_joint=control_chain[1],
-            end_joint=control_chain[-2], new_parent=self.joints_group)
+            end_joint=control_chain[-2], new_parent=self.joints_group())
         for control_jnt, out_jnt in zip(control_chain[1:-1], output_joints):
             _, parent_constraint_nodes = api.build_constraint(
                 out_jnt,
@@ -172,8 +172,8 @@ class TwistComponent(animcomponent.AnimComponent):
         self.attach_to_component(parent, hook_index=None)
 
         ik_curve.inheritsTransform.set(False)
-        self.joints_group.setVisible(False)
-        self.parts_group.setVisible(False)
+        self.joints_group().setVisible(False)
+        self.parts_group().setVisible(False)
 
     @override
     def attach_to_skeleton(self):

@@ -89,16 +89,16 @@ class FunctionNode(api.NoddleNode):
             res = super().serialize()
         except TypeError:
             pass
-        res['func_signature'] = self._func_signature
+        res['func_signature'] = self.func_signature
         return res
 
     @override
     def pre_deserialization(self, data: dict):
         func_sign = data.get('func_signature')
         if '__builtin__' in func_sign:
-            self._func_signature = func_sign.replace('__builtin__', 'builtins')
+            self.func_signature = func_sign.replace('__builtin__', 'builtins')
         else:
-            self._func_signature = func_sign
+            self.func_signature = func_sign
 
 
 def register_plugin(register_node: callable, register_function: callable, register_data_type: callable):

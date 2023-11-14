@@ -165,6 +165,100 @@ def current_scene_is_modified() -> bool:
     return cmds.file(query=True, modified=True)
 
 
+def current_directory() -> str:
+    """
+    Returns the director yof the open scene file.
+
+    :return: current open scene directory.
+    :rtype: str
+    """
+
+    return os.path.split(current_file_path())[0]
+
+
+def current_file_path() -> str:
+    """
+    Returns the path of the open scene file.
+
+    :return: current open scene file path.
+    :rtype: str
+    """
+
+    if not is_new_scene():
+        return os.path.normpath(cmds.file(query=True, sceneName=True))
+
+    return ''
+
+
+def current_file_name(include_name: bool = True, include_extension: bool = True) -> str:
+    """
+    Returns the name of the current open scene file.
+
+    :param bool include_name: whether to include file name.
+    :param bool include_extension: whether to include file extension.
+    :return: current open scene file name.
+    :rtype: str
+    """
+
+    _, file_name = os.path.split(current_file_path())
+    name, extension = os.path.splitext(file_name)
+    if include_name and include_extension:
+        return file_name
+    elif include_name:
+        return name
+    elif include_extension:
+        return extension.lstrip('.')
+
+    return ''
+
+
+def current_extension() -> str:
+    """
+    Returns the extension of the current open scene file.
+
+    :return: current open scene file extension.
+    :rtype: str
+    """
+
+    _, file_name = os.path.split(current_file_path())
+    return os.path.splitext(file_name)[1].lstrip('.')
+
+
+def rename_scene(file_path: str):
+    """
+    Changes the file path on the current open scene file.
+
+    :param str file_path: absolute file path.
+    """
+
+    cmds.file(rename=file_path)
+
+
+def save_scene():
+    """
+    Saves any changes to the open scene file.
+    """
+
+    if is_new_scene():
+        return
+
+    extension = current_extension()
+    file_type = 'mayaAscii' if extension.lower() == 'ma' else 'mayaBinary'
+
+    cmds.file(save=True, prompt=False, type=file_type)
+
+
+def save_scene_as(file_path: str):
+    """
+    Saves the open scene file in a different location.
+
+    :params str file_path: absolute file path to save current scene into.
+    """
+
+    rename_scene(file_path)
+    save_scene()
+
+
 def save() -> bool:
     """
     Saves current scene in current Maya file.

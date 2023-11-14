@@ -121,6 +121,11 @@ def draw_realtime_edge(
     pen_style = consts.EDGE_DASHED_STYLE
     pen_width = edge_view.thickness
 
+    if edge_view.edge.start_socket:
+        color = edge_view.edge.start_socket.graphics_socket.color_background
+    elif edge_view.edge.end_socket:
+        color = edge_view.edge.end_socket.graphics_socket.color_background
+
     pen = qt.QPen(color, pen_width)
     pen.setStyle(pen_style)
     pen.setCapStyle(qt.Qt.RoundCap)
