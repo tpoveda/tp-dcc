@@ -4,6 +4,7 @@ import timeit
 
 from tp.bootstrap import log
 from tp.libs.rig.noddle.core import project, asset
+from tp.libs.rig.noddle.maya.functions import assets
 
 
 class Build:

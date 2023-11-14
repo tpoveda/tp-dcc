@@ -16,8 +16,8 @@ class GraphicsSocket(qt.QGraphicsItem):
 
     FONT_NAME: str | None = None
     FONT_SIZE: int | None = None
-    TEXT_ZOOM_OUT_LIMIT = 2
-    SOCKET_ZOOM_OUT_LIMIT = 2
+    TEXT_ZOOM_OUT_LIMIT = -0.4
+    SOCKET_ZOOM_OUT_LIMIT = -0.75
 
     def __init__(self, socket: Socket):
         super().__init__(socket.node.graphics_node)
@@ -82,8 +82,9 @@ class GraphicsSocket(qt.QGraphicsItem):
             self, painter: qt.QPainter, option: qt.QStyleOptionGraphicsItem,
             widget: Union[qt.QWidget, None] = ...) -> None:
 
-        self.text_item.setVisible(self.socket.node.scene.view.zoom > self.TEXT_ZOOM_OUT_LIMIT)
-        if self.socket.node.scene.view.zoom < self.SOCKET_ZOOM_OUT_LIMIT:
+        zoom = self.socket.node.scene.view.zoom_value()
+        self.text_item.setVisible(zoom > self.TEXT_ZOOM_OUT_LIMIT)
+        if zoom < self.SOCKET_ZOOM_OUT_LIMIT:
             return
 
         # Update background color

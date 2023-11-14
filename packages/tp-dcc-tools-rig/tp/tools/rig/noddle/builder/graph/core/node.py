@@ -9,7 +9,7 @@ from overrides import override
 from tp.core import log
 from tp.common.qt import api as qt
 from tp.tools.rig.noddle.builder.graph import datatypes
-from tp.tools.rig.noddle.builder.graph.core import serializable, socket
+from tp.tools.rig.noddle.builder.graph.core import consts, serializable, socket
 from tp.tools.rig.noddle.builder.graph.graphics import node
 from tp.tools.rig.noddle.builder.graph.widgets import attributes
 
@@ -37,8 +37,8 @@ class Node(serializable.Serializable):
     DEFAULT_TITLE = 'Custom Node'
     TITLE_EDITABLE = False
     TITLE_COLOR = '#FF313131'
-    MIN_WIDTH = 180
-    MIN_HEIGHT = 40
+    MIN_WIDTH = consts.NODE_MIN_WIDTH
+    MIN_HEIGHT = consts.NODE_MIN_HEIGHT
     MAX_TEXT_WIDTH = 200
     INPUT_POSITION = socket.Socket.Position.LeftTop.value
     OUTPUT_POSITION = socket.Socket.Position.RightTop.value
@@ -112,11 +112,11 @@ class Node(serializable.Serializable):
         return self._outputs
 
     @property
-    def exec_in_socket(self) -> socket.Socket | None:
+    def exec_in_socket(self) -> socket.InputSocket | None:
         return self._exec_in_socket
 
     @property
-    def exec_out_socket(self) -> socket.Socket | None:
+    def exec_out_socket(self) -> socket.OutputSocket | None:
         return self._exec_out_socket
 
     @override

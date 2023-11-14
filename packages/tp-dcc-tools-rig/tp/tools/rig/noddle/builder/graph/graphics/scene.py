@@ -9,6 +9,7 @@ from tp.common.qt import api as qt
 
 if typing.TYPE_CHECKING:
     from tp.tools.rig.noddle.builder.graph.core.scene import Scene
+    from tp.tools.rig.noddle.builder.graph.graphics.view import GraphicsView
 
 
 class GraphicsScene(qt.QGraphicsScene):
@@ -40,6 +41,7 @@ class GraphicsScene(qt.QGraphicsScene):
         # override to disable parent event
         pass
 
+    @override
     def drawBackground(self, painter: qt.QPainter, rect: qt.QRectF) -> None:
         super().drawBackground(painter, rect)
 
@@ -67,6 +69,16 @@ class GraphicsScene(qt.QGraphicsScene):
         painter.drawLines(lines_light)
         painter.setPen(self._pen_dark)
         painter.drawLines(lines_dark)
+
+    def viewer(self) -> GraphicsView | None:
+        """
+        Returns node graph view this scene is linked to.
+
+        :return: node graph viewer.
+        :rtype: GraphicsView or None
+        """
+
+        return self.views()[0] if self.views() else None
 
     def set_scene_size(self, width: int, height: int):
         """

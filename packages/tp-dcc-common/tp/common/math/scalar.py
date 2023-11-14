@@ -114,7 +114,7 @@ def mean_value(numbers):
     return float(sum(numbers)) / max(len(numbers), 1)
 
 
-def get_range_percentage(min_value, max_value, value):
+def range_percentage(min_value, max_value, value):
     """
     Returns the percentage value along a line from min_vlaue to max_value that value is
     :param min_value: float, minimum value
@@ -141,7 +141,7 @@ def map_range_clamped(value, in_range_a, in_range_b, out_range_a, out_range_b):
     :return: float
     """
 
-    clamped_percentage = clamp(get_range_percentage(in_range_a, in_range_b, value), 0.0, 1.0)
+    clamped_percentage = clamp(range_percentage(in_range_a, in_range_b, value), 0.0, 1.0)
     return lerp(out_range_a, out_range_b, clamped_percentage)
 
 
@@ -157,7 +157,7 @@ def map_range_unclamped(value, in_range_a, in_range_b, out_range_a, out_range_b)
     :return: float
     """
 
-    clamped_percentage = get_range_percentage(in_range_a, in_range_b, value)
+    clamped_percentage = range_percentage(in_range_a, in_range_b, value)
     return lerp(out_range_a, out_range_b, clamped_percentage)
 
 

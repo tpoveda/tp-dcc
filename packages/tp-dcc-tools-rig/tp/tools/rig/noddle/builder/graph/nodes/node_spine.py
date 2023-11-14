@@ -57,7 +57,7 @@ class FKIKSpineNode(SpineNode):
 
     @override
     def execute(self) -> Any:
-        print('Googogogogogo')
+        self._component_instance = self.COMPONENT_CLASS()
 
 
 def register_plugin(register_node: callable, register_function: callable, register_data_type: callable):

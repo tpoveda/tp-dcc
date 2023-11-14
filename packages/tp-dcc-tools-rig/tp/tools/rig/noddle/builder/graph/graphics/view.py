@@ -6,9 +6,10 @@ import typing
 from overrides import override
 
 from tp.core import log
+from tp.common.math import scalar
 from tp.common.qt import api as qt
-from tp.tools.rig.noddle.builder.graph.core import edgedrag
-from tp.tools.rig.noddle.builder.graph.graphics import node, socket, edge
+from tp.tools.rig.noddle.builder.graph.core import consts, edgedrag
+from tp.tools.rig.noddle.builder.graph.graphics import node, socket, edge, slicer
 
 if typing.TYPE_CHECKING:
     from tp.tools.rig.noddle.builder.graph.core.scene import Scene
@@ -26,21 +27,30 @@ class GraphicsView(qt.QGraphicsView):
         Noop = 1
         Drag = 2
         Cut = 3
+        CutFreehand = 4
 
     def __init__(self, graphics_scene: GraphicsScene, parent: qt.QWidget | None = None):
         super().__init__(parent=parent)
 
         self._graphics_scene = graphics_scene
-        self._is_view_dragging = False
 
-        self._zoom_in_factor = 1.25
-        self._zoom_clamp = True
-        self._zoom = 10
-        self._zoom_step = 1
-        self._zoom_range = (-5.0, 10.0)
+        self._num_lods = 5
+        self._zoom_range = (consts.GRAPH_VIEWER_MINIMUM_ZOOM, consts.GRAPH_VIEWER_MAXIMUM_ZOOM)
+        self._scene_rect = qt.QRectF(0, 0, self.size().width(), self.size().height())
 
         self._last_left_mouse_click_pos = qt.QPointF()
         self._last_scene_mouse_pos = qt.QPointF()
+        self._left_mouse_button_state = False
+        self._right_mouse_button_state = False
+        self._middle_mouse_button_state = False
+        self._alt_state = False
+        self._ctrl_state = False
+        self._shift_state = False
+        self._origin_mouse_pos = qt.QPointF(0.0, 0.0)                   # origin position when user click on the scene.
+        self._mouse_pos = qt.QPointF(0.0, 0.0)                          # current mouse position.
+        self._prev_mouse_pos = qt.QPoint(self.width(), self.height())   # previous click operation mouse position.
+
+        self._is_view_dragging = False
         self._rubberband_dragging_rect = False
 
         self._edge_mode = GraphicsView.EdgeMode.Noop
@@ -49,8 +59,26 @@ class GraphicsView(qt.QGraphicsView):
         self._setup_ui()
         self.setScene(self._graphics_scene)
 
+        self._graph_label = GraphTitleLabel()
+        self._graph_label.setPlainText('BUILDER')
+
+        self._slicer = slicer.Slicer()
+        self._freehand_slicer = slicer.FreehandSlicer()
+        self._slicer.setVisible(False)
+        self._freehand_slicer.setVisible(False)
+        self._over_slicer_edges: list[edge.GraphicsEdge] = []
+
+        self._graphics_scene.addItem(self._graph_label)
+        self._graphics_scene.addItem(self._slicer)
+        self._graphics_scene.addItem(self._freehand_slicer)
+        self._update_scene()
         self._update_edge_width()
         self._update_render_hints()
+
+        self._last_size = self.size()
+
+    def __repr__(self) -> str:
+        return f'<{self.__class__.__name__}() object at {hex(id(self))}>'
 
     @property
     def scene(self) -> Scene:
@@ -59,10 +87,6 @@ class GraphicsView(qt.QGraphicsView):
     @property
     def is_view_dragging(self) -> bool:
         return self._is_view_dragging
-
-    @property
-    def zoom(self) -> int:
-        return self._zoom
 
     @property
     def last_scene_mouse_pos(self) -> qt.QPointF:
@@ -79,6 +103,22 @@ class GraphicsView(qt.QGraphicsView):
     @property
     def dragging(self) -> edgedrag.EdgeDrag:
         return self._dragging
+
+    @override
+    def resizeEvent(self, event: qt.QResizeEvent) -> None:
+        width = self.size().width()
+        height = self.size().height()
+
+        # Make sure that width and height are not 0.
+        # If that's the scale we automatically resize view to last valid size.
+        if 0 in [width, height]:
+            self.resize(self._last_size)
+
+        delta = max(width / self._last_size.width(), height / self._last_size.height())
+        self._set_zoom(delta, sensitivity=None)
+        self._last_size = self.size()
+
+        super().resizeEvent(event)
 
     @override
     def mousePressEvent(self, event: qt.QMouseEvent) -> None:
@@ -103,13 +143,27 @@ class GraphicsView(qt.QGraphicsView):
                 if result:
                     return
             if not item:
-                if event.modifiers() & qt.Qt.ControlModifier:
-                    self._edge_mode = GraphicsView.EdgeMode.Cut
-                    fake_event = qt.QMouseEvent(
-                        qt.QEvent.MouseButtonRelease, event.localPos(), event.screenPos(),
-                        qt.Qt.LeftButton, qt.Qt.NoButton, event.modifiers())
-                    super(GraphicsView, self).mouseReleaseEvent(fake_event)
-                    return
+                if event.modifiers():
+                    print('1', self._ctrl_state, self._shift_state)
+                    run_slicer = False
+                    if self._ctrl_state and not self._shift_state:
+                        print('2')
+                        self._edge_mode = GraphicsView.EdgeMode.Cut
+                        map_pos = self.mapToScene(event.pos())
+                        self._slicer.draw_path(map_pos, map_pos)
+                        self._slicer.setVisible(True)
+                        run_slicer = True
+                    elif self._ctrl_state and self._shift_state:
+                        print('3')
+                        self._edge_mode = GraphicsView.EdgeMode.CutFreehand
+                        self._freehand_slicer.setVisible(True)
+                        run_slicer = True
+                    if run_slicer:
+                        fake_event = qt.QMouseEvent(
+                            qt.QEvent.MouseButtonRelease, event.localPos(), event.screenPos(),
+                            qt.Qt.LeftButton, qt.Qt.NoButton, event.modifiers())
+                        super(GraphicsView, self).mouseReleaseEvent(fake_event)
+                        return
                 else:
                     self._rubberband_dragging_rect = True
 
@@ -122,10 +176,20 @@ class GraphicsView(qt.QGraphicsView):
             super(GraphicsView, self).mouseReleaseEvent(release_event)
             self.setDragMode(qt.QGraphicsView.ScrollHandDrag)
             self.setInteractive(False)
-            fake_event = qt.QMouseEvent(
-                event.type(), event.localPos(), event.screenPos(),
-                qt.Qt.LeftButton, event.buttons() | qt.Qt.LeftButton, event.modifiers())
-            super(GraphicsView, self).mousePressEvent(fake_event)
+            # fake_event = qt.QMouseEvent(
+            #     event.type(), event.localPos(), event.screenPos(),
+            #     qt.Qt.LeftButton, event.buttons() | qt.Qt.LeftButton, event.modifiers())
+            # super(GraphicsView, self).mousePressEvent(fake_event)
+
+        if event.button() == qt.Qt.LeftButton:
+            self._left_mouse_button_state = True
+        if event.button() == qt.Qt.RightButton:
+            self._right_mouse_button_state = True
+        if event.button() == qt.Qt.MiddleButton:
+            self._middle_mouse_button_state = True
+
+        self._origin_mouse_pos = event.pos()
+        self._prev_mouse_pos = event.pos()
 
         if event.button() == qt.Qt.MiddleButton:
             _middle_mouse_press()
@@ -141,19 +205,31 @@ class GraphicsView(qt.QGraphicsView):
         scene_pos = self.mapToScene(event.pos())
         self._is_view_dragging = not self.isInteractive()
 
+        if self._middle_mouse_button_state and self._alt_state:
+            pass
+        elif self._right_mouse_button_state or (self._left_mouse_button_state and self._alt_state):
+            previous_pos = self.mapToScene(self._prev_mouse_pos)
+            delta = previous_pos - scene_pos
+            self._set_pan(delta.x(), delta.y())
         try:
             if self._edge_mode == GraphicsView.EdgeMode.Drag:
                 pos = scene_pos
                 pos.setX(pos.x() - 1.0)
-                self._dragging.update_positions(pos.x(), pos.y())
-
-            if self._edge_mode == GraphicsView.EdgeMode.Cut and self._cutline is not None:
-                self._cutline.line_points.append(scene_pos)
-                self._cutlineupdate()
+                self._dragging.update_positions(int(pos.x()), int(pos.y()))
+            if self._edge_mode == GraphicsView.EdgeMode.Cut and self._slicer is not None:
+                p1 = self._slicer.path().pointAtPercent(0)
+                p2 = self.mapToScene(self._prev_mouse_pos)
+                self._slicer.draw_path(p1, p2)
+                self._slicer.show()
+                self._edges_ready_to_slice(self._slicer.path())
+            elif self._edge_mode == GraphicsView.EdgeMode.CutFreehand and self._freehand_slicer is not None:
+                self._freehand_slicer.add_point(scene_pos)
+                self._edges_ready_to_slice(self._freehand_slicer.path())
         except Exception:
             logger.exception('mouseMoveEvent exception', exc_info=True)
 
         self._last_scene_mouse_pos = scene_pos
+        self._prev_mouse_pos = event.pos()
 
         super().mouseMoveEvent(event)
 
@@ -184,14 +260,21 @@ class GraphicsView(qt.QGraphicsView):
                         result = self._dragging.end_edge_drag(item)
                         if result:
                             return
-
                 if self._edge_mode == GraphicsView.EdgeMode.Cut:
-                    self._cut_intersecting_edges()
-                    self._cutline.line_points = []
-                    self._cutline.update()
+                    cut_result = self._slicer.cut()
+                    if cut_result:
+                        self.scene.history.store_history('Edges Cut', set_modified=True)
+                    self._slicer.draw_path(qt.QPointF(0.0, 0.0), qt.QPointF(0.0, 0.0))
+                    self._slicer.setVisible(False)
+                    self._edge_mode = GraphicsView.EdgeMode.Noop
+                if self._edge_mode == GraphicsView.EdgeMode.CutFreehand:
+                    cut_result = self._freehand_slicer.cut()
+                    if cut_result:
+                        self.scene.history.store_history('Edges Cut', set_modified=True)
+                    self._freehand_slicer.reset()
+                    self._freehand_slicer.setVisible(False)
                     self._edge_mode = GraphicsView.EdgeMode.Noop
                     return
-
                 if self._rubberband_dragging_rect:
                     self._rubberband_dragging_rect = False
                     self.scene._on_selection_changed()
@@ -208,6 +291,13 @@ class GraphicsView(qt.QGraphicsView):
             self.setDragMode(qt.QGraphicsView.RubberBandDrag)
             self.setInteractive(True)
 
+        if event.button() == qt.Qt.LeftButton:
+            self._left_mouse_button_state = False
+        if event.button() == qt.Qt.RightButton:
+            self._right_mouse_button_state = False
+        if event.button() == qt.Qt.MiddleButton:
+            self._middle_mouse_button_state = False
+
         if event.button() == qt.Qt.MiddleButton:
             _middle_mouse_release()
         elif event.button() == qt.Qt.LeftButton:
@@ -218,27 +308,67 @@ class GraphicsView(qt.QGraphicsView):
             super(GraphicsView, self).mouseReleaseEvent(event)
 
     @override
+    def keyPressEvent(self, event):
+        """
+        Overrides base keyPressEvent function to handle graph viewer behaviour when user presses a keyboard button.
+
+        :param QEvent event: Qt keyboard press event.
+        """
+
+        modifiers = event.modifiers()
+
+        self._alt_state = modifiers == qt.Qt.AltModifier
+        self._ctrl_state = modifiers == qt.Qt.ControlModifier
+        self._shift_state = modifiers == qt.Qt.ShiftModifier
+
+        if modifiers == (qt.Qt.AltModifier | qt.Qt.ShiftModifier):
+            self._alt_state = True
+            self._shift_state = True
+        if modifiers == (qt.Qt.ControlModifier | qt.Qt.ShiftModifier):
+            self._ctrl_state = True
+            self._shift_state = True
+        if modifiers == (qt.Qt.ControlModifier | qt.Qt.AltModifier):
+            self._ctrl_state = True
+            self._alt_state = True
+
+        super().keyPressEvent(event)
+
+    @override
+    def keyReleaseEvent(self, event):
+        """
+        Overrides base keyReleaseEvent function to handle graph viewer behaviour when user releases a keyboard button.
+
+        :param QEvent event: Qt keyboard release event.
+        """
+
+        modifiers = event.modifiers()
+
+        self._alt_state = modifiers == qt.Qt.AltModifier
+        self._ctrl_state = modifiers == qt.Qt.ControlModifier
+        self._shift_state = modifiers == qt.Qt.ShiftModifier
+
+        if modifiers == (qt.Qt.AltModifier | qt.Qt.ShiftModifier):
+            self._alt_state = False
+            self._shift_state = False
+        if modifiers == (qt.Qt.ControlModifier | qt.Qt.ShiftModifier):
+            self._ctrl_state = False
+            self._shift_state = False
+        if modifiers == (qt.Qt.ControlModifier | qt.Qt.AltModifier):
+            self._ctrl_state = False
+            self._alt_state = False
+
+        super().keyReleaseEvent(event)
+
+    @override
     def wheelEvent(self, event: qt.QWheelEvent) -> None:
-        zoom_out_factor = 1.0 / self._zoom_in_factor
-
-        if event.angleDelta().y() > 0:
-            zoom_factor = self._zoom_in_factor
-            self._zoom += self._zoom_step
-        else:
-            zoom_factor = zoom_out_factor
-            self._zoom -= self._zoom_step
-
-        clamped = False
-        if self._zoom < self._zoom_range[0]:
-            self._zoom, clamped = self._zoom_range[0], True
-        if self._zoom > self._zoom_range[1]:
-            self._zoom, clamped = self._zoom_range[1], True
-
-        # Set actual scale.
-        if not clamped or not self._zoom_clamp:
-            self.scale(zoom_factor, zoom_factor)
-            self._update_edge_width()
-            self._update_render_hints()
+        try:
+            delta = event.delta()
+        except AttributeError:
+            delta = event.angleDelta().y()
+            if delta == 0:
+                delta = event.angleDelta().x()
+        self._set_zoom(delta, pos=event.pos())
+        super().wheelEvent(event)
 
     @override
     def dragEnterEvent(self, event: qt.QDragEnterEvent) -> None:
@@ -247,6 +377,84 @@ class GraphicsView(qt.QGraphicsView):
     @override
     def dropEvent(self, event: qt.QDropEvent) -> None:
         self.scene.signals.itemDropped.emit(event)
+
+    @override(check_signature=False)
+    def scale(self, scale_x: float, scale_y: float, pos: qt.QPoint | None = None):
+        """
+        Overrides base scale function to scale view taking into account current scene rectangle.
+
+        :param float scale_x: scale in X coordinate.
+        :param float scale_y: scale in Y coordinate.
+        :param QPoint or None pos: position from where the scaling is applied.
+        :return:
+        """
+
+        scale = [scale_x, scale_y]
+        center = pos or self._scene_rect.center()
+        width = self._scene_rect.width() / scale[0]
+        height = self._scene_rect.height() / scale[1]
+        self._scene_rect = qt.QRectF(
+            center.x() - (center.x() - self._scene_rect.left()) / scale[0],
+            center.y() - (center.y() - self._scene_rect.top()) / scale[1], width, height)
+        self._update_scene()
+
+    @override
+    def drawBackground(self, painter: qt.QPainter, rect: qt.QRectF) -> None:
+        super().drawBackground(painter, rect)
+        polygon = self.mapToScene(self.viewport().rect())
+        self._graph_label.setPos(polygon[0])
+
+    def zoom_value(self) -> float:
+        """
+        Returns the zoom level currently applied to this graph view.
+
+        :return: graph view zoom level.
+        :rtype: float
+        """
+
+        transform = self.transform()
+        current_scale = (transform.m11(), transform.m22())
+        return float('{:0.2f}'.format(current_scale[0] - 1.0))
+
+    def current_view_scale(self) -> float:
+        """
+        Returns current transform scale of the graph view.
+
+        :return: transform scale.
+        :rtype: float
+        """
+
+        return self.transform().m22()
+
+    def reset_scale(self):
+        """
+        Resets current transform scale of the graph view.
+        """
+
+        self.resetMatrix()
+
+    def lod_value_from_scale(self, scale: float | None = None):
+        """
+        Returns the current view LOD value taking into account view scale.
+
+        :param scale: float or None, scale to get LOD of. If not given, current view scale will be used instead.
+        :return: int, lod index
+        """
+
+        scale = scale if scale is not None else self.current_view_scale()
+        scale_percentage = scalar.range_percentage(self._zoom_range[0], self._zoom_range[1], scale)
+        lod = scalar.lerp(self._num_lods, 1, scale_percentage)
+        return int(round(lod))
+
+    def show_details(self) -> bool:
+        """
+        Returns whether high quality details should be rendered.
+
+        :return: True if high quality details should be rendered; False otherwise.
+        :rtype: bool
+        """
+
+        return self.lod_value_from_scale() < 3
 
     def log_scene_objects(self, item: qt.QGraphicsItem):
         """
@@ -294,22 +502,155 @@ class GraphicsView(qt.QGraphicsView):
 
     def _setup_ui(self):
         """
-        Internal function taht setup graphics view.
+        Internal function that setup graphics view.
         """
 
-        self.setViewportUpdateMode(qt.QGraphicsView.FullViewportUpdate)
+        self.setRenderHint(qt.QPainter.Antialiasing, True)
+        self.setRenderHint(qt.QPainter.TextAntialiasing, True)  # NOTE: this is expensive
+        self.setRenderHint(qt.QPainter.HighQualityAntialiasing, True)  # NOTE: this is expensive
+        self.setRenderHint(qt.QPainter.SmoothPixmapTransform, True)  # NOTE: this is expensive
         self.setHorizontalScrollBarPolicy(qt.Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(qt.Qt.ScrollBarAlwaysOff)
+        self.setViewportUpdateMode(qt.QGraphicsView.FullViewportUpdate)
+        # self.setCacheMode(qt.QGraphicsView.CacheBackground)
+        self.setOptimizationFlag(qt.QGraphicsView.DontAdjustForAntialiasing)
         self.setTransformationAnchor(qt.QGraphicsView.AnchorUnderMouse)
         self.setDragMode(qt.QGraphicsView.RubberBandDrag)
+        self.setAttribute(qt.Qt.WA_AlwaysShowToolTips)
         self.setAcceptDrops(True)
 
+    def _set_zoom(self, value: float, sensitivity: float | None = 0.0, pos: qt.QPoint | None = None):
+        """
+        Internal function that sets the zoom of the graph view.
+
+        :param float value: zoom value.
+        :param float or None sensitivity: zoom sensitivity value.
+        :param qt.QPointF pos: position from where the zoom is applied.
+        """
+
+        # if zoom position is given, we make sure to convert to scene coordinates
+        if pos:
+            pos = self.mapToScene(pos)
+
+        # if no sensitivity given we just scale the view
+        if sensitivity is None:
+            scale = 1.001 ** value
+            self.scale(scale, scale, pos)
+            return
+
+        # if not zoom value given we just skip zoom operation
+        if value == 0.0:
+            return
+
+        # scale view taking into account the minimum and maximum levels
+        scale = (0.9 + sensitivity) if value < 0.0 else (1.1 - sensitivity)
+        zoom = self.zoom_value()
+
+        if self._zoom_range[0] >= zoom:
+            if scale == 0.9:
+                return
+        if self._zoom_range[1] <= zoom:
+            if scale == 1.1:
+                return
+
+        self.scale(scale, scale, pos)
+        self._update_edge_width()
+        self._update_render_hints()
+
+    def _set_pan(self, pos_x: float, pos_y: float):
+        """
+        Internal function that sets the panning of the graph view
+        :param float pos_x: pan X coordinate position.
+        :param float pos_y: pan Y coordinate position.
+        :return:
+        """
+
+        # speed = self._scene_rect.width() * 0.0015
+        # x = -pos_x * speed
+        # y = -pos_y * speed
+        # self._scene_rect.adjust(x, y, x, y)
+
+        self._scene_rect.adjust(pos_x, pos_y, pos_x, pos_y)
+        self._update_scene()
+
+    def _update_scene(self):
+        """
+        Internal function that forces redraw of the scene.
+        """
+
+        self.setSceneRect(self._scene_rect)
+        self.fitInView(self._scene_rect, qt.Qt.KeepAspectRatio)
+
     def _update_edge_width(self):
-        edge.GraphicsEdge.WIDTH = ((self._zoom - self._zoom_range[0]) / (self._zoom_range[1] - self._zoom_range[0])) * \
+        """
+        Internal functoin that updates edge widget.
+        """
+
+        zoom = self.zoom_value()
+        edge.GraphicsEdge.WIDTH = ((zoom - self._zoom_range[0]) / (self._zoom_range[1] - self._zoom_range[0])) * \
             (edge.GraphicsEdge.MIN_WIDTH - edge.GraphicsEdge.MAX_WIDTH) + edge.GraphicsEdge.MAX_WIDTH
 
     def _update_render_hints(self):
-        if self._zoom > self.HIGH_QUALITY_ZOOM:
+        """
+        Internal function that updates render hints.
+        """
+
+        zoom = self.zoom_value()
+        if zoom > self.HIGH_QUALITY_ZOOM:
             self.setRenderHints(qt.QPainter.Antialiasing | qt.QPainter.HighQualityAntialiasing | qt.QPainter.TextAntialiasing | qt.QPainter.SmoothPixmapTransform)
         else:
             self.setRenderHints(qt.QPainter.Antialiasing | qt.QPainter.TextAntialiasing | qt.QPainter.SmoothPixmapTransform)
+
+    def _edges_ready_to_slice(self, slicer_path: qt.QPainterPath):
+        """
+        Internal function that updates edges painter based on whether an edge it's ready to be sliced or not.
+
+        :param QPainterPath slicer_path: slicer path.
+        """
+
+        visible_slicer = None
+        if self._slicer.isVisible():
+            visible_slicer = self._slicer
+        elif self._freehand_slicer.isVisible():
+            visible_slicer = self._freehand_slicer
+        if visible_slicer is None:
+            return
+
+        over_edges = visible_slicer.intersected_edges()
+        if not over_edges:
+            for over_edge in self._over_slicer_edges:
+                over_edge.ready_to_slice = False
+            self._over_slicer_edges.clear()
+            return
+
+        for over_edge in over_edges:
+            over_edge.ready_to_slice = True
+            if over_edge not in self._over_slicer_edges:
+                self._over_slicer_edges.append(over_edge)
+        edges_to_clean = []
+        for over_edge in self._over_slicer_edges:
+            if over_edge not in over_edges:
+                edges_to_clean.append(over_edge)
+        for over_edge in edges_to_clean:
+            over_edge.ready_to_slice = False
+            
+
+class GraphTitleLabel(qt.QGraphicsTextItem):
+
+    class Signals(qt.QObject):
+        textChanged = qt.Signal(str)
+
+    def __init__(self):
+        super(GraphTitleLabel, self).__init__()
+
+        self.signals = GraphTitleLabel.Signals()
+
+        self.setFlags(qt.QGraphicsTextItem.ItemIgnoresTransformations)
+        self.setDefaultTextColor(qt.QColor(255, 255, 255, 50))
+        self.setFont(qt.QFont('Impact', 20, 1))
+        self.setZValue(5)
+
+    @override
+    def setPlainText(self, text: str) -> None:
+        super().setPlainText(text)
+        self.signals.textChanged.emit(self.toPlainText())

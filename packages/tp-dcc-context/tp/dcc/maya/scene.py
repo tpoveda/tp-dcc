@@ -4,11 +4,16 @@ import enum
 
 from overrides import override
 
+import maya.cmds as cmds
+
 import maya.api.OpenMaya as OpenMaya
 
+from tp.core import log
 from tp.dcc.abstract import scene
 from tp.maya.cmds import scene as cmds_scene
 from tp.maya.om import dagpath
+
+logger = log.tpLogger
 
 
 class FileExtensions(enum.IntEnum):
@@ -46,6 +51,49 @@ class MayaScene(scene.AbstractScene):
         """
 
         return cmds_scene.current_scene_is_modified()
+
+    @override
+    def new(self):
+        """
+        Opens a new scene file.
+        """
+
+        cmds.file(newFile=True, force=True)
+
+    @override
+    def save(self):
+        """
+        Saves any changes to the current scene file.
+        """
+
+        cmds_scene.save_scene()
+
+    @override
+    def save_as(self, file_path: str):
+        """
+        Saves the current scene to given file path.
+
+        :param str file_path: file path where we want to store scene.
+        """
+
+        cmds_scene.save_as(file_path)
+
+    @override
+    def open(self, file_path: str) -> bool:
+        """
+        Opens the given scene file.
+
+        :param str file_path: absolute file path pointing to a valid scene.
+        :return: True if the scene was opened successfully; False otherwise.
+        :rtype: bool
+        """
+
+        try:
+            cmds.file(file_path, open=True, prompt=False, force=True)
+            return True
+        except RuntimeError as exception:
+            logger.error(exception)
+            return False
 
     @override(check_signature=False)
     def active_selection(self) -> list[OpenMaya.MObject]:

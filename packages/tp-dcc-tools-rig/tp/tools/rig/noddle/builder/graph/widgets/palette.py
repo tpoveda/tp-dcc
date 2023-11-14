@@ -372,8 +372,8 @@ class PopupNodesPalette(qt.QDialog):
             socket_to_connect = new_node.find_first_input_with_label(start_socket.label)
             if not socket_to_connect:
                 socket_to_connect = new_node.find_first_input_of_datatype(start_socket.data_type)
-            if start_node.exec_out_socket and not start_node.exec_out_socket.has_edge() and new_node.exec_in_socket:
-                edge.Edge(self._scene, start_socket=start_node.exec_out_socket, end_socket=new_node.exec_in_socket)
+            if start_node._exec_out_socket and not start_node._exec_out_socket.has_edge() and new_node._exec_in_socket:
+                edge.Edge(self._scene, start_socket=start_node._exec_out_socket, end_socket=new_node._exec_in_socket)
             self._view.dragging.end_edge_drag(socket_to_connect)
         # Input -> Output
         elif self.is_dragging_from_input():
@@ -382,8 +382,8 @@ class PopupNodesPalette(qt.QDialog):
             socket_to_connect = new_node.find_first_output_with_label(end_socket.label)
             if not socket_to_connect:
                 socket_to_connect = new_node.find_first_output_of_datatype(end_socket.data_type)
-            if end_node.exec_in_socket and not end_node.exec_in_socket.has_edge() and new_node.exec_out_socket:
-                edge.Edge(self._scene, start_socket=new_node.exec_out_socket, end_socket=end_node.exec_in_socket)
+            if end_node._exec_in_socket and not end_node._exec_in_socket.has_edge() and new_node._exec_out_socket:
+                edge.Edge(self._scene, start_socket=new_node._exec_out_socket, end_socket=end_node._exec_in_socket)
             self._view.dragging.end_edge_drag(socket_to_connect)
         self.close()
 

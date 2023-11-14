@@ -7,6 +7,8 @@ from overrides import override
 
 from tp.common.qt import api as qt
 from tp.common.python import decorators
+from tp.tools.rig.noddle.builder.graph.core import consts
+from tp.tools.rig.noddle.builder.graph.painters import edge as edge_painters
 
 if typing.TYPE_CHECKING:
     from tp.tools.rig.noddle.builder.graph.core.edge import Edge
@@ -25,16 +27,71 @@ class GraphicsEdge(qt.QGraphicsPathItem):
         self._source_position = [0, 0]
         self._destination_position = [200, 100]
 
-        self._color = qt.QColor("#001000")
-        self._color_selected = qt.QColor("#00ff00")
-        self._pen = qt.QPen(self._color)
-        self._pen_selected = qt.QPen(self._color_selected)
-        self._pen_dragging = qt.QPen(self._color)
-        self._pen_dragging.setStyle(qt.Qt.DashLine)
-        self._pen_selected.setWidthF(3.0)
-        self._pen_dragging.setWidthF(2.0)
+        self._color = consts.EDGE_COLOR
+        self._style = consts.EDGE_DEFAULT_STYLE
+        self._thickness = consts.EDGE_THICKNESS
+        self._active = False
+        self._highlight = False
+        self._ready_to_slice = False
+        self._pen = qt.QPen(qt.QColor(*self._color), self._thickness, qt.Qt.SolidLine, qt.Qt.RoundCap, qt.Qt.RoundJoin)
+
+        size = 4.0
+        self._arrow = qt.QPolygonF()
+        self._arrow.append(qt.QPointF(-size, size))
+        self._arrow.append(qt.QPointF(0.0, -size * 1.5))
+        self._arrow.append(qt.QPointF(size, size))
 
         self._setup_ui()
+
+    @property
+    def edge(self) -> Edge:
+        return self._edge
+
+    @property
+    def color(self) -> tuple[int, int, int, int]:
+        return self._color
+
+    @color.setter
+    def color(self, value: tuple[int, int, int, int]):
+        self._color = value
+
+    @property
+    def thickness(self) -> float:
+        return self._thickness
+
+    @thickness.setter
+    def thickness(self, value: float):
+        self._thickness = value
+
+    @property
+    def style(self) -> qt.Qt.PenStyle:
+        return self._style
+
+    @style.setter
+    def style(self, value: qt.Qt.PenStyle):
+        self._style = value
+
+    @property
+    def ready_to_slice(self) -> bool:
+        return self._ready_to_slice
+
+    @ready_to_slice.setter
+    def ready_to_slice(self, flag: bool):
+        if flag != self._ready_to_slice:
+            self._ready_to_slice = flag
+            self.update()
+
+    @property
+    def active(self) -> bool:
+        return self._active
+
+    @property
+    def highlighted(self) -> bool:
+        return self._highlight
+
+    @property
+    def arrow(self) -> qt.QPolygonF:
+        return self._arrow
 
     @override
     def shape(self) -> qt.QPainterPath:
@@ -45,43 +102,95 @@ class GraphicsEdge(qt.QGraphicsPathItem):
         return self.shape().boundingRect()
 
     @override
+    def hoverEnterEvent(self, event: qt.QGraphicsSceneHoverEvent) -> None:
+        self.activate()
+
+    def hoverLeaveEvent(self, event: qt.QGraphicsSceneHoverEvent) -> None:
+        self.reset()
+
+    @override
     def paint(
             self, painter: qt.QPainter, option: qt.QStyleOptionGraphicsItem,
             widget: Union[qt.QWidget, None] = ...) -> None:
 
-        self.setPath(self._calculate_path())
-        self._pen.setWidthF(self.WIDTH)
-
-        if self._edge.end_socket and self._edge.start_socket:
-            self._pen.setColor(self._edge.start_socket.graphics_socket.color_background)
-
-        if not self._edge.end_socket or not self._edge.start_socket:
-            painter.setPen(self._pen_dragging)
-        else:
-            painter.setPen(self._pen if not self.isSelected() else self._pen_selected)
-
-        painter.setBrush(qt.Qt.NoBrush)
-        painter.drawPath(self.path())
+        edge_painters.draw_default_edge(self, painter, option, widget=widget)
 
     def set_source(self, x: int, y: int):
+        """
+        Sets source/start point.
+
+        :param int x: X start point coordinate.
+        :param int y: Y start point coordinate.
+        """
+
         self._source_position = [x, y]
 
     def set_destination(self, x: int, y: int):
+        """
+        Sets destination/end point.
+
+        :param int x: X end point coordinate.
+        :param int y: Y end point coordinate.
+        """
+
         self._destination_position = [x, y]
 
     def intersects_with(self, pt1: qt.QPointF, pt2: qt.QPointF) -> bool:
+        """
+        Returns whether edge path intersects with path formed by given start and end points.
+
+        :param qt.QPointF pt1: start point.
+        :param qt.QPointF pt2: end point.
+        :return: True if path intersects with path both points belongs to; False otherwise.
+        :rtype: bool
+        """
+
         cut_path = qt.QPainterPath(pt1)
         cut_path.lineTo(pt2)
         path = self._calculate_path()
         return cut_path.intersects(path)
+
+    def update_path(self):
+        """
+        Updates internal path.
+        """
+
+        self.setPath(self._calculate_path())
+
+    def activate(self):
+        """
+        Activates edge.
+        """
+
+        self._active = True
+        self.setPen(qt.QPen(qt.QColor(*self.color).lighter(125), self._thickness, self._style))
+
+    def highlight(self):
+        """
+        Highlights current connector.
+        """
+
+        self._highlight = True
+        self.setPen(qt.QPen(qt.QColor(*self.color).lighter(225), self._thickness, self._style))
+
+    def reset(self):
+        """
+        Resets connector.
+        """
+
+        self._active = False
+        self._highlight = False
+        self.setPen(qt.QPen(qt.QColor(*self._color), self._thickness, self._style))
 
     def _setup_ui(self):
         """
         Internal function that setup graphics edge settings.
         """
 
+        self.setZValue(consts.EDGE_Z_VALUE)
         self.setFlag(qt.QGraphicsItem.ItemIsSelectable)
-        self.setZValue(-1)
+        self.setAcceptHoverEvents(True)
+        self.setCacheMode(consts.ITEM_CACHE_MODE)
 
     @decorators.abstractmethod
     def _calculate_path(self) -> qt.QPainterPath:
