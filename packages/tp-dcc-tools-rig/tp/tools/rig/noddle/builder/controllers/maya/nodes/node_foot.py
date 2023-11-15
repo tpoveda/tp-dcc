@@ -6,10 +6,9 @@ from overrides import override
 
 from tp.libs.rig.noddle.core.components import foot
 from tp.tools.rig.noddle.builder import api
-from tp.tools.rig.noddle.builder.nodes import node_component
 
 
-class FootComponentNode(node_component.AnimComponentNode):
+class FootComponentNode(api.AnimComponentNode):
 
     ID = 10
     IS_EXEC = True
@@ -69,5 +68,5 @@ def register_plugin(register_node: callable, register_function: callable, regist
         nice_name='Get Roll Axis', category='Foot Component')
     register_function(
         FootComponentNode.COMPONENT_CLASS.fk_control, api.DataType.FootComponent,
-        inputs={'Foot': api.DataType.FootComponent}, outputs={'Control': api.dt.Control},
+        inputs={'Foot': api.DataType.FootComponent}, outputs={'Control': api.DataType.CONTROL},
         nice_name='Get FK Control', category='Foot Component')

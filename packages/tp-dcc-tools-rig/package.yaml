@@ -21,6 +21,5 @@ environment:
     - '{self}/tp/libs/rig/freeform/meta'
   NODDLE_BUILDER_EDITOR_NODE_PATHS:
     - '{self}/tp/tools/rig/noddle/builder/graph/nodes'
-    - '{self}/tp/tools/rig/noddle/builder/nodes'
 commands:
   - '{self}/startup/rig.py'

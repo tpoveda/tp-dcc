@@ -6,10 +6,9 @@ from overrides import override
 
 from tp.libs.rig.noddle.core.components import stretch
 from tp.tools.rig.noddle.builder import api
-from tp.tools.rig.noddle.builder.nodes import node_component
 
 
-class IKSplineStretchComponentNode(node_component.ComponentNode):
+class IKSplineStretchComponentNode(api.ComponentNode):
 
     ID = 21
     IS_EXEC = True
@@ -25,7 +24,7 @@ class IKSplineStretchComponentNode(node_component.ComponentNode):
         self.in_name.set_value('stretch')
         self.out_self.data_type = api.DataType.IkSplineStretchComponent
 
-        self.in_switch_control = self.add_input(api.dt.Control, label='Switch Control')
+        self.in_switch_control = self.add_input(api.DataType.CONTROL, label='Switch Control')
         self.in_default_state = self.add_input(api.dt.Boolean, label='Default State', value=False)
         self.in_switch_attr_name = self.add_input(api.dt.String, label='Stretch Attribute', value='stretch')
         self.in_stretch_axis = self.add_input(api.dt.String, label='Stretch Axis', value='x')

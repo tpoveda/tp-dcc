@@ -22,11 +22,11 @@ class CharacterNode(api.ComponentNode):
     def setup_sockets(self):
         super().setup_sockets()
 
-        self.out_self.data_type = api.dt.Character
+        self.out_self.data_type = api.DataType.CHARACTER
         self.in_name.set_value('character')
         self.in_tag.set_value('character')
 
-        self.out_root_control = self.add_output(api.dt.Control, label='Root Control')
+        self.out_root_control = self.add_output(api.DataType.CONTROL, label='Root Control')
         self.out_deform_rig = self.add_output(api.dt.String, label='Deformation Rig')
         self.out_control_rig = self.add_output(api.dt.String, label='Control Rig')
         self.out_geometry_group = self.add_output(api.dt.String, label='Geometry Group')
@@ -47,37 +47,37 @@ class CharacterNode(api.ComponentNode):
 def register_plugin(register_node: callable, register_function: callable, register_data_type: callable):
     register_node(CharacterNode.ID, CharacterNode)
     register_function(
-        CharacterNode.COMPONENT_CLASS.control_rig_group, api.dt.Character,
-        inputs={'Character': api.dt.Character}, outputs={'Control Rig': api.dt.String},
+        CharacterNode.COMPONENT_CLASS.control_rig_group, api.DataType.CHARACTER,
+        inputs={'Character': api.DataType.CHARACTER}, outputs={'Control Rig': api.dt.String},
         nice_name='Get Control Rig', category='Character')
     register_function(
-        CharacterNode.COMPONENT_CLASS.deformation_rig_group, api.dt.Character,
-        inputs={'Character': api.dt.Character}, outputs={'Deformation Rig': api.dt.String},
+        CharacterNode.COMPONENT_CLASS.deformation_rig_group, api.DataType.CHARACTER,
+        inputs={'Character': api.DataType.CHARACTER}, outputs={'Deformation Rig': api.dt.String},
         nice_name='Get Deformation Rig', category='Character')
     register_function(
-        CharacterNode.COMPONENT_CLASS.geometry_group, api.dt.Character,
-        inputs={'Character': api.dt.Character}, outputs={'Geometry Group': api.dt.String},
+        CharacterNode.COMPONENT_CLASS.geometry_group, api.DataType.CHARACTER,
+        inputs={'Character': api.DataType.CHARACTER}, outputs={'Geometry Group': api.dt.String},
         nice_name='Get Geometry Group', category='Character')
     register_function(
-        CharacterNode.COMPONENT_CLASS.root_control, api.dt.Character,
-        inputs={'Character': api.dt.Character}, outputs={'Root Control': api.dt.Control},
+        CharacterNode.COMPONENT_CLASS.root_control, api.DataType.CHARACTER,
+        inputs={'Character': api.DataType.CHARACTER}, outputs={'Root Control': api.DataType.CONTROL},
         nice_name='Get Root Control', category='Character')
     register_function(
-        CharacterNode.COMPONENT_CLASS.world_locator, api.dt.Character,
-        inputs={'Character': api.dt.Character}, outputs={'World Locator': api.dt.String},
+        CharacterNode.COMPONENT_CLASS.world_locator, api.DataType.CHARACTER,
+        inputs={'Character': api.DataType.CHARACTER}, outputs={'World Locator': api.dt.String},
         nice_name='Get World Locator', category='Character')
     register_function(
-        CharacterNode.COMPONENT_CLASS.root_motion, api.dt.Character,
-        inputs={'Character': api.dt.Character}, outputs={'Root Joint': api.dt.String},
+        CharacterNode.COMPONENT_CLASS.root_motion, api.DataType.CHARACTER,
+        inputs={'Character': api.DataType.CHARACTER}, outputs={'Root Joint': api.dt.String},
         nice_name='Get Root Joint', category='Character')
     register_function(
-        CharacterNode.COMPONENT_CLASS.add_root_motion, api.dt.Character,
-        inputs={'Character': api.dt.Character, 'Follow Control': api.dt.Control, 'Root Joint': api.dt.String},
+        CharacterNode.COMPONENT_CLASS.add_root_motion, api.DataType.CHARACTER,
+        inputs={'Character': api.DataType.CHARACTER, 'Follow Control': api.DataType.CONTROL, 'Root Joint': api.dt.String},
         outputs={'Root Joint': api.dt.String}, nice_name='Add Root Motion', category='Character')
     register_function(
-        CharacterNode.COMPONENT_CLASS.attach_to_skeleton, api.dt.Character,
-        inputs={'Character': api.dt.Character}, nice_name='Attach To Skeleton', category='Character')
+        CharacterNode.COMPONENT_CLASS.attach_to_skeleton, api.DataType.CHARACTER,
+        inputs={'Character': api.DataType.CHARACTER}, nice_name='Attach To Skeleton', category='Character')
     register_function(
-        CharacterNode.COMPONENT_CLASS.set_publish_mode, api.dt.Character,
-        inputs={'Character': api.dt.Character, 'Publish Ready': api.dt.Boolean},
+        CharacterNode.COMPONENT_CLASS.set_publish_mode, api.DataType.CHARACTER,
+        inputs={'Character': api.DataType.CHARACTER, 'Publish Ready': api.dt.Boolean},
         nice_name='Set Publish Mode', category='Character')

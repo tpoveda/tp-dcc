@@ -13,7 +13,7 @@ from tp.tools.rig.noddle.builder.graph.core import consts
 from tp.tools.rig.noddle.builder.graph.painters import node as node_painters
 
 if typing.TYPE_CHECKING:
-    from tp.tools.rig.noddle.builder.graph.core.node import Node
+    from tp.tools.rig.noddle.builder.graph.core.node import BaseNode
     from tp.tools.rig.noddle.builder.graph.graphics.view import GraphicsView
     from tp.tools.rig.noddle.builder.graph.graphics.scene import GraphicsScene
 
@@ -23,7 +23,7 @@ class BaseGraphicsNode(qt.QGraphicsItem):
     FONT_NAME: str | None = None
     FONT_SIZE: int | None = None
 
-    def __init__(self, node: Node, parent: qt.QWidget | None = None):
+    def __init__(self, node: BaseNode, parent: qt.QWidget | None = None):
         super().__init__(parent=parent)
 
         if GraphicsNode.FONT_NAME is None or GraphicsNode.FONT_SIZE is None:
@@ -66,7 +66,7 @@ class BaseGraphicsNode(qt.QGraphicsItem):
         self.setToolTip('node: {}'.format(value))
 
     @property
-    def node(self) -> Node:
+    def node(self) -> BaseNode:
         return self._node
 
     @property
@@ -214,7 +214,7 @@ class GraphicsNode(BaseGraphicsNode):
 
     TEXT_ZOOM_OUT_LIMIT = 2
 
-    def __init__(self, node: Node, parent: qt.QWidget | None = None):
+    def __init__(self, node: BaseNode, parent: qt.QWidget | None = None):
         super().__init__(node, parent=parent)
 
         self._was_moved = False

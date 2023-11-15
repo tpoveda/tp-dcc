@@ -15,10 +15,12 @@ class NoddleBuilderTool(tool.Tool):
         from tp.tools.rig.noddle.builder import controller, window
         from tp.tools.rig.noddle.builder.graph import registers
 
-        # Load nodes locally
-        registers.load_plugins()
-
         noddle_controller = controller.NoddleController()
+        noddle_controller.load_data_types()
+
+        # Load nodes locally and update registers
+        registers.load_plugins(noddle_controller.nodes_paths())
+
         win = window.NoddleBuilderWindow(controller=noddle_controller)
         win.show()
 

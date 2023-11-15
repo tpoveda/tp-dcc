@@ -46,8 +46,14 @@ def serialize_node(node_to_serialize: Node) -> dict:
 
     node_to_serialize.pre_serialization()
 
-    inputs = [serialize_socket(input_socket) for input_socket in node_to_serialize.inputs]
-    outputs = [serialize_socket(output_socket) for output_socket in node_to_serialize.outputs]
+    try:
+        inputs = [serialize_socket(input_socket) for input_socket in node_to_serialize.inputs]
+    except AttributeError:
+        inputs = []
+    try:
+        outputs = [serialize_socket(output_socket) for output_socket in node_to_serialize.outputs]
+    except AttributeError:
+        outputs = []
 
     data = {
         'id': node_to_serialize.uuid,

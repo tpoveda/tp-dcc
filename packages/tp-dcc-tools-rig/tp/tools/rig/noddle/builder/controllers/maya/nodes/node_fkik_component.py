@@ -6,10 +6,9 @@ from overrides import override
 
 from tp.libs.rig.noddle.core.components import fkik
 from tp.tools.rig.noddle.builder import api
-from tp.tools.rig.noddle.builder.nodes import node_component
 
 
-class FKIKComponentNode(node_component.AnimComponentNode):
+class FKIKComponentNode(api.AnimComponentNode):
 
     ID = 9
     IS_EXEC = True
@@ -64,15 +63,15 @@ def register_plugin(register_node: callable, register_function: callable, regist
 
     register_function(
         FKIKComponentNode.COMPONENT_CLASS.ik_control, api.DataType.FKIKComponent,
-        inputs={'FKIK Component': api.DataType.FKIKComponent}, outputs={'Control': api.dt.Control},
+        inputs={'FKIK Component': api.DataType.FKIKComponent}, outputs={'Control': api.DataType.CONTROL},
         nice_name='Get IK Control', category='FKIK Component')
     register_function(
         FKIKComponentNode.COMPONENT_CLASS.pole_vector_control, api.DataType.FKIKComponent,
-        inputs={'FKIK Component': api.DataType.FKIKComponent}, outputs={'Control': api.dt.Control},
+        inputs={'FKIK Component': api.DataType.FKIKComponent}, outputs={'Control': api.DataType.CONTROL},
         nice_name='Get PV Control', category='FKIK Component')
     register_function(
         FKIKComponentNode.COMPONENT_CLASS.param_control, api.DataType.FKIKComponent,
-        inputs={'FKIK Component': api.DataType.FKIKComponent}, outputs={'Control': api.dt.Control},
+        inputs={'FKIK Component': api.DataType.FKIKComponent}, outputs={'Control': api.DataType.CONTROL},
         nice_name='Get Param Control', category='FKIK Component')
     register_function(
         FKIKComponentNode.COMPONENT_CLASS.fk_controls, api.DataType.FKIKComponent,
@@ -89,7 +88,7 @@ def register_plugin(register_node: callable, register_function: callable, regist
     register_function(
         FKIKComponentNode.COMPONENT_CLASS.fk_control_at, api.DataType.FKIKComponent,
         inputs={'FKIK Component': api.DataType.FKIKComponent, 'Index': api.dt.Numeric},
-        outputs={'FK Control': api.dt.Control},
+        outputs={'FK Control': api.DataType.CONTROL},
         nice_name='Get FK Control At', category='FKIK Component')
     register_function(
         FKIKComponentNode.COMPONENT_CLASS.start_hook_index, api.DataType.FKIKComponent,

@@ -7,7 +7,6 @@ from typing import Any
 from tp.core import log
 from tp.common.qt import api as qt
 from tp.common.python import modules
-from tp.libs.rig.noddle.core import control, component, animcomponent, character
 
 logger = log.rigLogger
 
@@ -118,7 +117,7 @@ def function_from_signature(signature: str) -> dict | None:
     return None
 
 
-def load_plugins():
+def load_plugins(extra_plugin_paths: list[str] | None = None):
     """
     Loads Noddle Rig editor plugins
     """
@@ -127,9 +126,9 @@ def load_plugins():
 
     NODES_QUEUE.clear()
     FUNCTIONS_QUEUE.clear()
-    DATA_TYPES_REGISTER.clear()
-    NODES_REGISTER.clear()
-    FUNCTIONS_REGISTER.clear()
+    # DATA_TYPES_REGISTER.clear()
+    # NODES_REGISTER.clear()
+    # FUNCTIONS_REGISTER.clear()
 
     DataType.register_basic_types()
 
@@ -140,6 +139,8 @@ def load_plugins():
     if not editor_plugin_paths:
         logger.warning('No Noddle Builder editor node paths to register found')
         return
+
+    editor_plugin_paths.extend(extra_plugin_paths or [])
 
     for editor_plugin_path in editor_plugin_paths:
         plugin_files = []
@@ -210,11 +211,6 @@ class DataType:
     NUMERIC = {'class': numbers.Complex, 'color': qt.QColor("#DEC017"), 'label': 'Number', 'default': 0.0}
     BOOLEAN = {'class': bool, 'color': qt.QColor("#C40000"), 'label': 'Condition', 'default': False}
     LIST = {'class': list, 'color': qt.QColor("#0BC8F1"), 'label': 'List', 'default': []}
-    CONTROL = {'class': control.Control, 'color': qt.QColor("#2BB12D"), 'label': 'Control', 'default': None}
-    COMPONENT = {'class': component.Component, 'color': qt.QColor("#6495ED"), 'label': 'Component', 'default': None}
-    ANIM_COMPONENT = {
-        'class': animcomponent.AnimComponent, 'color': qt.QColor("#6495ED"), 'label': 'AnimComponent', 'default': None}
-    CHARACTER = {'class': character.Character, 'color': qt.QColor("#5767FF"), 'label': 'Character', 'default': None}
 
     def __getattr__(self, item: str):
         if item in DATA_TYPES_REGISTER:
@@ -251,8 +247,17 @@ class DataType:
     @classmethod
     def runtime_types(cls, names: bool = False, classes: bool = False) -> list[dict]:
         result = []
+
+        # TODO: A datatype should be define by itself whether is runtime or
+        runtime_types = [cls.LIST['class']]
+        if 'COMPONENT' in DATA_TYPES_REGISTER:
+            runtime_types.append(DATA_TYPES_REGISTER['COMPONENT']['class'])
+        if 'CONTROL' in DATA_TYPES_REGISTER:
+            runtime_types.append(DATA_TYPES_REGISTER['CONTROL']['class'])
+        runtime_types = tuple(runtime_types)
+
         for type_name, type_desc in DATA_TYPES_REGISTER.items():
-            if issubclass(type_desc['class'], (cls.COMPONENT['class'], cls.LIST['class'], cls.CONTROL['class'])):
+            if issubclass(type_desc['class'], runtime_types):
                 if names:
                     result.append(type_name)
                 elif classes:

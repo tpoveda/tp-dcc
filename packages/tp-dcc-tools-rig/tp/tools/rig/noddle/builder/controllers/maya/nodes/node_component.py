@@ -58,7 +58,7 @@ class ComponentNode(api.NoddleNode):
     def setup_sockets(self):
         super().setup_sockets()
 
-        self._in_meta_parent = self.add_input(api.dt.Component, label='Parent', value=None)
+        self._in_meta_parent = self.add_input(api.DataType.COMPONENT, label='Parent', value=None)
         self._in_side = self.add_input(api.dt.String, label='Side', value='c')
         self._in_name = self.add_input(api.dt.String, label='Name', value='component')
         self._in_tag = self.add_input(api.dt.String, label='Tag', value='')
@@ -66,8 +66,8 @@ class ComponentNode(api.NoddleNode):
         self.mark_input_as_required(self._in_name)
         self.mark_input_as_required(self._in_side)
 
-        self._out_self = self.add_output(api.dt.Component, label='Self', value=None)
-        self._out_meta_parent = self.add_output(api.dt.Component, label='Parent', value=None)
+        self._out_self = self.add_output(api.DataType.COMPONENT, label='Self', value=None)
+        self._out_meta_parent = self.add_output(api.DataType.COMPONENT, label='Parent', value=None)
         self._out_meta_children = self.add_output(api.dt.List, label='Children')
         self._out_side = self.add_output(api.dt.String, label='Side', value='c')
         self._out_name = self.add_output(api.dt.String, label='Name', value='component')
@@ -88,16 +88,16 @@ class AnimComponentNode(ComponentNode):
     def setup_sockets(self):
         super().setup_sockets()
 
-        self.out_self.data_type = api.dt.AnimComponent
-        self.in_meta_parent.data_type = api.dt.AnimComponent
-        self.out_meta_parent.data_type = api.dt.AnimComponent
+        self.out_self.data_type = api.DataType.ANIM_COMPONENT
+        self.in_meta_parent.data_type = api.DataType.ANIM_COMPONENT
+        self.out_meta_parent.data_type = api.DataType.ANIM_COMPONENT
         self.in_name.set_value('anim_component')
 
-        self.in_character = self.add_input(api.dt.Character, label='Character')
+        self.in_character = self.add_input(api.DataType.CHARACTER, label='Character')
         self.in_hook = self.add_input(api.dt.Numeric, label='In Hook')
         self.mark_input_as_required(self.in_character)
 
-        self.out_character = self.add_output(api.dt.Character, label='Character')
+        self.out_character = self.add_output(api.DataType.CHARACTER, label='Character')
         self.out_in_hook = self.add_output(api.dt.Numeric, label='In Hook')
 
         self.in_character.affects(self.out_character)
@@ -109,11 +109,11 @@ class AnimComponentNode(ComponentNode):
 def register_plugin(register_node: callable, register_function: callable, register_data_type: callable):
 
     register_function(
-        AnimComponentNode.COMPONENT_CLASS.character, api.dt.AnimComponent,
-        inputs={'AnimComponent': api.dt.AnimComponent}, outputs={'Character': api.dt.Character},
+        AnimComponentNode.COMPONENT_CLASS.character, api.DataType.ANIM_COMPONENT,
+        inputs={'AnimComponent': api.DataType.ANIM_COMPONENT}, outputs={'Character': api.DataType.CHARACTER},
         nice_name='Get Character', category='Anim Component')
 
     register_function(
-        AnimComponentNode.COMPONENT_CLASS.controls, api.dt.AnimComponent,
-        inputs={'AnimComponent': api.dt.AnimComponent}, outputs={'Controls': api.dt.List},
+        AnimComponentNode.COMPONENT_CLASS.controls, api.DataType.ANIM_COMPONENT,
+        inputs={'AnimComponent': api.DataType.ANIM_COMPONENT}, outputs={'Controls': api.dt.List},
         nice_name='List Controls', category='Anim Component')

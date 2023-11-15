@@ -6,10 +6,9 @@ from overrides import override
 
 from tp.libs.rig.noddle.core.components import spine
 from tp.tools.rig.noddle.builder import api
-from tp.tools.rig.noddle.builder.nodes import node_component
 
 
-class SpineNode(node_component.AnimComponentNode):
+class SpineNode(api.AnimComponentNode):
 
     ID = None
     IS_EXEC = True
@@ -84,32 +83,32 @@ def register_plugin(register_node: callable, register_function: callable, regist
 
     register_function(
         SpineNode.COMPONENT_CLASS.root_control, api.DataType.SpineComponent,
-        inputs={'Spine': api.DataType.SpineComponent}, outputs={'Root Control': api.dt.Control},
+        inputs={'Spine': api.DataType.SpineComponent}, outputs={'Root Control': api.DataType.CONTROL},
         nice_name='Root Control', category='Spine')
     register_function(
         SpineNode.COMPONENT_CLASS.hips_control, api.DataType.SpineComponent,
-        inputs={'Spine': api.DataType.SpineComponent}, outputs={'Hips Control': api.dt.Control},
+        inputs={'Spine': api.DataType.SpineComponent}, outputs={'Hips Control': api.DataType.CONTROL},
         nice_name='Hips Control', category='Spine')
     register_function(
         SpineNode.COMPONENT_CLASS.chest_control, api.DataType.SpineComponent,
-        inputs={'Spine': api.DataType.SpineComponent}, outputs={'Chest Control': api.dt.Control},
+        inputs={'Spine': api.DataType.SpineComponent}, outputs={'Chest Control': api.DataType.CONTROL},
         nice_name='Chest Control', category='Spine')
 
     register_function(
         FKIKSpineNode.COMPONENT_CLASS.fk1_control, api.DataType.FkIkSpineComponent,
-        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'FK1 Control': api.dt.Control},
+        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'FK1 Control': api.DataType.CONTROL},
         nice_name='FK1 Control', category='FKIK Spine')
     register_function(
         FKIKSpineNode.COMPONENT_CLASS.fk2_control, api.DataType.FkIkSpineComponent,
-        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'FK2 Control': api.dt.Control},
+        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'FK2 Control': api.DataType.CONTROL},
         nice_name='FK2 Control', category='FKIK Spine')
     register_function(
         FKIKSpineNode.COMPONENT_CLASS.mid_control, api.DataType.FkIkSpineComponent,
-        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'Mid Control': api.dt.Control},
+        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'Mid Control': api.DataType.CONTROL},
         nice_name='Mid Control', category='FKIK Spine')
     register_function(
         FKIKSpineNode.COMPONENT_CLASS.pivot_control, api.DataType.FkIkSpineComponent,
-        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'Pivot Control': api.dt.Control},
+        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'Pivot Control': api.DataType.CONTROL},
         nice_name='Pivot Control', category='FKIK Spine')
     register_function(
         FKIKSpineNode.COMPONENT_CLASS.ik_curve, api.DataType.FkIkSpineComponent,

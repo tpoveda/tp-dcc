@@ -53,12 +53,6 @@ class ForEachNode(api.NoddleNode):
         return loop_body
 
 
-class ForEachComponent(ForEachNode):
-    ID = 105
-    DEFAULT_TITLE = "For Each Component"
-    COLLECTION_DATA_TYPE = api.dt.Component
-
-
 class ForEachName(ForEachNode):
     ID = 106
     DEFAULT_TITLE = 'For Each Name'
@@ -66,5 +60,4 @@ class ForEachName(ForEachNode):
 
 
 def register_plugin(register_node: callable, register_function: callable, register_data_type: callable):
-    register_node(ForEachComponent.ID, ForEachComponent)
     register_node(ForEachName.ID, ForEachName)

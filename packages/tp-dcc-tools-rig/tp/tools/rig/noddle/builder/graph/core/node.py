@@ -11,7 +11,8 @@ from tp.core import log
 from tp.common.qt import api as qt
 from tp.tools.rig.noddle.builder.graph import datatypes
 from tp.tools.rig.noddle.builder.graph.core import consts, socket
-from tp.tools.rig.noddle.builder.graph.graphics import node
+from tp.tools.rig.noddle.builder.graph.models import node as node_model
+from tp.tools.rig.noddle.builder.graph.graphics import node as node_graphics
 from tp.tools.rig.noddle.builder.graph.widgets import attributes
 
 if typing.TYPE_CHECKING:
@@ -22,7 +23,7 @@ logger = log.rigLogger
 
 class BaseNode:
 
-    GRAPHICS_CLASS = node.GraphicsNode
+    GRAPHICS_CLASS = node_graphics.BaseGraphicsNode
 
     ID: int | None = None
     IS_EXEC = True
@@ -38,20 +39,19 @@ class BaseNode:
     def __init__(self, scene: Scene, title: str | None = None):
         super().__init__()
 
-        self._uuid = str(uuid.uuid4())
+        self._model = node_model.NodeModel()
         self._scene = scene
-        self._graphics_node: node.GraphicsNode | None = None
-        self.title = title or self.__class__.DEFAULT_TITLE
-        self._inputs: list[socket.InputSocket] = []
-        self._outputs: list[socket.OutputSocket] = []
+        self._title = ''
 
-        self._setup_inner_classes()
+        self._graphics_node = self.GRAPHICS_CLASS(self)
+
+        self.title = title or self.__class__.DEFAULT_TITLE
 
         self.scene.add_node(self)
         self.scene.graphics_scene.addItem(self._graphics_node)
 
-    def __str__(self) -> str:
-        return f'<{self.__class__.__name__} {hex(id(self))[2:5]}..{hex(id(self))[-3]}> {self.title}'
+    def __repr__(self):
+        return '<{}("{}") object at {}>'.format(self.__class__.__name__, self.ID, hex(id(self)))
 
     @classmethod
     def as_str(cls, name_only: bool = False) -> str:
@@ -65,8 +65,38 @@ class BaseNode:
         return cls.__name__ if name_only else '.'.join([cls.__module__, cls.__name__])
 
     @property
+    def model(self) -> node_model.NodeModel:
+        """
+        Returns node model.
+
+        :return: node model.
+        :rtype: node_model.NodeModel
+        """
+
+        return self._model
+
+    @model.setter
+    def model(self, value: node_model.NodeModel):
+        """
+        Sets the node model.
+
+        :param node_model.NodeModel value: node model.
+        """
+
+        self._model = value
+
+        self.update()
+
+    @property
     def uuid(self) -> str:
-        return self._uuid
+        """
+        Returns node unique ID.
+
+        :return: node unique identifier.
+        :rtype: str
+        """
+
+        return self.model.uuid
 
     @uuid.setter
     def uuid(self, value: str):
@@ -77,7 +107,7 @@ class BaseNode:
         return self._scene
 
     @property
-    def graphics_node(self) -> node.GraphicsNode:
+    def graphics_node(self) -> node_graphics.GraphicsNode:
         return self._graphics_node
 
     @property
@@ -94,13 +124,12 @@ class BaseNode:
             # TODO: Improve this
             pass
 
-    @property
-    def inputs(self) -> list[socket.InputSocket]:
-        return self._inputs
+    def update(self):
+        """
+        Updates the node view based on current node model data.
+        """
 
-    @property
-    def outputs(self) -> list[socket.OutputSocket]:
-        return self._outputs
+        print('Updating view ...')
 
     def pre_serialization(self):
         """
@@ -183,16 +212,10 @@ class BaseNode:
         except Exception:
             logger.exception(f'Failed to delete node {self}', exc_info=True)
 
-    def _setup_inner_classes(self):
-        """
-        Internal function that initializes node inner classes.
-        """
-
-        self._graphics_node = self.__class__.GRAPHICS_CLASS(self)
-
 
 class Node(BaseNode):
 
+    GRAPHICS_CLASS = node_graphics.GraphicsNode
     ATTRIBUTES_WIDGET = attributes.AttributesWidget
 
     class Signals(qt.QObject):
@@ -214,6 +237,8 @@ class Node(BaseNode):
         self._is_invalid = False
         self._is_executing = False
 
+        self._inputs: list[socket.InputSocket] = []
+        self._outputs: list[socket.OutputSocket] = []
         self._required_inputs: deque[socket.InputSocket] = deque()
         self._exec_in_socket: socket.InputSocket | None = None
         self._exec_out_socket: socket.OutputSocket | None = None
@@ -227,6 +252,14 @@ class Node(BaseNode):
     @property
     def signals(self) -> Signals:
         return self._signals
+
+    @property
+    def inputs(self) -> list[socket.InputSocket]:
+        return self._inputs
+
+    @property
+    def outputs(self) -> list[socket.OutputSocket]:
+        return self._outputs
 
     @property
     def required_inputs(self) -> deque[socket.InputSocket]:

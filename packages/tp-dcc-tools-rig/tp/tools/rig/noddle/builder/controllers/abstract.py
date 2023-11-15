@@ -31,6 +31,14 @@ class AbstractNoddleController(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def nodes_paths(self) -> list[str]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def load_data_types(self):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def reference_model(self):
         raise NotImplementedError
 

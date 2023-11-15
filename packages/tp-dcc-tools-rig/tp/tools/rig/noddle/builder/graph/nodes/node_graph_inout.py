@@ -66,7 +66,7 @@ class GraphOutputNode(api.NoddleNode):
     def _setup_sockets(self, reset: bool = True):
         self._exec_in_socket = self.add_input(api.dt.Exec)
         self._exec_out_socket = None
-        self._in_character = self.add_input(api.dt.Character, label='Character')
+        self._in_character = self.add_input(api.DataType.CHARACTER, label='Character')
         self.mark_input_as_required(self._in_character)
 
     @override
