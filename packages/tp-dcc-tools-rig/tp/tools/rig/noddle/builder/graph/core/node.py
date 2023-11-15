@@ -5,6 +5,8 @@ import typing
 from typing import Any
 from collections import deque
 
+from overrides import override
+
 from tp.core import log
 from tp.common.qt import api as qt
 from tp.tools.rig.noddle.builder.graph import datatypes
@@ -18,15 +20,7 @@ if typing.TYPE_CHECKING:
 logger = log.rigLogger
 
 
-class Node:
-
-    ATTRIBUTES_WIDGET = attributes.AttributesWidget
-
-    class Signals(qt.QObject):
-        compiledChanged = qt.Signal(bool)
-        invalidChanged = qt.Signal(bool)
-        titleEdited = qt.Signal(str)
-        numSocketsChanged = qt.Signal()
+class BaseNode:
 
     GRAPHICS_CLASS = node.GraphicsNode
 
@@ -39,36 +33,22 @@ class Node:
     MIN_WIDTH = consts.NODE_MIN_WIDTH
     MIN_HEIGHT = consts.NODE_MIN_HEIGHT
     MAX_TEXT_WIDTH = 200
-    INPUT_POSITION = socket.Socket.Position.LeftTop.value
-    OUTPUT_POSITION = socket.Socket.Position.RightTop.value
+    COMPILABLE = False
 
     def __init__(self, scene: Scene, title: str | None = None):
         super().__init__()
 
         self._uuid = str(uuid.uuid4())
         self._scene = scene
-        self._signals = Node.Signals()
-        self._title: str | None = None
-        self._is_compiled = False
-        self._is_invalid = False
-        self._is_executing = False
         self._graphics_node: node.GraphicsNode | None = None
+        self.title = title or self.__class__.DEFAULT_TITLE
         self._inputs: list[socket.InputSocket] = []
         self._outputs: list[socket.OutputSocket] = []
-        self._required_inputs: deque[socket.InputSocket] = deque()
-        self._exec_in_socket: socket.InputSocket | None = None
-        self._exec_out_socket: socket.OutputSocket | None = None
 
-        self._setup_settings()
         self._setup_inner_classes()
-        self.title = title or self.__class__.DEFAULT_TITLE
 
         self.scene.add_node(self)
         self.scene.graphics_scene.addItem(self._graphics_node)
-
-        self.signals.numSocketsChanged.connect(self._on_num_sockets_changed)
-        self._setup_sockets()
-        self._setup_signals()
 
     def __str__(self) -> str:
         return f'<{self.__class__.__name__} {hex(id(self))[2:5]}..{hex(id(self))[-3]}> {self.title}'
@@ -83,10 +63,6 @@ class Node:
         """
 
         return cls.__name__ if name_only else '.'.join([cls.__module__, cls.__name__])
-
-    @property
-    def signals(self) -> Signals:
-        return self._signals
 
     @property
     def uuid(self) -> str:
@@ -110,43 +86,36 @@ class Node:
 
     @title.setter
     def title(self, value: str):
-        old_height = self._graphics_node.title_height
-        old_width = self._graphics_node.title_width
         self._title = value
-        self._graphics_node.title = self._title
-        new_width = self._graphics_node.title_width
-        new_height = self._graphics_node.title_height
-        if old_height != new_height or old_width != new_width:
-            self.update_size()
+        try:
+            self._graphics_node.title = self._title
+        except AttributeError:
+            # Node graphics do not need to have title in all scenarios
+            # TODO: Improve this
+            pass
 
     @property
     def inputs(self) -> list[socket.InputSocket]:
         return self._inputs
 
     @property
-    def required_inputs(self) -> deque[socket.InputSocket]:
-        return self._required_inputs
-
-    @property
     def outputs(self) -> list[socket.OutputSocket]:
         return self._outputs
 
-    @property
-    def exec_in_socket(self) -> socket.InputSocket | None:
-        return self._exec_in_socket
-
-    @property
-    def exec_out_socket(self) -> socket.OutputSocket | None:
-        return self._exec_out_socket
-
-    @property
-    def is_executing(self) -> bool:
-        return self._is_executing
-
-    def setup_sockets(self):
+    def pre_serialization(self):
         """
-        Creates all custom sockets for this node instance.
+        Function that is called before node serialization process starts.
         This function can be overriden by custom node classes.
+        """
+
+        pass
+
+    def post_serialization(self, data: dict):
+        """
+        Function that is called before node serialization process starts.
+        This function can be overriden by custom node classes.
+
+        :param dict data: node deserialized data.
         """
 
         pass
@@ -167,6 +136,131 @@ class Node:
         This function can be overriden by custom node classes.
 
         :param dict data: node serialized data.
+        """
+
+        pass
+
+    def set_position(self, x: float, y: float):
+        """
+        Sets node position within scene.
+
+        :param float x: X coordinate.
+        :param float y: Y coordinate.
+        """
+
+        self._graphics_node.setPos(x, y)
+
+    def position(self) -> qt.QPointF:
+        """
+        Returns node position within scene.
+
+        :return: node position.
+        :rtype: qt.QPointF
+        """
+
+        return self._graphics_node.pos()
+
+    def append_tooltip(self, text: str):
+        """
+        Appends given text to node tooltip.
+
+        :param str text: tooltip to append.
+        """
+
+        self._graphics_node.setToolTip(self._graphics_node.toolTip() + text)
+
+    def remove(self, silent: bool = False):
+        """
+        Removes node from scene.
+
+        :param bool silent: whether to emit remove signals, so listeners are notified.
+        """
+
+        try:
+            self.scene.graphics_scene.removeItem(self._graphics_node)
+            self._graphics_node = None
+            self.scene.remove_node(self)
+        except Exception:
+            logger.exception(f'Failed to delete node {self}', exc_info=True)
+
+    def _setup_inner_classes(self):
+        """
+        Internal function that initializes node inner classes.
+        """
+
+        self._graphics_node = self.__class__.GRAPHICS_CLASS(self)
+
+
+class Node(BaseNode):
+
+    ATTRIBUTES_WIDGET = attributes.AttributesWidget
+
+    class Signals(qt.QObject):
+        compiledChanged = qt.Signal(bool)
+        invalidChanged = qt.Signal(bool)
+        titleEdited = qt.Signal(str)
+        numSocketsChanged = qt.Signal()
+
+    COMPILABLE = True
+    INPUT_POSITION = socket.Socket.Position.LeftTop.value
+    OUTPUT_POSITION = socket.Socket.Position.RightTop.value
+
+    def __init__(self, scene: Scene, title: str | None = None):
+        super().__init__(scene=scene, title=title)
+
+        self._signals = Node.Signals()
+
+        self._is_compiled = False
+        self._is_invalid = False
+        self._is_executing = False
+
+        self._required_inputs: deque[socket.InputSocket] = deque()
+        self._exec_in_socket: socket.InputSocket | None = None
+        self._exec_out_socket: socket.OutputSocket | None = None
+
+        self._setup_settings()
+
+        self.signals.numSocketsChanged.connect(self._on_num_sockets_changed)
+        self._setup_sockets()
+        self._setup_signals()
+
+    @property
+    def signals(self) -> Signals:
+        return self._signals
+
+    @property
+    def required_inputs(self) -> deque[socket.InputSocket]:
+        return self._required_inputs
+
+    @property
+    def exec_in_socket(self) -> socket.InputSocket | None:
+        return self._exec_in_socket
+
+    @property
+    def exec_out_socket(self) -> socket.OutputSocket | None:
+        return self._exec_out_socket
+
+    @property
+    def is_executing(self) -> bool:
+        return self._is_executing
+
+    @override
+    def post_deserialization(self, data: dict):
+        self.signals.numSocketsChanged.emit()
+
+    @override
+    def remove(self, silent: bool = False):
+        try:
+            self.remove_all_connections(include_exec=True, silent=silent)
+        except Exception:
+            logger.exception(f'Failed to delete node {self}', exc_info=True)
+            return
+        super().remove(silent=silent)
+
+    def setup_sockets(self):
+        """
+        Creates all custom sockets for this node instance.
+        This function can be overriden by custom node classes.
         """
 
         pass
@@ -466,52 +560,6 @@ class Node:
                 break
         return found_output_socket
 
-    def set_position(self, x: float, y: float):
-        """
-        Sets node position within scene.
-
-        :param float x: X coordinate.
-        :param float y: Y coordinate.
-        """
-
-        self._graphics_node.setPos(x, y)
-
-    def position(self) -> qt.QPointF:
-        """
-        Returns node position within scene.
-
-        :return: node position.
-        :rtype: qt.QPointF
-        """
-
-        return self._graphics_node.pos()
-
-    def update_size(self):
-        """
-        Function that updates node graphics size.
-        """
-
-        self._recalculate_width()
-        self._recalculate_height()
-        self.update_socket_positions()
-        self.update_connected_edges()
-
-    def update_connected_edges(self):
-        """
-        Updates the edges connected to this node.
-        """
-
-        for node_socket in self._inputs + self._outputs:
-            node_socket.update_edges()
-
-    def update_socket_positions(self):
-        """
-        Updates the position of the graphic sockets.
-        """
-
-        for node_socket in self._outputs + self._inputs:
-            node_socket.update_positions()
-
     def is_invalid(self) -> bool:
         """
         Returns whether node is invalid.
@@ -673,30 +721,6 @@ class Node:
 
         self.graphics_node.title_item.edit()
 
-    def remove(self, silent: bool = False):
-        """
-        Removes node from scene.
-
-        :param bool silent: whether to emit remove signals, so listeners are notified.
-        """
-
-        try:
-            self.remove_all_connections(include_exec=True, silent=silent)
-            self.scene.graphics_scene.removeItem(self._graphics_node)
-            self._graphics_node = None
-            self.scene.remove_node(self)
-        except Exception:
-            logger.exception(f'Failed to delete node {self}', exc_info=True)
-
-    def append_tooltip(self, text: str):
-        """
-        Appends given text to node tooltip.
-
-        :param str text: tooltip to append.
-        """
-
-        self._graphics_node.setToolTip(self._graphics_node.toolTip() + text)
-
     def attributes_widget(self) -> attributes.AttributesWidget:
         """
         Returns attribute editor widget for this node.
@@ -744,13 +768,6 @@ class Node:
 
         self._socket_spacing = 32
 
-    def _setup_inner_classes(self):
-        """
-        Internal function that initializes node inner classes.
-        """
-
-        self._graphics_node = self.__class__.GRAPHICS_CLASS(self)
-
     def _setup_sockets(self, reset: bool = True):
         """
         Internal function that creates default sockets for this node.
@@ -779,49 +796,12 @@ class Node:
         self.signals.invalidChanged.connect(self._on_invalid_change)
         self.signals.titleEdited.connect(self._on_title_edited)
 
-    def _recalculate_width(self):
-        """
-        Internal function that recalculates and updates node graphics width.
-        """
-
-        # Labels max width
-        input_widths = [input_socket.label_width() for input_socket in self._inputs] or [0, 0]
-        output_widths = [output_socket.label_width() for output_socket in self._outputs] or [0, 0]
-
-        max_label_width = max(input_widths + output_widths)
-
-        # Calculate clamped title text width
-        self._graphics_node.title_item.setTextWidth(-1)
-        if self._graphics_node.title_width > self.MAX_TEXT_WIDTH:
-            self._graphics_node.title_item.setTextWidth(self.MAX_TEXT_WIDTH)
-            title_with_padding = self.MAX_TEXT_WIDTH + self._graphics_node.title_horizontal_padding * 2
-        else:
-            title_with_padding = self._graphics_node.title_width + self._graphics_node.title_horizontal_padding * 2
-
-        # Use the max value between widths of label, allowed min width, clamped text width
-        # Sockets on both sides or only one side
-        if self._inputs and self._outputs:
-            self._graphics_node.width = max(max_label_width * 2, self.MIN_WIDTH, int(title_with_padding))
-        else:
-            self._graphics_node.width = max(
-                max_label_width + self._graphics_node.one_side_horizontal_padding, self.MIN_WIDTH, title_with_padding)
-
-    def _recalculate_height(self):
-        """
-        Internal function that recalculates and updates node graphics height.
-        """
-
-        max_inputs = len(self._inputs) * self._socket_spacing
-        max_outputs = len(self._outputs) * self._socket_spacing
-        total_socket_height = max(max_inputs, max_outputs, self.MIN_HEIGHT)
-        self._graphics_node.height = total_socket_height + self._graphics_node.title_height + self._graphics_node.lower_padding
-
     def _on_num_sockets_changed(self):
         """
         Internal callback function that is called each time number of sockets for this node changes.
         """
 
-        self.update_size()
+        self._graphics_node.update_size()
 
     def _on_compiled_changed(self, state: bool):
         """

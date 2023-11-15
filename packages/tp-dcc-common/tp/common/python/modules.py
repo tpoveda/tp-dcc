@@ -99,7 +99,7 @@ def import_module(module_path, name=None, skip_warnings=True, skip_errors=False,
     Imports the given module path. If the given module path is a dotted one, import lib will be used. Otherwise, it's
     expected that given module path is the absolute path to the source file. If name argument is not given, then the
     basename without the extension will be used
-    :param module_path: str, module path. Can be a dotted path (cpg.common.python.modules) or an absolute one
+    :param module_path: str, module path. Can be a dotted path (tp.common.python.modules) or an absolute one
     :param name: str, name for the imported module which will be used if the module path is an absolute path
     :param skip_warnings: bool, whether warnings should be skipped
     :param skip_errors: bool, whether errors should be skipped

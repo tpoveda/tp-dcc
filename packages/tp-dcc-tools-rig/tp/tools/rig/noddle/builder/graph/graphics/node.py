@@ -34,23 +34,10 @@ class BaseGraphicsNode(qt.QGraphicsItem):
         self._width = self.node.MIN_WIDTH
         self._height = self.node.MIN_HEIGHT
 
-        self._was_moved = False
-
         self._one_side_horizontal_padding = 20.0
         self._edge_roundness = 10.0
         self._edge_padding = 10.0
-        self._title_horizontal_padding = 4.0
-        self._title_vertical_padding = 4.0
         self._lower_padding = 8.0
-
-        self._title_color = qt.Qt.white
-        self._title_font = qt.QFont(GraphicsNode.FONT_NAME, GraphicsNode.FONT_SIZE)
-        self._title_font.setBold(True)
-
-        self._pen_default = qt.QPen(qt.QColor('#7F000000'))
-        self._pen_selected = qt.QPen(qt.QColor('#FFA637'))
-        self._brush_background = qt.QBrush(qt.QColor('#E3212121'))
-        self._brush_title = qt.QBrush(self._title_color)
 
         self._properties = {
             'id': None,
@@ -65,8 +52,6 @@ class BaseGraphicsNode(qt.QGraphicsItem):
         }
 
         self._setup_ui()
-        self._setup_title()
-        self._setup_content()
 
     def __repr__(self):
         return '{}.{}(\'{}\')'.format(self.__module__, self.__class__.__name__, self.name)
@@ -157,31 +142,6 @@ class BaseGraphicsNode(qt.QGraphicsItem):
         self._properties['header_color'] = helpers.force_list(value)
 
     @property
-    def title(self) -> str:
-        return self._title_item.toPlainText()
-
-    @title.setter
-    def title(self, value: str):
-        self._title_item.setPlainText(value)
-
-    @property
-    def title_width(self) -> float:
-        return self._title_item.width
-
-    @property
-    def title_height(self) -> float:
-        return self._title_item.height
-
-    @property
-    def title_color(self) -> qt.QColor:
-        return qt.QColor(self.node.TITLE_COLOR) if not isinstance(
-            self.node.TITLE_COLOR, qt.QColor) else self.node.TITLE_COLOR
-
-    @property
-    def title_item(self) -> GraphicsNodeTitle:
-        return self._title_item
-
-    @property
     def edge_roundness(self) -> float:
         return self._edge_roundness
 
@@ -192,14 +152,6 @@ class BaseGraphicsNode(qt.QGraphicsItem):
     @property
     def lower_padding(self) -> float:
         return self._lower_padding
-
-    @property
-    def title_horizontal_padding(self) -> float:
-        return self._title_horizontal_padding
-
-    @property
-    def title_vertical_padding(self) -> float:
-        return self._title_vertical_padding
 
     @property
     def one_side_horizontal_padding(self) -> float:
@@ -257,6 +209,110 @@ class BaseGraphicsNode(qt.QGraphicsItem):
         # self.setCacheMode(consts.ITEM_CACHE_MODE)
         self.setZValue(consts.NODE_Z_VALUE)
 
+
+class GraphicsNode(BaseGraphicsNode):
+
+    TEXT_ZOOM_OUT_LIMIT = 2
+
+    def __init__(self, node: Node, parent: qt.QWidget | None = None):
+        super().__init__(node, parent=parent)
+
+        self._was_moved = False
+
+        self._title_horizontal_padding = 4.0
+        self._title_vertical_padding = 4.0
+
+        self._title_color = qt.Qt.white
+        self._title_font = qt.QFont(GraphicsNode.FONT_NAME, GraphicsNode.FONT_SIZE)
+        self._title_font.setBold(True)
+
+        self._setup_title()
+        self._setup_content()
+
+    @property
+    def title(self) -> str:
+        return self._title_item.toPlainText()
+
+    @title.setter
+    def title(self, value: str):
+        old_height = self.title_height
+        old_width = self.title_width
+        self._title_item.setPlainText(value)
+        new_width = self.title_width
+        new_height = self.title_height
+        if old_height != new_height or old_width != new_width:
+            self.update_size()
+
+    @property
+    def title_width(self) -> float:
+        return self._title_item.width
+
+    @property
+    def title_height(self) -> float:
+        return self._title_item.height
+
+    @property
+    def title_horizontal_padding(self) -> float:
+        return self._title_horizontal_padding
+
+    @property
+    def title_vertical_padding(self) -> float:
+        return self._title_vertical_padding
+
+    @property
+    def title_color(self) -> qt.QColor:
+        return qt.QColor(self.node.TITLE_COLOR) if not isinstance(
+            self.node.TITLE_COLOR, qt.QColor) else self.node.TITLE_COLOR
+
+    @property
+    def title_item(self) -> GraphicsNodeTitle:
+        return self._title_item
+
+    @override
+    def mouseMoveEvent(self, event: qt.QGraphicsSceneMouseEvent) -> None:
+        super().mouseMoveEvent(event)
+        self._was_moved = True
+
+    @override
+    def mouseReleaseEvent(self, event: qt.QGraphicsSceneMouseEvent) -> None:
+        super().mouseReleaseEvent(event)
+        if self._was_moved:
+            self._was_moved = False
+            self.node.scene.history.store_history('Node moved', set_modified=True)
+
+    @override
+    def paint(
+            self, painter: qt.QPainter, option: qt.QStyleOptionGraphicsItem,
+            widget: Union[qt.QWidget, None] = ...) -> None:
+
+        node_painters.node_painter(self, painter, option, widget)
+
+    def update_size(self):
+        """
+        Function that updates node graphics size.
+        """
+
+        self._recalculate_width()
+        self._recalculate_height()
+        self.update_socket_positions()
+        self.update_connected_edges()
+
+    def update_socket_positions(self):
+        """
+        Updates the position of the graphic sockets.
+        """
+
+        for node_socket in self.node.outputs + self.node.inputs:
+            node_socket.update_positions()
+
+    def update_connected_edges(self):
+        """
+        Updates the edges connected to this node.
+        """
+
+        for node_socket in self.node.inputs + self.node.outputs:
+            node_socket.update_edges()
+
     def _setup_title(self):
         """
         Internal function that setup graphics node title.
@@ -274,34 +330,42 @@ class BaseGraphicsNode(qt.QGraphicsItem):
 
         pass
 
+    def _recalculate_width(self):
+        """
+        Internal function that recalculates and updates node graphics width.
+        """
 
-class GraphicsNode(BaseGraphicsNode):
+        # Labels max width
+        input_widths = [input_socket.label_width() for input_socket in self.node.inputs] or [0, 0]
+        output_widths = [output_socket.label_width() for output_socket in self.node.outputs] or [0, 0]
 
-    TEXT_ZOOM_OUT_LIMIT = 2
+        max_label_width = max(input_widths + output_widths)
 
-    def __init__(self, node: Node, parent: qt.QWidget | None = None):
-        super().__init__(node, parent=parent)
+        # Calculate clamped title text width
+        self.title_item.setTextWidth(-1)
+        if self.title_width > self.node.MAX_TEXT_WIDTH:
+            self.title_item.setTextWidth(self.node.MAX_TEXT_WIDTH)
+            title_with_padding = self.node.MAX_TEXT_WIDTH + self.title_horizontal_padding * 2
+        else:
+            title_with_padding = self.title_width + self.title_horizontal_padding * 2
 
-    @override
-    def mouseMoveEvent(self, event: qt.QGraphicsSceneMouseEvent) -> None:
-        super().mouseMoveEvent(event)
-        for node in self.scene().scene.selected_nodes:
-            node.update_connected_edges()
-        self._was_moved = True
+        # Use the max value between widths of label, allowed min width, clamped text width
+        # Sockets on both sides or only one side
+        if self.node.inputs and self.node.outputs:
+            self.width = max(max_label_width * 2, self.node.MIN_WIDTH, int(title_with_padding))
+        else:
+            self.width = max(
+                max_label_width + self.one_side_horizontal_padding, self.node.MIN_WIDTH, title_with_padding)
 
-    @override
-    def mouseReleaseEvent(self, event: qt.QGraphicsSceneMouseEvent) -> None:
-        super().mouseReleaseEvent(event)
-        if self._was_moved:
-            self._was_moved = False
-            self.node.scene.history.store_history('Node moved', set_modified=True)
+    def _recalculate_height(self):
+        """
+        Internal function that recalculates and updates node graphics height.
+        """
 
-    @override
-    def paint(
-            self, painter: qt.QPainter, option: qt.QStyleOptionGraphicsItem,
-            widget: Union[qt.QWidget, None] = ...) -> None:
-
-        node_painters.node_painter(self, painter, option, widget)
+        max_inputs = len(self.node.inputs) * self.node._socket_spacing
+        max_outputs = len(self.node.outputs) * self.node._socket_spacing
+        total_socket_height = max(max_inputs, max_outputs, self.node.MIN_HEIGHT)
+        self.height = total_socket_height + self.title_height + self.lower_padding
 
 
 class GraphicsNodeTitle(qt.QGraphicsTextItem):

@@ -161,6 +161,7 @@ class GraphExecutor:
         """
 
         for node in self.scene.nodes:
+            if not node.COMPILABLE:
+                continue
             node.set_compiled(False, emit_signal=False)
-
 

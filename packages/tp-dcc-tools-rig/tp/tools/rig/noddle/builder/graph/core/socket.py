@@ -107,7 +107,7 @@ class Socket:
         if hasattr(self, '_graphics_socket'):
             self._graphics_socket.color_background = self._data_type.get('color')
             self._graphics_socket.update()
-        self.node.update_size()
+        self.node.graphics_node.update_size()
 
     @property
     def data_class(self) -> type:

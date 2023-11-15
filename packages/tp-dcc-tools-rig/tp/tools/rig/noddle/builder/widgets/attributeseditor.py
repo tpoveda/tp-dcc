@@ -45,7 +45,10 @@ class AttributesEditor(qt.QWidget):
             return
 
         node = selected[-1]
-        widget = node.attributes_widget()
+        try:
+            widget = node.attributes_widget()
+        except AttributeError:
+            return
         if widget:
             self.current_widget = widget
 

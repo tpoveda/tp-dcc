@@ -43,10 +43,13 @@ def deserialize_socket(
 
 
 def serialize_node(node_to_serialize: Node) -> dict:
+
+    node_to_serialize.pre_serialization()
+
     inputs = [serialize_socket(input_socket) for input_socket in node_to_serialize.inputs]
     outputs = [serialize_socket(output_socket) for output_socket in node_to_serialize.outputs]
 
-    return {
+    data = {
         'id': node_to_serialize.uuid,
         'node_id': node_to_serialize.__class__.ID,
         'title': node_to_serialize.title,
@@ -55,6 +58,10 @@ def serialize_node(node_to_serialize: Node) -> dict:
         'inputs': inputs,
         'outputs': outputs
     }
+
+    node_to_serialize.post_serialization(data)
+
+    return data
 
 
 def deserialize_node(node_instance: Node, data: dict, hashmap: dict | None = None, restore_id: bool = True):
@@ -105,8 +112,6 @@ def deserialize_node(node_instance: Node, data: dict, hashmap: dict | None = Non
             value = socket_data.get('value', data_type['default'])
             found_output_socket = node_instance.add_output(data_type, socket_data['label'], value=value)
         deserialize_socket(found_output_socket, socket_data, hashmap, restore_id)
-
-    node_instance.signals.numSocketsChanged.emit()
 
     node_instance.post_deserialization(data)
 

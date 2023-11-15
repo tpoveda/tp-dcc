@@ -154,7 +154,7 @@ class GraphicsBackdrop(graphics_node.BaseGraphicsNode):
             'pos': self.xy_pos,
             'width': self._width,
             'height': self._height}
-        self.viewer().nodeBackdropUpdated.emit(self.node.uid, 'sizer_mouse_release', size)
+        self.viewer().nodeBackdropUpdated.emit(self.node.uuid, 'sizer_mouse_release', size)
 
     def on_sizer_double_clicked(self):
         size = self.calc_backdrop_size()

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import typing
-from typing import Union
+from typing import Union, Any
 
 from overrides import override
 
 from tp.common.qt import api as qt
 from tp.preferences.interfaces import noddle
+from tp.tools.rig.noddle.builder.graph.core import consts
 
 if typing.TYPE_CHECKING:
     from tp.tools.rig.noddle.builder.graph.core.socket import Socket
@@ -78,6 +79,12 @@ class GraphicsSocket(qt.QGraphicsItem):
             2 * (self.radius + self.outline_width), 2 * (self.radius + self.outline_width))
 
     @override
+    def itemChange(self, change: qt.QGraphicsItem.GraphicsItemChange, value: Any) -> Any:
+        if change == self.ItemScenePositionHasChanged:
+            self.socket.update_edges()
+        return super().itemChange(change, value)
+
+    @override
     def paint(
             self, painter: qt.QPainter, option: qt.QStyleOptionGraphicsItem,
             widget: Union[qt.QWidget, None] = ...) -> None:
@@ -103,6 +110,12 @@ class GraphicsSocket(qt.QGraphicsItem):
         """
         Internal function that creates graphics socket widgets.
         """
+
+        self.setAcceptHoverEvents(True)
+        self.setCacheMode(consts.ITEM_CACHE_MODE)
+        self.setFlag(self.ItemIsSelectable, True)
+        self.setFlag(self.ItemSendsScenePositionChanges, True)
+        self.setZValue(consts.SOCKET_Z_VALUE)
 
         self._setup_label()
 

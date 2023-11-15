@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Module that contains custom exceptions used by cpg-libs-nodegraph
+Module that contains custom exceptions used by tp-libs-nodegraph
 """
 
 
