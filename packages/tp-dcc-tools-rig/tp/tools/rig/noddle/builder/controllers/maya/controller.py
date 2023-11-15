@@ -8,7 +8,7 @@ from overrides import override
 import maya.cmds as cmds
 
 from tp.common.qt import api as qt
-from tp.tools.rig.noddle.builder.graph import registers
+from tp.common.nodegraph import registers
 from tp.tools.rig.noddle.builder.controllers import abstract
 from tp.libs.rig.noddle.core import control, component, animcomponent, character
 

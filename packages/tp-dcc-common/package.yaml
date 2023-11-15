@@ -10,5 +10,7 @@ environment:
     - '{self}'
   TPDCC_BASE_PATHS:
     - '{self}'
+  TPDCC_NODEGRAPH_NODE_PATHS:
+    - '{self}/tp/common/nodegraph/nodes'
 commands:
   - '{self}/startup/common.py'

@@ -1,378 +1,412 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+from __future__ import annotations
+
+import uuid
+import enum
+import typing
+from typing import Any
+
+from overrides import override
+
+from tp.core import log
+from tp.common.qt import api as qt
+from tp.common.nodegraph import registers, datatypes
+from tp.common.nodegraph.graphics import socket
+
+if typing.TYPE_CHECKING:
+    from tp.common.nodegraph.core.node import Node
+    from tp.common.nodegraph.core.edge import Edge
+
+logger = log.rigLogger
+
+
+class Socket:
+
+    class Signals(qt.QObject):
+        valueChanged = qt.Signal()
+        connectionChanged = qt.Signal()
+
+    class Position(enum.IntEnum):
+        LeftTop = 1
+        LeftCenter = 2
+        LeftBottom = 3
+        RightTop = 4
+        RightCenter = 5
+        RightBottom = 6
+
+    LABEL_VERTICAL_PADDING = -10.0
+
+    def __init__(
+            self, node: Node, index: int = 0, position: Position = Position.LeftTop,
+            data_type: dict = datatypes.Numeric, label: str | None = None, max_connections: int = 0, value: Any = None,
+            count_on_this_side: int = 0):
+        super().__init__()
+
+        self._uuid = str(uuid.uuid4())
+        self._node = node
+        self._index = index
+        self._node_position = position if isinstance(position, Socket.Position) else Socket.Position(position)
+        self._data_type = data_type
+        self._label = label or self._data_type.get('label')
+        self._max_connections = max_connections
+        self._count_on_this_side = count_on_this_side
+        self._edges: list[Edge] = []
+        self._value = value or self._data_type.get('default')
+        self._default_value = self.value()
+        self._signals = Socket.Signals()
+        self._affected_sockets: list[Socket] = []
+
+        self._graphics_socket = socket.GraphicsSocket(self)
+        self.update_positions()
+
+        self._setup_signals()
+
+    def __str__(self) -> str:
+        return f'<{self.__class__.__name__} {hex(id(self))[2:5]}..{hex(id(self))[-3]}>'
+
+    @property
+    def signals(self) -> Signals:
+        return self._signals
+
+    @property
+    def uuid(self) -> str:
+        return self._uuid
+
+    @uuid.setter
+    def uuid(self, value: str):
+        self._uuid = value
+
+    @property
+    def node(self) -> Node:
+        return self._node
+
+    @property
+    def index(self) -> int:
+        return self._index
+
+    @index.setter
+    def index(self, value: int):
+        self._index = value
+
+    @property
+    def node_position(self) -> Socket.Position:
+        return self._node_position
+
+    @property
+    def data_type(self) -> dict:
+        return self._data_type
+
+    @data_type.setter
+    def data_type(self, value: str | dict):
+        if isinstance(value, str):
+            self._data_type = registers.DATA_TYPES_REGISTER[value]
+        elif isinstance(value, dict):
+            self._data_type = value
+        else:
+            logger.error(f'Cannot set data type to "{value}"')
+            raise ValueError
+        if hasattr(self, '_graphics_socket'):
+            self._graphics_socket.color_background = self._data_type.get('color')
+            self._graphics_socket.update()
+        self.node.graphics_node.update_size()
+
+    @property
+    def data_class(self) -> type:
+        return self.data_type.get('class')
+
+    @property
+    def max_connections(self) -> int:
+        return self._max_connections
+
+    @property
+    def label(self) -> str:
+        return self._label
+
+    @label.setter
+    def label(self, value: str):
+        self._label = value
+        self._graphics_socket.text_item.setPlainText(self._label)
+
+    @property
+    def default_value(self) -> Any:
+        return self._default_value
+
+    @default_value.setter
+    def default_value(self, value: Any):
+        self._default_value = value
+
+    @property
+    def edges(self) -> list[Edge]:
+        return self._edges
+
+    @property
+    def graphics_socket(self) -> socket.GraphicsSocket:
+        return self._graphics_socket
+
+    def is_runtime_data(self) -> bool:
+        """
+        Returns whether data contained by this socket is runtime data.
+
+        :return: True if socket data is runtime; False otherwise.
+        :rtype: bool
+        """
+
+        runtime_classes = datatypes.runtime_types(classes=True)
+        return self.data_class in runtime_classes or self.value().__class__ in runtime_classes
 
-"""
-Module that contains socket controller implementation
-"""
+    def value(self) -> Any:
+        """
+        Returns socket internal value.
+
+        :return: socket value.
+        :rtype: Any
+        """
 
-from tp.common.nodegraph.core import consts, utils, exceptions, register, commands
-from tp.common.nodegraph.models import socket as socket_model
+        return self._value
 
+    def set_value(self, value: Any):
+        """
+        Sets socket internal value.
 
-class Socket(object):
-	"""
-	Clas that allows to connect one node to another.
-	"""
+        :param Any value: internal value.
+        """
 
-	def __init__(self, node, view):
-		self._view = view
-		self._model = socket_model.SocketModel(node)
-		self._affected_sockets = list()
+        if self.data_type == datatypes.Exec:
+            return
+        if self._value == value:
+            return
 
-	def __repr__(self):
-		port = str(self.__class__.__name__)
-		return '<{}("{}") object at {}>'.format(port, self.name(), hex(id(self)))
+        self._value = value
+        self._signals.valueChanged.emit()
+
+    def reset_value_to_default(self):
+        """
+        Resets socket internal value to its default value.
+        """
+
+        self.set_value(self.default_value)
+
+    def affects(self, other_socket: Socket):
+        """
+        Adds given socket into the list of affect sockets by this one.
+        This means, that if this socket value changes, given socket will be processed too.
+
+        :param Socket other_socket: affected socket.
+        """
+
+        self._affected_sockets.append(other_socket)
+
+    def can_be_connected(self, other_socket: Socket) -> bool:
+        """
+        Returns whether this socket can be connected to the given one.
+
+        :param Socket other_socket socket to connect.
+        :return: True if this socket can be connected to the given one; False otherwise.
+        :rtype: bool
+        """
+
+        # Clicking on socket edge is dragging from
+        if self is other_socket:
+            return False
+
+        # Trying to connect output->output or input->input
+        if isinstance(other_socket, self.__class__):
+            logger.warning('Cannot connect two sockets of the same type')
+            return False
+
+        if self.node is other_socket.node:
+            logger.warning('Cannot connect sockets on the same node')
+            return False
+
+        return True
 
-	# ==================================================================================================================
-	# PROPERTIES
-	# ==================================================================================================================
+    def list_connections(self) -> list[Socket]:
+        """
+        Returns list of sockets that are connected to this one.
 
-	@property
-	def model(self):
-		"""
-		Returns socket model.
+        :return: list of connected sockets.
+        :rtype: list[Socket]
+        """
 
-		:return: socket model.
-		:rtype: SocketModel
-		"""
+        connected_sockets = []
+        for edge in self.edges:
+            for found_socket in [edge.start_socket, edge.end_socket]:
+                if found_socket and found_socket != self:
+                    connected_sockets.append(found_socket)
+
+        return connected_sockets
 
-		return self._model
+    def update_affected(self):
+        """Updates affected nodes with the current node value.
+        """
 
-	@property
-	def view(self):
-		"""
-		Returns socket view.
+        for affected_socket in self._affected_sockets:
+            affected_socket.set_value(self.value())
 
-		:return: socket view.
-		:rtype: SocketView
-		"""
+    def has_edge(self) -> bool:
+        """
+        Returns whether this socket is connected.
 
-		return self._view
+        :return: True if socket is connected; False otherwise.
+        :rtype: bool
+        """
 
-	@property
-	def data_type(self):
-		return self._model.data_type
+        return bool(self._edges)
+
+    def update_edges(self):
+        """
+        Updates connected edge positions.
+        """
 
-	@data_type.setter
-	def data_type(self, value):
-		self._model.data_type = value
+        for connected_edge in self._edges:
+            connected_edge.update_positions()
 
-	@property
-	def color(self):
-		return self._view.color
+    def position(self) -> list[int, int]:
+        """
+        Returns the position of the socket at given index.
 
-	@color.setter
-	def color(self, value):
-		self._view.color = value
+        :return: node position.
+        :rtype: list[int, int]
+        """
+        return self.node.socket_position(self.index, self.node_position, self._count_on_this_side)
 
-	@property
-	def border_color(self):
-		return self._view.border_color
+    def update_positions(self):
+        """
+        Updates the position of the graphics socket.
+        """
 
-	@border_color.setter
-	def border_color(self, value):
-		self._view.border_color = value
+        def _label_position():
+            text_width = self._graphics_socket.text_item.boundingRect().width()
+            if self._node_position in [Socket.Position.LeftTop, Socket.Position.LeftBottom]:
+                return [self.node.graphics_node.width / 25.0, Socket.LABEL_VERTICAL_PADDING]
+            else:
+                return [-text_width - self.node.graphics_node.width / 25, Socket.LABEL_VERTICAL_PADDING]
 
-	# ==================================================================================================================
-	# BASE
-	# ==================================================================================================================
+        self._graphics_socket.setPos(
+            *self.node.socket_position(self._index, self._node_position, self._count_on_this_side))
+        self._graphics_socket.text_item.setPos(*_label_position())
 
-	def direction(self):
-		"""
-		Returns socket direction.
+    def label_width(self) -> float:
+        """
+        Returns width for sockets label.
 
-		:return: socket direction.
-		:rtype: str
-		"""
+        :return: sockets label width.
+        :rtype: float
+        """
 
-		return self._model.direction
+        return self._graphics_socket.text_item.boundingRect().width()
 
-	def multi_connection(self):
-		"""
-		Returns whether socket is single connection;
+    def set_connected_edge(self, edge: Edge, silent: bool = False):
+        """
+        Connects this socket to given edge.
 
-		:return: True if socket is multi connection; False otherwise.
-		:rtype: bool
-		"""
+        :param Edge edge: edge to connect to.
+        :param bool silent: whether to emit remove signals, so listeners are notified.
+        """
 
-		return self._model.multi_connection
+        if not edge:
+            logger.warning(f'{self}: Given edge {edge}')
+            return
 
-	def name(self):
-		"""
-		Returns the socket name.
-
-		:return: socket name.
-		:rtype: str
-		"""
+        if self.edges and self.max_connections and len(self.edges) >= self.max_connections:
+            self.edges[-1].remove()
+        self.edges.append(edge)
 
-		return self._model.name
+        if not silent:
+            self._signals.connectionChanged.emit()
 
-	def node(self):
-		"""
-		Returns the socket parent node.
+    def remove_edge(self, edge: Edge, silent: bool = False):
+        """
+        Removes given edge from this socket.
 
-		:return: parent node.
-		:rtype: BaseNode
-		"""
+        :param Edge edge: edge instance to remove.
+        :param bool silent: whether to emit remove signals, so listeners are notified.
+        """
 
-		return self._model.node
+        self._edges.remove(edge)
+        if not silent:
+            self._signals.connectionChanged.emit()
 
-	def visible(self):
-		"""
-		Returns whether socket is visible within node graph.
-
-		:return: True if socket is visible; False otherwise.
-		:rtype: bool
-		"""
-
-		return self._model.visible
+    def remove_all_edges(self, silent: bool = False):
+        """
+        Removes all edges connected to this socket.
 
-	def set_visible(self, flag):
-		"""
-		Sets whether socket is visible within node graph.
+        :param bool silent: whether to emit remove signals, so listeners are notified.
+        """
 
-		:param bool flag: True to make socket visible; False otherwise.
-		"""
+        while self._edges:
+            self._edges[0].remove(silent=silent)
+        self._edges.clear()
 
-		self._model.visible = flag
-		label = 'Show' if flag else 'Hide'
-		undo_stack = self.node().graph.undo_stack()
-		undo_stack.beginMacro('{} Socket {}'.format(label, self.name()))
-		for node_socket in self.connected_sockets():
-			undo_stack.push(commands.SocketDisconnectedCommand(self, node_socket))
-		undo_stack.push(commands.SocketVisibleCommand(self))
-		undo_stack.endMacro()
+    def remove(self, silent: bool = False):
+        """
+        Deletes socket.
 
-	def locked(self):
-		"""
-		Returns socket locked state.
+        :param bool silent: whether to emit remove signals, so listeners are notified.
+        """
 
-		:return: True if socket is locked; False otherwise.
-		:rtype: bool
+        self.remove_all_edges(silent=silent)
+        self.node.scene.graphics_scene.removeItem(self._graphics_socket)
 
-		..note:: if sockets are locked the new connectors cannot be connected and current connectors cannot be
-			disconnected .
-		"""
+    def _setup_signals(self):
+        """
+        Internal function that setup socket signals.
+        """
 
-		return self._model.locked
-
-	def set_locked(self, flag=False, connected_sockets=True, push_undo=True):
-		"""
-		Sets the socket locked state.
-
-		:param bool flag: socket lock state.
-		:param bool connected_sockets: whether apply to lock state to connected sockets.
-		:param bool push_undo: whether to push lock operation to the undo stack.
-		"""
-
-		graph = self.node().graph
-		undo_stack = graph.undo_stack()
-		if flag:
-			undo_command = commands.SocketLockedCommand(self)
-		else:
-			undo_command = commands.SocketUnlockedCommand(self)
-		if push_undo:
-			undo_stack.push(undo_command)
-		else:
-			undo_command.redo()
-
-		if connected_sockets:
-			for connected_socket in self.connected_sockets():
-				connected_socket.set_locked(flag, connected_sockets=False, push_undo=push_undo)
-
-	def lock(self):
-		"""
-		Locks the socket so new connectors cannot be connected and current connectors cannot be disconnected.
-		"""
-
-		self.set_locked(True, connected_sockets=True)
-
-	def unlock(self):
-		"""
-		Unlocks the socket so new connectors can be connected and existing connectors can be disconnected.
-		"""
-
-		self.set_locked(False, connected_sockets=True)
-
-	def is_connected(self):
-		"""
-		Returns whether this socket is connected to other sockets.
-
-		:return: True if socket is connected to other sockets; False otherwise.
-		:rtype: bool
-		"""
-
-		return len(self.connected_sockets()) > 0
-
-	def connected_sockets(self):
-		"""
-		Returns all connected sockets.
-
-		:return: list of connected sockets.
-		:rtype: list(Socket)
-		"""
-
-		sockets = list()
-
-		graph = self.node().graph
-		for node_id, socket_names in self._model.connected_sockets.items():
-			for socket_name in socket_names:
-				node_found = graph.node_by_id(node_id)
-				if self.direction() == consts.SocketDirection.Input:
-					sockets.append(node_found.outputs()[socket_name])
-				elif self.direction() == consts.SocketDirection.Output:
-					sockets.append(node_found.inputs()[socket_name])
-
-		return sockets
-
-	def connect_to(self, node_socket=None, push_undo=True):
-		"""
-		Creates a connection to the given socket and emits portConnected signal from the parent node graph.
-
-		:param Socket node_socket: socket object.
-		:param bool push_undo: whether connect socket operation should be pushed into undo stack.
-		"""
-
-		if not node_socket or self in node_socket.connected_sockets():
-			return
-
-		if self.locked() or node_socket.locked():
-			name = [_socket.name() for _socket in [self, node_socket] if _socket.locked()][0]
-			raise exceptions.SocketError('Cannot connect socket because "{}" is locked'.format(name))
-
-		graph = self.node().graph
-		viewer = graph.viewer()
-
-		if push_undo:
-			undo_stack = graph.undo_stack()
-			undo_stack.beginMacro('Connect Socket')
-
-		pre_connector_socket = None
-		source_connector_sockets = self.connected_sockets()
-		if not self.multi_connection() and source_connector_sockets:
-			pre_connector_socket = source_connector_sockets[0]
-
-		if not node_socket:
-			if pre_connector_socket:
-				if push_undo:
-					undo_stack.push(commands.SocketDisconnectedCommand(self, node_socket))
-					undo_stack.push(commands.NodeInputDisconnectedCommand(self, node_socket))
-				else:
-					commands.SocketDisconnectedCommand(self, node_socket).redo()
-					commands.NodeInputDisconnectedCommand(self, node_socket).redo()
-			return
-
-		if graph.is_acyclic() and utils.acyclic_check(self._view, node_socket.view):
-			if pre_connector_socket:
-				if push_undo:
-					undo_stack.push(commands.SocketDisconnectedCommand(self, pre_connector_socket))
-					undo_stack.push(commands.NodeInputDisconnectedCommand(self, pre_connector_socket))
-					undo_stack.endMacro()
-				else:
-					commands.SocketDisconnectedCommand(self, pre_connector_socket).redo()
-					commands.NodeInputDisconnectedCommand(self, pre_connector_socket).redo()
-				return
-
-		target_connector_sockets = node_socket.connected_sockets()
-		if not node_socket.multi_connection() and target_connector_sockets:
-			detached_socket = target_connector_sockets[0]
-			if push_undo:
-				undo_stack.push(commands.SocketDisconnectedCommand(node_socket, detached_socket))
-				undo_stack.push(commands.NodeInputDisconnectedCommand(node_socket, detached_socket))
-			else:
-				commands.SocketDisconnectedCommand(node_socket, detached_socket).redo()
-				commands.NodeInputDisconnectedCommand(node_socket, detached_socket).redo()
-
-		if pre_connector_socket:
-			if push_undo:
-				undo_stack.push(commands.SocketDisconnectedCommand(self, pre_connector_socket))
-				undo_stack.push(commands.NodeInputDisconnectedCommand(self, pre_connector_socket))
-			else:
-				commands.SocketDisconnectedCommand(self, pre_connector_socket).redo()
-				commands.NodeInputDisconnectedCommand(self, pre_connector_socket).redo()
-
-		if push_undo:
-			undo_stack.push(commands.SocketConnectedCommand(self, node_socket))
-			undo_stack.push(commands.NodeInputConnectedCommand(self, node_socket))
-			undo_stack.endMacro()
-		else:
-			commands.SocketConnectedCommand(self, node_socket).redo()
-			commands.NodeInputConnectedCommand(self, node_socket).redo()
-
-		sockets = {_socket.direction(): _socket for _socket in [self, node_socket]}
-		graph.socketConnected.emit(sockets[consts.SocketDirection.Input], sockets[consts.SocketDirection.Output])
-
-	def disconnect_from(self, node_socket=None, push_undo=True):
-		"""
-		Disconnects from the given socket and emits portDisconnected signal from the parent node graph.
-
-		:param Socket node_socket: socket object.
-		:param bool push_undo: whether disconnect socket operation should be pushed into undo stack.
-		"""
-
-		if not node_socket:
-			return
-
-		if self.locked() or node_socket.locked():
-			name = [_socket.name() for _socket in [self, node_socket] if _socket.locked()][0]
-			raise exceptions.SocketError('Cannot disconnect socket because "{}" is locked'.format(name))
-
-		graph = self.node().graph
-		if push_undo:
-			undo_stack = graph.undo_stack()
-			undo_stack.beginMacro('Disconnect Socket')
-			undo_stack.push(commands.SocketDisconnectedCommand(self, node_socket))
-			undo_stack.push(commands.NodeInputDisconnectedCommand(self, node_socket))
-			undo_stack.endMacro()
-		else:
-			commands.SocketDisconnectedCommand(self, node_socket).redo()
-			commands.NodeInputDisconnectedCommand(self, node_socket).redo()
-
-		sockets = {_socket.direction(): _socket for _socket in [self, node_socket]}
-		graph.socketDisconnected.emit(sockets[consts.SocketDirection.Input], sockets[consts.SocketDirection.Output])
-
-	def clear_connections(self, push_undo=True):
-		"""
-		Disconnects from all the socket connections and emit the portDisconnected signals from the node graph.
-
-		:param bool push_undo: whether clear socket connections operation should be pushed into undo stack.
-		"""
-
-		if self.locked():
-			raise exceptions.SocketError(
-				'Cannot clear connections because socket "{}" is locked'.format(self.name()))
-
-		if not self.connected_sockets():
-			return
-
-		if push_undo:
-			graph = self.node().graph
-			undo_stack = graph.undo_stack()
-			undo_stack.beginMacro('"{}" Clear Connections'.format(self.name()))
-			for connected_socket in self.connected_sockets():
-				self.disconnect_from(connected_socket, push_undo=True)
-			undo_stack.endMacro()
-		else:
-			for connected_socket in self.connected_sockets():
-				self.disconnect_from(connected_socket, push_undo=False)
-
-	def affects(self, other_socket):
-		"""
-		Adds given socket within the list of affected sockets by this one.
-
-		:param Socket other_socket: affected socket.
-		"""
-
-		self._affected_sockets.append(other_socket)
-
-	def update_affected(self):
-		"""
-		Updates affect sockets with the value of this socket.
-		"""
-
-		for affected_socket in self._affected_sockets:
-			if not affected_socket.node().has_property(affected_socket.name()):
-				return
-			if not self.node().has_property(self.name()):
-				return
-			affected_socket.node().set_property(affected_socket.name(), self.node().get_property(self.name()))
+        pass
+
+
+class InputSocket(Socket):
+
+    @override
+    def can_be_connected(self, other_socket: Socket) -> bool:
+        result = super().can_be_connected(other_socket)
+        if not issubclass(other_socket.data_class, self.data_class):
+            return False
+        return result
+
+    @override
+    def value(self) -> Any:
+        if self.has_edge():
+            output_socket = self.edges[0].other_socket(self)
+            if output_socket:
+                return output_socket.value()
+        return self._value
+
+    @override
+    def _setup_signals(self):
+        super()._setup_signals()
+
+        self._signals.valueChanged.connect(self.node.set_compiled)
+        self._signals.connectionChanged.connect(self._on_connection_changed)
+
+    def _on_connection_changed(self):
+        """
+        Internal callback function that is called each time connection changes.
+        """
+
+        if not self.has_edge() and self.is_runtime_data():
+            self.set_value(self.data_type['default'])
+
+
+class OutputSocket(Socket):
+
+    @override
+    def can_be_connected(self, other_socket: Socket) -> bool:
+        result = super().can_be_connected(other_socket)
+        if not issubclass(self.data_class, other_socket.data_class):
+            return False
+        return result
+
+    @override
+    def _setup_signals(self):
+        super()._setup_signals()
+
+        self._signals.valueChanged.connect(self._on_value_changed)
+
+    def _on_value_changed(self):
+        """
+        Internal callback function that is called each time socket value changes.
+        """
+
+        for connected_socket in self.list_connections():
+            connected_socket.signals.valueChanged.emit()

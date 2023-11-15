@@ -4,12 +4,12 @@ import typing
 
 from tp.common.qt import api as qt
 from tp.common.resources import api as resources
-from tp.tools.rig.noddle.builder.graph.core import edge
+from tp.common.nodegraph.core import edge
 
 if typing.TYPE_CHECKING:
-    from tp.tools.rig.noddle.builder.graph.core.scene import Scene
+    from tp.common.nodegraph.core.scene import Scene
     from tp.tools.rig.noddle.builder.window import NoddleBuilderWindow
-    from tp.tools.rig.noddle.builder.graph.core.executor import GraphExecutor
+    from tp.common.nodegraph.core.executor import GraphExecutor
 
 
 class GraphMenu(qt.QMenu):

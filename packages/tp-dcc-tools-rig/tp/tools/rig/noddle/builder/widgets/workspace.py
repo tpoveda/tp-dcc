@@ -60,7 +60,7 @@ class WorkspaceWidget(qt.QWidget):
 
         self._scroll_widget = shared.ScrollWidget(parent=self)
         self._project_group = ProjectGroup(parent=self)
-        self._asset_group = AssetGroup(client=self._controller, parent=self)
+        self._asset_group = AssetGroup(controller=self._controller, parent=self)
         self._scroll_widget.add_widget(self._project_group)
         self._scroll_widget.add_widget(self._asset_group)
         self._scroll_widget.content_layout.addStretch()
@@ -214,10 +214,10 @@ class AssetGroup(qt.QGroupBox):
 
     assetChanged = qt.Signal(object)
 
-    def __init__(self, client: NoddleBuilderClient, title: str = 'Asset', parent: qt.QWidget | None = None):
+    def __init__(self, controller: NoddleController, title: str = 'Asset', parent: qt.QWidget | None = None):
         super().__init__(title, parent=parent)
 
-        self._client = client
+        self._controller = controller
         self._prefs = noddle.noddle_interface()
         self._asset_types = self._prefs.asset_types() or ['character']
 
@@ -359,9 +359,9 @@ class AssetGroup(qt.QGroupBox):
             return
 
         path = os.path.normpath(self._file_system.filePath(index))
-        dcc_file_extensions = self._client.execute('file_extensions').get('ReturnValue', [])
+        dcc_file_extensions = self._controller.execute('file_extensions').get('ReturnValue', [])
         if dcc_file_extensions and any([path.endswith(ext) for ext in dcc_file_extensions]):
-            self._client.open_file(path, force=True)
+            self._controller.open_file(path, force=True)
         else:
             if sys.platform == 'win32':
                 os.startfile(path)
@@ -387,9 +387,9 @@ class AssetGroup(qt.QGroupBox):
             return
 
         if reference:
-            self._client.reference_file(file_path)
+            self._controller.reference_file(file_path)
         else:
-            self._client.open_file(file_path, force=True)
+            self._controller.open_file(file_path, force=True)
 
     def _set_asset(self):
         """

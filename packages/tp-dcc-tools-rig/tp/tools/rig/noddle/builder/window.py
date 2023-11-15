@@ -7,14 +7,11 @@ from overrides import override
 from tp.core import log
 from tp.common.qt import api as qt
 from tp.common.resources import api as resources
-# from tp.common.nodegraph.core import graph
-# from tp.common.nodegraph.nodes import basic, widgets
-# from tp.common.nodegraph.editors import propertieseditor
 
+from tp.common.nodegraph.widgets import palette
+from tp.tools.rig.noddle.builder import editor
 from tp.tools.rig.noddle.builder.widgets import workspace, history, vars, attributeseditor
 from tp.tools.rig.noddle.builder.menus import file_menu, edit_menu, graph_menu
-from tp.tools.rig.noddle.builder.graph import editor
-from tp.tools.rig.noddle.builder.graph.widgets import palette
 
 if typing.TYPE_CHECKING:
     from tp.tools.rig.noddle.builder.controller import NoddleController
@@ -103,48 +100,6 @@ class NoddleBuilderWindow(qt.FramelessWindow):
         self._mdi_area.setTabsClosable(True)
         self._mdi_area.setTabsMovable(True)
 
-        # self._graph = graph.NodeGraph()
-        # self._graph.register_nodes(
-        #     [
-        #         basic.BasicNodeA,
-        #         basic.BasicNodeB,
-        #         basic.CustomGroupNode,
-        #         basic.CustomSocketsNode,
-        #         widgets.DropdownMenuNode,
-        #         widgets.TextInputNode,
-        #         widgets.CheckboxNode
-        #     ]
-        # )
-        # self._graph_widget = self._graph.widget
-        # self._graph_widget.resize(1100, 800)
-        # self._graph_widget.show()
-        # node_basic_a = self._graph.create_node('nodes.basic.BasicNodeA', text_color='#feab20')
-        # node_basic_a.set_disabled(False)
-        # # create node and set a custom icon.
-        # node_basic_b = self._graph.create_node('nodes.basic.BasicNodeB', name='custom icon')
-        # icon_path = r"D:\tools\dev\tp-dcc-dev\packages\tp-dcc-common\tp\common\resources\icons\color\face.png"
-        # node_basic_b.set_icon(icon_path)
-        # # create node with the custom port shapes.
-        # n_custom_sockets = self._graph.create_node('nodes.custom.sockets.CustomSocketsNode', name='custom ports')
-        # n_text_input = self._graph.create_node('nodes.widget.TextInputNode', name='text node', color='#0a1e20')
-        # n_checkbox = self._graph.create_node('nodes.widget.CheckboxNode', name='checkbox node')
-        # n_combo_menu = self._graph.create_node('nodes.widget.DropdownMenuNode', name='combobox node')
-        # n_group = self._graph.create_node('nodes.group.CustomGroupNode')
-        # n_text_input.set_output(0, n_custom_sockets.input(0))
-        # n_text_input.set_output(0, n_checkbox.input(0))
-        # n_text_input.set_output(0, n_combo_menu.input(0))
-        # self._graph.auto_layout_nodes()
-        # n_backdrop = self._graph.create_node('Backdrop')
-        # n_backdrop.wrap_nodes([n_custom_sockets, n_combo_menu])
-        # self._graph.clear_selection()
-        # self._graph.fit_to_selection()
-        # properties_editor = propertieseditor.PropertiesEditorWidget(graph=self._graph)
-        # properties_editor.setWindowFlags(qt.Qt.Tool)
-        # def display_properties_bin(_):
-        #     if not properties_editor.isVisible():
-        #         properties_editor.show()
-        # self._graph.nodeDoubleClicked.connect(display_properties_bin)
-
         self._main_window.addDockWidget(qt.Qt.RightDockWidgetArea, self._attributes_editor_dock)
         self._main_window.addDockWidget(qt.Qt.RightDockWidgetArea, self._workspace_dock)
         self._main_window.tabifyDockWidget(self._attributes_editor_dock, self._workspace_dock)
@@ -153,7 +108,6 @@ class NoddleBuilderWindow(qt.FramelessWindow):
         self._main_window.addDockWidget(qt.Qt.LeftDockWidgetArea, self._nodes_palette_dock)
         self._main_window.addDockWidget(qt.Qt.LeftDockWidgetArea, self._vars_dock)
 
-        # self._window_main_layout.addWidget(self._graph_widget)
         self._window_main_layout.addWidget(self._mdi_area)
 
         self._setup_menubar()

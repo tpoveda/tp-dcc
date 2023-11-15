@@ -6,7 +6,7 @@ from tp.common.qt import api as qt
 from tp.tools.rig.noddle.builder.widgets import vars
 
 if typing.TYPE_CHECKING:
-    from tp.tools.rig.noddle.builder.graph.editor import NodeEditor
+    from tp.tools.rig.noddle.builder.editor import NodeEditor
     from tp.tools.rig.noddle.builder.window import NoddleBuilderWindow
 
 

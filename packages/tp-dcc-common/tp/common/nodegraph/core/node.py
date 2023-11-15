@@ -1,486 +1,868 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+from __future__ import annotations
 
-"""
-Module that contains node object implementation
-"""
+import typing
+from typing import Any
+from collections import deque
 
-from collections import OrderedDict
-
-from Qt.QtGui import QColor
+from overrides import override
 
 from tp.core import log
-from tp.common.python import helpers
-from tp.common.nodegraph.core import consts, abstract, exceptions, register, socket
-from tp.common.nodegraph.views import node as node_view
-from tp.common.nodegraph.painters import socket as socket_painters
-from tp.common.nodegraph.widgets import nodewidgets
+from tp.common.qt import api as qt
+from tp.common.nodegraph import datatypes
+from tp.common.nodegraph.core import consts, socket
+from tp.common.nodegraph.models import node as node_model
+from tp.common.nodegraph.graphics import node as node_graphics
+from tp.common.nodegraph.widgets import attributes
 
-logger = log.tpLogger
+if typing.TYPE_CHECKING:
+    from tp.common.nodegraph.core.scene import Scene
 
+logger = log.rigLogger
 
-class BaseNode(abstract.Node):
-	"""
-	Base class for nodes that allow socket connections from one node to another.
-	"""
 
-	NODE_NAME = 'Node'
+class BaseNode:
 
-	def __init__(self, view=None):
-		view = view or node_view.NodeView
+    GRAPHICS_CLASS = node_graphics.BaseGraphicsNode
 
-		super(BaseNode, self).__init__(view=view)
+    ID: int | None = None
+    IS_EXEC = True
+    AUTO_INIT_EXECS = True
+    DEFAULT_TITLE = 'Custom Node'
+    TITLE_EDITABLE = False
+    TITLE_COLOR = '#FF313131'
+    MIN_WIDTH = consts.NODE_MIN_WIDTH
+    MIN_HEIGHT = consts.NODE_MIN_HEIGHT
+    MAX_TEXT_WIDTH = 200
+    COMPILABLE = False
+    IS_INPUT = False
 
-		self._inputs = list()
-		self._outputs = list()
+    def __init__(self, scene: Scene, title: str | None = None):
+        super().__init__()
 
-	# ==================================================================================================================
-	# OVERRIDES
-	# ==================================================================================================================
+        self._model = node_model.NodeModel()
+        self._scene = scene
+        self._title = ''
 
-	def update_model(self):
-		"""
-		Updates the node model from view.
-		"""
+        self._graphics_node = self.GRAPHICS_CLASS(self)
 
-		for name, value in self.view.properties.items():
-			if name in ['inputs', 'outputs']:
-				continue
-			self.model.set_property(name, value)
+        self.title = title or self.__class__.DEFAULT_TITLE
 
-		for name, widget in self.view.widgets.items():
-			self.model.set_property(name, widget.value())
+        self.scene.add_node(self)
+        self.scene.graphics_scene.addItem(self._graphics_node)
 
-	# ==================================================================================================================
-	# BASE
-	# ==================================================================================================================
+    def __repr__(self):
+        return '<{}("{}") object at {}>'.format(self.__class__.__name__, self.ID, hex(id(self)))
 
-	def icon(self):
-		"""
-		Returns node icon path.
+    @classmethod
+    def as_str(cls, name_only: bool = False) -> str:
+        """
+        Returns a string representation of the class.
 
-		:return: node icon path.
-		:rtype: str or None
-		"""
+        :param bool name_only: whether to return the name of the class only.
+        :return: class as a string.
+        """
 
-		return self.model.icon
+        return cls.__name__ if name_only else '.'.join([cls.__module__, cls.__name__])
 
-	def set_icon(self, icon=None):
-		"""
-		Sets the node icon.
+    @property
+    def model(self) -> node_model.NodeModel:
+        """
+        Returns node model.
 
-		:param str icon: path to the icon image.
-		"""
+        :return: node model.
+        :rtype: node_model.NodeModel
+        """
 
-		self.set_property('icon', icon)
+        return self._model
 
-	# ==================================================================================================================
-	# SOCKETS
-	# ==================================================================================================================
+    @model.setter
+    def model(self, value: node_model.NodeModel):
+        """
+        Sets the node model.
 
-	# NOTE: do change function name, used by NodeGraph to access node socket easily (_on_connection_changed)
-	def inputs(self):
-		"""
-		Returns all the input socket from the node.
+        :param node_model.NodeModel value: node model.
+        """
 
-		:return: all node input sockets.
-		:rtype: dictionary with the input socket names as keys and the input socket objects as values.
-		:rtype: dict(str, Socket)
-		"""
-
-		return {node_socket.name(): node_socket for node_socket in self._inputs}
-
-	def input_sockets(self):
-		"""
-		Returns all input sockets.
+        self._model = value
 
-		:return: list of node input sockets.
-		:rtype: list[tp.common.nodegraph.core.socket.Socket]
-		"""
+        self.update()
 
-		return self._inputs
+    @property
+    def uuid(self) -> str:
+        """
+        Returns node unique ID.
 
-	# NOTE: do change function name, used by NodeGraph to access node socket easily (_on_connection_changed)
-	def outputs(self):
-		"""
-		Returns all the output socket from the node.
-
-		:return: all node output sockets.
-		:rtype: dictionary with the output socket names as keys and the output socket objects as values.
-		:rtype: dict(str, Socket)
-		"""
-
-		return {node_socket.name(): node_socket for node_socket in self._outputs}
-
-	def output_sockets(self):
-		"""
-		Returns all output sockets.
-
-		:return: list of node output sockets.
-		:rtype: list[tp.common.nodegraph.core.socket.Socket]
-		"""
-
-		return self._outputs
-
-	def input(self, name_or_index):
-		"""
-		Returns the input socket with the matching index.
-
-		:param int or str name_or_index: name or index of the input socket.
-		:return: socket instance.
-		:rtype: tp.common.nodegraph.core.socket.Socket
-		"""
-
-		if isinstance(name_or_index, int):
-			if name_or_index < len(self._inputs):
-				return self._inputs[name_or_index]
-		elif helpers.is_string(name_or_index):
-			return self.inputs().get(name_or_index, None)
-
-	def set_input(self, index, output_socket):
-		"""
-		Creates a connection to the given output socket.
-		:param int index: index of the input socket to connect.
-		:param tp.common.nodegraph.core.socket.Socket output_socket: output socket to connect.
-		"""
-
-		input_socket = self.input(index)
-		input_socket.connect_to(output_socket)
-
-	def output(self, name_or_index):
-		"""
-		Returns the output socket with the matching index.
-
-		:param int or str name_or_index: name or index of the output socket.
-		:return: socket instance.
-		:rtype: tp.common.nodegraph.core.socket.Socket
-		"""
-
-		if isinstance(name_or_index, int):
-			if name_or_index < len(self._outputs):
-				return self._outputs[name_or_index]
-		elif helpers.is_string(name_or_index):
-			return self.outputs().get(name_or_index, None)
-
-	def set_output(self, index, input_socket):
-		"""
-		Creates a connection between the given input socket.
-
-		:param int index: index of the output socket given input will be connected to.
-		:param tp.common.nodegraph.core.socket.Socket input_socket: input socket that will be connected.
-		"""
-
-		output_socket = self.output(index)
-		output_socket.connect_to(input_socket)
-
-	def add_input(
-			self, name='input', multi_input=False, display_name=True, color=None, data_type=None, locked=False,
-			painter_fn=None):
-		"""
-		Adds a new input socket into the node.
-
-		:param str name: name for the input socket.
-		:param bool multi_input: whether to allow socket to have more than one connection.
-		:param bool display_name: display the port name on the node.
-		:param tuple(int, int, int) color: initial port color in 0 to 255 range.
-		:param str data_type: socket data type name.
-		:param bool locked: locked state of the socket.
-		:param callable painter_fn: custom function to override the drawing of the socket.
-		:return: newly created socket object.
-		:rtype: Socket
-		"""
-
-		data_type = data_type or register.DataTypes.EXEC
-
-		if name in self.inputs().keys():
-			raise exceptions.SocketDuplicatedError('socket input name "{}" already registered!'.format(name))
-
-		# exec inputs only can be connected to one output
-		if data_type == register.DataTypes.EXEC:
-			multi_input = False
-
-		painter_fn = painter_fn or socket_painters.exec_socket_painter if data_type == register.DataTypes.EXEC else None
-		socket_args = [name, multi_input, display_name, locked]
-		if painter_fn and callable(painter_fn):
-			socket_args.append(painter_fn)
-		socket_view = self._view.add_input(*socket_args)
-
-		# if a color is not defined we use data type specific color
-		if not color:
-			color = register.DataType.get_type(data_type).get('color', QColor()).toTuple()
-		if color:
-			socket_view.color = color
-			socket_view.border_color = [min([255, max([0, i + 80])]) for i in color]
-
-		new_socket = socket.Socket(self, socket_view)
-		new_socket.model.direction = consts.SocketDirection.Input
-		new_socket.model.name = name
-		new_socket.display_name = display_name
-		new_socket.model.multi_connection = multi_input
-		new_socket.model.data_type = data_type
-		new_socket.model.locked = locked
-		self._inputs.append(new_socket)
-		self.model.inputs[new_socket.name()] = new_socket.model
-
-		return new_socket
-
-	def add_output(self, name='output', multi_output=True, display_name=True, color=None, data_type=None, locked=False,
-				   painter_fn=None):
-		"""
-		Adds a new input socket into the node.
-
-		:param str name: name for the input socket.
-		:param bool multi_output: whether to allow socket to have more than one connection.
-		:param bool display_name: display the port name on the node.
-		:param tuple(int, int, int) color: initial port color in 0 to 255 range.
-		:param str data_type: socket data type name.
-		:param bool locked: locked state of the socket.
-		:param callable painter_fn: custom function to override the drawing of the socket.
-		:return: newly created socket object.
-		:rtype: Socket
-		"""
-
-		data_type = data_type or register.DataTypes.EXEC
-
-		if name in self.outputs().keys():
-			raise exceptions.SocketDuplicatedError('socket output name "{}" already registered!'.format(name))
-
-		# exec outputs only can be connected to one input
-		if data_type == register.DataTypes.EXEC:
-			multi_output = False
-
-		painter_fn = painter_fn or socket_painters.exec_socket_painter if data_type == register.DataTypes.EXEC else None
-		socket_args = [name, multi_output, display_name, locked]
-		if painter_fn and callable(painter_fn):
-			socket_args.append(painter_fn)
-		socket_view = self._view.add_output(*socket_args)
-
-		# if a color is not defined we use data type specific color
-		if not color:
-			color = register.DataType.get_type(data_type).get('color').toTuple()
-		if color:
-			socket_view.color = color
-			socket_view.border_color = [min([255, max([0, i + 80])]) for i in color]
-
-		new_socket = socket.Socket(self, socket_view)
-		new_socket.model.direction = consts.SocketDirection.Output
-		new_socket.model.name = name
-		new_socket.model.multi_connection = multi_output
-		new_socket.model.data_type = data_type
-		new_socket.model.locked = locked
-		self._outputs.append(new_socket)
-		self.model.outputs[new_socket.name()] = new_socket.model
-
-		return new_socket
-
-	def delete_input(self, name_or_index):
-		"""
-		Deletes input socket from node by its name or index.
-
-		:param str or int name_or_index: socket name or index.
-		:raises exception.SocketError: if sockets cannot be deleted for this node.
-		:raises exception.SocketError: if socket to delete is locked.
-		"""
-
-		input_socket = None
-		if type(name_or_index) in (int, str):
-			input_socket = self.input(name_or_index)
-		if input_socket is None:
-			return
-		if not self.socket_deletion_allowed():
-			raise exceptions.SocketError(
-				'Socket "{}" cannot be deleted on this node because sockets are not removable'.format(self.name()))
-		if input_socket.locked():
-			raise exceptions.SocketError('Cannot delete a socket that is locked!')
-
-		self._inputs.remove(input_socket)
-		self._model.inputs.pop(input_socket.name())
-		self._view.delete_input(input_socket.view)
-		input_socket.model.node = None
-		self._view.draw()
-
-	def delete_output(self, name_or_index):
-		"""
-		Deletes output socket from node by its name or index.
-
-		:param str or int name_or_index: socket name or index.
-		:raises exception.SocketError: if sockets cannot be deleted for this node.
-		:raises exception.SocketError: if socket to delete is locked.
-		"""
-
-		output_socket = None
-		if type(name_or_index) in (int, str):
-			output_socket = self.output(name_or_index)
-		if output_socket is None:
-			return
-		if not self.socket_deletion_allowed():
-			raise exceptions.SocketError(
-				'Socket "{}" cannot be deleted on this node because sockets are not removable'.format(self.name()))
-		if output_socket.locked():
-			raise exceptions.SocketError('Cannot delete a socket that is locked!')
-
-		self._outputs.remove(output_socket)
-		self._model.outputs.pop(output_socket.name())
-		self._view.delete_output(output_socket.view)
-		output_socket.model.node = None
-		self._view.draw()
-
-	def delete_all_sockets(self, force=False):
-		"""
-		Deletes all sockets in this node.
-		"""
-
-		if not force and not self.socket_deletion_allowed():
-			raise exceptions.SocketError(
-				'Socket "{}" cannot be deleted on this node because sockets are not removable'.format(self.name()))
-
-		for input_name, _ in self.inputs():
-			self.delete_input(input_name)
-		for output_name, _ in self.outputs():
-			self.delete_output(output_name)
-
-	def socket_deletion_allowed(self):
-		"""
-		Returns whether sockets for this node can be deleted.
-
-		:return: True if sockets can be deleted; False otherwise.
-		:rtype: bool
-		"""
-
-		return self.model.dynamic_port
-
-	def set_socket_deletion_allowed(self, flag):
-		"""
-		Sets whether sockets for this node can be deleted.
-
-		:param bool flag: True to enable socket deletion; False otherwise.
-		"""
-
-		self.model.dynamic_port = flag
-
-	def connected_input_nodes(self):
-		"""
-		Returns all nodes connected from the input sockets.
-
-		:return: input nodes mapping.
-		:rtype: dict(tp.common.nodegraph.core.socket.Socket: list[tp.common.nodegraph.core.node.BaseNode]]
-		"""
-
-		nodes = OrderedDict()
-		for input_socket in self.input_sockets():
-			nodes[input_socket] = [connected_socket.node() for connected_socket in input_socket.connected_sockets()]
-
-		return nodes
-
-	def connected_output_nodes(self):
-		"""
-		Returns all nodes connected from the output sockets.
-
-		:return: output nodes mapping.
-		:rtype: dict(tp.common.nodegraph.core.socket.Socket: list[tp.common.nodegraph.core.node.BaseNode]]
-		"""
-
-		nodes = OrderedDict()
-		for output_socket in self.output_sockets():
-			nodes[output_socket] = [connected_socket.node() for connected_socket in output_socket.connected_sockets()]
-
-		return nodes
-
-	# =================================================================================================================
-	# WIDGETS
-	# =================================================================================================================
-
-	def widgets(self):
-		"""
-		Returns al embedded widgets from this node.
-
-		:return: list of embedded widgets.
-		:rtype: list[nodewidgets.NodeBaseWidget]
-		"""
-
-		return self.view.widgets
-
-	def widget(self, name):
-		"""
-		Returns the embedded widget associated with the given property name.
-
-		:param str name: node property name.
-		:return: embedded node widget.
-		:rtype: nodewidgets.NodeBaseWidget
-		"""
-
-		return self.view.widgets.get(name)
-
-	def add_combo_menu(self, name, label='', items=None, tab=None):
-		"""
-		Creates a custom property and embeds a combo box widget into the node.
-
-		:param str name: name for the custom property.
-		:param str label: label to be displayed.
-		:param list[str] or None items: optional list of items to be added into the menu.
-		:param str or None tab: name of the widget tab to display in.
-		"""
-
-		self.create_property(
-			name, value=items[0] if items else None, items=items or list(),
-			widget_type=consts.PropertiesEditorWidgets.COMBOBOX, tab=tab)
-		widget = nodewidgets.NodeComboBox(name=name, label=label, items=items, parent=self.view)
-		widget.valueChanged.connect(lambda k, v: self.set_property(k, v))
-		self.view.add_widget(widget)
-
-	def add_text_input(self, name, label='', text='', tab=None):
-		"""
-		Creates a custom property and embeds a line edit widget into the node.
-
-		:param str name: name for the custom property.
-		:param str label: label to be displayed.
-		:param str text: optional default text.
-		:param str or None tab: name of the widget tab to display in.
-		"""
-
-		self.create_property(name, value=text, widget_type=consts.PropertiesEditorWidgets.LINE_EDIT, tab=tab)
-		widget = nodewidgets.NodeLineEdit(name=name, label=label, text=text, parent=self.view)
-		widget.valueChanged.connect(lambda k, v: self.set_property(k, v))
-		self.view.add_widget(widget)
-
-	def add_checkbox(self, name, label='', text='', state=False, tab=None):
-		"""
-		Creates a custom property and embeds a checkbox widget into the node.
-
-		:param str name: name for the custom property.
-		:param str label: label to be displayed.
-		:param str text: optional checkbox text.
-		:param bool state: default checkbox check state.
-		:param str or None tab: name of the widget tab to display in.
-		"""
-
-		self.create_property(name, value=state, widget_type=consts.PropertiesEditorWidgets.CHECKBOX, tab=tab)
-		widget = nodewidgets.NodeCheckBox(name=name, label=label, text=text, state=state, parent=self.view)
-		widget.valueChanged.connect(lambda k, v: self.set_property(k, v))
-		self.view.add_widget(widget)
-
-	# =================================================================================================================
-	# CALLBACKS
-	# =================================================================================================================
-
-	def _on_input_connected(self, input_socket, output_socket):
-		"""
-		Internal callback function that is triggered when a new connection is made.
-
-		:param tp.common.nodegraph.core.socket.Socket input_socket: source input socket from this node.
-		:param tp.common.nodegraph.core.socket.Socket output_socket: output socket that connected to this node.
-		..info:: this function does nothing by default, re-implement if custom logic is required.
-		"""
-
-		pass
-
-	def _on_input_disconnected(self, input_socket, output_socket):
-		"""
-		Internal callback function that is triggered when a connection has been disconnected.
-
-		:param tp.common.nodegraph.core.socket.Socket input_socket: source input socket from this node.
-		:param tp.common.nodegraph.core.socket.Socket output_socket: output socket that was disconnected from this node.
-		..info:: this function does nothing by default, re-implement if custom logic is required.
-		"""
-
-		pass
+        :return: node unique identifier.
+        :rtype: str
+        """
+
+        return self.model.uuid
+
+    @uuid.setter
+    def uuid(self, value: str):
+        self._uuid = value
+
+    @property
+    def scene(self) -> Scene:
+        return self._scene
+
+    @property
+    def graphics_node(self) -> node_graphics.GraphicsNode:
+        return self._graphics_node
+
+    @property
+    def title(self) -> str:
+        return self._title
+
+    @title.setter
+    def title(self, value: str):
+        self._title = value
+        try:
+            self._graphics_node.title = self._title
+        except AttributeError:
+            # Node graphics do not need to have title in all scenarios
+            # TODO: Improve this
+            pass
+
+    def update(self):
+        """
+        Updates the node view based on current node model data.
+        """
+
+        print('Updating view ...')
+
+    def pre_serialization(self):
+        """
+        Function that is called before node serialization process starts.
+        This function can be overriden by custom node classes.
+        """
+
+        pass
+
+    def post_serialization(self, data: dict):
+        """
+        Function that is called before node serialization process starts.
+        This function can be overriden by custom node classes.
+
+        :param dict data: node deserialized data.
+        """
+
+        pass
+
+    def pre_deserialization(self, data: dict):
+        """
+        Function that is called before node deserialization process starts.
+        This function can be overriden by custom node classes.
+
+        :param dict data: node serialized data.
+        """
+
+        pass
+
+    def post_deserialization(self, data: dict):
+        """
+        Function that is called after node deserialization process ends.
+        This function can be overriden by custom node classes.
+
+        :param dict data: node serialized data.
+        """
+
+        pass
+
+    def set_position(self, x: float, y: float):
+        """
+        Sets node position within scene.
+
+        :param float x: X coordinate.
+        :param float y: Y coordinate.
+        """
+
+        self._graphics_node.setPos(x, y)
+
+    def position(self) -> qt.QPointF:
+        """
+        Returns node position within scene.
+
+        :return: node position.
+        :rtype: qt.QPointF
+        """
+
+        return self._graphics_node.pos()
+
+    def append_tooltip(self, text: str):
+        """
+        Appends given text to node tooltip.
+
+        :param str text: tooltip to append.
+        """
+
+        self._graphics_node.setToolTip(self._graphics_node.toolTip() + text)
+
+    def remove(self, silent: bool = False):
+        """
+        Removes node from scene.
+
+        :param bool silent: whether to emit remove signals, so listeners are notified.
+        """
+
+        try:
+            self.scene.graphics_scene.removeItem(self._graphics_node)
+            self._graphics_node = None
+            self.scene.remove_node(self)
+        except Exception:
+            logger.exception(f'Failed to delete node {self}', exc_info=True)
+
+
+class Node(BaseNode):
+
+    GRAPHICS_CLASS = node_graphics.GraphicsNode
+    ATTRIBUTES_WIDGET = attributes.AttributesWidget
+
+    class Signals(qt.QObject):
+        compiledChanged = qt.Signal(bool)
+        invalidChanged = qt.Signal(bool)
+        titleEdited = qt.Signal(str)
+        numSocketsChanged = qt.Signal()
+
+    COMPILABLE = True
+    INPUT_POSITION = socket.Socket.Position.LeftTop.value
+    OUTPUT_POSITION = socket.Socket.Position.RightTop.value
+
+    def __init__(self, scene: Scene, title: str | None = None):
+        super().__init__(scene=scene, title=title)
+
+        self._signals = Node.Signals()
+
+        self._is_compiled = False
+        self._is_invalid = False
+        self._is_executing = False
+
+        self._inputs: list[socket.InputSocket] = []
+        self._outputs: list[socket.OutputSocket] = []
+        self._required_inputs: deque[socket.InputSocket] = deque()
+        self._exec_in_socket: socket.InputSocket | None = None
+        self._exec_out_socket: socket.OutputSocket | None = None
+
+        self._setup_settings()
+
+        self.signals.numSocketsChanged.connect(self._on_num_sockets_changed)
+        self._setup_sockets()
+        self._setup_signals()
+
+    @property
+    def signals(self) -> Signals:
+        return self._signals
+
+    @property
+    def inputs(self) -> list[socket.InputSocket]:
+        return self._inputs
+
+    @property
+    def outputs(self) -> list[socket.OutputSocket]:
+        return self._outputs
+
+    @property
+    def required_inputs(self) -> deque[socket.InputSocket]:
+        return self._required_inputs
+
+    @property
+    def exec_in_socket(self) -> socket.InputSocket | None:
+        return self._exec_in_socket
+
+    @property
+    def exec_out_socket(self) -> socket.OutputSocket | None:
+        return self._exec_out_socket
+
+    @property
+    def is_executing(self) -> bool:
+        return self._is_executing
+
+    @override
+    def post_deserialization(self, data: dict):
+        self.signals.numSocketsChanged.emit()
+
+    @override
+    def remove(self, silent: bool = False):
+        try:
+            self.remove_all_connections(include_exec=True, silent=silent)
+        except Exception:
+            logger.exception(f'Failed to delete node {self}', exc_info=True)
+            return
+        super().remove(silent=silent)
+
+    def setup_sockets(self):
+        """
+        Creates all custom sockets for this node instance.
+        This function can be overriden by custom node classes.
+        """
+
+        pass
+
+    def exec_queue(self) -> deque[Node]:
+        """
+        Recursive function that returns executable queue, that defines the order of execution for nodes.
+
+        :return: nodes executable queue.
+        :rtype: deque[Node]
+        """
+
+        exec_queue = deque([self])
+        for exec_output in self.list_exec_outputs():
+            if not exec_output.list_connections():
+                continue
+            exec_queue.extend(exec_output.list_connections()[0].node.exec_queue())
+
+        return exec_queue
+
+    def execute(self) -> Any:
+        """
+        Executes node logic.
+        """
+
+        return 0
+
+    def execute_children(self):
+        """
+        Executes children nodes.
+        """
+
+        for child_node in self.list_exec_children():
+            child_node._exec()
+
+    def value(self, socket_name: str) -> Any:
+        """
+        Returns the internal value of given socket name.
+
+        :param str socket_name: socket name to get value of.
+        :return: socket value.
+        :rtype: Any
+        :raises AttributeError: if socket with given name does not exist.
+        """
+
+        found_socket = getattr(self, socket_name)
+        if not found_socket or not isinstance(found_socket, socket.Socket):
+            logger.error(f'Socket "{socket_name}" does not exist!')
+            raise AttributeError
+
+        return found_socket.value()
+
+    def verify_inputs(self) -> bool:
+        """
+        Verifies that input sockets are valid for this node.
+
+        :return: True if inputs are valid; False otherwise.
+        :rtype: bool
+        """
+
+        invalid_inputs: deque[socket.Socket] = deque()
+        for input_socket in self._required_inputs:
+            if not input_socket.has_edge() and not input_socket.value():
+                invalid_inputs.append(input_socket)
+
+        if invalid_inputs:
+            tooltip = ''
+            for invalid_input in invalid_inputs:
+                tooltip += f'Invalid input: {invalid_input.label}\n'
+            self.append_tooltip(tooltip)
+            return False
+
+        return True
+
+    def verify(self) -> bool:
+        """
+        Verifies whether node can be compiled.
+
+        :return: True if node can be compiled; False otherwise.
+        :rtype: bool
+        """
+
+        self._graphics_node.setToolTip('')
+        result = self.verify_inputs()
+
+        return result
+
+    def socket_position(
+            self, index: int, position: socket.Socket.Position, count_on_this_side: int = 1) -> list[int, int]:
+        """
+        Returns the position of the socket at given index.
+
+        :param int index: socket index.
+        :param socket.Socket.Position position: socket position.
+        :param int count_on_this_side: number of sockets on the side.
+        :return: socket position relative to this node graphics.
+        :rtype: list[int, int]
+        """
+
+        if position in (
+                socket.Socket.Position.LeftTop, socket.Socket.Position.LeftCenter, socket.Socket.Position.LeftBottom):
+            x = 0
+        else:
+            x = self.graphics_node.width
+
+        if position in (socket.Socket.Position.LeftBottom, socket.Socket.Position.RightBottom):
+            # start from top
+            y = self.graphics_node.height - self.graphics_node.edge_roundness - self.graphics_node.title_horizontal_padding - index * self._socket_spacing
+        elif position in (socket.Socket.Position.LeftCenter, socket.Socket.Position.RightCenter):
+            num_sockets = count_on_this_side
+            node_height = self.graphics_node.height
+            top_offset = self.graphics_node.title_height + 2 * self.graphics_node.title_vertical_padding + self.graphics_node.edge_padding
+            available_height = node_height - top_offset
+
+            y = top_offset + available_height / 2.0 + (index - 0.5) * self._socket_spacing
+            if num_sockets > 1:
+                y -= self._socket_spacing * (num_sockets - 1) / 2
+
+        elif position in (socket.Socket.Position.LeftTop, socket.Socket.Position.RightTop):
+            # start from bottom
+            y = self.graphics_node.title_height + self.graphics_node.title_horizontal_padding + self.graphics_node.edge_roundness + index * self._socket_spacing
+        else:
+            y = 0
+
+        return [x, y]
+
+    def add_input(
+            self, data_type: dict, label: str | None = None, value: Any = None, *args, **kwargs) -> socket.InputSocket:
+        """
+        Adds a new input socket to this node.
+
+        :param dict data_type: data type of the socket.
+        :param str or None label: optional input socket label.
+        :param Any value: optional default input socket value.
+        :return: newly created input socket.
+        :rtype: socket.InputSocket
+        """
+
+        def _new_input_index() -> int:
+            return len(self._inputs)
+
+        new_socket = socket.InputSocket(
+            self, index=_new_input_index(), position=self.__class__.INPUT_POSITION, data_type=data_type, label=label,
+            max_connections=1, value=value, count_on_this_side=_new_input_index(), *args, **kwargs)
+        self._inputs.append(new_socket)
+        self.signals.numSocketsChanged.emit()
+
+        return new_socket
+
+    def mark_input_as_required(self, input_socket_to_mark_as_required: socket.InputSocket):
+        """
+        Marks given input socket as a required socket for the node to be executed.
+
+        :param socket.InputSocket input_socket_to_mark_as_required: input socket to mark as required.
+        """
+
+        if isinstance(input_socket_to_mark_as_required, socket.InputSocket):
+            self._required_inputs.append(input_socket_to_mark_as_required)
+        elif isinstance(input_socket_to_mark_as_required, str):
+            input_socket_to_mark_as_required = self.find_first_input_with_label(input_socket_to_mark_as_required)
+            if not input_socket_to_mark_as_required:
+                logger.error(
+                    f'Can not mark input {input_socket_to_mark_as_required} as required. '
+                    f'Failed to find socket from label.')
+                return
+            self._required_inputs.append(input_socket_to_mark_as_required)
+        else:
+            logger.error(f'Invalid required "input socket" argument {input_socket_to_mark_as_required}')
+
+    def mark_inputs_as_required(self, input_sockets: list[socket.InputSocket]):
+        """
+        Marks given input sockets as required sockets for the node to be executed.
+
+        :param list[socket.InputSocket] input_sockets: list of input sockets to mark as required.
+        """
+
+        for input_socket in input_sockets:
+            self.mark_input_as_required(input_socket)
+
+    def add_output(
+            self, data_type: dict, label: str | None = None, max_connections: int = 0, value: Any = None, *args,
+            **kwargs) -> socket.OutputSocket:
+        """
+        Adds a new output socket to this node.
+
+        :param dict data_type: data type of the socket.
+        :param str or None label: optional input socket label.
+        :param int max_connections: maximum number of connections this socket will accept.
+        :param Any value: optional default input socket value.
+        :return: newly created input socket.
+        :rtype: socket.OutputSocket
+        """
+
+        def _new_output_index() -> int:
+            return len(self._outputs)
+
+        max_connections = 1 if data_type == datatypes.Exec else max_connections
+        new_socket = socket.OutputSocket(
+            self, index=_new_output_index(), position=self.__class__.OUTPUT_POSITION, data_type=data_type, label=label,
+            max_connections=max_connections, value=value, count_on_this_side=_new_output_index(), *args, **kwargs)
+        self._outputs.append(new_socket)
+        self.signals.numSocketsChanged.emit()
+
+        return new_socket
+
+    def find_first_input_with_label(self, text: str) -> socket.InputSocket | None:
+        """
+        Returns first input socket with given label.
+
+        :param str text: label to find input socket by.
+        :return: found input socket instance.
+        :rtype: socket.InputSocket or None
+        """
+
+        found_input_socket = None
+        for input_socket in self._inputs:
+            if input_socket.label == text:
+                found_input_socket = input_socket
+                break
+        return found_input_socket
+
+    def find_first_input_of_datatype(self, datatype: dict) -> socket.InputSocket | None:
+        """
+        Returns first input socket with given data type.
+
+        :param dict datatype: data type to find input socket by.
+        :return: found input socket instance.
+        :rtype: socket.InputSocket or None
+        """
+
+        found_input_socket = None
+        for input_socket in self._inputs:
+            if issubclass(datatype.get('class', type(None)), input_socket.data_class):
+                found_input_socket = input_socket
+                break
+        return found_input_socket
+
+    def find_first_output_with_label(self, text) -> socket.OutputSocket | None:
+        """
+        Returns output input socket with given label.
+
+        :param str text: label to find output socket by.
+        :return: found output socket instance.
+        :rtype: socket.OutputSocket or None
+        """
+
+        found_output_socket = None
+        for output_socket in self._outputs:
+            if output_socket.label == text:
+                found_output_socket = output_socket
+                break
+        return found_output_socket
+
+    def list_exec_outputs(self) -> list[socket.OutputSocket]:
+        """
+        Returns list of executable output sockets.
+
+        :return: executable output sockets.
+        :rtype: list[socket.OutputSocket]
+        """
+
+        return [found_socket for found_socket in self.outputs if found_socket.data_type == datatypes.Exec]
+
+    def list_non_exec_inputs(self) -> list[socket.InputSocket]:
+        """
+        Returns list of non executable input sockets.
+
+        :return: nont executable input sockets.
+        :rtype: list[socket.InputSocket]
+        """
+
+        return [found_socket for found_socket in self.inputs if found_socket.data_type != datatypes.Exec]
+
+    def list_non_exec_outputs(self) -> list[socket.OutputSocket]:
+        """
+        Returns list of non executable outputs sockets.
+
+        :return: nont executable outputs sockets.
+        :rtype: list[socket.OutputSocket]
+        """
+
+        return [found_socket for found_socket in self.outputs if found_socket.data_type != datatypes.Exec]
+
+    def find_first_output_of_datatype(self, datatype: dict):
+        """
+        Returns first output socket with given data type.
+
+        :param dict datatype: data type to find output socket by.
+        :return: found output socket instance.
+        :rtype: socket.OutputSocket or None
+        """
+
+        found_output_socket = None
+        for output_socket in self._outputs:
+            if issubclass(output_socket.data_class, datatype.get('class', type(None))):
+                found_output_socket = output_socket
+                break
+        return found_output_socket
+
+    def is_invalid(self) -> bool:
+        """
+        Returns whether node is invalid.
+
+        :return: True if node is invalid; False otherwise.
+        :rtype: bool
+        """
+
+        return self._is_invalid
+
+    def set_invalid(self, flag: bool = True):
+        """
+        Sets node invalid status.
+
+        :param bool flag: True to set node as invalid; False otherwise.
+        """
+
+        self._is_invalid = flag
+        self.signals.invalidChanged.emit(self._is_invalid)
+
+    def is_compiled(self) -> bool:
+        """
+        Returns whether this node is already compiled.
+
+        :return: True if node is compiled; False otherwise.
+        :rtype: bool
+        """
+
+        return self._is_compiled
+
+    def set_compiled(self, flag: bool = False, emit_signal: bool = True):
+        """
+        Sets node compile status.
+
+        :param bool flag: True to set node as compiled; False otherwise.
+        :param bool emit_signal: whether to notify that compile status changed.
+        """
+
+        if self._is_compiled == flag:
+            return
+        self._is_compiled = flag
+        self.signals.compiledChanged.emit(self._is_compiled)
+
+    def mark_children_compiled(self, state: bool):
+        """
+        Marks all children nodes with given compile status.
+
+        :param bool state: compile status.
+        """
+
+        if state:
+            return
+
+        for child_node in self.list_children():
+            child_node.set_compiled(state)
+            child_node.mark_children_compiled(state)
+
+    def remove_socket(self, name: str, is_input: bool = True):
+        """
+        Removes socket with given name from node.
+
+        :param str name: name of the socket to remove.
+        :param bool is_input: whether the input to remove is an input one or an output one.
+        """
+
+        try:
+            if is_input:
+                socket_to_remove = [socket for socket in self.inputs if socket.label == name][0]
+                self.inputs.remove(socket_to_remove)
+                if socket_to_remove in self._required_inputs:
+                    self._required_inputs.remove(socket_to_remove)
+                for index, socket in enumerate(self.inputs):
+                    socket.index = index
+            else:
+                socket_to_remove = [socket for socket in self.outputs if socket.label == name][0]
+                self.outputs.remove(socket_to_remove)
+                for index, socket in enumerate(self.outputs):
+                    socket.index = index
+            socket_to_remove.remove()
+            self.signals.numSocketsChanged.emit()
+        except Exception:
+            logger.exception('Failed to delete socket {}'.format(name), exc_info=True)
+
+    def remove_existing_sockets(self):
+        """
+        Deletes all sockets that already exist for this node.
+        """
+
+        for socket_to_delete in self._inputs + self._outputs:
+            self._scene.graphics_scene.removeItem(socket_to_delete.graphics_socket)
+        self._inputs.clear()
+        self._outputs.clear()
+
+    def remove_all_connections(self, include_exec: bool = False, silent: bool = False):
+        """
+        Deletes all edges connected to this node sockets.
+
+        :param bool include_exec: whether to delete edges connected to executable sockets.
+        :param bool silent: whether to emit remove signals, so listeners are notified.
+        """
+
+        for input_socket in self.inputs:
+            if not include_exec and input_socket.data_type == datatypes.Exec:
+                continue
+            input_socket.remove_all_edges(silent=silent)
+        for output_socket in self.outputs:
+            if not include_exec and output_socket.data_type == datatypes.Exec:
+                continue
+            output_socket.remove_all_edges(silent=silent)
+
+    def list_children(self, recursive: bool = False) -> list[Node]:
+        """
+        Recursive function that return a list with all connected children nodes.
+
+        :param bool recursive: whether to return children recursively.
+        :return: children nodes.
+        :rtype: list[Node]
+        """
+
+        children: list[Node] = []
+        for output in self.outputs:
+            for child_socket in output.list_connections():
+                children.append(child_socket.node)
+        if recursive:
+            for child_node in children:
+                children += child_node.list_children(recursive=True)
+
+        return children
+
+    def list_exec_children(self) -> list[Node]:
+        """
+        Returns list with all connected executable children.
+
+        :return: children executable nodes.
+        :rtype: list[Node]
+        """
+
+        executable_children: list[Node] = []
+        for exec_output in self.list_exec_outputs():
+            executable_children += [child_socket.node for child_socket in exec_output.list_connections()]
+
+        return executable_children
+
+    def update_affected_outputs(self):
+        """Updates affected output sockets for each one of the inputs.
+        """
+
+        for input_socket in self.inputs:
+            input_socket.update_affected()
+
+    def edit_title(self):
+        """
+        Enables node title edit mode.
+        """
+
+        if not self.TITLE_EDITABLE:
+            logger.warning(f'Title for node {self.title} is not editable')
+            return
+
+        self.graphics_node.title_item.edit()
+
+    def attributes_widget(self) -> attributes.AttributesWidget:
+        """
+        Returns attribute editor widget for this node.
+
+        :return: attribute editor widget.
+        :rtype: attributes.AttributesWidget
+        """
+
+        return self.ATTRIBUTES_WIDGET(self)
+
+    def _exec(self) -> int:
+        """
+        Internal function that handles node execution logic shared by all nodes.
+
+        :return: execution code.
+        :rtype: int
+        """
+
+        logger.debug(f'Executing {self}....')
+        self._is_executing = True
+
+        qt.QApplication.processEvents()
+        self._graphics_node.update()
+
+        try:
+            self.execute()
+            self.update_affected_outputs()
+            self.set_compiled(True)
+            self.set_invalid(False)
+        except Exception:
+            logger.exception(f'Failed to execute {self.title} {self}')
+            self.append_tooltip('Execution error (Check script editor for details)\n')
+            self.set_invalid(True)
+            raise
+        finally:
+            self._is_executing = False
+            self._graphics_node.update()
+
+        return 0
+
+    def _setup_settings(self):
+        """
+        Internal function that initializes node settings.
+        """
+
+        self._socket_spacing = 32
+
+    def _setup_sockets(self, reset: bool = True):
+        """
+        Internal function that creates default sockets for this node.
+
+        :param bool reset: whehther to remove already existing sockets.
+        """
+
+        self._required_inputs.clear()
+        self._exec_in_socket = None
+        self._exec_out_socket = None
+        if reset:
+            self.remove_existing_sockets()
+
+        if self.__class__.IS_EXEC and self.__class__.AUTO_INIT_EXECS:
+            self._exec_in_socket = self.add_input(datatypes.Exec)
+            self._exec_out_socket = self.add_output(datatypes.Exec, max_connections=1)
+
+        self.setup_sockets()
+
+    def _setup_signals(self):
+        """
+        Internal function that setup node signals.
+        """
+
+        self.signals.compiledChanged.connect(self._on_compiled_changed)
+        self.signals.invalidChanged.connect(self._on_invalid_change)
+        self.signals.titleEdited.connect(self._on_title_edited)
+
+    def _on_num_sockets_changed(self):
+        """
+        Internal callback function that is called each time number of sockets for this node changes.
+        """
+
+        self._graphics_node.update_size()
+
+    def _on_compiled_changed(self, state: bool):
+        """
+        Internal callback function that is called each time node compile status changes.
+
+        :param bool state: node compile status.
+        """
+
+        self.mark_children_compiled(state)
+
+    def _on_invalid_change(self, state: bool):
+        """
+        Internal callback function that is called each time node invalid status changes.
+
+        :param bool state: node invalid status.
+        """
+
+        if state:
+            logger.warning(f'{self} marked as invalid')
+
+    def _on_title_edited(self, new_title: str):
+        """
+        Internal callback function that is called each time node title changes.
+
+        :param str new_title: new node title.
+        """
+
+        new_title = new_title or self.DEFAULT_TITLE
+        old_title = self.title
+        self.title = new_title
+        self.scene.history.store_history(f'Renamed Node {old_title} -> {new_title}')

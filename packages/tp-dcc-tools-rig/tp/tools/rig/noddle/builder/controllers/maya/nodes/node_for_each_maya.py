@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from tp.tools.rig.noddle.builder import api
 
-from tp.tools.rig.noddle.builder.graph.nodes import node_for_each
+from tp.common.nodegraph.nodes import node_for_each
 
 
 class ForEachComponent(node_for_each.ForEachNode):

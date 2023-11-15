@@ -9,11 +9,11 @@ from overrides import override
 from tp.core import log
 from tp.common.qt import api as qt
 from tp.common.resources import api as resources
-from tp.tools.rig.noddle.builder.graph import registers
+from tp.common.nodegraph import registers
 
 if typing.TYPE_CHECKING:
-    from tp.tools.rig.noddle.builder.graph.core.scene import Scene
-    from tp.tools.rig.noddle.builder.graph.core.vars import SceneVars
+    from tp.common.nodegraph.core.scene import Scene
+    from tp.common.nodegraph.core.vars import SceneVars
     from tp.tools.rig.noddle.builder.window import NoddleBuilderWindow
     from tp.tools.rig.noddle.builder.widgets.attributeseditor import AttributesEditor
 

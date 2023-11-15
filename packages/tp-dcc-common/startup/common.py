@@ -6,7 +6,6 @@ from Qt.QtWidgets import QApplication
 
 from tp.core import log
 from tp.common.resources import api as resources
-from tp.common.nodegraph.core import register
 
 logger = log.tpLogger
 
@@ -27,8 +26,6 @@ def startup(package_manager):
     app = QApplication.instance() or QApplication(sys.argv)
     resources_path = os.path.join(os.path.dirname(root_path), 'resources')
     resources.register_resource(resources_path, key='tp-dcc-common')
-
-    register.load_registers()
 
 
 def shutdown(package_manager):

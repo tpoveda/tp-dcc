@@ -7,7 +7,7 @@ from tp.common.qt import api as qt
 
 if typing.TYPE_CHECKING:
     from tp.tools.rig.noddle.builder.window import NoddleBuilderWindow
-    from tp.tools.rig.noddle.builder.graph.core.history import SceneHistory
+    from tp.common.nodegraph.core.history import SceneHistory
 
 logger = log.rigLogger
 

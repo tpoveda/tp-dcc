@@ -19,7 +19,5 @@ environment:
   TPDCC_META_PATHS:
     - '{self}/tp/libs/rig/noddle/maya/meta'
     - '{self}/tp/libs/rig/freeform/meta'
-  NODDLE_BUILDER_EDITOR_NODE_PATHS:
-    - '{self}/tp/tools/rig/noddle/builder/graph/nodes'
 commands:
   - '{self}/startup/rig.py'
