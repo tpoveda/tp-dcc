@@ -285,3 +285,53 @@ class FKIKSpineComponent(SpineComponent):
             return None
 
         return control.Control(self.sourceNodeByName('pivotControl').object())
+
+    def ik_curve(self) -> api.DagNode | None:
+        """
+        Returns this component IK curve.
+
+        :return: IK curve.
+        :rtype: api.DagNode
+        """
+
+        return self.attribute('ikCurve').sourceNode()
+
+    def root_hook_index(self) -> int:
+        """
+        Returns root hook index.
+
+        :return: root hook index.
+        :rtype: int
+        """
+
+        return self.Hooks.ROOT.value
+
+    def hips_hook_index(self) -> int:
+        """
+          Returns hips hook index.
+
+          :return: hips hook index.
+          :rtype: int
+          """
+
+        return self.Hooks.HIPS.value
+
+    def mid_hook_index(self) -> int:
+        """
+          Returns mid hook index.
+
+          :return: mid hook index.
+          :rtype: int
+          """
+
+        return self.Hooks.MID.value
+
+    def chest_hook_index(self) -> int:
+        """
+          Returns chest hook index.
+
+          :return: chest hook index.
+          :rtype: int
+          """
+
+        return self.Hooks.CHEST.value

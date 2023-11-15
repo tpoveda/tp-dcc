@@ -171,6 +171,16 @@ class Character(component.Component):
             found_control.write_bind_pose()
         logger.info(f'Written {len(controls)} bind poses')
 
+    def root_motion(self) -> api.Joint:
+        """
+        Returns the root motion joint.
+
+        :return: root motion joint.
+        :rtype: api.Joint
+        """
+
+        return self.attribute('rootMotionJoint').sourceNode()
+
     def add_root_motion(
             self, follow_object: api.DagNode, root_joint: str | None = None,
             children: list[api.Joint] | None = None, up_axis: str = 'y') -> api.Joint:
@@ -227,3 +237,14 @@ class Character(component.Component):
 
         for found_component in self.components():
             found_component.attach_to_skeleton()
+
+    def set_publish_mode(self, value: bool):
+        """
+        Sets whether character is ready to be published.
+
+        :param bool value: ready flag.
+        """
+
+        pass
+        # self.set_interesting(not value)
+        # self.create_selection_sets()

@@ -7,6 +7,7 @@ from typing import List, Iterator
 from overrides import override
 import maya.cmds as cmds
 
+from tp.core import log
 from tp.maya import api
 from tp.libs.rig.noddle import consts
 from tp.libs.rig.noddle.core import control
@@ -17,6 +18,8 @@ if typing.TYPE_CHECKING:
     from tp.libs.rig.noddle.core.hook import Hook
     from tp.libs.rig.noddle.maya.meta.components.character import Character
 
+logger = log.rigLogger
+
 
 class FKIKComponent(animcomponent.AnimComponent):
 
@@ -26,24 +29,54 @@ class FKIKComponent(animcomponent.AnimComponent):
         START_JOINT = 0
         END_JOINT = 1
 
-    @property
     def joints_offset_group(self) -> api.DagNode:
+        """
+        Returns this component joints offset group.
+
+        :return: joints offset group.
+        :rtype: api.DagNode
+        """
+
         return self.sourceNodeByName('jointOffsetGrp')
 
-    @property
     def ik_control(self) -> control.Control:
+        """
+        Returns this component IK control.
+
+        :return: IK control.
+        :rtype: control.Control
+        """
+
         return control.Control(node=self.sourceNodeByName('ikControl').object())
 
-    @property
     def pole_vector_control(self) -> control.Control:
+        """
+        Returns this component pole vector control.
+
+        :return: pole vector control.
+        :rtype: control.Control
+        """
+
         return control.Control(node=self.sourceNodeByName('poleVectorControl').object())
 
-    @property
     def param_control(self) -> control.Control:
+        """
+        Returns this component param control.
+
+        :return: param control.
+        :rtype: control.Control
+        """
+
         return control.Control(node=self.sourceNodeByName('paramControl').object())
 
-    @property
     def ik_handle(self) -> api.IkHandle:
+        """
+        Returns this component IK handle.
+
+        :return: component IK handle.
+        :rtype: api.IkHandle
+        """
+
         return self.sourceNodeByName('ikHandle')
 
     @override
@@ -81,13 +114,13 @@ class FKIKComponent(animcomponent.AnimComponent):
             new_parent=self.joints_group())
 
         joint_offset_group = nodes.create(
-            'transform', [self.indexed_name, 'constr'], self.side, suffix='grp', p=self.joints_group.fullPathName())
+            'transform', [self.indexed_name, 'constr'], self.side, suffix='grp', p=self.joints_group().fullPathName())
         attributes.add_meta_parent_attribute([joint_offset_group])
         cmds.matchTransform(joint_offset_group.fullPathName(), control_chain[0].fullPathName())
         control_chain[0].setParent(joint_offset_group)
 
         fk_controls = []
-        next_parent = self.controls_group
+        next_parent = self.controls_group()
         for control_joint in control_chain:
             fk_control = control.Control.create(
                 name=f'{self.indexed_name}_fk', side=self.side, guide=control_joint, parent=next_parent,
@@ -223,7 +256,7 @@ class FKIKComponent(animcomponent.AnimComponent):
         in_hook = self.in_hook()
         if in_hook:
             _, parent_constraint_nodes = api.build_constraint(
-                self.joints_offset_group,
+                self.joints_offset_group(),
                 drivers={
                     'targets': ((in_hook.fullPathName(partial_name=True, include_namespace=False), in_hook),)},
                 constraint_type='parent', maintainOffset=True
@@ -262,3 +295,52 @@ class FKIKComponent(animcomponent.AnimComponent):
         """
 
         return list(self.iterate_fk_controls())
+
+    def fk_control_at(self, index: int) -> control.Control:
+        """
+        Returns FK control at given index.
+
+        :param int index: index to get FK control by.
+        :return: FK control at given index.
+        :rtype: control.Control
+        """
+
+        return self.fk_controls()[index]
+
+    def hide_last_fk(self):
+        """
+        Hides last FK control.
+        """
+
+        self.fk_controls()[-1].group.hide()
+
+    def start_hook_index(self) -> int:
+        """
+        Returns start hook index.
+
+        :return: start hook index.
+        :rtype: int
+        """
+
+        return self.Hooks.START_JOINT.value
+
+    def end_hook_index(self) -> int:
+        """
+        Returns end hook index.
+
+        :return: end hook index.
+        :rtype: int
+        """
+
+        return self.Hooks.END_JOINT.value
+
+    def add_fk_orient_switch(self):
+        """
+        Adds FK orient switch.
+        """
+
+        if not self.character() or not self.in_hook():
+            logger.error('Canont add orient attribute without character and parent component hook')
+            return
+
+        self.fk_controls()[0].add_orient_switch(self.character().world_locator(), self.in_hook())

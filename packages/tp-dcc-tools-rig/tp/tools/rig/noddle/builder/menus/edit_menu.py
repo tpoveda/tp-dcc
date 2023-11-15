@@ -52,7 +52,7 @@ class EditMenu(qt.QMenu):
         Internal function that setup all action shortcuts
         """
 
-        self._rename_selected_node_action.setShortcuts('F2')
+        self._rename_selected_node_action.setShortcut('F2')
         self._undo_action.setShortcut('Ctrl+Z')
         self._redo_action.setShortcut('Ctrl+Y')
         self._copy_action.setShortcut('Ctrl+C')

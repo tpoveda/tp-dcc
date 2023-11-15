@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import typing
 from typing import Union
-from functools import partial
 
 from overrides import override
 
@@ -35,14 +34,51 @@ class BaseGraphicsNode(qt.QGraphicsItem):
         self._width = self.node.MIN_WIDTH
         self._height = self.node.MIN_HEIGHT
 
+        self._was_moved = False
+
+        self._one_side_horizontal_padding = 20.0
+        self._edge_roundness = 10.0
+        self._edge_padding = 10.0
+        self._title_horizontal_padding = 4.0
+        self._title_vertical_padding = 4.0
+        self._lower_padding = 8.0
+
+        self._title_color = qt.Qt.white
+        self._title_font = qt.QFont(GraphicsNode.FONT_NAME, GraphicsNode.FONT_SIZE)
+        self._title_font.setBold(True)
+
+        self._pen_default = qt.QPen(qt.QColor('#7F000000'))
+        self._pen_selected = qt.QPen(qt.QColor('#FFA637'))
+        self._brush_background = qt.QBrush(qt.QColor('#E3212121'))
+        self._brush_title = qt.QBrush(self._title_color)
+
         self._properties = {
+            'id': None,
+            'name': node.title,
             'color': consts.NODE_COLOR,
             'border_color': consts.NODE_BORDER_COLOR,
             'text_color': consts.NODE_TEXT_COLOR,
-            'header_color': consts.NODE_HEADER_COLOR
+            'header_color': consts.NODE_HEADER_COLOR,
+            'selected': False,
+            'disabled': False,
+            'visible': False
         }
 
         self._setup_ui()
+        self._setup_title()
+        self._setup_content()
+
+    def __repr__(self):
+        return '{}.{}(\'{}\')'.format(self.__module__, self.__class__.__name__, self.name)
+
+    @property
+    def name(self):
+        return self._properties['name']
+
+    @name.setter
+    def name(self, value):
+        self._properties['name'] = value
+        self.setToolTip('node: {}'.format(value))
 
     @property
     def node(self) -> Node:
@@ -120,55 +156,6 @@ class BaseGraphicsNode(qt.QGraphicsItem):
     def header_color(self, value: tuple[int, int, int, int]):
         self._properties['header_color'] = helpers.force_list(value)
 
-    def viewer(self) -> GraphicsView | None:
-        """
-        Returns graph viewer this node belongs to.
-
-        :return: node graph viewer.
-        :rtype: GraphicsView or None
-        """
-
-        current_scene = self.scene()        # type: GraphicsScene
-        return current_scene.viewer() if current_scene else None
-
-    def _setup_ui(self):
-        """
-        Internal function that creates graphics node widgets.
-        """
-
-        self.setFlags(self.ItemIsSelectable | self.ItemIsMovable)
-        # self.setCacheMode(consts.ITEM_CACHE_MODE)
-        self.setZValue(consts.NODE_Z_VALUE)
-
-
-class GraphicsNode(BaseGraphicsNode):
-
-    TEXT_ZOOM_OUT_LIMIT = 2
-
-    def __init__(self, node: Node, parent: qt.QWidget | None = None):
-        super().__init__(node, parent=parent)
-
-        self._was_moved = False
-
-        self._one_side_horizontal_padding = 20.0
-        self._edge_roundness = 10.0
-        self._edge_padding = 10.0
-        self._title_horizontal_padding = 4.0
-        self._title_vertical_padding = 4.0
-        self._lower_padding = 8.0
-
-        self._title_color = qt.Qt.white
-        self._title_font = qt.QFont(GraphicsNode.FONT_NAME, GraphicsNode.FONT_SIZE)
-        self._title_font.setBold(True)
-
-        self._pen_default = qt.QPen(qt.QColor('#7F000000'))
-        self._pen_selected = qt.QPen(qt.QColor('#FFA637'))
-        self._brush_background = qt.QBrush(qt.QColor('#E3212121'))
-        self._brush_title = qt.QBrush(self._title_color)
-
-        self._setup_title()
-        self._setup_content()
-
     @property
     def title(self) -> str:
         return self._title_item.toPlainText()
@@ -218,9 +205,82 @@ class GraphicsNode(BaseGraphicsNode):
     def one_side_horizontal_padding(self) -> float:
         return self._one_side_horizontal_padding
 
+    @property
+    def disabled(self):
+        return self._properties['disabled']
+
+    @disabled.setter
+    def disabled(self, flag):
+        self._properties['disabled'] = flag
+
+    @property
+    def selected(self):
+        if self._properties['selected'] != self.isSelected():
+            self._properties['selected'] = self.isSelected()
+        return self._properties['selected']
+
+    @selected.setter
+    def selected(self, flag=False):
+        self.setSelected(flag)
+
+    @property
+    def visible(self):
+        return self._properties['visible']
+
+    @visible.setter
+    def visible(self, visible=False):
+        self._properties['visible'] = visible
+        self.setVisible(visible)
+
     @override
     def boundingRect(self) -> qt.QRectF:
-        return qt.QRectF(0, 0, self.width, self.height).normalized()
+        # return qt.QRectF(0.0, 0.0, self.width, self.height)
+        return qt.QRectF(0.0, 0.0, self.width, self.height).normalized()
+
+    def viewer(self) -> GraphicsView | None:
+        """
+        Returns graph viewer this node belongs to.
+
+        :return: node graph viewer.
+        :rtype: GraphicsView or None
+        """
+
+        current_scene = self.scene()        # type: GraphicsScene
+        return current_scene.viewer() if current_scene else None
+
+    def _setup_ui(self):
+        """
+        Internal function that creates graphics node widgets.
+        """
+
+        self.setFlags(self.ItemIsSelectable | self.ItemIsMovable)
+        # self.setCacheMode(consts.ITEM_CACHE_MODE)
+        self.setZValue(consts.NODE_Z_VALUE)
+
+    def _setup_title(self):
+        """
+        Internal function that setup graphics node title.
+        """
+
+        self._title_item = GraphicsNodeTitle(self, is_editable=self.node.TITLE_EDITABLE)
+        self._title_item.setDefaultTextColor(qt.Qt.white)
+        self._title_item.setFont(self._title_font)
+        self._title_item.setPos(self._title_horizontal_padding, 0)
+
+    def _setup_content(self):
+        """
+        Internal function that setup graphics node content.
+        """
+
+        pass
+
+
+class GraphicsNode(BaseGraphicsNode):
+
+    TEXT_ZOOM_OUT_LIMIT = 2
+
+    def __init__(self, node: Node, parent: qt.QWidget | None = None):
+        super().__init__(node, parent=parent)
 
     @override
     def mouseMoveEvent(self, event: qt.QGraphicsSceneMouseEvent) -> None:
@@ -242,23 +302,6 @@ class GraphicsNode(BaseGraphicsNode):
             widget: Union[qt.QWidget, None] = ...) -> None:
 
         node_painters.node_painter(self, painter, option, widget)
-
-    def _setup_title(self):
-        """
-        Internal function that setup graphics node title.
-        """
-
-        self._title_item = GraphicsNodeTitle(self, is_editable=self.node.TITLE_EDITABLE)
-        self._title_item.setDefaultTextColor(qt.Qt.black)
-        self._title_item.setFont(self._title_font)
-        self._title_item.setPos(self._title_horizontal_padding, 0)
-
-    def _setup_content(self):
-        """
-        Internal function that setup graphics node content.
-        """
-
-        pass
 
 
 class GraphicsNodeTitle(qt.QGraphicsTextItem):
@@ -291,7 +334,7 @@ class GraphicsNodeTitle(qt.QGraphicsTextItem):
         line_edit = qt.QLineEdit()
         line_edit_proxy = qt.QGraphicsProxyWidget(self)
         line_edit_proxy.setWidget(line_edit)
-        line_edit.editingFinished.connect(partial(_apply_edit, line_edit.text()))
+        line_edit.editingFinished.connect(lambda: _apply_edit(line_edit.text()))
         line_edit.editingFinished.connect(line_edit_proxy.deleteLater)
         line_edit.setFont(self.font())
         line_edit.setMaximumWidth(self._graphics_node.width)

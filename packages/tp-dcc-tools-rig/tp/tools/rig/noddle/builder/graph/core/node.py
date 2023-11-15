@@ -1,15 +1,14 @@
 from __future__ import annotations
 
+import uuid
 import typing
 from typing import Any
 from collections import deque
 
-from overrides import override
-
 from tp.core import log
 from tp.common.qt import api as qt
 from tp.tools.rig.noddle.builder.graph import datatypes
-from tp.tools.rig.noddle.builder.graph.core import consts, serializable, socket
+from tp.tools.rig.noddle.builder.graph.core import consts, socket
 from tp.tools.rig.noddle.builder.graph.graphics import node
 from tp.tools.rig.noddle.builder.graph.widgets import attributes
 
@@ -19,7 +18,7 @@ if typing.TYPE_CHECKING:
 logger = log.rigLogger
 
 
-class Node(serializable.Serializable):
+class Node:
 
     ATTRIBUTES_WIDGET = attributes.AttributesWidget
 
@@ -46,6 +45,7 @@ class Node(serializable.Serializable):
     def __init__(self, scene: Scene, title: str | None = None):
         super().__init__()
 
+        self._uuid = str(uuid.uuid4())
         self._scene = scene
         self._signals = Node.Signals()
         self._title: str | None = None
@@ -73,9 +73,28 @@ class Node(serializable.Serializable):
     def __str__(self) -> str:
         return f'<{self.__class__.__name__} {hex(id(self))[2:5]}..{hex(id(self))[-3]}> {self.title}'
 
+    @classmethod
+    def as_str(cls, name_only: bool = False) -> str:
+        """
+        Returns a string representation of the class.
+
+        :param bool name_only: whether to return the name of the class only.
+        :return: class as a string.
+        """
+
+        return cls.__name__ if name_only else '.'.join([cls.__module__, cls.__name__])
+
     @property
     def signals(self) -> Signals:
         return self._signals
+
+    @property
+    def uuid(self) -> str:
+        return self._uuid
+
+    @uuid.setter
+    def uuid(self, value: str):
+        self._uuid = value
 
     @property
     def scene(self) -> Scene:
@@ -123,75 +142,6 @@ class Node(serializable.Serializable):
     @property
     def is_executing(self) -> bool:
         return self._is_executing
-
-    @override
-    def serialize(self) -> dict:
-        inputs = [input_socket.serialize() for input_socket in self._inputs]
-        outputs = [output_socket.serialize() for output_socket in self._outputs]
-
-        return {
-            'id': self.uid,
-            'node_id': self.__class__.ID,
-            'title': self.title,
-            'pos_x': self._graphics_node.scenePos().x(),
-            'pos_y': self._graphics_node.scenePos().y(),
-            'inputs': inputs,
-            'outputs': outputs
-        }
-
-    @override(check_signature=False)
-    def deserialize(self, data: dict, hashmap: dict | None = None, restore_id: bool = True):
-
-        self.pre_deserialization(data)
-
-        if restore_id:
-            self.uid = data.get('id')
-        hashmap[data['id']] = self
-
-        self.set_position(data['pos_x'], data['pos_y'])
-        self.title = data.get('title')
-
-        # Sockets
-        data['inputs'].sort(key=lambda in_socket: in_socket['index'] + in_socket['position'] * 10000)
-        data['outputs'].sort(key=lambda out_socket: out_socket['index'] + out_socket['position'] * 10000)
-
-        # Deserialize sockets
-        for socket_data in data.get('inputs'):
-            found_input_socket: socket.InputSocket | None = None
-            for input_socket in self.inputs:
-                if input_socket.index == socket_data['index']:
-                    found_input_socket = input_socket
-                    break
-            if found_input_socket is None:
-                logger.warning(
-                    f'Deserialization of input socket data for node {self.title} has not found socket with '
-                    f'index {socket_data["index"]}')
-                logger.debug(f'Missing socket data: {socket_data}')
-                data_type = datatypes.type_from_name(socket_data['data_type'])
-                value = socket_data.get('value', data_type['default'])
-                found_input_socket = self.add_input(data_type, socket_data['label'], value=value)
-            found_input_socket.deserialize(socket_data, hashmap, restore_id)
-
-        for socket_data in data.get('outputs'):
-            found_output_socket: socket.OutputSocket | None = None
-            for output_socket in self.outputs:
-                if output_socket.index == socket_data['index']:
-                    found_output_socket = output_socket
-                    break
-            if found_output_socket is None:
-                logger.warning(
-                    f'Deserialization of output socket data for node {self.title} has not found socket with '
-                    f'index {socket_data["index"]}')
-                logger.debug(f'Missing socket data: {socket_data}')
-                # we can create new socket for this
-                data_type = datatypes.type_from_name(socket_data['data_type'])
-                value = socket_data.get('value', data_type['default'])
-                found_output_socket = self.add_output(data_type, socket_data['label'], value=value)
-            found_output_socket.deserialize(socket_data, hashmap, restore_id)
-
-        self.signals.numSocketsChanged.emit()
-
-        self.post_deserialization(data)
 
     def setup_sockets(self):
         """

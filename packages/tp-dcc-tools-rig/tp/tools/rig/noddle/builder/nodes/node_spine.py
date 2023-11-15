@@ -111,3 +111,23 @@ def register_plugin(register_node: callable, register_function: callable, regist
         FKIKSpineNode.COMPONENT_CLASS.pivot_control, api.DataType.FkIkSpineComponent,
         inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'Pivot Control': api.dt.Control},
         nice_name='Pivot Control', category='FKIK Spine')
+    register_function(
+        FKIKSpineNode.COMPONENT_CLASS.ik_curve, api.DataType.FkIkSpineComponent,
+        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'IK Curve': api.dt.String},
+        nice_name='IK Curve', category='FKIK Spine')
+    register_function(
+        FKIKSpineNode.COMPONENT_CLASS.root_hook_index, api.DataType.FkIkSpineComponent,
+        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'Hook Root': api.dt.Numeric},
+        nice_name='Get Root Hook', category='FKIK Spine')
+    register_function(
+        FKIKSpineNode.COMPONENT_CLASS.hips_hook_index, api.DataType.FkIkSpineComponent,
+        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'Hook Hips': api.dt.Numeric},
+        nice_name='Get Hips Hook', category='FKIK Spine')
+    register_function(
+        FKIKSpineNode.COMPONENT_CLASS.mid_hook_index, api.DataType.FkIkSpineComponent,
+        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'Hook Mid': api.dt.String},
+        nice_name='Get Mid Hook', category='FKIK Spine')
+    register_function(
+        FKIKSpineNode.COMPONENT_CLASS.chest_hook_index, api.DataType.FkIkSpineComponent,
+        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'Hook Chest': api.dt.String},
+        nice_name='Get Chest Hook', category='FKIK Spine')

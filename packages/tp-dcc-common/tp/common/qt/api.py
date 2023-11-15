@@ -37,7 +37,7 @@ from Qt.QtGui import (
 from tp.common.resources import api as resources
 from tp.common.qt import consts
 from tp.common.qt.mvc import Model
-from tp.common.qt.contexts import block_signals
+from tp.common.qt.contexts import block_signals, application
 from tp.common.qt.dpi import dpi_scale, dpi_scale_divide, dpi_multiplier, margins_dpi_scale, size_by_dpi, point_by_dpi
 from tp.common.qt.qtutils import (
     get_widget_at_mouse, compat_ui_loader, clear_layout, to_qt_object, set_stylesheet_object_name, process_ui_events,

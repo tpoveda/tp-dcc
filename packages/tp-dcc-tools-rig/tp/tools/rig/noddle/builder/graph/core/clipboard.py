@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-from tp.tools.rig.noddle.builder.graph.core import edge
+from tp.tools.rig.noddle.builder.graph.core import edge, serializer
 
 
 if typing.TYPE_CHECKING:
@@ -32,11 +32,11 @@ class SceneClipboard:
 
         # Sort edges and nodes
         for node in self._scene.selected_nodes:
-            selected_nodes.append(node.serialize())
+            selected_nodes.append(serializer.serialize_node(node))
             for input_socket in node.inputs:
-                selected_sockets[input_socket.uid] = input_socket
+                selected_sockets[input_socket.uuid] = input_socket
             for output_socket in node.outputs:
-                selected_sockets[output_socket.uid] = output_socket
+                selected_sockets[output_socket.uuid] = output_socket
 
         # Remove all edges not connected to a node in selected list
         edges_to_remove = []
@@ -90,7 +90,7 @@ class SceneClipboard:
         for node_data in data['nodes']:
             node_class = self._scene.class_from_node_data(node_data)
             new_node = node_class(self._scene)      # type: Node
-            new_node.deserialize(node_data, hashmap, restore_id=False)
+            serializer.deserialize_node(new_node, node_data, hashmap, restore_id=False)
             created_nodes.append(new_node)
 
             # Adjust node position
@@ -101,7 +101,7 @@ class SceneClipboard:
         # Create each edge
         for edge_data in data['edges']:
             new_edge = edge.Edge(self._scene)
-            new_edge.deserialize(edge_data, hashmap, restore_id=False)
+            serializer.deserialize_edge(new_edge, edge_data, hashmap, restore_id=False)
 
         self._scene.history.store_history('Paste items', set_modified=True)
 

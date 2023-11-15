@@ -26,7 +26,7 @@ class Project:
         super().__init__()
 
         self._path = directory
-        self._interface = preferences.preference.interface('noddle')
+        self._interface = preferences.preference().interface('noddle')
 
     def __repr__(self):
         return f'{self.name}({self.path}): {self.meta_data}'
@@ -159,7 +159,7 @@ class Project:
         Refreshes recent projects by ensuring recent project folders exist.
         """
 
-        interface = preferences.preference.interface('noddle')
+        interface = preferences.preference().interface('noddle')
         interface.refresh_recent_projects()
 
     def set_data(self, key: str, value: str):

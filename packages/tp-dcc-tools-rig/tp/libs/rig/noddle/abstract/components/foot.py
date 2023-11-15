@@ -1,0 +1,2 @@
+class AbstractReverseFootComponent:
+    pass

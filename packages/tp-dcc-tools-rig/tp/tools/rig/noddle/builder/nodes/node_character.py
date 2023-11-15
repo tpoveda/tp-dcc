@@ -66,3 +66,18 @@ def register_plugin(register_node: callable, register_function: callable, regist
         CharacterNode.COMPONENT_CLASS.world_locator, api.dt.Character,
         inputs={'Character': api.dt.Character}, outputs={'World Locator': api.dt.String},
         nice_name='Get World Locator', category='Character')
+    register_function(
+        CharacterNode.COMPONENT_CLASS.root_motion, api.dt.Character,
+        inputs={'Character': api.dt.Character}, outputs={'Root Joint': api.dt.String},
+        nice_name='Get Root Joint', category='Character')
+    register_function(
+        CharacterNode.COMPONENT_CLASS.add_root_motion, api.dt.Character,
+        inputs={'Character': api.dt.Character, 'Follow Control': api.dt.Control, 'Root Joint': api.dt.String},
+        outputs={'Root Joint': api.dt.String}, nice_name='Add Root Motion', category='Character')
+    register_function(
+        CharacterNode.COMPONENT_CLASS.attach_to_skeleton, api.dt.Character,
+        inputs={'Character': api.dt.Character}, nice_name='Attach To Skeleton', category='Character')
+    register_function(
+        CharacterNode.COMPONENT_CLASS.set_publish_mode, api.dt.Character,
+        inputs={'Character': api.dt.Character, 'Publish Ready': api.dt.Boolean},
+        nice_name='Set Publish Mode', category='Character')

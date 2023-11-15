@@ -6,13 +6,11 @@ import json
 import timeit
 import typing
 
-from overrides import override
-
 from tp.core import log
 from tp.common.qt import api as qt
 from tp.common.python import jsonio
 from tp.tools.rig.noddle.builder.graph import registers
-from tp.tools.rig.noddle.builder.graph.core import serializable, history, clipboard, node, edge, vars, executor
+from tp.tools.rig.noddle.builder.graph.core import history, clipboard, node, edge, vars, executor, serializer
 from tp.tools.rig.noddle.builder.graph.graphics import scene
 
 if typing.TYPE_CHECKING:
@@ -22,7 +20,7 @@ if typing.TYPE_CHECKING:
 logger = log.rigLogger
 
 
-class Scene(serializable.Serializable):
+class Scene:
 
     class Signals(qt.QObject):
         fileNameChanged = qt.Signal(str)
@@ -36,6 +34,7 @@ class Scene(serializable.Serializable):
     def __init__(self):
         super().__init__()
 
+        self._uuid = str(uuid.uuid4())
         self._signals = Scene.Signals()
         self._file_name: str = ''
         self._has_been_modified = False
@@ -73,6 +72,14 @@ class Scene(serializable.Serializable):
     @property
     def signals(self) -> Scene.Signals:
         return self._signals
+
+    @property
+    def uuid(self) -> str:
+        return self._uuid
+
+    @uuid.setter
+    def uuid(self, value: str):
+        self._uuid = value
 
     @property
     def graphics_scene(self) -> scene.GraphicsScene:
@@ -169,80 +176,6 @@ class Scene(serializable.Serializable):
     def is_executing(self, flag: bool):
         self._is_executing = flag
 
-    @override
-    def serialize(self) -> dict:
-        nodes: list[dict] = []
-        edges: list[dict] = []
-        for n in self._nodes:
-            nodes.append(n.serialize())
-        for e in self._edges:
-            if not e.start_socket or not e.end_socket:
-                continue
-            edges.append(e.serialize())
-
-        return {
-            'id': self.uid,
-            'vars': self._vars.serialize(),
-            'scene_width': self._scene_width,
-            'scene_height': self._scene_height,
-            'nodes': nodes,
-            'edges': edges,
-            'edge_type': self._edge_type.name
-        }
-
-    @override(check_signature=False)
-    def deserialize(self, data: dict, hashmap: dict | None = None, restore_id: bool = True):
-        hashmap = hashmap or {}
-
-        if restore_id:
-            self.uid = data['id']
-
-        # Deserialize variables
-        self.vars.deserialize(data.get('vars', {}))
-
-        # Deserialize nodes
-        all_nodes = self.nodes[:]
-        for node_data in data['nodes']:
-            found = False
-            for scene_node in all_nodes:
-                if scene_node.uid == node_data['id']:
-                    found = scene_node
-                    break
-            if not found:
-                new_node = self.class_from_node_data(node_data)(self)
-                new_node.deserialize(node_data, hashmap, restore_id=restore_id)
-            else:
-                found.deserialize(node_data, hashmap, restore_id=restore_id)
-                all_nodes.remove(found)
-        while all_nodes:
-            node_to_remove = all_nodes.pop()
-            node_to_remove.remove()
-
-        # Deserialize edges
-        all_edges = self.edges[:]
-        for edge_data in data['edges']:
-            found = False
-            for scene_edge in all_edges:
-                if scene_edge.uid == edge_data['id']:
-                    found = scene_edge
-                    break
-            if not found:
-                new_edge = edge.Edge(self)
-                new_edge.deserialize(edge_data, hashmap, restore_id)
-            else:
-                found.deserialize(edge_data, hashmap, restore_id)
-                all_edges.remove(found)
-        while all_edges:
-            edge_to_delete = all_edges.pop()
-            try:
-                self.edges.index(edge_to_delete)
-            except ValueError:
-                continue
-            edge_to_delete.remove()
-
-        # Set edge type
-        self.edge_type = data.get('edge_type', edge.Edge.Type.BEZIER)
-
     def item_at(self, position: qt.QPoint) -> qt.QGraphicsItem | None:
         """
         Returns item at given position.
@@ -279,7 +212,7 @@ class Scene(serializable.Serializable):
         :return: scene node IDs.
         """
 
-        return [scene_node.uid for scene_node in self.nodes]
+        return [scene_node.uuid for scene_node in self.nodes]
 
     def remove_node(self, node_to_remove: node.Node):
         """
@@ -308,7 +241,7 @@ class Scene(serializable.Serializable):
         :return: scene edge IDs.
         """
 
-        return [scene_edge.uid for scene_edge in self.edges]
+        return [scene_edge.uuid for scene_edge in self.edges]
 
     def remove_edge(self, edge_to_remove: edge.Edge):
         """
@@ -464,7 +397,7 @@ class Scene(serializable.Serializable):
         """
 
         try:
-            data = self.serialize()
+            data = serializer.serialize_scene(self)
             if not jsonio.validate_json(data):
                 logger.error('Scene data is not valid')
                 logger.info(data)
@@ -491,7 +424,7 @@ class Scene(serializable.Serializable):
             self.clear()
             start_time = timeit.default_timer()
             data = jsonio.read_file(file_path)
-            self.deserialize(data)
+            serializer.deserialize_scene(self, data)
             logger.info("Rig build loaded in {0:.2f}s".format(timeit.default_timer() - start_time))
             self.history.clear()
             self.executor.reset_stepped_execution()
@@ -508,15 +441,15 @@ class Scene(serializable.Serializable):
         """
 
         obj_count = 1
-        self.uid = str(uuid.uuid4())
+        self.uuid = str(uuid.uuid4())
         for scene_node in self.nodes:
-            scene_node.uid = str(uuid.uuid4())
+            scene_node.uuid = str(uuid.uuid4())
             obj_count += 1
             for socket in scene_node.inputs + scene_node.outputs:
-                socket.uid = str(uuid.uuid4())
+                socket.uuid = str(uuid.uuid4())
                 obj_count += 1
         for scene_edge in self.edges:
-            scene_edge.uid = str(uuid.uuid4())
+            scene_edge.uuid = str(uuid.uuid4())
             obj_count += 1
         logger.info(f'Generated new UUIDs for {obj_count} objects')
 

@@ -4,12 +4,9 @@ import typing
 from typing import Any
 from collections import OrderedDict
 
-from overrides import override
-
 from tp.core import log
 from tp.common.qt import api as qt
 from tp.tools.rig.noddle.builder.graph import registers
-from tp.tools.rig.noddle.builder.graph.core import serializable
 
 
 if typing.TYPE_CHECKING:
@@ -19,7 +16,7 @@ if typing.TYPE_CHECKING:
 logger = log.tpLogger
 
 
-class SceneVars(serializable.Serializable):
+class SceneVars:
 
     class Signals(qt.QObject):
         valueChanged = qt.Signal(str)
@@ -44,27 +41,6 @@ class SceneVars(serializable.Serializable):
     @property
     def vars(self) -> dict:
         return self._vars
-
-    @override
-    def serialize(self) -> dict:
-        try:
-            result = {}
-            for var_name, value_type_pair in self._vars.items():
-                value, type_name = value_type_pair
-                if type_name in registers.DataType.runtime_types(names=True):
-                    result[var_name] = [registers.DATA_TYPES_REGISTER[type_name]['default'], type_name]
-                else:
-                    result[var_name] = [value, type_name]
-        except Exception:
-            logger.exception('SceneVars serialize exception!', exc_info=True)
-            raise
-
-        return result
-
-    @override(check_signature=False)
-    def deserialize(self, data: dict, hashmap: dict | None = None):
-        self._vars.clear()
-        self._vars.update(data)
 
     def unique_variable_name(self, name: str) -> str:
         """

@@ -1,12 +1,11 @@
 from __future__ import annotations
 
+import uuid
 import enum
 import typing
 
-from overrides import override
-
 from tp.core import log
-from tp.tools.rig.noddle.builder.graph.core import serializable, socket
+from tp.tools.rig.noddle.builder.graph.core import socket
 from tp.tools.rig.noddle.builder.graph.graphics import edge
 
 if typing.TYPE_CHECKING:
@@ -15,7 +14,7 @@ if typing.TYPE_CHECKING:
 logger = log.rigLogger
 
 
-class Edge(serializable.Serializable):
+class Edge:
 
     class Type(enum.Enum):
         DIRECT = edge.GraphicsEdgeDirect
@@ -27,6 +26,7 @@ class Edge(serializable.Serializable):
             silent: bool = False):
         super().__init__()
 
+        self._uuid = str(uuid.uuid4())
         self._scene = scene
         self._start_socket: socket.Socket | None = None
         self._end_socket: socket.Socket | None = None
@@ -39,6 +39,14 @@ class Edge(serializable.Serializable):
 
     def __str__(self) -> str:
         return f'<{self.__class__.__name__} {hex(id(self))[2:5]}..{hex(id(self))[-3]}>'
+
+    @property
+    def uuid(self) -> str:
+        return self._uuid
+
+    @uuid.setter
+    def uuid(self, value: str):
+        self._uuid = value
 
     @property
     def start_socket(self) -> socket.Socket:
@@ -83,22 +91,6 @@ class Edge(serializable.Serializable):
     @property
     def graphics_edge(self) -> edge.GraphicsEdge:
         return self._graphics_edge
-
-    @override
-    def serialize(self) -> dict:
-        return {
-            'id': self.uid,
-            'start': self.start_socket.uid,
-            'end': self.end_socket.uid
-        }
-
-    @override(check_signature=False)
-    def deserialize(self, data: dict, hashmap: dict | None = None, restore_id: bool = True):
-        if restore_id:
-            self.uid = data.get('id')
-        self.start_socket = hashmap[data['start']]
-        self.end_socket = hashmap[data['end']]
-        self.update_edge_graphics_type()
 
     def set_start_socket(self, value: socket.Socket | None, silent: bool = False):
         """

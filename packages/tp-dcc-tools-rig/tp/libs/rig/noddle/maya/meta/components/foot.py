@@ -91,17 +91,17 @@ class ReverseFootComponent(animcomponent.AnimComponent):
         toe_tap_transform = nodes.create(
             'transform', name=[self.indexed_name, 'tap'], side=self.side, suffix='grp', p=rv_chain[2].fullPathName())
         toe_tap_transform.setParent(rv_chain[1])
-        parent.ik_handle.setParent(rv_chain[-1])
+        parent.ik_handle().setParent(rv_chain[-1])
         ball_handle.setParent(rv_chain[2])
         toe_handle.setParent(toe_tap_transform)
 
-        foot_locators_group.setParent(parent.ik_control)
+        foot_locators_group.setParent(parent.ik_control())
         toe_locator.setParent(heel_locator)
         outer_locator.setParent(toe_locator)
         inner_locator.setParent(outer_locator)
         rv_chain[0].setParent(inner_locator)
 
-        parent.param_control.attribute('fkik').connect(self.controls_group().visibility)
+        parent.param_control().attribute('fkik').connect(self.controls_group().visibility)
 
         fk_control = control.Control.create(
             name=f'{self.indexed_name}_fk', side=self.side, guide=control_chain[0], parent=parent.fk_controls()[-1],
@@ -114,28 +114,29 @@ class ReverseFootComponent(animcomponent.AnimComponent):
         )
         self.add_util_nodes(orient_constraint_nodes)
 
-        parent.param_control.attribute('fkik').connect(ball_handle.ikBlend)
-        parent.param_control.attribute('fkik').connect(toe_handle.ikBlend)
+        parent.param_control().attribute('fkik').connect(ball_handle.ikBlend)
+        parent.param_control().attribute('fkik').connect(toe_handle.ikBlend)
 
-        attributes.add_divider(parent.ik_control, attr_name='FOOT')
+        parent_ik_control = parent.ik_control()
+        attributes.add_divider(parent_ik_control, attr_name='FOOT')
         for attr_name in ReverseFootComponent.ROLL_ATTRIBUTE_NAMES:
-            parent.ik_control.addAttribute(attr_name, type=api.kMFnNumericFloat, default=0.0, keyable=True)
+            parent.ik_control().addAttribute(attr_name, type=api.kMFnNumericFloat, default=0.0, keyable=True)
 
-        parent.ik_control.attribute('footRoll').connect(rv_chain[2].attribute(roll_axis))
-        parent.ik_control.attribute('toeRoll').connect(toe_locator.rotateX)
-        parent.ik_control.attribute('heelRoll').connect(heel_locator.rotateX)
-        parent.ik_control.attribute('toeTap').connect(toe_tap_transform.attribute(roll_axis))
-        parent.ik_control.attribute('toeTwist').connect(toe_locator.rotateY)
-        parent.ik_control.attribute('heelTwist').connect(heel_locator.rotateY)
+        parent_ik_control.attribute('footRoll').connect(rv_chain[2].attribute(roll_axis))
+        parent_ik_control.attribute('toeRoll').connect(toe_locator.rotateX)
+        parent_ik_control.attribute('heelRoll').connect(heel_locator.rotateX)
+        parent_ik_control.attribute('toeTap').connect(toe_tap_transform.attribute(roll_axis))
+        parent_ik_control.attribute('toeTwist').connect(toe_locator.rotateY)
+        parent_ik_control.attribute('heelTwist').connect(heel_locator.rotateY)
 
         bank_condition = api.factory.create_dg_node(
             name=naming.generate_name([self.indexed_name, 'bank'], side=self.side, suffix='cond'),
             node_type='condition')
         bank_condition.operation.set(4 if self.side.lower() == 'r' else 2)
         bank_condition.colorIfFalseR.set(0)
-        parent.ik_control.attribute('bank').connect(bank_condition.firstTerm)
-        parent.ik_control.attribute('bank').connect(bank_condition.colorIfTrueR)
-        parent.ik_control.attribute('bank').connect(bank_condition.colorIfFalseG)
+        parent_ik_control.attribute('bank').connect(bank_condition.firstTerm)
+        parent_ik_control.attribute('bank').connect(bank_condition.colorIfTrueR)
+        parent_ik_control.attribute('bank').connect(bank_condition.colorIfFalseG)
         bank_condition.outColorG.connect(outer_locator.rotateZ)
         bank_condition.outColorR.connect(inner_locator.rotateZ)
 
@@ -148,3 +149,23 @@ class ReverseFootComponent(animcomponent.AnimComponent):
         self.scale_controls(scale_dict)
 
         foot_locators_group.setVisible(False)
+
+    def roll_axis(self) -> str:
+        """
+        Returns this component roll axis.
+
+        :return: roll axis.
+        :rtype: str
+        """
+
+        return self.attribute('rollAxis').value()
+
+    def fk_control(self) -> control.Control:
+        """
+        Returns this component FK control.
+
+        :return: FK control.
+        :rtype: FK control.
+        """
+
+        return self.controls()[0]

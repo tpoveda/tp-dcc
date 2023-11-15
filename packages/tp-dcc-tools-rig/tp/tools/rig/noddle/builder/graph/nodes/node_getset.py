@@ -90,15 +90,12 @@ class VarNode(api.NoddleNode):
         return result
 
     @override
-    def serialize(self) -> dict:
-        result = super().serialize()
-        result['var_name'] = self.var_name
-
-        return result
-
-    @override
     def pre_deserialization(self, data: dict):
         self.set_var_name(data.get('var_name'), init_sockets=True)
+
+    @override
+    def post_deserialization(self, data: dict):
+        data['var_name'] = self.var_name
 
     def attributes_widgets(self):
         return None

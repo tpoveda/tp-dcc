@@ -7,6 +7,7 @@ from collections import deque
 from tp.core import log
 from tp.common.qt import api as qt
 from tp.preferences.interfaces import noddle
+from tp.tools.rig.noddle.builder.graph.core import serializer
 
 if typing.TYPE_CHECKING:
     from tp.tools.rig.noddle.builder.graph.core.scene import Scene
@@ -67,12 +68,12 @@ class SceneHistory:
 
         def _create_stamp():
             selection = {
-                'nodes': [node.uid for node in self._scene.selected_nodes],
-                'edges': [edge.uid for edge in self._scene.selected_edges]
+                'nodes': [node.uuid for node in self._scene.selected_nodes],
+                'edges': [edge.uuid for edge in self._scene.selected_edges]
             }
             return {
                 'desc': description,
-                'snapshot': self._scene.serialize(),
+                'snapshot': serializer.serialize_scene(self._scene),
                 'selection': selection
             }
 
@@ -180,16 +181,16 @@ class SceneHistory:
         """
 
         try:
-            self._scene.deserialize(stamp['snapshot'])
+            serializer.deserialize_scene(self._scene, stamp['snapshot'])
             self._scene.graphics_scene.clearSelection()
             for edge_uid in stamp['selection']['edges']:
                 for edge in self._scene.edges:
-                    if edge.uid == edge_uid:
+                    if edge.uuid == edge_uid:
                         edge.graphics_edge.setSelected(True)
                         break
             for node_uid in stamp['selection']['nodes']:
                 for node in self._scene.nodes:
-                    if node.uid == node_uid:
+                    if node.uuid == node_uid:
                         node.graphics_node.setSelected(True)
                     break
         except Exception:

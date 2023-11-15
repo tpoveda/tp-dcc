@@ -8,6 +8,7 @@ from overrides import override
 from tp.core import log
 from tp.common.math import scalar
 from tp.common.qt import api as qt
+from tp.common.python import helpers
 from tp.tools.rig.noddle.builder.graph.core import consts, edgedrag
 from tp.tools.rig.noddle.builder.graph.graphics import node, socket, edge, slicer
 
@@ -28,6 +29,8 @@ class GraphicsView(qt.QGraphicsView):
         Drag = 2
         Cut = 3
         CutFreehand = 4
+
+    nodeBackdropUpdated = qt.Signal(object, str, dict)
 
     def __init__(self, graphics_scene: GraphicsScene, parent: qt.QWidget | None = None):
         super().__init__(parent=parent)
@@ -79,10 +82,6 @@ class GraphicsView(qt.QGraphicsView):
 
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}() object at {hex(id(self))}>'
-
-    @property
-    def scene(self) -> Scene:
-        return self._graphics_scene.scene
 
     @property
     def is_view_dragging(self) -> bool:
@@ -265,7 +264,7 @@ class GraphicsView(qt.QGraphicsView):
                 if self._edge_mode == GraphicsView.EdgeMode.Cut:
                     cut_result = self._slicer.cut()
                     if cut_result:
-                        self.scene.history.store_history('Edges Cut', set_modified=True)
+                        self._graphics_scene.scene.history.store_history('Edges Cut', set_modified=True)
                     self._slicer.draw_path(qt.QPointF(0.0, 0.0), qt.QPointF(0.0, 0.0))
                     self._slicer.setVisible(False)
                     self._edge_mode = GraphicsView.EdgeMode.Noop
@@ -273,14 +272,14 @@ class GraphicsView(qt.QGraphicsView):
                 if self._edge_mode == GraphicsView.EdgeMode.CutFreehand:
                     cut_result = self._freehand_slicer.cut()
                     if cut_result:
-                        self.scene.history.store_history('Edges Cut', set_modified=True)
+                        self._graphics_scene.scene.history.store_history('Edges Cut', set_modified=True)
                     self._freehand_slicer.reset()
                     self._freehand_slicer.setVisible(False)
                     self._edge_mode = GraphicsView.EdgeMode.Noop
                     return
                 if self._rubberband_dragging_rect:
                     self._rubberband_dragging_rect = False
-                    self.scene._on_selection_changed()
+                    self._graphics_scene.scene._on_selection_changed()
                     return
             except Exception:
                 logger.exception('Left mouse release exception', exc_info=True)
@@ -375,11 +374,11 @@ class GraphicsView(qt.QGraphicsView):
 
     @override
     def dragEnterEvent(self, event: qt.QDragEnterEvent) -> None:
-        self.scene.signals.itemDragEntered.emit(event)
+        self._graphics_scene.scene.signals.itemDragEntered.emit(event)
 
     @override
     def dropEvent(self, event: qt.QDropEvent) -> None:
-        self.scene.signals.itemDropped.emit(event)
+        self._graphics_scene.scene.signals.itemDropped.emit(event)
 
     @override(check_signature=False)
     def scale(self, scale_x: float, scale_y: float, pos: qt.QPoint | None = None):
@@ -488,7 +487,7 @@ class GraphicsView(qt.QGraphicsView):
 
         if not item:
             logger.info('SCENE:')
-            logger.info('VARS: {0}'.format(self.scene.vars._vars))
+            logger.info('VARS: {0}'.format(self._graphics_scene.scene.vars._vars))
             logger.info('  Nodes:')
             for scene_node in self._graphics_scene.scene.nodes:
                 logger.info('    {0}'.format(scene_node))
@@ -502,6 +501,60 @@ class GraphicsView(qt.QGraphicsView):
         """
 
         self._edge_mode = GraphicsView.EdgeMode.Noop
+
+    def all_nodes(self, filtered_classes: list[type] | None = None):
+        """
+        Returns all node views in current graph. Allows the filtering of specific node classes.
+
+        :param list[type] or None filtered_classes: If given, only nodes with given classes will be taken into account
+        :return: all node views within the scene.
+        :rtype: list[node.BaseGraphicsNode]
+        """
+
+        all_nodes: list[node.BaseGraphicsNode] = []
+        current_scene = self.scene()
+        if not current_scene:
+            return all_nodes
+
+        filtered_classes = helpers.force_list(filtered_classes or [node.BaseGraphicsNode])
+        if node.BaseGraphicsNode not in filtered_classes:
+            filtered_classes.append(node.BaseGraphicsNode)
+        filtered_classes = helpers.force_tuple(filtered_classes)
+
+        for item_view in current_scene.items():
+            if not item_view or not isinstance(item_view, filtered_classes):
+                continue
+            all_nodes.append(item_view)
+
+        return all_nodes
+
+    def selected_nodes(self, filtered_classes: list[type] | None = None) -> list[node.BaseGraphicsNode]:
+        """
+        Returns current selected views. Allows the filtering of specific node classes.
+
+        :param list[type] or None filtered_classes: list of node classes we want to filter by.
+        :return: list of selected node views.
+        :rtype: list[node.BaseGraphicsNode]
+        """
+
+        selected_nodes: list[node.BaseGraphicsNode] = []
+
+        # if no scene is available, no nodes can be selected
+        current_scene = self.scene()
+        if not current_scene:
+            return selected_nodes
+
+        filtered_classes = helpers.force_list(filtered_classes or [node.BaseGraphicsNode])
+        if node.BaseGraphicsNode not in filtered_classes:
+            filtered_classes.append(node.BaseGraphicsNode)
+        filtered_classes = helpers.force_tuple(filtered_classes)
+
+        for item in current_scene.selectedItems():
+            if not item or not isinstance(item, filtered_classes):
+                continue
+            selected_nodes.append(item)
+
+        return selected_nodes
 
     def _setup_ui(self):
         """

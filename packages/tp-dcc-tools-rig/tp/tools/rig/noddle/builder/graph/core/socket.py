@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 import enum
 import typing
 from typing import Any
@@ -9,7 +10,6 @@ from overrides import override
 from tp.core import log
 from tp.common.qt import api as qt
 from tp.tools.rig.noddle.builder.graph import registers, datatypes
-from tp.tools.rig.noddle.builder.graph.core import serializable
 from tp.tools.rig.noddle.builder.graph.graphics import socket
 
 if typing.TYPE_CHECKING:
@@ -19,7 +19,7 @@ if typing.TYPE_CHECKING:
 logger = log.rigLogger
 
 
-class Socket(serializable.Serializable):
+class Socket:
 
     class Signals(qt.QObject):
         valueChanged = qt.Signal()
@@ -41,6 +41,7 @@ class Socket(serializable.Serializable):
             count_on_this_side: int = 0):
         super().__init__()
 
+        self._uuid = str(uuid.uuid4())
         self._node = node
         self._index = index
         self._node_position = position if isinstance(position, Socket.Position) else Socket.Position(position)
@@ -65,6 +66,14 @@ class Socket(serializable.Serializable):
     @property
     def signals(self) -> Signals:
         return self._signals
+
+    @property
+    def uuid(self) -> str:
+        return self._uuid
+
+    @uuid.setter
+    def uuid(self, value: str):
+        self._uuid = value
 
     @property
     def node(self) -> Node:
@@ -132,33 +141,6 @@ class Socket(serializable.Serializable):
     @property
     def graphics_socket(self) -> socket.GraphicsSocket:
         return self._graphics_socket
-
-    @override
-    def serialize(self) -> dict:
-        value = self.value() if not self.is_runtime_data() else None
-        return {
-            'id': self.uid,
-            'index': self.index,
-            'position': self.node_position.value,
-            'data_type': datatypes.type_name(self.data_type),
-            'max_connections': self.max_connections,
-            'label': self.label,
-            'value': value
-        }
-
-    @override(check_signature=False)
-    def deserialize(self, data: dict, hashmap: dict | None = None, restore_id: bool = True):
-
-        if restore_id:
-            self.uid = data['id']
-
-        data_type = datatypes.type_from_name(data['data_type'])
-        value = data.get('value', data_type['default'])
-        self.data_type = data_type
-        self.set_value(value)
-        hashmap[data['id']] = self
-
-        return True
 
     def is_runtime_data(self) -> bool:
         """
