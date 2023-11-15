@@ -64,6 +64,22 @@ def init(**kwargs):
     dev = bool(strtobool(os.getenv('TPDCC_ENV_DEV', 'False')))
     deps_path = kwargs.get('dependencies_path', None) or os.getenv('TPDCC_DEPS_ROOT', None)
 
+    if not package_version_file:
+        if env.application() == 'standalone':
+            package_version_file = 'package_version_standalone.config'
+        elif env.application() == 'maya':
+            package_version_file = 'package_version_maya.config'
+        elif env.application() == '3dsmax':
+            package_version_file = 'package_version_3dsmax.config'
+        elif env.application() == 'mobu':
+            package_version_file = 'package_version_mobu.config'
+        elif env.application() == 'houdini':
+            package_version_file = 'package_version_houdini.config'
+        elif env.application() == 'blender':
+            package_version_file = 'package_version_blender.config'
+        elif env.application() == 'unreal':
+            package_version_file = 'package_version_unreal.config'
+
     logger.debug('Bootstrap init paths:')
     logger.debug(f'\tPackages Root Path: {root_path}')
     logger.debug(f'\tDependencies Root Path: {root_path}')
