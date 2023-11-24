@@ -1,0 +1,18 @@
+name: 'tp-dcc-tools-rig-freeform'
+version: '1.0.0'
+author: 'Tomas Poveda'
+authorEmail: 'tpovedatd@gmail.com'
+description: 'Rigging package that contains Freeform Rigging toolkit'
+displayName: 'tp-dcc-tools-rig-freeform'
+environment:
+  PYTHONPATH:
+    - '{self}'
+    - '{self}/preferences'
+  TPDCC_BASE_PATHS:
+    - '{self}'
+  TPDCC_TOOL_DEFINITION_MODULES:
+    - '{self}/tp/tools/rig/freeform/tool.py'
+  TPDCC_META_PATHS:
+    - '{self}/tp/libs/rig/freeform/meta'
+commands:
+  - '{self}/startup/freeform.py'

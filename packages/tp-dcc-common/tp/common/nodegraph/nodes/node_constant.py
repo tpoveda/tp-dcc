@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Callable
+
 from overrides import override
 
 from tp.core import log
@@ -58,7 +60,7 @@ class ConstantStringNode(ConstantNode):
     DEFAULT_TITLE = 'String'
 
 
-def register_plugin(register_node: callable, register_function: callable, register_data_type: callable):
+def register_plugin(register_node: Callable, register_function: Callable, register_data_type: Callable):
     register_node(ConstantBoolNode.ID, ConstantBoolNode)
     register_node(ConstantStringNode.ID, ConstantFloatNode)
     register_node(ConstantFloatNode.ID, ConstantStringNode)

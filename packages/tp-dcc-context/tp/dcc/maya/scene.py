@@ -30,6 +30,26 @@ class MayaScene(scene.AbstractScene):
     __slots__ = ()
     __extensions__ = FileExtensions
 
+    @override(check_signature=False)
+    def extensions(self) -> tuple[FileExtensions, ...]:
+        """
+        Returns a list of scene file extensions.
+
+        :return: tuple[enum.IntEnum]
+        """
+
+        return FileExtensions.mb, FileExtensions.ma
+
+    def is_batch_mode(self) -> bool:
+        """
+        Returns whether scene is running in batch mode.
+
+        :return: True if scene is running in batch mode; False otherwise.
+        :rtype: bool
+        """
+
+        return cmds_scene.is_batch()
+
     @override
     def is_new_scene(self) -> bool:
         """
@@ -94,6 +114,50 @@ class MayaScene(scene.AbstractScene):
         except RuntimeError as exception:
             logger.error(exception)
             return False
+
+    @override
+    def current_file_path(self) -> str:
+        """
+        Returns the path of the open scene file.
+
+        :return: scene file path.
+        :rtype: str
+        """
+
+        return cmds_scene.current_file_path()
+
+    @override
+    def current_directory(self) -> str:
+        """
+        Returns the directory of the open scene file.
+
+        :return: scene file directory.
+        :rtype: str
+        """
+
+        return cmds_scene.current_directory()
+
+    @override
+    def current_file_name(self) -> str:
+        """
+        Returns the name of the open scene file with extension.
+
+        :return: scene name with extension.
+        :rtype: str
+        """
+
+        return cmds_scene.current_file_name()
+
+    @override
+    def current_project_directory(self) -> str:
+        """
+        Returns the current project directory.
+
+        :return: project directory.
+        :rtype: str
+        """
+
+        return cmds_scene.current_project_directory()
 
     @override(check_signature=False)
     def active_selection(self) -> list[OpenMaya.MObject]:

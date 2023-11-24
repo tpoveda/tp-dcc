@@ -7,7 +7,7 @@ Module that contains Maya command implementation
 
 import sys
 import traceback
-from typing import Dict, Any
+from typing import Any
 
 from overrides import override
 import maya.cmds as cmds
@@ -22,7 +22,9 @@ logger = log.tpLogger
 
 class MayaCommand(command.DccCommand):
 
-    pass
+    @override
+    def do(self, **kwargs: dict) -> Any:
+        raise NotImplementedError
 
 
 class MayaCommandRunner(command.BaseCommandRunner):
@@ -37,7 +39,7 @@ class MayaCommandRunner(command.BaseCommandRunner):
         helpers.load_plugin('tpundo.py')
 
     @override
-    def run(self, command_id: str, **kwargs: Dict) -> Any:
+    def run(self, command_id: str, **kwargs: dict) -> Any:
 
         logger.debug(f'Executing command: "{command_id}"')
 
@@ -92,7 +94,7 @@ class MayaCommandRunner(command.BaseCommandRunner):
             return False
 
         command_to_undo = self._undo_stack[-1]
-        if command_to_undo is not None or not command_to_undo.is_undoable:
+        if command_to_undo is None or not command_to_undo.is_undoable:
             return False
 
         exc_tb, exc_type, exc_value = None, None, None
@@ -101,7 +103,7 @@ class MayaCommandRunner(command.BaseCommandRunner):
             cmds.undo()
         except exceptions.CommandCancel:
             command_to_undo.stats.finish(None)
-            return
+            return False
         except Exception:
             exc_type, exc_value, exc_tb = sys.exc_info()
             raise

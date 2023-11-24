@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import numbers
-from typing import Any
+from typing import Any, Callable
 
 from tp.core import log
 from tp.common.qt import api as qt
@@ -34,8 +34,8 @@ def register_node(node_id: str, node_class: type):
 
 
 def register_function(
-        func: callable, source_data_type: dict, inputs: dict | None = None, outputs: dict | None = None,
-        default_values: dict | None = None, nice_name: str | None = None, subtype: dict | None = None,
+        func: Callable, source_data_type: dict, inputs: dict | None = None, outputs: dict | None = None,
+        default_values: list[list[Any]] | None = None, nice_name: str | None = None, subtype: dict | None = None,
         category: str = 'General', docstring: str = '', icon: str = 'func.png'):
     """
     Registers given function.
@@ -44,7 +44,7 @@ def register_function(
     :param dict source_data_type: source data type.
     :param dict or None inputs: dictionary representing the inputs of the function node.
     :param dict or None outputs: dictionary representing the outputs of the function node.
-    :param dict or None default_values: dictionary representing the default values of inputs.
+    :param list[list[Any]] or None default_values: dictionary representing the default values of inputs.
     :param nice_name: node nice name.
     :param subtype: optional source subtype.
     :param category: optional node category

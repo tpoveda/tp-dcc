@@ -7,17 +7,10 @@ displayName: 'tp-dcc-tools-rig'
 environment:
   PYTHONPATH:
     - '{self}'
-    - '{self}/preferences'
   TPDCC_BASE_PATHS:
     - '{self}'
   TPDCC_TOOL_DEFINITION_MODULES:
-    - '{self}/tp/tools/rig/rigscript/tool.py'
-    - '{self}/tp/tools/rig/noddle/tool.py'
-    - '{self}/tp/tools/rig/freeform/tool.py'
     - '{self}/tp/tools/rig/transferskinweights/tool.py'
     - '{self}/tp/tools/rig/skeletor/tool.py'
-  TPDCC_META_PATHS:
-    - '{self}/tp/libs/rig/noddle/maya/meta'
-    - '{self}/tp/libs/rig/freeform/meta'
 commands:
   - '{self}/startup/rig.py'

@@ -1,0 +1,35 @@
+settings:
+    project:
+        previousProject: ''
+        recentProjects: []
+        maxRecent: 3
+    assets:
+        types:
+            - 'character'
+            - 'prop'
+            - 'vehicle'
+            - 'environment'
+            - 'other'
+    builder:
+        titleFont: ['Roboto', 10]
+        socketFont: ['Roboto', 10]
+        history:
+            enabled: true
+            size: 32
+    naming:
+        templates:
+            default: '{side}_{name}_{suffix}'
+            alternative: '{name}_{side}_{suffix}'
+            unreal: '{suffix}_{name}_{side}'
+        profile:
+            indexPadding: 2
+            template: 'default'
+            startIndex: 0
+    rig:
+        io:
+            skin:
+                fileFormat: 'pickle'
+            nglayers:
+                fileFormat: 'pickle'
+        display:
+            lineWidth: 2.0

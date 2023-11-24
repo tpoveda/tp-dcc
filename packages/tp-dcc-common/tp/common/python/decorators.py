@@ -13,7 +13,7 @@ import time
 import inspect
 import traceback
 import threading
-from typing import Any
+from typing import Any, Callable
 from functools import wraps, update_wrapper
 
 from overrides import override
@@ -361,7 +361,7 @@ def add_metaclass(metaclass):
     return wrapper
 
 
-def classproperty(func: callable) -> ClassProperty:
+def classproperty(func: Callable) -> ClassProperty:
     """
     Custom decorator that returns a class property object to be used as a decorator.
 
@@ -512,11 +512,11 @@ class ClassProperty:
 
         return self.fdel.__get__(instance, type(instance))()
 
-    def setter(self, func: callable) -> ClassProperty:
+    def setter(self, func: Callable) -> ClassProperty:
         """
         Decorator hook used to override setter function.
 
-        :param callable func: function.
+        :param Callable func: function.
         :return: class property instance
         :rtype: ClassProperty
         """
@@ -525,11 +525,11 @@ class ClassProperty:
         self.fset = func
         return self
 
-    def deleter(self, func: callable) -> ClassProperty:
+    def deleter(self, func: Callable) -> ClassProperty:
         """
         Decorator hook used to override delete function.
 
-        :param callable func: function.
+        :param Callable func: function.
         :return: class property instance
         :rtype: ClassProperty
         """
@@ -552,7 +552,7 @@ class AbstractDecorator(abc.ABC):
 
         self._instance: object | None = None
         self._owner: type[AbstractDecorator] | None = None
-        self._func: callable | None = None
+        self._func: Callable | None = None
 
         num_args = len(args)
         if num_args == 1:

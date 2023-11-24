@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
+
 from overrides import override
 
 from tp.core import log
@@ -169,6 +170,6 @@ class SetNode(VarNode):
         self.set_var_value(self.in_value.value())
 
 
-def register_plugin(register_node: callable, register_function: callable, register_data_type: callable):
+def register_plugin(register_node: Callable, register_function: Callable, register_data_type: Callable):
     register_node(GetNode.ID, GetNode)
     register_node(SetNode.ID, SetNode)

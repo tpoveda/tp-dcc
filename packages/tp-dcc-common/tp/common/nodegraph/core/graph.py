@@ -10,15 +10,13 @@ from tp.common.qt import api as qt
 from tp.common.nodegraph.core import scene
 from tp.common.nodegraph.models import graph as graph_model
 from tp.common.nodegraph.graphics import view
-from tp.common.nodegraph.widgets import palette
+from tp.common.nodegraph.widgets import palette, graph as graph_widget
 
 
 logger = log.rigLogger
 
 
-class NodeGraph(qt.QWidget):
-
-    aboutToClose = qt.Signal(qt.QWidget, qt.QCloseEvent)
+class NodeGraph(qt.QObject):
 
     def __init__(
             self, model: graph_model.NodeGraphModel | None = None, viewer: view.GraphicsView | None = None,
@@ -26,16 +24,14 @@ class NodeGraph(qt.QWidget):
         super().__init__(parent=parent)
 
         self.setObjectName('NodeGraph')
-        self.setAttribute(qt.Qt.WA_DeleteOnClose)
-        self.setMinimumSize(200, 500)
 
         self._model = model or graph_model.NodeGraphModel()
-
         self._scene = scene.Scene()
-        self._view = viewer or view.GraphicsView(self._scene.graphics_scene)
+        self._viewer = viewer or view.GraphicsView(self._scene.graphics_scene)
+        self._widget: graph_widget.NodeGraphWidget | None = None
 
-        self._setup_actions()
-        self._setup_layouts()
+        # self._setup_actions()
+        # self._setup_layouts()
         self._setup_signals()
 
         self._update_title()
@@ -45,13 +41,6 @@ class NodeGraph(qt.QWidget):
 
     @property
     def model(self) -> graph_model.NodeGraphModel:
-        """
-        Returns the model used for storing the graph data.
-
-        :return:  graph scene model.
-        :rtype: graph_model.NodeGraphModel
-        """
-
         return self._model
 
     @property
@@ -75,35 +64,55 @@ class NodeGraph(qt.QWidget):
 
         return file_name
 
-    @override
-    def closeEvent(self, event: qt.QCloseEvent) -> None:
-        self.aboutToClose.emit(self, event)
+    # @override
+    # def contextMenuEvent(self, event: qt.QContextMenuEvent) -> None:
+    #
+    #     def _handle_node_context_menu():
+    #         context_menu = NodeContextMenu(self)
+    #         context_menu.exec_(self.mapToGlobal(event.pos()))
+    #
+    #     def _handle_edge_context_menu():
+    #         pass
+    #
+    #     if self._viewer.is_view_dragging:
+    #         event.ignore()
+    #         return
+    #
+    #     try:
+    #         item = self.scene.item_at(event.pos())
+    #         if not item:
+    #             _handle_node_context_menu()
+    #         if hasattr(item, 'node') or hasattr(item, 'socket') or not item:
+    #             _handle_node_context_menu()
+    #         elif hasattr(item, 'edge'):
+    #             _handle_edge_context_menu()
+    #         super().contextMenuEvent(event)
+    #     except Exception:
+    #         logger.exception('contextMenuEvent exception', exc_info=True)
 
-    @override
-    def contextMenuEvent(self, event: qt.QContextMenuEvent) -> None:
+    def widget(self) -> graph_widget.NodeGraphWidget:
+        """
+        Returns graph widget for adding graph into a layout.
 
-        def _handle_node_context_menu():
-            context_menu = NodeContextMenu(self)
-            context_menu.exec_(self.mapToGlobal(event.pos()))
+        :return: node graph widget.
+        :rtype: graph_widget.NodeGraphWidget
+        """
 
-        def _handle_edge_context_menu():
-            pass
+        if self._widget is not None:
+            return self._widget
 
-        if self._view.is_view_dragging:
-            event.ignore()
-            return
+        self._widget = graph_widget.NodeGraphWidget()
+        self._widget.addTab(self._viewer, 'Node Graph')
+        tab_bar = self._widget.tabBar()
+        for btn_flag in [tab_bar.RightSide, tab_bar.LeftSide]:
+            tab_btn = tab_bar.tabButton(0, btn_flag)
+            if not tab_btn:
+                continue
+            tab_btn.deleteLater()
+            tab_bar.setTabButton(0, btn_flag, None)
+        self._widget.tabCloseRequested.connect(self._on_close_sub_graph_tab)
 
-        try:
-            item = self.scene.item_at(event.pos())
-            if not item:
-                _handle_node_context_menu()
-            if hasattr(item, 'node') or hasattr(item, 'socket') or not item:
-                _handle_node_context_menu()
-            elif hasattr(item, 'edge'):
-                _handle_edge_context_menu()
-            super().contextMenuEvent(event)
-        except Exception:
-            logger.exception('contextMenuEvent exception', exc_info=True)
+        return self._widget
 
     def is_modified(self) -> bool:
         """
@@ -207,17 +216,17 @@ class NodeGraph(qt.QWidget):
         Internal function that setup all actions.
         """
 
-        self.addAction(palette.PopupNodesPalette.show_action(self, self._view))
+        self.addAction(palette.PopupNodesPalette.show_action(self, self._viewer))
 
-    def _setup_layouts(self):
-        """
-        Internal function that creates all UI layouts and add all widgets to them.
-        """
-
-        self._main_layout = qt.vertical_layout(spacing=0, margins=(0, 0, 0, 0))
-        self.setLayout(self._main_layout)
-
-        self._main_layout.addWidget(self._view)
+    # def _setup_layouts(self):
+    #     """
+    #     Internal function that creates all UI layouts and add all widgets to them.
+    #     """
+    #
+    #     self._main_layout = qt.vertical_layout(spacing=0, margins=(0, 0, 0, 0))
+    #     self.setLayout(self._main_layout)
+    #
+    #     self._main_layout.addWidget(self._viewer)
 
     def _setup_signals(self):
         """
@@ -229,14 +238,16 @@ class NodeGraph(qt.QWidget):
         self.scene.signals.fileNameChanged.connect(self._update_title)
         self.scene.signals.modified.connect(self._update_title)
 
-        self._view.nodeBackdropUpdated.connect(self._on_node_backdrop_updated)
+        self._viewer.nodeBackdropUpdated.connect(self._on_node_backdrop_updated)
 
     def _update_title(self):
         """
         Internal function that updates editor title.
         """
 
-        self.setWindowTitle(self.user_friendly_title)
+        pass
+
+        # self.setWindowTitle(self.user_friendly_title)
 
     def _on_item_drag_enter(self, event: qt.QDragEnterEvent):
         """
@@ -323,6 +334,15 @@ class NodeGraph(qt.QWidget):
         # backdrop_node = self.node_by_id(node_id)
         # if backdrop_node and isinstance(backdrop_node, node_backdrop.BackdropNode):
         #     backdrop_node.update_property(update_property, value)
+
+    def _on_close_sub_graph_tab(self, index: int):
+        """
+        Internal callback function that is called each time the close button is clickied on expanded sub graph tab.
+
+        :param int index: tab index.
+        """
+
+        pass
 
 
 class NodeContextMenu(qt.QMenu):

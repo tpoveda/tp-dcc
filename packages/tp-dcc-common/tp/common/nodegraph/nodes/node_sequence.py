@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Callable
+
 from tp.tools.rig.noddle.builder import api
 
 from overrides import override
@@ -23,5 +25,5 @@ class SequenceNode(api.NoddleNode):
             self.add_output(api.dt.Exec, label=f'Then {i}')
 
 
-def register_plugin(register_node: callable, register_function: callable, register_data_type: callable):
+def register_plugin(register_node: Callable, register_function: Callable, register_data_type: Callable):
     register_node(SequenceNode.ID, SequenceNode)

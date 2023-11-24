@@ -1,0 +1,20 @@
+name: 'tp-dcc-tools-rig-noddle'
+version: '1.0.0'
+author: 'Tomas Poveda'
+authorEmail: 'tpovedatd@gmail.com'
+description: ' Node base rigging framework'
+displayName: 'tp-dcc-tools-rig-noddle'
+environment:
+  PYTHONPATH:
+    - '{self}'
+    - '{self}/preferences'
+  TPDCC_BASE_PATHS:
+    - '{self}'
+  TPDCC_TOOL_DEFINITION_MODULES:
+    - '{self}/tp/tools/rig/noddle/tool.py'
+  TPDCC_META_PATHS:
+    - '{self}/tp/libs/rig/noddle/maya/meta'
+  TPDCC_COMMAND_LIB:
+    - '{self}/tp/tools/rig/noddle/builder/controllers/maya/commands.py'
+commands:
+  - '{self}/startup/noddle.py'

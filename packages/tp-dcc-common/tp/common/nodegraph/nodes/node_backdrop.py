@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Callable
+
 from overrides import override
 
 from tp.common.nodegraph.core import node
@@ -30,5 +32,5 @@ class BackdropNode(node.BaseNode):
         self.graphics_node.backdrop_text = data['backdrop_text']
 
 
-def register_plugin(register_node: callable, register_function: callable, register_data_type: callable):
+def register_plugin(register_node: Callable, register_function: Callable, register_data_type: Callable):
     register_node(BackdropNode.ID, BackdropNode)

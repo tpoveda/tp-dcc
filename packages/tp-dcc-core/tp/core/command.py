@@ -11,7 +11,7 @@ import sys
 import time
 import inspect
 import traceback
-from typing import Type, Deque, List, Dict, Any
+from typing import Any
 from collections import deque
 from abc import ABCMeta, abstractmethod
 
@@ -25,12 +25,11 @@ from tp.common import plugin
 logger = log.tpLogger
 
 
-def execute(command_id: str, **kwargs: Dict) -> Any:
+def execute(command_id: str, **kwargs: dict) -> Any:
     """
     Executes given DCC command with given ID.
 
     :param str command_id: DCC command ID to execute.
-    :param Dict kwargs: DCC command keyword arguments.
     :return: DCC command result.
     :rtype: Any
     """
@@ -52,6 +51,10 @@ class DccCommandInterface:
 
             return super().__getattribute__(item)
 
+    id: str | None = None
+    creator = ''
+    is_undoable = False
+    is_enabled = True
     UI_DATA = {'icon': '', 'tooltip': '', 'label': '', 'color': '', 'backgroundColor': ''}
 
     def __init__(self, stats: CommandStats | None = None):
@@ -73,39 +76,6 @@ class DccCommandInterface:
     def arguments(self) -> DccCommandInterface.ArgumentParser:
         return self._arguments
 
-    @abstractmethod
-    def id(self) -> str:
-        """
-        Returns unique command ID used to call the command.
-
-        :return: unique command ID.
-        :rtype: str
-        """
-
-        raise NotImplementedError('abstract command DCC property id not implemented!')
-
-    @abstractmethod
-    def creator(self) -> str:
-        """
-        Returns the command developer name.
-
-        :return: creator name.
-        :rtype: str
-        """
-
-        raise NotImplementedError('abstract command DCC property creator not implemented!')
-
-    @abstractmethod
-    def is_undoable(self) -> bool:
-        """
-        Returns whether this command is undoable.
-
-        :return: True if command is undoable; False otherwise.
-        :rtype: bool
-        """
-
-        return False
-
     def initialize(self):
         """
         Function that should be overridden by subclasses.
@@ -115,12 +85,12 @@ class DccCommandInterface:
         pass
 
     @abstractmethod
-    def do(self, **kwargs: Dict) -> Any:
+    def do(self, **kwargs: dict) -> Any:
         """
         Executes the command functionality. This function only supports keyword arguments, so every argument MUST have
         a default value.
 
-        :param Dict kwargs: dictionary with key value pairs. Any kind of type is supported (even DCC specific types).
+        :param dict kwargs: dictionary with key value pairs. Any kind of type is supported (even DCC specific types).
         :return: command run result.
         :rtype: Any
         """
@@ -144,14 +114,14 @@ class DccCommandInterface:
 
         return self.do(**self._arguments)
 
-    def resolve_arguments(self, arguments: Dict) -> Dict | None:
+    def resolve_arguments(self, arguments: dict) -> dict | None:
         """
         Function that is called before running the command. Useful to valid incoming command arguments before executing
         the command.
 
-        :param Dict arguments: key, value pairs of commands being passed to the run command function
+        :param dict arguments: key, value pairs of commands being passed to the run command function
         :return: dictionary with the same key value pairs as the arguments param.
-        :rtype: Dict or None
+        :rtype: dict or None
         """
 
         return arguments
@@ -165,11 +135,11 @@ class DccCommand(DccCommandInterface):
 
     @override
     def initialize(self):
-        """
-        Initializes functionality for the command
-        """
-
         self.prepare_command()
+
+    @override
+    def do(self, **kwargs: dict) -> Any:
+        raise NotImplementedError
 
     def prepare_command(self):
         """
@@ -209,11 +179,11 @@ class DccCommand(DccCommandInterface):
 
         return name in self._arguments
 
-    def parse_arguments(self, arguments: Dict) -> bool:
+    def parse_arguments(self, arguments: dict) -> bool:
         """
         Parses given command arguments and prepares them for the command to use.
 
-        :param Dict arguments: arguments to parse.
+        :param dict arguments: arguments to parse.
         :return: True if the parse arguments operation was successful; False otherwise.
         :rtype: bool
         """
@@ -266,8 +236,8 @@ class DccCommand(DccCommandInterface):
 
 
 class CommandStats:
-    def __init__(self, command_class: Type):
-        self._command = command_class
+    def __init__(self, command: DccCommand):
+        self._command = command
         self._start_time = 0.0
         self._end_time = 0.0
         self._execution_time = 0.0
@@ -352,28 +322,28 @@ class MetaCommandRunner(type):
 
 
 class BaseCommandRunner:
-    def __init__(self, interface: Type | None = None, register_env: str = 'TPDCC_COMMAND_LIB'):
+    def __init__(self, interface: type | None = None, register_env: str = 'TPDCC_COMMAND_LIB'):
         interface = interface or DccCommand
-        self._undo_stack = deque()
-        self._redo_stack = deque()
+        self._undo_stack: deque[DccCommand] = deque()
+        self._redo_stack: deque[DccCommand] = deque()
         self._manager = plugin.PluginFactory(interface, plugin_id='id')
         self._manager.register_paths_from_env_var(register_env, package_name='tp-dcc')
 
     @property
-    def undo_stack(self) -> Deque:
+    def undo_stack(self) -> deque:
         return self._undo_stack
 
     @property
-    def redo_stack(self) -> Deque:
+    def redo_stack(self) -> deque:
         return self._redo_stack
 
-    def commands(self) -> List[DccCommand]:
+    def commands(self) -> list[DccCommand]:
         return self._manager.plugins()
 
     def manager(self) -> plugin.PluginFactory:
         return self._manager
 
-    def run(self, command_id: str, **kwargs: Dict) -> Any:
+    def run(self, command_id: str, **kwargs: dict) -> Any:
         """
         Run the command with given ID.
 
@@ -473,13 +443,13 @@ class BaseCommandRunner:
 
         return result
 
-    def find_command(self, command_id: str) -> Type | None:
+    def find_command(self, command_id: str) -> type[DccCommand] | None:
         """
         Returns registered command by its ID.
 
         :param str command_id: ID of the command to find.
         :return: found command.
-        :rtype: Type or None
+        :rtype: type or None
         """
 
         return self._manager.get_plugin_from_id(command_id)

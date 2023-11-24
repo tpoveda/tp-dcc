@@ -13,6 +13,7 @@ import sys
 import timeit
 import inspect
 import operator
+from typing import Any
 from distutils import version
 try:
     from inspect import getfullargspec
@@ -427,7 +428,7 @@ class PluginFactory:
 
         return ordered_plugins
 
-    def get_plugin_from_id(self, plugin_id, package_name=None, plugin_version=None):
+    def get_plugin_from_id(self, plugin_id, package_name=None, plugin_version=None) -> type[Any] | None:
         """
         Retrieves the plugin with given plugin identifier. If you require a specific version of a plugin (in a
         scenario where there are multiple plugins with the same identifier) this can also be specified
@@ -436,7 +437,7 @@ class PluginFactory:
         :param plugin_version: int or float, version of the plugin you want. If factory has no versioning identifier
             specified this argument has no effect.
         :return: Plugin
-        :rtype: type
+        :rtype: type[Any] or None
         """
 
         package_name = package_name or 'tp-dcc'

@@ -382,6 +382,17 @@ def scene_modified_dialogue() -> str:
     return button_pressed
 
 
+def current_project_directory() -> str:
+    """
+    Returns the current project directory.
+
+    :return: current project directory.
+    :rtype: str
+    """
+
+    return os.path.normpath(cmds.workspace(query=True, directory=True))
+
+
 def find_texture_node_pairs() -> Set[Tuple[str, str]]:
     """
     Returns pair with scene texture maya node, texture name of texture dependencies of the current scene that are not
@@ -428,7 +439,7 @@ def is_batch() -> bool:
     :rtype: bool
     """
 
-    return cmds.about(batch=True)
+    return cmds.about(query=True, batch=True)
 
 
 def scene_cameras(

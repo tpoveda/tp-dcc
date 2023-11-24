@@ -905,7 +905,6 @@ class DGNode:
         :param str name: name of the attribute to add.
         :param int or None type: type of the attribute to add.
         :param OpenMaya.MDGModifier mod: optional modifier to add.
-        :param dict kwargs: extra keyword arguments.
         :return: newly created plug.
         :rtype: Plug
         """

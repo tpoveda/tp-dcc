@@ -1,0 +1,16 @@
+name: 'tp-dcc-tools-rig-frag'
+version: '1.0.0'
+author: 'Tomas Poveda'
+authorEmail: 'tpovedatd@gmail.com'
+description: 'Action based rigging framework'
+displayName: 'tp-dcc-tools-rig-frag'
+environment:
+  PYTHONPATH:
+    - '{self}'
+    - '{self}/preferences'
+  TPDCC_BASE_PATHS:
+    - '{self}'
+  TPDCC_TOOL_DEFINITION_MODULES:
+    - '{self}/tp/tools/rig/frag/tool.py'
+commands:
+  - '{self}/startup/frag.py'

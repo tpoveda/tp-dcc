@@ -134,7 +134,7 @@ def base_button(
         icon_color: Tuple[int, int, int] or None =None, icon_color_theme: str | None = None,
         min_width: int | None = None, max_width: int | None = None, min_height: int | None = None,
         max_height: int | None = None, style: int = consts.ButtonStyles.DEFAULT, tooltip: str = '',
-        theme_updates: bool = True, checkable: bool = False, checked: bool = False,
+        status_tip: str = '', theme_updates: bool = True, checkable: bool = False, checked: bool = False,
         parent: QWidget | None = None) -> BaseButton | BasePushButton:
     """
     Creates an extended PushButton with a transparent background or with its regular style.
@@ -150,6 +150,7 @@ def base_button(
     :param int max_height: maximum height of the button in pixels.
     :param int style: the style of the button.
     :param str tooltip: tooltip as seen with mouse over.
+    :param str status_tip: status tip as seen with mouse over.
     :param bool theme_updates: whether  button style will be updated when current style changes.
     :param bool checkable: whether the button can be checked.
     :param bool checked: whether (if checkable is True) button is checked by default.
@@ -165,7 +166,10 @@ def base_button(
     else:
         kwargs = dict(text=text, icon_color_theme=icon_color_theme, parent=parent)
         new_button = BasePushButton(**kwargs) if style == consts.ButtonStyles.DEFAULT else BaseButton(**kwargs)
-    new_button.setToolTip(tooltip)
+    if tooltip:
+        new_button.setToolTip(tooltip)
+    if status_tip:
+        new_button.setStatusTip(status_tip)
 
     if min_width is not None:
         new_button.setMinimumWidth(min_width)

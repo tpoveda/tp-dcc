@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
 from collections import deque
+from typing import Any, Callable
 
 from overrides import override
 
@@ -59,5 +59,5 @@ class ForEachName(ForEachNode):
     COLLECTION_DATA_TYPE = api.dt.String
 
 
-def register_plugin(register_node: callable, register_function: callable, register_data_type: callable):
+def register_plugin(register_node: Callable, register_function: Callable, register_data_type: Callable):
     register_node(ForEachName.ID, ForEachName)
