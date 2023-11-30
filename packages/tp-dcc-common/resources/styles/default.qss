@@ -6,6 +6,7 @@
 
 #include unreal/unreal.qss
 #include tpdcc/tpdcc.qss
+#include frag/frag.qss
 #include crit/crit.qss
 #include animation/animation.qss
 #include game/game.qss

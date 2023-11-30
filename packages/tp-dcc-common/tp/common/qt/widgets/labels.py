@@ -7,6 +7,8 @@ Module that extends default Qt labels (QLabel) functionality
 
 from __future__ import annotations
 
+from typing import Any
+
 from overrides import override
 
 from Qt.QtCore import Qt, Property, Signal
@@ -18,29 +20,43 @@ from tp.common.qt.widgets import layouts
 
 
 def label(
-		text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
-		elide_mode: Qt.TextElideMode = Qt.ElideNone, min_width: int | None = None, max_width: int | None = None,
+		text: str = '', tooltip: str = '', status_tip: str | None = None, upper: bool = False, bold: bool = False,
+		alignment: Qt.AlignmentFlag | None = None, elide_mode: Qt.TextElideMode = Qt.ElideNone,
+		min_width: int | None = None, max_width: int | None = None, properties: list[tuple[str, Any]] | None = None,
 		parent: QWidget | None = None) -> BaseLabel:
 	"""
 	Creates a new label widget.
 
 	:param str text: label text.
-	:param str tooltip: label tooltip.
+	:param str tooltip: optional label tooltip.
+	:param str tooltip: optional label status tip.
 	:param bool upper: whether label text is forced to be uppercase.
 	:param bool bold: whether label font is bold.
+	:param Qt.AlignFlag or None alignment: optional aligment flag for the label.
 	:param Qt.TextElideMode elide_mode: whether label text should elide.
 	:param int or None min_width: optional minimum width for the label.
 	:param int or None max_width: optional maximum width for the label.
+	:param list[tuple[str, Any]] or None properties: optional dynamic properties to add to the label.
+	:param str or None tooltip: optional label tooltip.
+	:param str or None status_tip: optional status tip.
 	:param QWidget parent: parent widget.
 	:return: new label widget instance.
 	:rtype: BaseLabel
 	"""
 
-	new_label = BaseLabel(text=text, tooltip=tooltip, bold=bold, upper=upper, elide_mode=elide_mode, parent=parent)
+	new_label = BaseLabel(
+		text=text, tooltip=tooltip, status_tip=status_tip, bold=bold, upper=upper, elide_mode=elide_mode, parent=parent)
 	if min_width is not None:
 		new_label.setMinimumWidth(min_width)
 	if max_width is not None:
 		new_label.setMaximumWidth(max_width)
+
+	if alignment:
+		new_label.setAlignment(alignment)
+
+	if properties:
+		for name, value in properties:
+			new_label.setProperty(name, value)
 
 	return new_label
 
@@ -231,7 +247,8 @@ class BaseLabel(QLabel, dpi.DPIScaling):
 		DANGER = 'danger'
 
 	def __init__(
-			self, text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False, enable_menu: bool = True,
+			self, text: str = '', tooltip: str = '', status_tip: str = '', upper: bool = False, bold: bool = False,
+			enable_menu: bool = True,
 			parent: QWidget | None = None, elide_mode: Qt.TextElideMode = Qt.ElideNone):
 		text = text.upper() if upper else text
 		self._enable_menu = enable_menu
@@ -248,7 +265,10 @@ class BaseLabel(QLabel, dpi.DPIScaling):
 		self._code = False
 		self._elide_mode = elide_mode
 
-		self.setToolTip(tooltip)
+		if tooltip:
+			self.setToolTip(tooltip)
+		if status_tip:
+			self.setStatusTip(status_tip)
 		self.setTextInteractionFlags(Qt.TextBrowserInteraction | Qt.LinksAccessibleByMouse)
 		self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
 		self.strong(bold)

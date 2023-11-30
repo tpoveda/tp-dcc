@@ -24,7 +24,7 @@ EXPAND_LIMIT = 5
 
 class PreferenceInterface:
 	"""
-	Base class that is responsible for interfacing to '.pref files withing tpDcc Tools framework.
+	Base class that is responsible for interfacing to .pref files withing tpDcc Tools framework.
 	Interfaces are a useful concept because allow us to properly handle configuration data when a change on the data
 	schema is done.
 	"""
@@ -53,6 +53,15 @@ class PreferenceInterface:
 		"""
 
 		return self.settings().is_valid()
+
+	def path(self, relative_path: str | None = None, root: str | None = None, refresh: bool = False) -> str:
+
+		relative_path = relative_path or self._RELATIVE_PATH
+
+		if self._SETTINGS is None or refresh:
+			self._SETTINGS = self._manager.find_setting(relative_path, root=root)
+
+		return self._SETTINGS.get_path()
 
 	def settings(
 			self, relative_path: str | None = None, root: str | None = None, name: str | None = None,

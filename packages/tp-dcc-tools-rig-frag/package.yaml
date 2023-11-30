@@ -12,5 +12,7 @@ environment:
     - '{self}'
   TPDCC_TOOL_DEFINITION_MODULES:
     - '{self}/tp/tools/rig/frag/tool.py'
+  TPDCC_COMMAND_LIB:
+    - '{self}/tp/tools/rig/frag/controllers/maya/commands.py'
 commands:
   - '{self}/startup/frag.py'

@@ -457,7 +457,7 @@ class AbstractButton(dpi.DPIScaling):
         self._tint_composition = kwargs.pop('tint_composition', QPainter.CompositionMode_Plus)
         colors = colors or self._icon_colors
 
-        self.set_icon_color(colors, update=False)
+        # self.set_icon_color(colors, update=False)
         self.update_icons()
 
     def set_icon_idle(self, idle_icon: QIcon, update: bool = False):

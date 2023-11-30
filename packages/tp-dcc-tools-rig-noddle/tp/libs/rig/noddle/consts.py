@@ -138,13 +138,3 @@ class SideColor(Enum):
     c = ColorIndex.index_to_rgb(ColorIndex.yellow.value)
     l = ColorIndex.index_to_rgb(ColorIndex.blue.value)
     r = ColorIndex.index_to_rgb(ColorIndex.red.value)
-
-
-class ActionColors(Enum):
-    Core = (0.7, 0.7, 0.7)
-    Controls = (0.4, 0.76, 0.65)
-
-
-class ActionCategories(Enum):
-    Core = 'Core'
-    Controls = 'Controls'

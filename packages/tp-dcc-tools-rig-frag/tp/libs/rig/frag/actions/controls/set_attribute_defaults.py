@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from overrides import override
 
-from tp.libs.rig.noddle import api
+from tp.libs.rig.frag import api
 
 
 class SetAttributeDefaultsAction(api.BuildAction):
@@ -19,7 +19,7 @@ class SetAttributeDefaultsAction(api.BuildAction):
             name='useAnimControls',
             type=api.BuildActionAttribute.Type.Bool,
             value=True,
-            description='If True, set defaults for all animation controls, works in additon to the explicit nodes.'),
+            description='If True, set defaults for all animation controls, works in addition to the explicit nodes.'),
         dict(
             name='nodes',
             type=api.BuildActionAttribute.Type.NodeList,

@@ -110,34 +110,36 @@ def colorize_layered_icon(
         icon_scaling += [default_size] * (len(icons) - len(icon_scaling))
 
     icon_largest = icons.pop(0)
+    return icon_largest
 
-    orig_size = icon_largest.availableSizes()[0] if icon_largest.availableSizes() else 1.0
-    col = colors.pop(0)
-    scale = icon_scaling.pop(0)
-
-    if col is not None:
-        icon_pixmap = pixmap.colorize_pixmap(icon_largest.pixmap(orig_size * scale), col)
-    else:
-        icon_pixmap = icon_largest.pixmap(orig_size * scale)
-
-    for i, _icon in enumerate(icons):
-        if _icon is None:
-            continue
-        overlay_pixmap = icons[i].pixmap(orig_size * icon_scaling[i])
-        pixmap.overlay_pixmap(icon_pixmap, overlay_pixmap, colors[i])
-
-    if tint_color is not None:
-        pixmap.tint_pixmap(icon_pixmap, tint_color, composition_mode=composition)
-
-    icon_pixmap = icon_pixmap.scaled(QSize(size, size), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-
-    icon = QIcon(icon_pixmap)
-    if grayscale:
-        icon_pixmap = pixmap.grayscale_pixmap(icon_pixmap)
-        icon = QIcon(icon_pixmap)
-        icon.addPixmap(icon.pixmap(size, QIcon.Disabled))   # TODO: Use tint instead
-
-    return icon
+    # TODO: This does not work when icon is generated using a SVG image?
+    # orig_size = icon_largest.availableSizes()[0] if icon_largest.availableSizes() else 1.0
+    # col = colors.pop(0)
+    # scale = icon_scaling.pop(0)
+    #
+    # if col is not None:
+    #     icon_pixmap = pixmap.colorize_pixmap(icon_largest.pixmap(orig_size * scale), col)
+    # else:
+    #     icon_pixmap = icon_largest.pixmap(orig_size * scale)
+    #
+    # for i, _icon in enumerate(icons):
+    #     if _icon is None:
+    #         continue
+    #     overlay_pixmap = icons[i].pixmap(orig_size * icon_scaling[i])
+    #     pixmap.overlay_pixmap(icon_pixmap, overlay_pixmap, colors[i])
+    #
+    # if tint_color is not None:
+    #     pixmap.tint_pixmap(icon_pixmap, tint_color, composition_mode=composition)
+    #
+    # icon_pixmap = icon_pixmap.scaled(QSize(size, size), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+    #
+    # icon = QIcon(icon_pixmap)
+    # if grayscale:
+    #     icon_pixmap = pixmap.grayscale_pixmap(icon_pixmap)
+    #     icon = QIcon(icon_pixmap)
+    #     icon.addPixmap(icon.pixmap(size, QIcon.Disabled))   # TODO: Use tint instead
+    #
+    # return icon
 
 
 def grayscale_icon(icon):

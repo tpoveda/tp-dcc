@@ -14,7 +14,7 @@ from overrides import override
 
 from tp.core import log
 from tp.common.python import decorators
-from tp.libs.rig.noddle.core import colors, serializer
+from tp.libs.rig.frag.core import colors, serializer, metadata, mirror
 
 logger = log.rigLogger
 
@@ -209,7 +209,7 @@ class BuildActionPackageRegistry:
         Internal function that registers builtin Noddle actions.
         """
 
-        from tp.libs.rig.noddle import actions
+        from tp.libs.rig.frag import actions
         self.add_package(actions)
 
 
@@ -330,10 +330,8 @@ class BuildActionLoader:
 
             return _action_specs
 
-        logger.info(f'Loading Noddle Actions from package: {package}')
+        logger.info(f'Loading FRAG Actions from package: {package}')
         return _load_actions_from_module(package)
-
-
 
 
 class BuildActionSpec:
@@ -1055,11 +1053,21 @@ class BuildActionProxy(BuildActionData):
         """
         Getter method that returns whether mirrored actions for this proxy should be generated.
 
-        :return: True if actions for this proxy should be generated; False otherwise.
+        :return: True if mirror actions for this proxy should be generated; False otherwise.
         :rtype: bool
         """
 
         return self._is_mirrored
+
+    @is_mirrored.setter
+    def is_mirrored(self, flag: bool):
+        """
+        Setter method that sets whether mirrored actions for this proxy should be generated.
+
+        :param bool flag: True if mirror actions for this proxy should be generated; False otherwise.
+        """
+
+        self._is_mirrored = flag
 
     @override
     def has_warnings(self) -> bool:
@@ -1207,6 +1215,60 @@ class BuildActionProxy(BuildActionData):
 
         self._variants.clear()
 
+    def iterate_actions(self, config: dict) -> Iterator[BuildAction]:
+        """
+        Returns a generator that yields all the build actions represented by this proxy.
+        Expands variants and builds mirrored actions if necessary.
+
+        :param dict config: blueprint configuration.
+        :return: iterated build actions.
+        :rtype: Iterator[BuildAction]
+        :raises Exception: if action ID is not valid.
+        :raises Exception: if no build action spec for current action ID.
+        """
+
+        def _copy_data(_data, _ref_node: str | None = None) -> dict:
+            """
+            Internal function that performs a deep copy of the given data.
+            """
+
+            return metadata.decode_metadata(metadata.encode_metadata(data), _ref_node)
+
+        if not self.is_action_id_valid():
+            raise Exception(f'BuildActionProxy has no action id: {self}')
+        if self.is_missing_spec:
+            raise Exception(f'Failed to find BuildActionSpec for: {self.action_id}')
+
+        if self.is_variant_action():
+            # Warning if there are invariant base values set on variant attrs
+            for attr_name in self._variant_attr_names:
+                attr = self.attribute(attr_name)
+                if attr and attr.is_value_set():
+                    logger.warning(f'Found invariant value for a variant attribute: {self.action_id}.{attr_name}')
+
+            # Create and yield new build actions for each variant
+            main_data = self.serialize()
+            for variant in self._variants:
+                # TODO: Update serialization to ensure variants only return data for the attributes they are supposed
+                # to modify
+                data = variant.serialize()
+                data.update(_copy_data(main_data))
+                new_action = BuildAction.from_data(data)
+                yield new_action
+        else:
+            # no variants, just create one action
+            yield BuildAction.from_data(_copy_data(self.serialize()))
+
+        if self.is_mirrored:
+            # Create a copy of this proxy, mirror values and run mirrored action's generator disabling mirroring first.
+            mirror_action = BuildActionProxy()
+            mirror_action.deserialize(self.serialize())
+            mirror_op = mirror.MirrorActionUtil(config)
+            mirror_op.mirror_action(self, mirror_action)
+            mirror_action.is_mirrored = False
+            for action in mirror_action.iterate_actions(config):
+                yield action
+
 
 class BuildAction(BuildActionData):
     """
@@ -1315,6 +1377,30 @@ class BuildStep:
         new_step.deserialize(data)
         return new_step
 
+    @staticmethod
+    def top_most_steps(steps: list[BuildStep]) -> list[BuildStep]:
+        """
+        Returns a copy of the list of build steps that does not include any build step that have a parent of distant
+        parent in the list.
+
+        :param list[BuildStep] steps: list of build steps.
+        :return: ltop most list of build steps.
+        :rtype: list[BuildStep]
+        """
+
+        def _has_any_parent(build_step: BuildStep, parents: list[BuildStep]):
+            for parent in parents:
+                if build_step != parent and build_step.has_parent(parent):
+                    return True
+            return False
+
+        top_steps: list[BuildStep] = []
+        for step in steps:
+            if not _has_any_parent(step, steps):
+                top_steps.append(step)
+
+        return top_steps
+
     @property
     def name(self) -> str:
         """
@@ -1394,6 +1480,17 @@ class BuildStep:
         """
 
         self._is_disabled = flag
+
+    @property
+    def validate_results(self) -> list[logging.LogRecord]:
+        """
+        Getter method that returns the list of last known results of a build validation for this build step.
+
+        :return: list of validation results.
+        :rtype: list[logging.LogRecord]
+        """
+
+        return self._validate_results
 
     def is_root(self) -> bool:
         """
@@ -1695,6 +1792,44 @@ class BuildStep:
         for child_step in build_steps:
             self.add_child(child_step)
 
+    def insert_child(self, index: int, build_step: BuildStep):
+        """
+        Inserts given build step as a child of this build step in the given index.
+
+        :param int index: index where build step will be inserted.
+        :param BuildStep build_step: build step to insert as a child.
+        :raises TypeError: if given build step is not a valid build step type.
+        """
+
+        if not self.can_have_children():
+            return
+
+        if not isinstance(build_step, BuildStep):
+            raise TypeError(f'Expected BuildStep, got {type(build_step).__name__}')
+
+        if build_step in self._children:
+            return
+
+        self._children.insert(index, build_step)
+        build_step.set_parent_internal(self)
+
+    def iterate_children(self) -> Iterator[BuildStep]:
+        """
+        Generator function that yields all children recursively.
+
+        :return: iterated children.
+        :rtype: Iterator[BuildStep]
+        """
+
+        if not self.can_have_children():
+            return
+        for child in self._children:
+            if child.is_disabled:
+                continue
+            yield child
+            for descendant in child.iterate_children():
+                yield descendant
+
     def remove_child(self, build_step: BuildStep):
         """
         Removes given build step as child of this build step.
@@ -1722,6 +1857,34 @@ class BuildStep:
             return
 
         self._children.remove(build_step)
+
+    def remove_children(self, index: int, count: int):
+        """
+        Removes a number of children start at given index.
+
+        :param int index: child index to start removing from.
+        :param int count: total number of child to remove.
+        """
+
+        for _ in range(count):
+            self.remove_child_at(index)
+
+    def remove_child_at(self, index: int):
+        """
+        Removes children at given index.
+
+        :param int index: index of the child to remove.
+        """
+
+        if not self.can_have_children():
+            return
+        if index < 0 or index >= len(self._children):
+            return
+
+        build_step = self._children[index]
+        build_step.set_parent_internal(None)
+
+        del self._children[index]
 
     def clear_children(self):
         """
@@ -1767,6 +1930,16 @@ class BuildStep:
         self._parent = new_parent
         self.ensure_unique_name()
 
+    def remove_from_parent(self):
+        """
+        Removes this build step from its parent (if any).
+        """
+
+        if not self.parent:
+            return
+
+        self.parent.remove_child(self)
+
     def has_validation_errors(self) -> bool:
         """
         Returns whether this build step has any validation errors.
@@ -1786,6 +1959,37 @@ class BuildStep:
         """
 
         return self.has_validation_errors() or (self.is_action() and self._action_proxy.has_warnings())
+
+    def add_validate_error(self, record: logging.LogRecord):
+        """
+        Adds a validation exception that was encountered when running a build validator.
+
+        :param logging.LogRecord record: log record.
+        """
+
+        self._validate_results.append(record)
+
+    def clear_validate_results(self):
+        """
+        Clears the results of the last full rig validation that was done on this build step.
+        """
+
+        self._validate_results.clear()
+
+    def iterate_actions(self, config: dict) -> Iterator[BuildAction]:
+        """
+        Returns a generator that yields all actions for this build step.
+
+        :param dict config: blueprint configuration.
+        :return: iterated build actions.
+        :rtype: Iterator[BuildAction]
+        """
+
+        if not self._action_proxy:
+            return
+
+        for elem in self._action_proxy.iterate_actions(config):
+            yield elem
 
     def serialize(self) -> serializer.UnsortableOrderedDict:
         """

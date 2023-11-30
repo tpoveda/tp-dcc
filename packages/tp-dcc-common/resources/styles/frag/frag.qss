@@ -1,0 +1,74 @@
+/* Use section-title class to create headers with a dark background. */
+QLabel[cssClasses~="section-title"] {
+    font-weight: bold;
+    padding: 4px;
+    background-color: rgba(0, 0, 0, 20%);
+    border-radius: 2px;
+}
+
+/* Title text, large and bold. */
+QLabel[cssClasses~="title"] {
+    font-size: 12pt;
+    font-weight: bold;
+}
+
+/* Subtitle text, medium size and bold. */
+QLabel[cssClasses~="subtitle"] {
+    font-size: 10pt;
+    font-weight: bold;
+}
+
+/* A highlighted label block */
+QWidget[cssClasses~="block"] {
+    background-color: rgba(255, 255, 255, 4%);
+    border-radius: 2px;
+    padding: 2px;
+}
+
+/* Help text, usually at the bottom of a window, italic and dimmed. */
+QLabel[cssClasses~="help"] {
+    font-style: italic;
+    color: rgba(255, 255, 255, 40%);
+}
+
+/* The current mode title text, large and uppercase, with an active and inactive state. */
+QLabel[cssClasses~="mode-title"] {
+    font-size: 11pt;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+QLabel[cssClasses~="mode-title"][enabled=false] {
+    color: rgba(255, 255, 255, 10%);
+}
+
+/* Color coded toolbars to indicate blueprint vs rig mode. */
+QFrame[cssClasses~="toolbar-blueprint"] {
+    background-color: rgba(60, 80, 120, 50%);
+}
+
+QFrame[cssClasses~="toolbar-rig"] {
+    background-color: rgba(60, 120, 94, 50%);
+}
+
+/* Main toolbar, highlighted a bit with a darker background. */
+QFrame[cssClasses~="toolbar"] {
+    background-color: rgba(0, 0, 0, 20%);
+}
+
+QFrame[cssClasses~="toolbar"] QPushButton {
+    border: none;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0);
+}
+
+QFrame[cssClasses~="toolbar"] QPushButton:hover {
+    border: none;
+    border-radius: 2px;
+    background-color: rgba(200, 200, 200, 18%);
+}
+
+QFrame[cssClasses~="toolbar"] QPushButton:pressed {
+    border: none;
+    border-radius: 2px;
+    background-color: rgba(200, 200, 200, 35%);
+}

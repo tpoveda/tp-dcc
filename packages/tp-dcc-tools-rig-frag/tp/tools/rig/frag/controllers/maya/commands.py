@@ -3,12 +3,12 @@ from __future__ import annotations
 from overrides import override
 
 from tp.maya.api import command
-from tp.tools.rig.noddle.builder.core.blueprint import BlueprintModel
+from tp.tools.rig.frag.core.blueprint import BlueprintModel
 
 
 class RenameStepCommand(command.MayaCommand):
 
-    id = 'noddle.rig.builder.buildstep.rename'
+    id = 'frag.builder.buildstep.rename'
     creator = 'Tomas Poveda'
     is_undoable = True
     is_enabled = True

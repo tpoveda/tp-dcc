@@ -11,4 +11,4 @@ def rename_step(step_path: str, new_name: str):
     :param str new_name: new build step name.
     """
 
-    return command.execute('noddle.rig.builder.buildstep.rename', **locals())
+    return command.execute('frag.builder.buildstep.rename', **locals())

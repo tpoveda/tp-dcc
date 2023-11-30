@@ -1481,7 +1481,7 @@ class FramelessWindow(QWidget):
 
         super().__init__()
 
-        FramelessWindow.delete_instances()
+        # FramelessWindow.delete_instances()
 
         self.__class__._INSTANCES.append(weakref.proxy(self))
 

@@ -5,8 +5,8 @@ from typing import Any
 
 from tp.core import log
 from tp.dcc import scene
-from tp.preferences.interfaces import noddle
-from tp.libs.rig.noddle.core import action, serializer
+from tp.preferences.interfaces import frag
+from tp.libs.rig.frag.core import action, serializer
 
 logger = log.rigLogger
 
@@ -31,7 +31,7 @@ class Blueprint:
     def __init__(self):
         super().__init__()
 
-        self._prefs = noddle.noddle_interface()
+        self._prefs = frag.frag_interface()
         self._settings: dict[str, Any] = {}
         self._add_missing_settings()
         self._version = '0.0.0'
@@ -41,6 +41,17 @@ class Blueprint:
         self._root_step = action.BuildStep('Root')
 
         self.update_scene_path()
+
+    @property
+    def config_file_path(self) -> str:
+        """
+        Returns configuration file path.
+
+        :return: configuration file path.
+        :rtype: str
+        """
+
+        return self._prefs.path()
 
     @property
     def settings(self) -> dict[str, Any]:
@@ -196,7 +207,7 @@ class Blueprint:
         """
 
         if BlueprintSettings.RigName not in self._settings:
-            self.set_setting(BlueprintSettings.RigName, '')
+            self.set_setting(BlueprintSettings.RigName, 'spider')
         if BlueprintSettings.RigNodeNameFormat not in self._settings:
             self.set_setting(BlueprintSettings.RigNodeNameFormat, '{rigName}_rig')
         if BlueprintSettings.DebugBuild not in self._settings:
@@ -288,7 +299,7 @@ class BlueprintFile:
         """
 
         scene_name = scene.Scene().current_name()
-        return f'{scene_name}.{self.file_extension}'
+        return f'{scene_name}.{self.file_extension}' if scene_name else ''
 
     def resolve_file_path(self, allow_existing: bool = False):
         """

@@ -13,7 +13,7 @@ from tp.maya.om import output as maya_output
 class MayaOutput(output.BaseOutput):
 
 	@staticmethod
-	def display_info(text):
+	def display_info(text: str):
 		"""
 		Displays info based on application.
 
@@ -23,7 +23,7 @@ class MayaOutput(output.BaseOutput):
 		maya_output.display_info(text)
 
 	@staticmethod
-	def display_warning(text):
+	def display_warning(text: str):
 		"""
 		Displays warning based on application.
 
@@ -34,7 +34,7 @@ class MayaOutput(output.BaseOutput):
 
 
 	@staticmethod
-	def display_error(text):
+	def display_error(text: str):
 		"""
 		Displays error based on application.
 

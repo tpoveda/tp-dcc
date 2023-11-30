@@ -14,7 +14,5 @@ environment:
     - '{self}/tp/tools/rig/noddle/tool.py'
   TPDCC_META_PATHS:
     - '{self}/tp/libs/rig/noddle/maya/meta'
-  TPDCC_COMMAND_LIB:
-    - '{self}/tp/tools/rig/noddle/builder/controllers/maya/commands.py'
 commands:
   - '{self}/startup/noddle.py'

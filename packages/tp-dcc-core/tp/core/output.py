@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
 Module that contains class implementations related with DCC outputs
 """
@@ -18,10 +15,10 @@ class _MetaOutput(type):
             return BaseOutput
 
 
-class BaseOutput(object):
+class BaseOutput:
 
     @staticmethod
-    def display_info(text):
+    def display_info(text: str):
         """
         Displays info based on application.
 
@@ -31,7 +28,7 @@ class BaseOutput(object):
         print('Info: {}'.format(text))
 
     @staticmethod
-    def display_warning(text):
+    def display_warning(text: str):
         """
         Displays warning based on application.
 
@@ -41,7 +38,7 @@ class BaseOutput(object):
         print('Warning: {}'.format(text))
 
     @staticmethod
-    def display_error(text):
+    def display_error(text: str):
         """
         Displays error based on application.
 
@@ -52,17 +49,17 @@ class BaseOutput(object):
 
 
 @decorators.add_metaclass(_MetaOutput)
-class Output(object):
+class Output:
     pass
 
 
-def display_info(text):
+def display_info(text: str):
     return Output().display_info(text)
 
 
-def display_warning(text):
+def display_warning(text: str):
     return Output().display_warning(text)
 
 
-def display_error(text):
+def display_error(text: str):
     return Output().display_error(text)

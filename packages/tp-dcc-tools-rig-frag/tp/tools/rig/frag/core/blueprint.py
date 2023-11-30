@@ -8,12 +8,12 @@ from overrides import override
 from tp.core import log
 from tp.common.qt import api as qt
 from tp.common.resources import api as resources
-from tp.libs.rig.noddle.core import action, blueprint as bp
-from tp.tools.rig.noddle.builder import commands
 
+from tp.tools.rig.frag import commands
+from tp.libs.rig.frag.core import action, builder, blueprint as bp
 
 if typing.TYPE_CHECKING:
-    from tp.libs.rig.noddle.core.builder import BlueprintBuilder
+    from tp.libs.rig.frag.core.builder import BlueprintBuilder
 
 logger = log.rigLogger
 
@@ -44,6 +44,9 @@ class BlueprintModel(qt.QObject):
 
     # Signal that is called when the presence of a built rig has changed.
     rigExistsChanged = qt.Signal()
+
+    # Signal that is called when validation results have changed.
+    validated = qt.Signal()
 
     def __init__(self, parent: qt.QObject | None = None):
         super().__init__(parent=parent)
@@ -151,6 +154,26 @@ class BlueprintModel(qt.QObject):
         """
 
         return self._is_changing_scenes
+
+    def blueprint_file_path(self) -> str | None:
+        """
+        Returns the full path of the current blueprint file.
+
+        :return: absolute blueprint file path.
+        :rtype: str or None
+        """
+
+        return self._blueprint_file.file_path if self.is_file_open() else None
+
+    def blueprint_file_name(self) -> str | None:
+        """
+          Returns the base name of the current blueprint file.
+
+          :return: blueprint base name.
+          :rtype: str or None
+          """
+
+        return self._blueprint_file.file_name() if self.is_file_open() else None
 
     def is_file_open(self) -> bool:
         """
@@ -390,6 +413,22 @@ class BlueprintModel(qt.QObject):
         """
 
         return self._interactive_builder is not None
+
+    def run_validation(self):
+        """
+        Runs a Blueprint validator for the current blueprint.
+        """
+
+        if not self.is_file_open():
+            return
+
+        if not builder.BlueprintBuilder.pre_build_validate(self._blueprint_file):
+            return
+
+        validator = builder.BlueprintValidator(self.blueprint_file)
+        validator.start()
+
+        self.validated.emit()
 
     def setting(self, key: str, default: Any = None) -> Any:
         """

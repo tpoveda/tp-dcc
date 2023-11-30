@@ -16,10 +16,10 @@ class FragTool(tool.Tool):
 
         frag_controller = controller.FragController()
 
-        win = window.FragWindow(controller=frag_controller)
-        win.show()
+        self._window = window.FragWindow(controller=frag_controller)
+        self._window.show()
 
-        return win
+        return self._window
 
 
 if __name__ == '__main__':
@@ -29,4 +29,4 @@ if __name__ == '__main__':
     tp.bootstrap.init(package_version_file='package_version_standalone.config')
 
     from tp.core.managers import tools
-    tools.ToolsManager().launch_tool_by_id('tp.rig.frag.builder')
+    result = tools.ToolsManager().launch_tool_by_id('tp.rig.frag.builder')

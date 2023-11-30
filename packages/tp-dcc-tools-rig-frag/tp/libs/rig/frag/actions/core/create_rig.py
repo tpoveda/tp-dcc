@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from overrides import override
 
-from tp.libs.rig.noddle import api
+from tp.libs.rig.frag import api
 
 
 class CreateRigAction(api.BuildAction):
