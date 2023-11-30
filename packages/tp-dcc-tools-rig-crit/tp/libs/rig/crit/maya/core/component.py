@@ -368,7 +368,7 @@ class Component:
         try:
             return True if self._meta and self._meta.exists() else False
         except AttributeError:
-            self.logger.warning('Component does not exist: {}'.format(self.descriptor.name), exc_info=True)
+            self.logger.warning(f'Component does not exist: {self.descriptor.name}', exc_info=True)
 
         return False
 
@@ -444,7 +444,7 @@ class Component:
         :rtype: str
         """
 
-        return self.descriptor.side if self.descriptor else names.deconstruct_name(self.meta.fullPathName()).side
+        return self.descriptor.side
 
     def set_side(self, side: str):
         """
@@ -469,6 +469,17 @@ class Component:
         self.save_descriptor(self.descriptor)
         self._update_space_switch_component_dependencies(self.name(), side)
 
+    def serialized_token_key(self) -> str:
+        """
+        Returns the serialized data key for this component, which results in the joined name, side with ':' as
+        separator.
+
+        :return: joined name.
+        :rtype: str
+        """
+
+        return ':'.join((self.name(), self.side())) if self.exists() else ''
+
     def root_transform(self) -> api.DagNode | None:
         """
         Returns the root transform node for this component instance.
@@ -478,8 +489,6 @@ class Component:
         """
 
         return self._meta.root_transform() if self.exists() else None
-
-
 
     def has_parent(self) -> bool:
         """
@@ -1189,8 +1198,6 @@ class Component:
         :return: True if auto align operation was successful; False otherwise.
         :rtype: bool
         """
-
-        print('chchchchchc', self.has_guide())
 
         if not self.has_guide():
             return False
@@ -2020,7 +2027,9 @@ class Component:
                 existing_joint.rename(joint_name)
                 continue
 
-            new_node = skeleton_layer.create_joint(name=joint_name, id=jnt.id, rotateOrder=jnt.rotateOrder, translate=jnt.translate, rotate=jnt.rotate, parent=joint_parent)
+            new_node = skeleton_layer.create_joint(
+                name=joint_name, id=jnt.id, rotateOrder=jnt.rotateOrder, translate=jnt.translate, rotate=jnt.rotate,
+                parent=joint_parent)
             new_node.segmentScaleCompensate.set(False)
             existing_joints[jnt.id] = new_node
             new_joint_ids[jnt.id] = new_node
@@ -2205,6 +2214,15 @@ class Component:
 
         layout_id = self.descriptor.get(consts.RIG_MARKING_MENU_DESCRIPTOR_KYE) or consts.DEFAULT_RIG_MARKING_MENU
         components.create_triggers(rig_layer, layout_id)
+
+    def setup_space_switches(self):
+        """
+        Setup space switches from the descriptor data.
+        """
+
+        # rig = self.rig
+        # rig_layer = self.rig_layer()
+        # existing_space_constraints = {i.controller_attribute_name(): i for i in rig_layer.space_switches()}
 
     @profiler.fn_timer
     def delete(self) -> bool:

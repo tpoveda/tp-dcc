@@ -144,7 +144,7 @@ class DeleteRigCommand(command.MayaCommand):
 
 	@override
 	def undo(self):
-		rigs.load_from_template(self._template)
+		rigs.load_rig_from_template(self._template)
 
 
 class CreateComponentsCommand(command.MayaCommand):

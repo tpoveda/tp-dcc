@@ -3,11 +3,12 @@ from __future__ import annotations
 from typing import List, Iterator
 
 from tp.maya import api
+from tp.maya.om import mathlib
 
 
 def construct_plane_from_positions(
 		position_vectors: List[api.OpenMaya.MVector, api.OpenMaya.MVector, api.OpenMaya.MVector],
-		nodes: List[api.DagNode, ...], rotate_axis: api.OpenMaya.MVector = api.Z_AXIS_VECTOR) -> api.OpenMaya.MPlane:
+		nodes: List[api.DagNode, ...], rotate_axis: api.OpenMaya.MVector = mathlib.Z_AXIS_VECTOR) -> api.OpenMaya.MPlane:
 	"""
 	Constructs a plane instance based on the averaged normal of the given node rotations.
 
@@ -23,10 +24,10 @@ def construct_plane_from_positions(
 	plane_a = api.OpenMaya.MPlane()
 	normal = api.OpenMaya.MVector(api.OpenMaya.MVector.kXaxisVector)
 	if len(position_vectors) == 3:
-		normal = api.three_point_normal(*position_vectors)
+		normal = mathlib.three_point_normal(*position_vectors)
 	elif len(position_vectors) > 3:
 		average_position = api.average_position(nodes)
-		normal = api.three_point_normal(
+		normal = mathlib.three_point_normal(
 			nodes[0].translation(space=api.kWorldSpace), average_position, nodes[-1].translation(space=api.kWorldSpace))
 	else:
 		for i in range(len(position_vectors)):
@@ -82,10 +83,10 @@ def align_nodes_iterator(
 		translation = current_node.translation(space=api.kWorldSpace)
 		if i == last_index:
 			target_node = nodes[i + 1] if skip_end else None
-			new_translation = translation if skip_end else api.closest_point_on_plane(translation, plane)
+			new_translation = translation if skip_end else mathlib.closest_point_on_plane(translation, plane)
 		else:
 			target_node = nodes[i + 1]
-			new_translation = api.closest_point_on_plane(translation, plane)
+			new_translation = mathlib.closest_point_on_plane(translation, plane)
 		current_node.setTranslation(new_translation, space=api.kWorldSpace)
 		change_map.append((current_node, target_node, new_translation))
 

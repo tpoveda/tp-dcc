@@ -299,9 +299,10 @@ MIRROR_BEHAVIOURS_TYPES = ['Behaviour', 'Relative']
 
 NOT_BUILT_STATE = 0
 GUIDES_STATE = 1
-SKELETON_STATE = 2
-RIG_STATE = 3
-POLISH_STATE = 4
+CONTROL_VIS_STATE = 2
+SKELETON_STATE = 3
+RIG_STATE = 4
+POLISH_STATE = 5
 
 # ======================================================================================================================
 # Build Script Function Types

@@ -3,12 +3,19 @@ settings:
       - 'matrixNodes'
       - 'lookdevKit'
       - 'quatNodes'
+    defaultContainerType: 'asset'
     useProxyAttributes: true
+    useContainers: false
+    blackbox: true
+    selectionChildHighlighting: false
     buildScripts: ['default']
     buildScriptPaths: []
+    templatePaths: []
+    componentPaths: []
+    namingPresetPaths: []
+    templateSavePath: ''
     containerOutlinerDisplayUnderParent: true
     containerAttrsShowAtTop: true
-    namingPresetPaths: []
     includeDefaultAssets: true
     defaultNamingPreset: "CRIT"
     namingPresetHierarchy:

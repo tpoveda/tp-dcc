@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import copy
 import pprint
-from typing import Dict, Any
+from typing import Any
 
 from overrides import override
 
@@ -13,6 +13,7 @@ from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.maya.descriptors import layers, spaceswitch
 
 
+# Descriptor layer to scene attribute mapping names.
 SCENE_LAYER_ATTR_TO_DESCRIPTOR = {
     consts.INPUT_LAYER_DESCRIPTOR_KEY: [
         consts.CRIT_DESCRIPTOR_CACHE_INPUT_DAG_ATTR,
@@ -46,13 +47,30 @@ SCENE_LAYER_ATTR_TO_DESCRIPTOR = {
     ]
 }
 
+# Descriptor keys which need to be serialized to templates.
+TEMPLATE_KEYS = (
+    consts.NAME_DESCRIPTOR_KEY,
+    consts.SIDE_DESCRIPTOR_KEY,
+    consts.GUIDE_LAYER_DESCRIPTOR_KEY,
+    consts.CONNECTIONS_DESCRIPTOR_KEY,
+    consts.PARENT_DESCRIPTOR_KEY,
+    consts.VERSION_DESCRIPTOR_KEY,
+    consts.TYPE_DESCRIPTOR_KEY,
+    consts.GUIDE_MARKING_MENU_DESCRIPTOR_KEY,
+    consts.SKELETON_MARKING_MENU_DESCRIPTOR_KEY,
+    consts.RIG_MARKING_MENU_DESCRIPTOR_KYE,
+    consts.ANIM_MARKING_MENU_DESCRIPTOR_KEY,
+    consts.SPACE_SWITCH_DESCRIPTOR_KEY,
+    consts.NAMING_PRESET_DESCRIPTOR_KEY
+)
 
-def load_descriptor(descriptor_data: Dict, original_descriptor: Dict, path: str | None = None) -> ComponentDescriptor:
+
+def load_descriptor(descriptor_data: dict, original_descriptor: dict, path: str | None = None) -> ComponentDescriptor:
     """
     Loads descriptor instance from given data.
 
-    :param Dict descriptor_data: descriptor data.
-    :param Dict original_descriptor: original descriptor.
+    :param dict descriptor_data: descriptor data.
+    :param dict original_descriptor: original descriptor.
     :param str or None path: optional descriptor path.
     :return: component descriptor instance.
     :rtype: ComponentDescriptor
@@ -62,35 +80,35 @@ def load_descriptor(descriptor_data: Dict, original_descriptor: Dict, path: str 
     return ComponentDescriptor(data=latest_data, original_descriptor=copy.deepcopy(original_descriptor), path=path)
 
 
-def migrate_to_latest_version(descriptor_data: Dict, original_descriptor: Dict | None = None):
+def migrate_to_latest_version(descriptor_data: dict, original_descriptor: dict | None = None):
     """
     Migrates descriptor schema from an old version to the latest one.
 
-    :param Dict descriptor_data: descriptor data as a raw dictionary.
-    :param Dict original_descriptor: original descriptor.
+    :param dict descriptor_data: descriptor data as a raw dictionary.
+    :param dict or None original_descriptor: original descriptor.
     :return: translated descriptor data to the latest schema.
-    :rtype: Dict
+    :rtype: dict
     """
 
     # expect rig layer to come from the base descriptor not the scene, so keep original rig data
     if original_descriptor:
         descriptor_data[consts.RIG_LAYER_DESCRIPTOR_KEY] = original_descriptor.get(
-            consts.RIG_LAYER_DESCRIPTOR_KEY, dict())
+            consts.RIG_LAYER_DESCRIPTOR_KEY, {})
 
     return descriptor_data
 
 
-def parse_raw_descriptor(descriptor_data: Dict) -> Dict:
+def parse_raw_descriptor(descriptor_data: dict) -> dict:
     """
     Function that parses the given descriptor data by transforming strings into dictionaries and by removing
     all descriptor keys that are empty.
 
-    :param Dict descriptor_data: descriptor data usually retrieved from current scene.
+    :param dict descriptor_data: descriptor data usually retrieved from current scene.
     :return: cleanup descriptor data.
-    :rtype: Dict
+    :rtype: dict
     """
 
-    translated_data = dict()
+    translated_data = {}
 
     for k, v in descriptor_data.items():
         if not v:
@@ -118,11 +136,14 @@ def parse_raw_descriptor(descriptor_data: Dict) -> Dict:
 class ComponentDescriptor(helpers.ObjectDict):
     """
     Class that describes a component.
+    Used by the component setup methods and is the fallback data when the component has yet to be created in the scene.
     """
 
     VERSION = '1.0'
 
-    def __init__(self, data: Dict | None = None, original_descriptor: Dict | None = None, path: str | None = None):
+    def __init__(
+            self, data: dict | None = None, original_descriptor: ComponentDescriptor | dict | None = None,
+            path: str | None = None):
 
         data = data or {}
         data[consts.VERSION_DESCRIPTOR_KEY] = self.VERSION
@@ -135,7 +156,7 @@ class ComponentDescriptor(helpers.ObjectDict):
         data[consts.SKELETON_LAYER_DESCRIPTOR_KEY] = layers.SkeletonLayerDescriptor.from_data(
             data.get(consts.SKELETON_LAYER_DESCRIPTOR_KEY, {}))
         data[consts.RIG_LAYER_DESCRIPTOR_KEY] = layers.RigLayerDescriptor.from_data(
-            data.get(consts.RIG_LAYER_DESCRIPTOR_KEY, dict()))
+            data.get(consts.RIG_LAYER_DESCRIPTOR_KEY, {}))
         data[consts.PARENT_DESCRIPTOR_KEY] = data.get(consts.PARENT_DESCRIPTOR_KEY, [])
         data[consts.CONNECTIONS_DESCRIPTOR_KEY] = data.get(consts.CONNECTIONS_DESCRIPTOR_KEY, {})
         data[consts.SPACE_SWITCH_DESCRIPTOR_KEY] = [
@@ -159,7 +180,7 @@ class ComponentDescriptor(helpers.ObjectDict):
         if guid is not None:
             return guid
 
-        return super(ComponentDescriptor, self).__getattribute__(item)
+        return super().__getattribute__(item)
 
     @property
     def guide_layer(self) -> layers.GuideLayerDescriptor | None:
@@ -186,7 +207,7 @@ class ComponentDescriptor(helpers.ObjectDict):
         return self[consts.SPACE_SWITCH_DESCRIPTOR_KEY]
 
     @override(check_signature=False)
-    def update(self, kwargs: Dict):
+    def update(self, kwargs: dict):
 
         self[consts.GUIDE_LAYER_DESCRIPTOR_KEY].update(kwargs.get(consts.GUIDE_LAYER_DESCRIPTOR_KEY, {}))
         self[consts.INPUT_LAYER_DESCRIPTOR_KEY].update(kwargs.get(consts.INPUT_LAYER_DESCRIPTOR_KEY, {}))
@@ -198,12 +219,12 @@ class ComponentDescriptor(helpers.ObjectDict):
             if k not in consts.DESCRIPTOR_KEYS_TO_SKIP_UPDATE:
                 self[k] = v
 
-    def serialize(self) -> Dict:
+    def serialize(self) -> dict:
         """
         Serializes the contents of the descriptor.
 
         :return: serialized descriptor.
-        :rtype: Dict
+        :rtype: dict
         """
 
         data = {}
@@ -213,7 +234,16 @@ class ComponentDescriptor(helpers.ObjectDict):
                 continue
             data[k] = v
 
-        spaces = list()
+        spaces: list = []
+        for i in self.space_switching:
+            existing_space = self.original_descriptor.space_switch_by_label(i['label'])
+            if not existing_space:
+                spaces.append(i)
+            else:
+                difference = i.difference(existing_space)
+                if difference:
+                    spaces.append(difference)
+        data[consts.SPACE_SWITCH_DESCRIPTOR_KEY] = spaces
 
         return data
 
@@ -228,28 +258,33 @@ class ComponentDescriptor(helpers.ObjectDict):
 
         return json.dumps(self.to_template() if template else self.serialize())
 
-    def to_scene_data(self):
+    def to_scene_data(self) -> dict:
         """
+        Returns a dictionary with the component data.
 
-        :return:
+        :return: component dictionary data.
+        :rtype: dict
         """
 
         serialized_data = self.serialize()
 
-        output_data = dict()
+        output_data = {}
 
-        for layer_key, [dag_layer_attr_name, settings_attr_name, metadata_attr_name, dg_attr_name] in SCENE_LAYER_ATTR_TO_DESCRIPTOR.items():
-            layer_data = serialized_data.get(layer_key, dict())
-            output_data[dag_layer_attr_name] = json.dumps(layer_data.get(consts.DAG_DESCRIPTOR_KEY, list()))
-            output_data[settings_attr_name] = json.dumps(layer_data.get(consts.SETTINGS_DESCRIPTOR_KEY, list() if layer_key != consts.RIG_LAYER_DESCRIPTOR_KEY else dict()))
-            output_data[metadata_attr_name] = json.dumps(layer_data.get(consts.METADATA_DESCRIPTOR_KEY, list()))
+        for layer_key, [dag_layer_attr_name, settings_attr_name, metadata_attr_name, dg_attr_name] in \
+                SCENE_LAYER_ATTR_TO_DESCRIPTOR.items():
+            layer_data = serialized_data.get(layer_key, {})
+            output_data[dag_layer_attr_name] = json.dumps(layer_data.get(consts.DAG_DESCRIPTOR_KEY, []))
+            output_data[settings_attr_name] = json.dumps(
+                layer_data.get(
+                    consts.SETTINGS_DESCRIPTOR_KEY, [] if layer_key != consts.RIG_LAYER_DESCRIPTOR_KEY else {}))
+            output_data[metadata_attr_name] = json.dumps(layer_data.get(consts.METADATA_DESCRIPTOR_KEY, []))
             if dg_attr_name:
-                output_data[dg_attr_name] = json.dumps(layer_data.get(consts.DG_DESCRIPTOR_KEY, list()))
+                output_data[dg_attr_name] = json.dumps(layer_data.get(consts.DG_DESCRIPTOR_KEY, []))
 
-        space_switch_data = serialized_data.get(consts.SPACE_SWITCH_DESCRIPTOR_KEY, dict())
+        space_switch_data = serialized_data.get(consts.SPACE_SWITCH_DESCRIPTOR_KEY, {})
         output_data[consts.CRIT_DESCRIPTOR_CACHE_SPACE_SWITCHING_ATTR] = json.dumps(space_switch_data)
 
-        info_data = dict()
+        info_data = {}
         for key in (
                 consts.NAME_DESCRIPTOR_KEY, consts.SIDE_DESCRIPTOR_KEY, consts.CONNECTIONS_DESCRIPTOR_KEY,
                 consts.PARENT_DESCRIPTOR_KEY, consts.VERSION_DESCRIPTOR_KEY, consts.TYPE_DESCRIPTOR_KEY,
@@ -261,6 +296,27 @@ class ComponentDescriptor(helpers.ObjectDict):
         output_data[consts.CRIT_DESCRIPTOR_CACHE_INFO_ATTR] = json.dumps(info_data)
 
         return output_data
+
+    def to_template(self) -> dict:
+        """
+        Returns a dictionary only containing the necessary information for template storage, which should be the guide
+        information.
+
+        :return: template dictionary data.
+        :rtype: dict
+        """
+
+        data = self.serialize()
+
+        raw = copy.deepcopy({n: info for n, info in data.items() if n in TEMPLATE_KEYS})
+        ignore_meta_attributes = ('guideVisibility', 'guideControlVisibility')
+        meta_data = []
+        for meta_attr in raw[consts.GUIDE_LAYER_DESCRIPTOR_KEY].get(consts.SETTINGS_DESCRIPTOR_KEY):
+            if meta_attr not in ignore_meta_attributes:
+                meta_data.append(meta_attr)
+        raw[consts.GUIDE_LAYER_DESCRIPTOR_KEY][consts.METADATA_DESCRIPTOR_KEY] = meta_data
+
+        return raw
 
     def pprint(self):
         """

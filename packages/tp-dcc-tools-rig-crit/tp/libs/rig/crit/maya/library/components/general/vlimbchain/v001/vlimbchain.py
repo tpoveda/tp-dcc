@@ -5,6 +5,7 @@ from typing import List, Dict
 from overrides import override
 
 from tp.maya import api
+from tp.maya.om import mathlib
 
 from tp.libs.rig.utils.maya import align, skeleton
 from tp.libs.rig.crit import api as crit
@@ -108,9 +109,9 @@ class VChainComponent(component.Component):
 		positions = [guide.translation() for guide in chain_guides]
 		aim_vector = upper_guide.attribute(crit.consts.CRIT_AUTO_ALIGN_AIM_VECTOR_ATTR).value()
 		up_vector = upper_guide.attribute(crit.consts.CRIT_AUTO_ALIGN_UP_VECTOR_ATTR).value()
-		rotate_axis, _ = api.perpendicular_axis_from_align_vectors(aim_vector, up_vector)
-		rotate_axis = api.Vector(api.AXIS_VECTOR_BY_INDEX[rotate_axis])
-		if api.is_vector_negative(aim_vector):
+		rotate_axis, _ = mathlib.perpendicular_axis_from_align_vectors(aim_vector, up_vector)
+		rotate_axis = api.Vector(mathlib.AXIS_VECTOR_BY_INDEX[rotate_axis])
+		if mathlib.is_vector_negative(aim_vector):
 			rotate_axis *= -1
 		constructed_plane = align.construct_plane_from_positions(positions, chain_guides, rotate_axis=rotate_axis)
 		guides, matrices = [], []
@@ -121,7 +122,7 @@ class VChainComponent(component.Component):
 
 			up_vector = current_guide.attribute(crit.consts.CRIT_AUTO_ALIGN_UP_VECTOR_ATTR).value() * self._flip_auto_align_up_vector
 			aim_vector = current_guide.attribute(crit.consts.CRIT_AUTO_ALIGN_AIM_VECTOR_ATTR).value()
-			rotation = api.look_at(
+			rotation = mathlib.look_at(
 				current_guide.translation(api.kWorldSpace),
 				target_guide.translation(api.kWorldSpace),
 				aim_vector=api.Vector(aim_vector),
@@ -175,9 +176,9 @@ class VChainComponent(component.Component):
 			ik_end_in_matrix = guide_layer_descriptor.guide('end').transformation_matrix(scale=False)
 		else:
 			aim_guide, end_guide = guide_layer_descriptor.find_guides(self.world_end_aim_guide_id, 'end')
-			rotation = api.look_at(
-				api.Vector(end_guide.translate), api.Vector(aim_guide.translate), api.Z_AXIS_VECTOR,
-				api.Y_AXIS_VECTOR, constraint_axis=api.Vector(0, 1, 1))
+			rotation = mathlib.look_at(
+				api.Vector(end_guide.translate), api.Vector(aim_guide.translate), mathlib.Z_AXIS_VECTOR,
+				mathlib.Y_AXIS_VECTOR, constraint_axis=api.Vector(0, 1, 1))
 			ik_end_in_matrix = end_guide.transformationMatrix(rotate=False, scale=False)
 			ik_end_in_matrix.setRotation(rotation)
 
@@ -185,7 +186,7 @@ class VChainComponent(component.Component):
 		up_vec_in_matrix = guide_layer_descriptor.guide('upVec').transformation_matrix(scale=False)
 		up_vec_in.setWorldMatrix(up_vec_in_matrix.asMatrix())
 
-	@override
+	@override(check_signature=False)
 	def post_setup_skeleton_layer(self, parent_joint: crit.Joint):
 
 		output_layer = self.output_layer()
@@ -211,7 +212,7 @@ class VChainComponent(component.Component):
 
 		super().post_setup_skeleton_layer(parent_joint=parent_joint)
 
-	@override
+	@override(check_signature=False)
 	def pre_setup_rig(self, parent_node: crit.Joint | api.DagNode | None = None):
 
 		descriptor = self.descriptor
@@ -230,7 +231,7 @@ class VChainComponent(component.Component):
 
 		super().pre_setup_rig(parent_node=parent_node)
 
-	@override
+	@override(check_signature=False)
 	def setup_rig(self, parent_node: crit.Joint | api.DagNode | None = None):
 
 		descriptor = self.descriptor

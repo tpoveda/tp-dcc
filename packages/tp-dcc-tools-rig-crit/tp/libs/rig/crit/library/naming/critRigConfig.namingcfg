@@ -50,7 +50,14 @@
       "description": "Convention for the rigs control displayLayer",
       "expression": "{rigName}_{type}",
       "exampleFields": {"rigName":  "Robot", "type": "displayLayer"}
-    }
+    },
+    {
+      "name": "object",
+      "creator": "Tomi Poveda",
+      "description": "Standard Maya node type convention, used for utility nodes or any node which does not have an explicit Rule",
+      "expression": "{rigName}_{section}_{type}",
+      "exampleFields": {"rigName": "Robot","section": "world", "system":"ik", "type": "transform"}
+        }
   ],
   "tokens": []
 }

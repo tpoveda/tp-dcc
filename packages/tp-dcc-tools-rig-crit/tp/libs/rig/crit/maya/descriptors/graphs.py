@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from tp.common.python import helpers
 
-from tp.libs.rig.crit.maya.descriptors import nodes
+from tp.libs.rig.crit.maya.descriptors import nodes as descriptor_nodes
 
 
 class NamedGraph(helpers.ObjectDict):
@@ -25,7 +25,7 @@ class NamedGraph(helpers.ObjectDict):
 		return cls({
 			'id': graph_id,
 			'name': graph_data.get('name', graph_id),
-			'nodes': [nodes.DGNodeDescriptor(i) for i in graph_data.get('nodes', list())],
+			'nodes': [descriptor_nodes.DGNodeDescriptor(i) for i in graph_data.get('nodes', list())],
 			'connections': graph_data.get('connections', list()),
 			'inputs': graph_data.get('inputs', dict()),
 			'outputs': graph_data.get('outputs', dict()),
@@ -74,12 +74,12 @@ class NamedGraph(helpers.ObjectDict):
 		self['name'] = value
 
 	@property
-	def nodes(self) -> list[nodes.DGNodeDescriptor]:
+	def nodes(self) -> list[descriptor_nodes.DGNodeDescriptor]:
 		"""
 		Returns the DG nodes for this graph.
 
 		:return: list of dg node descriptors.
-		:rtype: list[nodes.DGNodeDescriptor]
+		:rtype: list[descriptor_nodes.DGNodeDescriptor]
 		"""
 
 		return self['nodes']
@@ -117,13 +117,13 @@ class NamedGraph(helpers.ObjectDict):
 
 		return self['connections']
 
-	def node(self, node_id: str) -> nodes.DGNodeDescriptor | None:
+	def node(self, node_id: str) -> descriptor_nodes.DGNodeDescriptor | None:
 		"""
 		Returns graph node with given ID.
 
 		:param str node_id: ID of the graph node to retrieve.
 		:return: found graph node descriptor.
-		:rtype: nodes.DGNodeDescriptor or None
+		:rtype: descriptor_nodes.DGNodeDescriptor or None
 		"""
 
 		for node_descriptor in self.nodes:

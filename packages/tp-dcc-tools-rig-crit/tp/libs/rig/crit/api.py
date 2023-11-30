@@ -13,7 +13,8 @@ if dcc.is_maya():
 	from tp.libs.rig.crit.maya.meta.nodes import ControlNode, Guide, Joint
 	from tp.libs.rig.crit.maya.meta.layers import CritSkeletonLayer
 	from tp.libs.rig.crit.maya.library.functions.rigs import (
-		iterate_scene_rigs, iterate_scene_rig_meta_nodes, root_by_rig_name
+		iterate_scene_rigs, iterate_scene_rig_meta_nodes, root_by_rig_name, load_rig_from_template,
+		load_rig_from_template_file
 	)
 	from tp.libs.rig.crit.maya.library.functions.components import (
 		components_from_nodes, component_from_node, components_from_selected

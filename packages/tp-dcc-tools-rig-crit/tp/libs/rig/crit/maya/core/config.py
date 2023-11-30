@@ -34,13 +34,14 @@ class MayaConfiguration(config.Configuration):
 	metadata from a node within a scene.
 	"""
 
-	COMPONENTS_MANAGER = None				# type: managers.ComponentsManager
+	COMPONENTS_MANAGER: managers.ComponentsManager | None = None
 
 	def __init__(self):
 
 		self._use_proxy_attributes = True
 		self._use_containers = False
 		self._blackbox = False
+		self._hide_control_shapes_in_outliner = True
 
 		super().__init__()
 
@@ -148,12 +149,14 @@ class MayaConfiguration(config.Configuration):
 
 		super()._initialize_environment()
 
-		for plugin_required in self._config_cache.get('requiredMayaPlugins', list()):
+		for plugin_required in self._config_cache.get('requiredMayaPlugins', []):
 			maya_helpers.load_plugin(plugin_required)
 
 		self._use_proxy_attributes = self._config_cache.get('useProxyAttributes', self._use_proxy_attributes)
 		self._use_containers = self._config_cache.get('useContainers', self._use_containers)
 		self._blackbox = self._config_cache.get('blackBox', self._blackbox)
+		self._hide_control_shapes_in_outliner = self._config_cache.get(
+			'hideControlShapesInOutliner', self._hide_control_shapes_in_outliner)
 
 	def components_paths(self):
 		"""
@@ -175,3 +178,13 @@ class MayaConfiguration(config.Configuration):
 		"""
 
 		return self.COMPONENTS_MANAGER.initialize_component_descriptor(component_type)
+
+	def container_type(self) -> str:
+		"""
+		Returns the default container type to use ('asset', 'set' or None).
+
+		:return: container type.
+		:rtype: str
+		"""
+
+		return self._config_cache.get('defaultContainerType', 'asset')

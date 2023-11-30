@@ -20,8 +20,9 @@ environment:
     - '{self}/tp/libs/rig/crit/maya/library/markingmenus/menus'
   TPDCC_MARKING_MENU_COMMAND_PATHS:
     - '{self}/tp/libs/rig/crit/maya/library/markingmenus/commands'
-  CRIT_BUILD_SCRIPTS_PATH: "{self}/tp/libs/rig/crit/library/buildscripts"
   CRIT_NAME_PRESET_PATH: "{self}/tp/libs/rig/crit/library/naming"
+  CRIT_BUILD_SCRIPTS_PATH: "{self}/tp/libs/rig/crit/library/buildscripts"
+  CRIT_EXPORT_PLUGIN_PATH: "{self}/tp/libs/rig/crit/library/exporters"
   CRIT_COMPONENTS_PATHS:
     - "{self}/tp/libs/rig/crit/maya/library/components"
   CRIT_DESCRIPTORS_PATHS:

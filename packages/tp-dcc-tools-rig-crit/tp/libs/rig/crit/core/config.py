@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import typing
-from typing import List, Dict
+from typing import List, Dict, Type
 
 from tp.core import log
 from tp.common import plugin
@@ -10,381 +10,482 @@ from tp.common.python import helpers, strings
 from tp.preferences.interfaces import crit
 
 from tp.libs.rig.crit import consts
-from tp.libs.rig.crit.core import namingpresets, buildscript
+from tp.libs.rig.crit.core import namingpresets, buildscript, templates, exporter
 
 if typing.TYPE_CHECKING:
-	from tp.libs.rig.crit.maya.core.rig import Rig
+    from tp.libs.rig.crit.maya.core.rig import Rig
 
 logger = log.rigLogger
 
 
-def initialize_build_scripts_manager(preference_interface, reload: bool = False):
-	"""
-	Initializes CRIT build scripts manager.
-
-	:param preference_interface: CRIT preference interface instance.
-	:param bool reload: whether to force reload of the naming preset manager if it is already initialized
-	"""
-
-	if reload or Configuration.BUILD_SCRIPTS_MANAGER is None:
-		build_scripts_manager = plugin.PluginFactory(
-			interface=buildscript.BaseBuildScript, plugin_id='ID', package_name='crit')
-		paths = os.getenv(Configuration.BUILD_SCRIPTS_VAR, '').split(os.pathsep)
-		paths += preference_interface.user_build_script_paths()
-		helpers.add_to_environment('TPDCC_BASE_PATHS', paths)
-		build_scripts_manager.register_paths_from_env_var(Configuration.BUILD_SCRIPTS_VAR, package_name='crit')
-		build_scripts_manager.register_paths(preference_interface.user_build_script_paths(), package_name='crit')
-		build_scripts_manager.load_all_plugins(package_name='crit')
-		Configuration.BUILD_SCRIPTS_MANAGER = build_scripts_manager
-
-
 def initialize_naming_preset_manager(preference_interface, reload: bool = False):
-	"""
-	Initializes Naming preset manager.
+    """
+    Initializes Naming preset manager.
 
-	:param preference_interface: CRIT preference interface instance.
-	:param bool reload: whether to force reload of the naming preset manager if it is already initialized
-	"""
+    :param preference_interface: CRIT preference interface instance.
+    :param bool reload: whether to force reload of the naming preset manager if it is already initialized
+    """
 
-	if reload or Configuration.NAMING_PRESET_MANAGER is None:
-		presets_manager = namingpresets.PresetsManager()
-		hierarchy = preference_interface.naming_preset_hierarchy()
-		presets_manager.load_from_hierarchy(hierarchy)
-		Configuration.NAMING_PRESET_MANAGER = presets_manager
+    if reload or Configuration.NAMING_PRESET_MANAGER is None:
+        presets_manager = namingpresets.PresetsManager()
+        hierarchy = preference_interface.naming_preset_hierarchy()
+        presets_manager.load_from_hierarchy(hierarchy)
+        Configuration.NAMING_PRESET_MANAGER = presets_manager
+
+
+def initialize_template_manager(reload: bool = False):
+    """
+    Initializes CRIT templates manager.
+
+    :param bool reload: whether to force reload of the templates manager if it is already initialized
+    """
+
+    if reload or Configuration.TEMPLATES_MANAGER is None:
+        templates_manager = templates.TemplatesManager()
+        templates_manager.discover_templates()
+        Configuration.TEMPLATES_MANAGER = templates_manager
+
+
+def initialize_build_scripts_manager(preference_interface, reload: bool = False):
+    """
+    Initializes CRIT build scripts manager.
+
+    :param preference_interface: CRIT preference interface instance.
+    :param bool reload: whether to force reload of the naming preset manager if it is already initialized
+    """
+
+    if reload or Configuration.BUILD_SCRIPTS_MANAGER is None:
+        build_scripts_manager = plugin.PluginFactory(
+            interface=buildscript.BaseBuildScript, plugin_id='ID', package_name='crit')
+        paths = os.getenv(Configuration.BUILD_SCRIPTS_VAR, '').split(os.pathsep)
+        paths += preference_interface.user_build_script_paths()
+        helpers.add_to_environment('TPDCC_BASE_PATHS', paths)
+        build_scripts_manager.register_paths_from_env_var(Configuration.BUILD_SCRIPTS_VAR, package_name='crit')
+        build_scripts_manager.register_paths(preference_interface.user_build_script_paths(), package_name='crit')
+        build_scripts_manager.load_all_plugins(package_name='crit')
+        Configuration.BUILD_SCRIPTS_MANAGER = build_scripts_manager
+
+
+def initialize_exporter_registry(preference_interface, reload: bool = False):
+    """
+    Initializes CRIT exporter manager.
+
+    :param preference_interface: CRIT preference interface instance.
+    :param bool reload: whether to force reload of the exporter manager if it is already initialized
+    """
+
+    if reload or Configuration.EXPORTER_MANAGER is None:
+        exporter_manager = plugin.PluginFactory(interface=exporter.ExporterPlugin, plugin_id='ID', package_name='crit')
+        exporter_manager.register_paths_from_env_var(Configuration.EXPORT_PLUGIN_VAR, package_name='crit')
+        exporter_manager.register_paths(preference_interface.exporter_plugin_paths(), package_name='crit')
+        Configuration.EXPORTER_MANAGER = exporter_manager
 
 
 class Configuration:
-	"""
-	Class that handles CRIT configuration.
-	This configuration handles lot of different rig related data that can be retrieved from a file in disk or from
-	metadata from a node within a scene.
-	"""
+    """
+    Class that handles CRIT configuration.
+    This configuration handles lot of different rig related data that can be retrieved from a file in disk or from
+    metadata from a node within a scene.
+    """
+
+    BUILD_SCRIPTS_VAR = 'CRIT_BUILD_SCRIPTS_PATH'
+    EXPORT_PLUGIN_VAR = 'CRIT_EXPORT_PLUGIN_PATH'
+
+    NAMING_PRESET_MANAGER: namingpresets.PresetsManager | None = None
+    TEMPLATES_MANAGER: plugin.PluginFactory | None = None
+    BUILD_SCRIPTS_MANAGER: plugin.PluginFactory | None = None
+    EXPORTER_MANAGER: plugin.PluginFactory | None = None
+
+    def __init__(self):
+        super().__init__()
+
+        self._config_cache: dict = {}
+        self._current_naming_preset: namingpresets.Preset | None = None
+        self._build_scripts: list[buildscript.BaseBuildScript] = []
+        self._selection_child_highlighting = False
+        self._auto_align_guides = True
+        self._delete_on_fail = False
+        self._preferences_interface = crit.crit_interface()
+        self._single_chain_hierarchy = True
+        self._guide_control_visibility = False
+        self._guide_pivot_visibility = True
+        self._build_skeleton_marking_menu = False
+        self._guide_scale = 1.0
+        self._control_scale = 1.0
+        self._export_plugin_overrides = self._preferences_interface.exporter_plugin_overrides()
+
+        self._initialize_managers()
+        self._initialize_environment()
+
+    @staticmethod
+    def build_script_config(rig: Rig) -> dict:
+        """
+        Returns the build scripts configuration data for given rig.
+
+        :param Rig rig: rig we want to get build script config of.
+        :return: build scripts configuration data.
+        :rtype: dict
+        """
+
+        return rig.meta.build_script_configuration()
+
+    @staticmethod
+    def update_build_script_config(rig: Rig, config: dict[str, dict]):
+        """
+        Updates rig build scripts from given configuration.
+
+        :param Rig rig: rig instance we want to update build scripts from.
+        :param dict[str, dict] config: build scripts data to update.
+        """
+
+        current_config = rig.meta.build_script_configuration()
+        current_config.update(config)
+        rig.meta.set_build_script_configuration(current_config)
+
+    @staticmethod
+    def set_build_script_config(rig: Rig, config: dict[str, dict]):
+        """
+        Sets the build script configuration on the given rig.
+
+        :param Rig rig: rig instance to set build scripts of.
+        :param dict[str, dict] config: configuration data for any/all build scripts for the current rig.
+        """
+
+        rig.meta.set_build_script_configuration(config)
+
+    @classmethod
+    def name_presets_manager(cls) -> namingpresets.PresetsManager:
+        """
+        Returns the naming presets manager used by this configuration.
+
+        :return: naming presets manager.
+        :rtype: namingpresets.PresetsManager
+        """
 
-	BUILD_SCRIPTS_VAR = 'CRIT_BUILD_SCRIPTS_PATH'
+        return cls.NAMING_PRESET_MANAGER
+
+    @classmethod
+    def templates_manager(cls) -> templates.TemplatesManager:
+        """
+        Returns the templates manager used by this configuration.
+
+        :return: templates manager.
+        :rtype: templates.TemplatesManager
+        """
 
-	NAMING_PRESET_MANAGER = None			# type: namingpresets.PresetsManager
-	BUILD_SCRIPTS_MANAGER = None  			# type: plugin.PluginFactory
+        return cls.TEMPLATES_MANAGER
 
-	def __init__(self):
-		super().__init__()
-
-		self._config_cache = dict()
-		self._current_naming_preset = None							# type: namingpresets.Preset
-		self._build_scripts = list()								# type: list[str]
-		self._selection_child_highlighting = False
-		self._auto_align_guides = True
-		self._delete_on_fail = False
-		self._preferences_interface = crit.crit_interface()
-		self._single_chain_hierarchy = True
-		self._guide_control_visibility = False
-		self._guide_pivot_visibility = True
-		self._build_skeleton_marking_menu = False
+    @property
+    def preferences_interface(self):
+        """
+        Returns CRIT preferences interface instance.
+
+        :return: CRIT preferences interface.
+        :rtype: CritPreferenceInterface
+        """
 
-		self._initialize_managers()
-		self._initialize_environment()
+        return self._preferences_interface
 
-	@classmethod
-	def name_presets_manager(cls) -> namingpresets.PresetsManager:
-		"""
-		Returns the naming presets manager used by this configuration.
+    @property
+    def delete_on_fail(self) -> bool:
+        """
+        Returns whether a component should be automatically deleted if it fails to build.
 
-		:return: naming presets manager.
-		:rtype: namingpresets.PresetsManager
-		"""
+        :return: True if this feature is enabled; False otherwise.
+        :rtype: bool
+        """
 
-		return cls.NAMING_PRESET_MANAGER
+        return self._delete_on_fail
 
-	@property
-	def preferences_interface(self) -> 'CritPreferenceInterface':
-		"""
-		Returns CRIT preferences interface instance.
+    @property
+    def current_naming_preset(self) -> namingpresets.Preset | None:
+        """
+        Returns current naming preset.
 
-		:return: CRIT preferences interface.
-		:rtype: CritPreferenceInterface
-		"""
+        :return: naming preset.
+        :rtype: namingpresets.Preset or None
+        """
 
-		return self._preferences_interface
+        return self._current_naming_preset
 
-	@property
-	def delete_on_fail(self) -> bool:
-		"""
-		Returns whether a component should be automatically deleted if it fails to build.
+    @property
+    def build_scripts(self) -> List[str]:
+        """
+        Returns list of directories or Python file paths which can be run during build time.
 
-		:return: True if this feature is enabled; False otherwise.
-		:rtype: bool
-		"""
+        :return: list of build script absolute paths.
+        :rtype: List[str]
+        """
 
-		return self._delete_on_fail
+        return self._build_scripts
 
-	@property
-	def current_naming_preset(self) -> namingpresets.Preset | None:
-		"""
-		Returns current naming preset.
+    @property
+    def selection_child_highlighting(self) -> bool:
+        """
+        Returns whether selection child highlighting should be enabled when building rig controls.
 
-		:return: naming preset.
-		:rtype: namingpresets.Preset or None
-		"""
+        :return: True if selection child highlighting feature should be enabled; False otherwise.
+        :rtype: bool
+        """
 
-		return self._current_naming_preset
+        return self._selection_child_highlighting
 
-	@property
-	def build_scripts(self) -> List[str]:
-		"""
-		Returns list of directories or Python file paths which can be run during build time.
+    @selection_child_highlighting.setter
+    def selection_child_highlighting(self, flag: bool):
+        """
+        Sets whether selection child highlighting should be enabled.
 
-		:return: list of build script absolute paths.
-		:rtype: List[str]
-		"""
+        :param bool flag: True to enable child highlighting; False to disable it.
+        """
 
-		return self._build_scripts
+        self._selection_child_highlighting = flag
 
-	@property
-	def selection_child_highlighting(self) -> bool:
-		"""
-		Returns whether selection child highlighting should be enabled when building rig controls.
+    @property
+    def auto_align_guides(self) -> bool:
+        """
+        Returns whether auto alignment should be run when building the skeleton layer.
 
-		:return: True if selection child highlighting feature should be enabled; False otherwise.
-		:rtype: bool
-		"""
+        :return: True if guides auto alignment should be run; False otherwise.
+        :rtype: bool
+        """
 
-		return self._selection_child_highlighting
+        return self._auto_align_guides
 
-	@selection_child_highlighting.setter
-	def selection_child_highlighting(self, flag: bool):
-		"""
-		Sets whether selection child highlighting should be enabled.
+    @auto_align_guides.setter
+    def auto_align_guides(self, flag: bool):
+        """
+        Sets whether auto alignment should be run when building the skeleton layer.
 
-		:param bool flag: True to enable child highlighting; False to disable it.
-		"""
+        :param bool flag: True to enable auto align guide feature; False to disable it.
+        """
 
-		self._selection_child_highlighting = flag
+        self._auto_align_guides = flag
 
-	@property
-	def auto_align_guides(self) -> bool:
-		"""
-		Returns whether auto alignment should be run when building the skeleton layer.
+    @property
+    def single_chain_hierarchy(self) -> bool:
+        """
+        Returns whether skeleton will be created under a unique chain hierarchy (so it is suitable for games).
 
-		:return: True if guides auto alignment should be run; False otherwise.
-		:rtype: bool
-		"""
+        :return: True if skeleton will be created under a unique chain hierarchy; False otherwise.
+        :rtype: bool
+        """
 
-		return self._auto_align_guides
+        return self._single_chain_hierarchy
 
-	@auto_align_guides.setter
-	def auto_align_guides(self, flag: bool):
-		"""
-		Sets whether auto alignment should be run when building the skeleton layer.
+    @property
+    def guide_control_visibility(self) -> bool:
+        """
+        Returns whether guide controls are visible.
 
-		:param bool flag: True to enable auto align guide feature; False to disable it.
-		"""
+        :return: True if guide controls are visible; False otherwise.
+        :rtype: bool
+        """
 
-		self._auto_align_guides = flag
+        return self._guide_control_visibility
 
-	@property
-	def single_chain_hierarchy(self) -> bool:
-		"""
-		Returns whether skeleton will be created under a unique chain hierarchy (so it is suitable for games).
+    @guide_control_visibility.setter
+    def guide_control_visibility(self, flag: bool):
+        """
+        Sets whether guide controls are visible.
 
-		:return: True if skeleton will be created under a unique chain hierarchy; False otherwise.
-		:rtype: bool
-		"""
+        :param bool flag: True if guide controls are visible; False otherwise.
+        """
 
-		return self._single_chain_hierarchy
+        self._guide_control_visibility = flag
+
+    @property
+    def guide_pivot_visibility(self) -> bool:
+        """
+        Returns whether guide pivot is visible.
+
+        :return: True if guide pivot is visible; False otherwise.
+        :rtype: bool
+        """
+
+        return self._guide_pivot_visibility
+
+    @guide_pivot_visibility.setter
+    def guide_pivot_visibility(self, flag: bool):
+        """
+        Sets whether guide pivot is visible.
+
+        :param bool flag: True if guide pivot is visible; False otherwise.
+        """
+
+        self._guide_pivot_visibility = flag
+
+    @property
+    def build_skeleton_marking_menu(self) -> bool:
+        """
+        Returns whether skeleton custom marking menu should be created.
+
+        :return: True if skeleton custom marking menu should be created; False otherwise.
+        :rtype: bool
+        """
+
+        return self._build_skeleton_marking_menu
+
+    def update_from_rig(self, rig: Rig) -> Dict:
+        """
+        Updates this configuration from the given scene rig instance.
+
+        :param tp.libs.rig.maya.core.rig.Rig rig: rig instance to pull configuration data from.
+        :return: updated configuration dictionary.
+        :rtype: Dict
+        """
+
+        cache = rig.cached_configuration()
+        self.update_from_cache(cache)
+        return cache
 
-	@property
-	def guide_control_visibility(self) -> bool:
-		"""
-		Returns whether guide controls are visible.
+    def update_from_cache(self, cache: Dict, rig: Rig | None = None):
+        """
+        Updates this configuration from the given configuration dictionary.
 
-		:return: True if guide controls are visible; False otherwise.
-		:rtype: bool
-		"""
-
-		return self._guide_control_visibility
-
-	@guide_control_visibility.setter
-	def guide_control_visibility(self, flag: bool):
-		"""
-		Sets whether guide controls are visible.
-
-		:param bool flag: True if guide controls are visible; False otherwise.
-		"""
-
-		self._guide_control_visibility = flag
-
-	@property
-	def guide_pivot_visibility(self) -> bool:
-		"""
-		Returns whether guide pivot is visible.
-
-		:return: True if guide pivot is visible; False otherwise.
-		:rtype: bool
-		"""
-
-		return self._guide_pivot_visibility
-
-	@guide_pivot_visibility.setter
-	def guide_pivot_visibility(self, flag: bool):
-		"""
-		Sets whether guide pivot is visible.
-
-		:param bool flag: True if guide pivot is visible; False otherwise.
-		"""
-
-		self._guide_pivot_visibility = flag
-
-	@property
-	def build_skeleton_marking_menu(self) -> bool:
-		"""
-		Returns whether skeleton custom marking menu should be created.
-
-		:return: True if skeleton custom marking menu should be created; False otherwise.
-		:rtype: bool
-		"""
-
-		return self._build_skeleton_marking_menu
-
-	def update_from_rig(self, rig: Rig) -> Dict:
-		"""
-		Updates this configuration from the given scene rig instance.
-
-		:param tp.libs.rig.maya.core.rig.Rig rig: rig instance to pull configuration data from.
-		:return: updated configuration dictionary.
-		:rtype: Dict
-		"""
-
-		cache = rig.cached_configuration()
-		self.update_from_cache(cache)
-		return cache
-
-	def update_from_cache(self, cache: Dict):
-		"""
-		Updates this configuration from the given configuration dictionary.
-
-		:param Dict cache: configuration dictionary to update this configuration from.
-		"""
-
-		try:
-			preset_name = cache['namingPreset']
-			self.set_naming_preset_by_name(preset_name)
-		except KeyError:
-			pass
-
-		for setting, value in cache.items():
-			if setting == 'buildScripts':
-				self.set_build_scripts(value)
-				continue
-			if hasattr(self, setting):
-				setattr(self, setting, value)
-			elif hasattr(self, strings.camel_case_to_snake_case(setting)):
-				try:
-					setattr(self, strings.camel_case_to_snake_case(setting), value)
-				except Exception:
-					logger.error(f'Something went wrong while updating configuration: {setting}', exc_info=True)
-
-	def serialize(self) -> Dict:
-		"""
-		Serializes current configuration data.
-
-		:return: serialized data.
-		:rtype: Dict
-		"""
-
-		cache = self._config_cache
-		overrides = dict()
-
-		for setting in ('useProxyAttributes',
-						'useContainers',
-						'blackBox',
-						'requiredMayaPlugins',
-						'selectionChildHighlighting',
-						'autoAlignGuides',
-						'guidePivotVisibility',
-						'guideControlVisibility'):
-			config_state = cache.get(setting)
-			current_state = None
-			if hasattr(self, setting):
-				current_state = getattr(self, setting)
-			elif hasattr(self, strings.camel_case_to_snake_case(setting)):
-				current_state = getattr(self, strings.camel_case_to_snake_case(setting))
-			if current_state is not None and current_state != config_state:
-				overrides[setting] = current_state
-
-		for build_script in self._build_scripts:
-			properties = build_script.get(build_script.ID, {})
-			overrides.setdefault('buildScripts', list()).append([build_script.ID, properties])
-
-		if self._current_naming_preset.name != consts.DEFAULT_BUILTIN_PRESET_NAME:
-			overrides[consts.NAMING_PRESET_DESCRIPTOR_KEY] = self._current_naming_preset.name
-
-		return overrides
-
-	def find_name_manager_for_type(self, crit_type: str, preset_name: str | None = None):
-		"""
-		Finds and returns the naming convention manager used to handle the nomenclature for the given type.
-
-		:param str crit_type: Crit type to search for ('rig', 'module', etc).
-		:param str or None preset_name: optional preset to use find the Crit type.
-		:return: naming manager instance.
-		:rtype: tp.common.naming.manager.NameManager or None
-		"""
-
-		preset = self._current_naming_preset
-		if preset_name:
-			preset = self.NAMING_PRESET_MANAGER.find_preset(preset_name)
-
-		return preset.find_name_manager_for_type(crit_type)
-
-	def set_naming_preset_by_name(self, name: str):
-		"""
-		Sets the current naming convention preset by the given name.
-
-		:param str name: name of the preset to set as active.
-		"""
-
-		preset = self.NAMING_PRESET_MANAGER.find_preset(name)
-		if preset is None:
-			preset = self.NAMING_PRESET_MANAGER.find_preset(consts.DEFAULT_PRESET_NAME)
-
-		self._current_naming_preset = preset
-
-	def set_build_scripts(self, script_ids):
-		"""
-		Sets the current build scripts that should be executed for the rigs using this configuration.
-
-		:param list(str) script_ids: list of script IDs to set.
-		"""
-
-		build_scripts_manager = self.BUILD_SCRIPTS_MANAGER
-		self._build_scripts.clear()
-		for build_script_id in script_ids:
-			build_script = build_scripts_manager.get_loaded_plugin_from_id(build_script_id, package_name='crit')
-			if build_script:
-				self._build_scripts.append(build_script)
-
-	def _initialize_managers(self, force: bool = False):
-		"""
-		Internal function handles the initialization of all the configuration managers.
-
-		:param bool force: whether to force the reloading of the managers.
-		"""
-
-		initialize_build_scripts_manager(self._preferences_interface, reload=force)
-		initialize_naming_preset_manager(self._preferences_interface, reload=force)
-
-	def _initialize_environment(self):
-		"""
-		Internal function that handles the loading and setup of CRIT preferences from settings.
-		"""
-
-		# we update the cache to optimize speed
-		self._config_cache = self._preferences_interface.settings().get('settings', dict())
-
-		self._selection_child_highlighting = self._config_cache.get(
-			'selectionChildHighlighting', self._selection_child_highlighting)
-		self._guide_control_visibility = self._config_cache.get('guideControlVisibility',
-																self._guide_control_visibility)
-		self._guide_pivot_visibility = self._config_cache.get('guidePivotVisibility', self._guide_pivot_visibility)
-
-		self.set_build_scripts(self._config_cache.get('buildScripts', list()))
-		self.set_naming_preset_by_name(self._config_cache.get('defaultNamingPreset', consts.DEFAULT_PRESET_NAME))
+        :param Dict cache: configuration dictionary to update this configuration from.
+        :param Rig or None rig: optional rig this configuration belongs to.
+        """
+
+        if rig is not None:
+            raise NotImplementedError
+
+        try:
+            preset_name = cache['namingPreset']
+            self.set_naming_preset_by_name(preset_name)
+        except KeyError:
+            pass
+
+        for setting, value in cache.items():
+            if setting == 'buildScripts':
+                self.set_build_scripts(value)
+                continue
+            if hasattr(self, setting):
+                setattr(self, setting, value)
+            elif hasattr(self, strings.camel_case_to_snake_case(setting)):
+                try:
+                    setattr(self, strings.camel_case_to_snake_case(setting), value)
+                except Exception:
+                    logger.error(f'Something went wrong while updating configuration: {setting}', exc_info=True)
+
+    def serialize(self, rig: Rig) -> Dict:
+        """
+        Serializes current configuration data.
+
+        :param Rig rig: rig this configuration belongs to.
+        :return: serialized data.
+        :rtype: Dict
+        """
+
+        cache = self._config_cache
+        overrides = dict()
+        build_script_config = self.build_script_config(rig)
+
+        for setting in ('useProxyAttributes',
+                        'useContainers',
+                        'blackBox',
+                        'requiredMayaPlugins',
+                        'selectionChildHighlighting',
+                        'autoAlignGuides',
+                        'guidePivotVisibility',
+                        'guideControlVisibility',
+                        'hideControlShapesInOutliner'):
+            config_state = cache.get(setting)
+            current_state = None
+            if hasattr(self, setting):
+                current_state = getattr(self, setting)
+            elif hasattr(self, strings.camel_case_to_snake_case(setting)):
+                current_state = getattr(self, strings.camel_case_to_snake_case(setting))
+            if current_state is not None and current_state != config_state:
+                overrides[setting] = current_state
+
+        for build_script in self._build_scripts:
+            properties = build_script_config.get(build_script.ID, {})
+            overrides.setdefault('buildScripts', list()).append([build_script.ID, properties])
+
+        if self._current_naming_preset.name != consts.DEFAULT_BUILTIN_PRESET_NAME:
+            overrides[consts.NAMING_PRESET_DESCRIPTOR_KEY] = self._current_naming_preset.name
+
+        return overrides
+
+    def find_name_manager_for_type(self, crit_type: str, preset_name: str | None = None):
+        """
+        Finds and returns the naming convention manager used to handle the nomenclature for the given type.
+
+        :param str crit_type: Crit type to search for ('rig', 'module', etc).
+        :param str or None preset_name: optional preset to use find the Crit type.
+        :return: naming manager instance.
+        :rtype: tp.common.naming.manager.NameManager or None
+        """
+
+        preset = self._current_naming_preset
+        if preset_name:
+            preset = self.NAMING_PRESET_MANAGER.find_preset(preset_name)
+
+        return preset.find_name_manager_for_type(crit_type)
+
+    def set_naming_preset_by_name(self, name: str):
+        """
+        Sets the current naming convention preset by the given name.
+
+        :param str name: name of the preset to set as active.
+        """
+
+        preset = self.NAMING_PRESET_MANAGER.find_preset(name)
+        if preset is None:
+            preset = self.NAMING_PRESET_MANAGER.find_preset(consts.DEFAULT_PRESET_NAME)
+
+        self._current_naming_preset = preset
+
+    def set_build_scripts(self, script_ids):
+        """
+        Sets the current build scripts that should be executed for the rigs using this configuration.
+
+        :param list(str) script_ids: list of script IDs to set.
+        """
+
+        build_scripts_manager = self.BUILD_SCRIPTS_MANAGER
+        self._build_scripts.clear()
+        for build_script_id in script_ids:
+            build_script = build_scripts_manager.get_loaded_plugin_from_id(build_script_id, package_name='crit')
+            if build_script:
+                self._build_scripts.append(build_script)
+
+    def export_plugin_by_id(self, plugin_id: str) -> Type[exporter.ExporterPlugin] | None:
+        """
+        Retrieves the exporter plugin class from given ID.
+
+        :param str plugin_id: ID of the CRIT exporter plugin to retrieve.
+        :return: plugin class that matches given ID.
+        """
+
+        override_plugin_id = self._export_plugin_overrides.get(plugin_id) or plugin_id
+        return self.EXPORTER_MANAGER.get_plugin_from_id(override_plugin_id, package_name='crit')
+
+    def _initialize_managers(self, force: bool = False):
+        """
+        Internal function handles the initialization of all the configuration managers.
+
+        :param bool force: whether to force the reloading of the managers.
+        """
+
+        initialize_template_manager(reload=force)
+        initialize_naming_preset_manager(self._preferences_interface, reload=force)
+        initialize_build_scripts_manager(self._preferences_interface, reload=force)
+        initialize_exporter_registry(self._preferences_interface, reload=force)
+
+    def _initialize_environment(self):
+        """
+        Internal function that handles the loading and setup of CRIT preferences from settings.
+        """
+
+        # we update the cache to optimize speed
+        self._config_cache = self._preferences_interface.settings().get('settings', {})
+
+        self._selection_child_highlighting = self._config_cache.get(
+            'selectionChildHighlighting', self._selection_child_highlighting)
+        self._guide_control_visibility = self._config_cache.get('guideControlVisibility',
+                                                                self._guide_control_visibility)
+        self._guide_pivot_visibility = self._config_cache.get('guidePivotVisibility', self._guide_pivot_visibility)
+
+        self.set_build_scripts(self._config_cache.get('buildScripts', []))
+        self.set_naming_preset_by_name(self._config_cache.get('defaultNamingPreset', consts.DEFAULT_PRESET_NAME))

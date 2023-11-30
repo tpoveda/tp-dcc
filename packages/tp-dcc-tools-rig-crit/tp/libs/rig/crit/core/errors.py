@@ -90,3 +90,18 @@ class CritMissingControlError(CritError):
 class CritMissingRigForNode(CritError):
 
 	MSG = 'Node is not attached to a rig'
+
+
+class CritTemplateAlreadyExistsError(CritError):
+
+	MSG = 'Template path: {} already exists!'
+
+
+class CritTemplateMissingComponents(CritError):
+
+	MSG = 'No component specified in template: {}'
+
+
+class CritTemplateRootPathDoesNotExist(CritError):
+
+	MSG = 'Template root path does not exist on disk: {}'

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Tuple, List, Dict
+import typing
 
 from overrides import override
+
 
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
@@ -11,6 +12,9 @@ from tp.maya import api
 from tp.maya.api import command
 from tp.maya.om import scene, nodes
 from tp.libs.rig.crit import api as crit
+
+if typing.TYPE_CHECKING:
+	from tp.libs.rig.crit.maya.descriptors.component import ComponentDescriptor
 
 
 class RenameComponentCommand(command.MayaCommand):
@@ -24,11 +28,11 @@ class RenameComponentCommand(command.MayaCommand):
 	is_enabled = True
 	ui_data = {'icon': '', 'tooltip': __doc__, 'label': 'Rename Component', 'color': 'white', 'backgroundColor': 'black'}
 
-	_component = None			# type: crit.Component
+	_component: crit.Component | None = None
 	_old_name = ''
 
 	@override
-	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+	def resolve_arguments(self, arguments: dict) -> dict | None:
 		component = arguments.get('component')
 		name = arguments.get('name')
 		if not name:
@@ -60,11 +64,11 @@ class SetSideComponentCommand(command.MayaCommand):
 	is_enabled = True
 	ui_data = {'icon': '', 'tooltip': __doc__, 'label': 'Rename Component Side', 'color': '', 'backgroundColor': ''}
 
-	_component = None			# type: crit.Component
+	_component: crit.Component | None = None
 	_old_side = ''
 
 	@override
-	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+	def resolve_arguments(self, arguments: dict) -> dict | None:
 		component = arguments.get('component')
 		side = arguments.get('side')
 		if not side:
@@ -101,7 +105,7 @@ class AddParentComponentFromSelectionCommand(command.MayaCommand):
 	_driver_components = []
 
 	@override
-	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+	def resolve_arguments(self, arguments: dict) -> dict | None:
 		selection = list(api.selected(filter_types=api.kTransform))
 		if len(selection) < 2:
 			self.display_warning('Must have at least 2 nodes selected')
@@ -149,7 +153,7 @@ class AddParentComponentFromSelectionCommand(command.MayaCommand):
 		return arguments
 
 	@override(check_signature=False)
-	def do(self, driver: crit.Component | None = None, driven: List[crit.Component] | None = None):
+	def do(self, driver: crit.Component | None = None, driven: list[crit.Component] | None = None):
 		driver = self._driver_components
 		success = False
 		for component in self._driven_components:
@@ -176,11 +180,11 @@ class AddParentComponentCommand(command.MayaCommand):
 	disable_queue = True
 	ui_data = {'icon': '', 'tooltip': __doc__, 'label': 'Parent Component', 'color': '', 'backgroundColor': ''}
 
-	_child_component = None						# type: crit.Component
-	_parent_component = None					# type: crit.Component
+	_child_component: crit.Component | None = None
+	_parent_component: crit.Component | None = None
 
 	@override
-	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+	def resolve_arguments(self, arguments: dict) -> dict | None:
 
 		self._child_component = arguments['child_component']
 		self._parent_component = arguments['parent_component']
@@ -212,11 +216,11 @@ class RemoveAllParentsComponentFromSelectionCommand(command.MayaCommand):
 	disable_queue = True
 	ui_data = {'icon': '', 'tooltip': __doc__, 'label': 'Remove Parents', 'color': '', 'backgroundColor': ''}
 
-	_components = []							# type: List[crit.Component]
-	_parent_components = []						# type: List[List[crit.Component, crit.Component, Dict]]
+	_components: set[crit.Component] = []
+	_parent_components: list[list[crit.Component, crit.Component, dict]] = []
 
 	@override
-	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+	def resolve_arguments(self, arguments: dict) -> dict | None:
 
 		selection = list(api.selected(filter_types=api.kTransform,))
 		if not selection:
@@ -245,7 +249,7 @@ class RemoveAllParentsComponentFromSelectionCommand(command.MayaCommand):
 		return arguments
 
 	@override(check_signature=False)
-	def do(self, components: List[crit.Component] | None = None):
+	def do(self, components: list[crit.Component] | None = None):
 
 		for component in components:
 			component.remove_all_parents()
@@ -275,7 +279,7 @@ class SelectGuidesCommand(command.MayaCommand):
 	_old_selection = OpenMaya.MSelectionList()
 
 	@override
-	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+	def resolve_arguments(self, arguments: dict) -> dict | None:
 		super().resolve_arguments(arguments)
 
 		components = arguments.get('components', [])
@@ -329,7 +333,7 @@ class SelectGuideRootPivotCommand(command.MayaCommand):
 	_old_selection = OpenMaya.MSelectionList()
 
 	@override
-	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+	def resolve_arguments(self, arguments: dict) -> dict | None:
 		super().resolve_arguments(arguments)
 
 		components = arguments.get('components', [])
@@ -354,7 +358,7 @@ class SelectGuideRootPivotCommand(command.MayaCommand):
 		return {'components': components}
 
 	@override(check_signature=False)
-	def do(self, components: List[crit.Component] | None = None):
+	def do(self, components: list[crit.Component] | None = None):
 		new_selection = set()
 		for component in components:
 			root_guide = component.guide_layer().guide_root()
@@ -383,7 +387,7 @@ class SelectGuideShapesCommand(command.MayaCommand):
 	_old_selection = OpenMaya.MSelectionList()
 
 	@override
-	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+	def resolve_arguments(self, arguments: dict) -> dict | None:
 		super().resolve_arguments(arguments)
 
 		guides = arguments.get('guides', [])
@@ -401,7 +405,7 @@ class SelectGuideShapesCommand(command.MayaCommand):
 		return {'guides': guides}
 
 	@override(check_signature=False)
-	def do(self, guides: List[crit.Guide] | None = None):
+	def do(self, guides: list[crit.Guide] | None = None):
 		new_selection = set()
 		for guide in guides:
 			shape_node = guide.shape_node()
@@ -430,7 +434,7 @@ class SelectAllGuideShapesCommand(command.MayaCommand):
 	_old_selection = OpenMaya.MSelectionList()
 
 	@override
-	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+	def resolve_arguments(self, arguments: dict) -> dict | None:
 		super().resolve_arguments(arguments)
 
 		components = arguments.get('components', [])
@@ -455,7 +459,7 @@ class SelectAllGuideShapesCommand(command.MayaCommand):
 		return {'components': components}
 
 	@override(check_signature=False)
-	def do(self, components: List[crit.Component] | None = None):
+	def do(self, components: list[crit.Component] | None = None):
 		new_selection = set()
 		for component in components:
 			for guide in component.guide_layer().iterate_guides():
@@ -484,10 +488,10 @@ class AlignGuidesCommand(command.MayaCommand):
 	disable_queue = True
 	ui_data = {'icon': 'target', 'tooltip': __doc__, 'label': 'Auto Align Guides', 'color': '', 'backgroundColor': ''}
 
-	_changes = []				# type: List[Tuple[crit.Component, List[Dict]]]
+	_changes: list[tuple[crit.Component, list[dict]]] = []
 
 	@override
-	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+	def resolve_arguments(self, arguments: dict) -> dict | None:
 
 		requested_components = arguments.get('components')
 		if not requested_components:
@@ -510,7 +514,7 @@ class AlignGuidesCommand(command.MayaCommand):
 		return arguments
 
 	@override(check_signature=False)
-	def do(self, components: List[crit.Component] | None = None):
+	def do(self, components: list[crit.Component] | None = None):
 		rig = None
 		for component in components:
 			guide_layer = component.guide_layer()
@@ -548,12 +552,12 @@ class DeleteComponentCommand(command.MayaCommand):
 	disable_queue = True
 	ui_data = {'icon': '', 'tooltip': __doc__, 'label': 'Delete Component', 'color': 'white', 'backgroundColor': 'black'}
 
-	_rig = None									# type: crit.Rig
-	_components = []							# type: List[crit.Component]
-	_serialized_component_data = []				# type: List[Tuple[Dict, bool, bool, bool], ...]
+	_rig: crit.Rig | None = None
+	_components: list[crit.Component] = []
+	_serialized_component_data: list[tuple[ComponentDescriptor, bool, bool, bool], ...] = []
 
 	@override
-	def resolve_arguments(self, arguments: Dict) -> Dict | None:
+	def resolve_arguments(self, arguments: dict) -> dict | None:
 		self._serialized_component_data = []
 		for component in arguments.get('components', []):
 			self._serialized_component_data.append(
@@ -570,7 +574,7 @@ class DeleteComponentCommand(command.MayaCommand):
 		return arguments
 
 	@override(check_signature=False)
-	def do(self, rig: crit.Rig | None = None, components: List[crit.Component] | None = None, children: bool = True):
+	def do(self, rig: crit.Rig | None = None, components: list[crit.Component] | None = None, children: bool = True):
 		for component in self._components:
 			self._rig.delete_component(name=component.name(), side=component.side())
 

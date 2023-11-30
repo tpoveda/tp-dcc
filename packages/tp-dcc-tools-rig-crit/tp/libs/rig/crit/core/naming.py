@@ -4,10 +4,11 @@ import typing
 from typing import Iterator
 
 if typing.TYPE_CHECKING:
+    from tp.common.naming.manager import NameManager
     from tp.libs.rig.crit.maya.core.rig import Rig
 
 
-def unique_name_for_rig(rigs: Iterator[Rig], name: str):
+def unique_name_for_rig(rigs: Iterator[Rig], name: str) -> str:
     """
     Returns a unique name for a rig.
 
@@ -48,15 +49,15 @@ def unique_name_for_component_by_rig(rig: Rig, name: str, side: str) -> str:
     return current_name.split(':')[0]
 
 
-def compose_rig_names_for_layer(name_manager, rig_name, layer_type):
+def compose_rig_names_for_layer(name_manager: NameManager, rig_name: str, layer_type: str) -> tuple[str, str]:
     """
     Composes and returns the resolved node names for the layer root hierarchy and meta nodes.
 
-    :param tp.common.naming.manager.NameManager name_manager: naming manager instance used to resolve the name.
+    :param NameManager name_manager: naming manager instance used to resolve the name.
     :param str rig_name: rig name.
     :param str layer_type: layer type.
     :return: tuple with the root hierarchy name and the meta node name.
-    :rtype: tuple(str, str)
+    :rtype: tuple[str, str]
     """
 
     hierarchy_name = name_manager.resolve('layerHrc', {'rigName': rig_name, 'layerType': layer_type, 'type': 'hrc'})
@@ -65,15 +66,16 @@ def compose_rig_names_for_layer(name_manager, rig_name, layer_type):
     return hierarchy_name, meta_name
 
 
-def compose_component_root_names(name_manager, component_name, component_side):
+def compose_component_root_names(
+        name_manager: NameManager, component_name: str, component_side: str) -> tuple[str, str]:
     """
     Composes and returns the resolved node names for the component root hierarchy and meta nodes.
 
-    :param tp.common.naming.manager.NameManager name_manager: naming manager instance used to resolve the name.
+    :param NameManager name_manager: naming manager instance used to resolve the name.
     :param str component_name: component name.
     :param str component_side: component side.
     :return: tuple with the root hierarchy name and the meta node name.
-    :rtype: tuple(str, str)
+    :rtype: tuple[str, str]
     """
 
     hierarchy_name = name_manager.resolve(
@@ -84,7 +86,8 @@ def compose_component_root_names(name_manager, component_name, component_side):
     return hierarchy_name, meta_name
 
 
-def compose_names_for_layer(name_manager, component_name, component_side, layer_type):
+def compose_names_for_layer(
+        name_manager: NameManager, component_name: str, component_side: str, layer_type: str) -> tuple[str, str]:
     """
     Composes and returns the resolved node names for the layer root hierarchy and meta nodes.
 
@@ -93,7 +96,7 @@ def compose_names_for_layer(name_manager, component_name, component_side, layer_
     :param str component_side: component side.
     :param str layer_type: type of layer.
     :return: tuple with the root hierarchy name and the meta node name.
-    :rtype: tuple(str, str)
+    :rtype: tuple[str, str]
     """
 
     hierarchy_name = name_manager.resolve(
@@ -104,11 +107,11 @@ def compose_names_for_layer(name_manager, component_name, component_side, layer_
     return hierarchy_name, meta_name
 
 
-def compose_container_name(name_manager, component_name, component_side):
+def compose_container_name(name_manager: NameManager, component_name: str, component_side: str) -> str:
     """
     Composes and returns the resolved node names for the component asset container node.
 
-    :param tp.common.naming.manager.NameManager name_manager: naming manager instance used to resolve the name.
+    :param NameManager name_manager: naming manager instance used to resolve the name.
     :param str component_name: component name.
     :param str component_side: component side.
     :return: resolved name for the container.
@@ -120,7 +123,7 @@ def compose_container_name(name_manager, component_name, component_side):
             'componentName': component_name, 'side': component_side, 'section': 'root', 'type': 'container'})
 
 
-def compose_connectors_group_name(name_manager, component_name, component_side):
+def compose_connectors_group_name(name_manager: NameManager, component_name: str, component_side: str) -> str:
     """
     Composes and returns the resolved node names for the connectors group transform node.
 
@@ -135,7 +138,7 @@ def compose_connectors_group_name(name_manager, component_name, component_side):
         'connectorsGrp', {'componentName': component_name, 'side': component_side, 'type': 'connectorsGroup'})
 
 
-def compose_settings_name(name_manager, component_name, component_side, section):
+def compose_settings_name(name_manager: NameManager, component_name: str, component_side: str, section: str) -> str:
     """
     Composes and returns the resolved node names for a setting node.
 

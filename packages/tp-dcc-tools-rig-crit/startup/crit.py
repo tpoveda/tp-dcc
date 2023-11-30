@@ -1,9 +1,8 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
+"""
+Module that contains tp-dcc-tools-rig-crit startup/shutdown functionality
+"""
 
-"""
-Module that contains tp-dcc-maya startup functionality
-"""
+from __future__ import annotations
 
 import os
 import typing
@@ -13,49 +12,47 @@ from tp.core import log, dcc
 from tp.common.python import path
 from tp.preferences.interfaces import crit
 from tp.common.resources import api as resources
-from tp.bootstrap.core import manager, exceptions as bootstrap_exceptions
 
 if dcc.is_maya():
 	from tp.libs.rig.crit.maya import plugin as crit_plugin
 
 if typing.TYPE_CHECKING:
-	pass
+	from tp.bootstrap.core.package import Package
 
 
 logger = log.tpLogger
 
 
-def startup(package_manager):
+def startup(package: Package):
 	"""
-	This function is automatically called by tpDcc packages Manager when environment setup is initialized.
+	This function is automatically called by tp-dcc packages Manager when environment setup is initialized.
 
-	:param package_manager: current tpDcc packages Manager instance.
-	:return: tpDccPackagesManager
+	:param package: package instance that is going to be startup.
 	"""
-
-	root_file_path = path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-	package = manager.package_from_path(root_file_path)
-	if not package:
-		raise bootstrap_exceptions.MissingPackage(package)
 
 	logger.info('Loading CRIT rigging package...')
 
+	# Register resources
+	root_file_path = path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 	resources_path = path.join_path(os.path.dirname(root_file_path), 'resources')
-	print(resources_path)
 	resources.register_resource(resources_path)
 
+	# Update CRIT preferences
 	crit_interface = crit.crit_interface()
 	crit_interface.upgrade_preferences()
 	crit_interface.upgrade_assets()
 
+	# Load CRIT Maya plugins
 	if dcc.is_maya():
 		crit_plugin.load()
 
 
-def shutdown(package_manager):
+def shutdown(package: Package):
 	"""
-	Shutdown function that is called during tpDcc framework shutdown.
-	This function is called at the end of tpDcc framework shutdown.
+	Shutdown function that is called during tp-dcc framework shutdown.
+	This function is called at the end of tp-dcc framework shutdown.
+
+:param package: package instance that is going to be shutdown.
 	"""
 
 	logger.info('Shutting down CRIT rigging package...')

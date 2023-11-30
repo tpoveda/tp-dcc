@@ -96,7 +96,6 @@ class WorldComponent(component.Component):
         transform_matrix = god_node_guide_descriptor.transformation_matrix(scale=False)
         input_node.setWorldMatrix(transform_matrix.asMatrix())
 
-    @override
     def setup_outputs(self, parent_node: crit.Joint | api.DagNode):
         descriptor = self.descriptor
         guide_layer = descriptor.guide_layer
@@ -138,7 +137,7 @@ class WorldComponent(component.Component):
 
         super().setup_skeleton_layer(parent_joint)
 
-    @override
+    @override(check_signature=False)
     def setup_rig(self, parent_node: crit.Joint | api.DagNode | None = None):
         guide_layer_descriptor = self.descriptor.guide_layer
         control_panel = self.control_panel()

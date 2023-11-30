@@ -100,8 +100,8 @@ class TransformDescriptor(DGNodeDescriptor):
 				defaults[name] = tuple(existing_data)
 
 		# convert attributes dictionaries to attribute descriptor instances
-		new_attrs = defaults.get('attributes', list())
-		attr_instances = list()
+		new_attrs: list[attributes.AttributeDescriptor] = defaults.get('attributes', [])
+		attr_instances = []
 		attr_names = set()
 		for new_attr in new_attrs:
 			if new_attr['name'] in attr_names:
@@ -267,7 +267,7 @@ class TransformDescriptor(DGNodeDescriptor):
 			transformation_matrix.setTranslation(api.Vector(self.get('translate', (0.0, 0.0, 0.0))), api.kWorldSpace)
 		if rotate:
 			transformation_matrix.setRotation(api.Quaternion(self.get('rotate', (0.0, 0.0, 0.0))))
-			transformation_matrix.reorderRotation(api.int_to_mtransform_rotation_order(self.get('rotateOrder', ())))
+			transformation_matrix.reorderRotation(utils.int_to_mtransform_rotation_order(self.get('rotateOrder', ())))
 		if scale:
 			transformation_matrix.setScale(self.get('scale', (1.0, 1.0, 1.0)), api.kWorldSpace)
 
@@ -376,17 +376,26 @@ class GuideDescriptor(ControlDescriptor):
 		'internal': False,
 		'mirror': True,
 		'attributes': [
-			{'name': consts.CRIT_AUTO_ALIGN_AIM_VECTOR_ATTR, 'value': consts.DEFAULT_AIM_VECTOR, 'default': consts.DEFAULT_AIM_VECTOR, 'type': api.kMFnNumeric3Float},
-			{'name': consts.CRIT_AUTO_ALIGN_UP_VECTOR_ATTR, 'value': consts.DEFAULT_UP_VECTOR, 'default': consts.DEFAULT_UP_VECTOR, 'type': api.kMFnNumeric3Float},
+			{
+				'name': consts.CRIT_AUTO_ALIGN_AIM_VECTOR_ATTR,
+				'value': consts.DEFAULT_AIM_VECTOR,
+				'default': consts.DEFAULT_AIM_VECTOR,
+				'type': api.kMFnNumeric3Float
+			},
+			{
+				'name': consts.CRIT_AUTO_ALIGN_UP_VECTOR_ATTR,
+				'value': consts.DEFAULT_UP_VECTOR,
+				'default': consts.DEFAULT_UP_VECTOR,
+				'type': api.kMFnNumeric3Float
+			}
 		]
 	}
 
-	def update(self, other: GuideDescriptor | None = None, **kwargs: dict):
+	def update(self, other: GuideDescriptor | None = None, **kwargs):
 		"""
 		Overrides update function to make sure data is converted to descriptors.
 
-		:param uideDescriptor or None other: optional other guide descriptor to update from.
-		:param dict kwargs: keyword arguments.
+		:param GuideDescriptor or None other: optional other guide descriptor to update from.
 		"""
 
 		data = other or kwargs
@@ -438,7 +447,7 @@ class GuideDescriptor(ControlDescriptor):
 		:rtype: GuideDescriptor
 		"""
 
-		new_instance = super().deserialize(data, parent=parent)
+		new_instance = super().deserialize(data, parent=parent)         # type: GuideDescriptor
 
 		# make sure srts are described as transform descriptor instances
 		new_instance['srts'] = list(map(TransformDescriptor, new_instance.get('srts', [])))

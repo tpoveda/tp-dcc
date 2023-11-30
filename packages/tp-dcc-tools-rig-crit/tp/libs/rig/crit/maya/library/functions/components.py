@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing
 from typing import List, Dict
 
+from tp.core import log
 from tp.maya import api
 from tp.maya.meta import base
 from tp.maya.libs.triggers import api as triggers
@@ -10,11 +11,12 @@ from tp.libs.rig.crit import consts
 from tp.libs.rig.crit.core import errors
 from tp.libs.rig.crit.maya.library.functions import rigs
 
-
 if typing.TYPE_CHECKING:
 	from tp.libs.rig.crit.maya.core.rig import Rig
 	from tp.libs.rig.crit.maya.core.component import Component
 	from tp.libs.rig.crit.maya.meta.component import CritComponent
+
+logger = log.rigLogger
 
 
 def component_from_node(node: api.DGNode, rig: Rig | None = None) -> Component | None:
@@ -110,19 +112,79 @@ def create_triggers(node: api.DGNode, layout_id: str):
 
 def setup_space_switches(components: List[Component]):
 	"""
-	Function that loop over given components and setup space switches.
+	Loops over given components and setup space switches.
 
-	:param List[Component] components: list of components to setup space switches for.
+	:param List[Component] components: list of components to set up space switches for.
 	"""
 
-	pass
+	for component in components:
+		with api.namespace_context(component.namespace()):
+			container = component.container()
+			if container is not None:
+				container.makeCurrent(True)
+			try:
+				component.setup_space_switches()
+			finally:
+				if container is not None:
+					container.makeCurrent(False)
 
 
-def cleanup_space_switches(component: Component):
+def cleanup_space_switches(rig: Rig, component: Component):
 	"""
-	Function that removes all space switch drivers which use the given component as a driver.
+	Removes all space switch drivers which use the given component as a driver.
 
+	:param Rig rig: rig component belongs to.
 	:param Component component: component instance which will be deleted.
 	"""
 
-	pass
+	logger.debug('Updating space switching.')
+
+	old_token = component.serialized_token_key()
+	for found_component in rig.iterate_components():
+		if found_component == component:
+			continue
+		requires_save = False
+		for space in found_component.descriptor.space_switching:
+			new_drivers = []
+			for driver in list(space.drivers):
+				driver_name = driver.driver
+				if old_token not in driver_name:
+					new_drivers.append(driver)
+				else:
+					requires_save = True
+			space.drivers = new_drivers
+
+		if requires_save:
+			found_component.save_descriptor(found_component.descriptor)
+
+
+def mirror_component(
+		rig: Rig, component: Component, side: str, translate: tuple[str], rotate: str, duplicate: bool = True) -> dict:
+	"""
+	Mirrors the given component.
+
+	:param Rig rig: rig component belongs to.
+	:param Component component: component to mirror.
+	:param str side: side name for the component (only used when duplicating).
+	:param tuples[str] translate: axis to mirror on (defaults to ('x',).
+	:param str rotate: mirror plane to mirror rotations on, supports 'xy', 'yz', 'xz'. Default to 'yz'.
+	:param bool duplicate: whether the component should be duplicated and then mirrored.
+	:return: dictionary with the mirrored info.
+	:rtype: dict
+	"""
+
+	if duplicate:
+		component = rig.duplicate_component(component, component.name(), side)
+
+	if not component.has_guide():
+		rig.build_guides((component,))
+
+	original_data = component.mirror(translate=translate, rotate=rotate)
+
+	return {
+		'duplicated': duplicate,
+		'has_rig': component.has_rig(),
+		'has_skeleton': component.has_skeleton(),
+		'transform_data': original_data,
+		'component': component
+	}
