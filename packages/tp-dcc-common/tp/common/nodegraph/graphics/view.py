@@ -268,7 +268,7 @@ class GraphicsView(qt.QGraphicsView):
                 if self._edge_mode == GraphicsView.EdgeMode.Cut:
                     cut_result = self._slicer.cut()
                     if cut_result:
-                        self._graphics_scene.scene.history.store_history('Edges Cut', set_modified=True)
+                        self._graphics_scene.graph.history.store_history('Edges Cut', set_modified=True)
                     self._slicer.draw_path(qt.QPointF(0.0, 0.0), qt.QPointF(0.0, 0.0))
                     self._slicer.setVisible(False)
                     self._edge_mode = GraphicsView.EdgeMode.Noop
@@ -276,14 +276,14 @@ class GraphicsView(qt.QGraphicsView):
                 if self._edge_mode == GraphicsView.EdgeMode.CutFreehand:
                     cut_result = self._freehand_slicer.cut()
                     if cut_result:
-                        self._graphics_scene.scene.history.store_history('Edges Cut', set_modified=True)
+                        self._graphics_scene.graph.history.store_history('Edges Cut', set_modified=True)
                     self._freehand_slicer.reset()
                     self._freehand_slicer.setVisible(False)
                     self._edge_mode = GraphicsView.EdgeMode.Noop
                     return
                 if self._rubberband_dragging_rect:
                     self._rubberband_dragging_rect = False
-                    self._graphics_scene.scene._on_selection_changed()
+                    self._graphics_scene.graph._on_selection_changed()
                     return
             except Exception:
                 logger.exception('Left mouse release exception', exc_info=True)
@@ -378,11 +378,11 @@ class GraphicsView(qt.QGraphicsView):
 
     @override
     def dragEnterEvent(self, event: qt.QDragEnterEvent) -> None:
-        self._graphics_scene.scene.signals.itemDragEntered.emit(event)
+        self._graphics_scene.graph.itemDragEntered.emit(event)
 
     @override
     def dropEvent(self, event: qt.QDropEvent) -> None:
-        self._graphics_scene.scene.signals.itemDropped.emit(event)
+        self._graphics_scene.graph.itemDropped.emit(event)
 
     @override(check_signature=False)
     def scale(self, scale_x: float, scale_y: float, pos: qt.QPoint | None = None):

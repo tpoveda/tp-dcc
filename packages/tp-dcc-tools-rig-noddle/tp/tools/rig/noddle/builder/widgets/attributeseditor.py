@@ -40,7 +40,7 @@ class AttributesEditor(qt.QWidget):
         self.clear()
         if not self.current_editor:
             return
-        selected = self.current_editor.scene.selected_nodes
+        selected = self.current_editor.selected_nodes
         if not selected:
             return
 
@@ -56,7 +56,7 @@ class AttributesEditor(qt.QWidget):
         self.clear()
         if not list_item or not self.current_editor:
             return
-        variable_widget = vars.VarAttributeWidget(list_item, self.current_editor.scene)
+        variable_widget = vars.VarAttributeWidget(list_item, self.current_editor)
         self.current_widget = variable_widget
         variable_widget.dataTypeSwitched.connect(self.update_current_variable_widget)
 

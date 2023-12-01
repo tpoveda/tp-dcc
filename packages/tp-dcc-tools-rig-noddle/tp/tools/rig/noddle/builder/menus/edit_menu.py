@@ -6,7 +6,7 @@ from tp.core import log
 from tp.common.qt import api as qt
 
 if typing.TYPE_CHECKING:
-    from tp.common.nodegraph.core.scene import Scene
+    from tp.common.nodegraph.core.graph import NodeGraph
     from tp.tools.rig.noddle.builder.window import NoddleBuilderWindow
 
 logger = log.tpLogger
@@ -27,11 +27,11 @@ class EditMenu(qt.QMenu):
         self.setTearOffEnabled(True)
 
     @property
-    def scene(self) -> Scene | None:
+    def graph(self) -> NodeGraph | None:
         editor = self._main_window.current_editor
         if not editor:
             return None
-        return editor.scene
+        return editor.graphics_scene.graph
 
     def _setup_actions(self):
         """
@@ -98,26 +98,26 @@ class EditMenu(qt.QMenu):
         Internal function that updates enable status of menu actions.
         """
 
-        is_scene_set = self.scene is not None
-        self._rename_selected_node_action.setEnabled(is_scene_set)
-        self._regenerate_uuids_action.setEnabled(is_scene_set)
-        self._undo_action.setEnabled(is_scene_set)
-        self._redo_action.setEnabled(is_scene_set)
-        self._copy_action.setEnabled(is_scene_set)
-        self._cut_action.setEnabled(is_scene_set)
-        self._paste_action.setEnabled(is_scene_set)
-        self._delete_action.setEnabled(is_scene_set)
+        is_graph_set = self.graph is not None
+        self._rename_selected_node_action.setEnabled(is_graph_set)
+        self._regenerate_uuids_action.setEnabled(is_graph_set)
+        self._undo_action.setEnabled(is_graph_set)
+        self._redo_action.setEnabled(is_graph_set)
+        self._copy_action.setEnabled(is_graph_set)
+        self._cut_action.setEnabled(is_graph_set)
+        self._paste_action.setEnabled(is_graph_set)
+        self._delete_action.setEnabled(is_graph_set)
 
     def _on_rename_selected_node_action_triggered(self):
         """
         Internal callback function that is called each time Rename Selected Node action is triggered by the user.
         """
 
-        if self.scene is None:
+        if self.graph is None:
             return
 
         try:
-            self.scene.rename_selected_node()
+            self.graph.rename_selected_node()
         except Exception:
             logger.exception('Node rename exception', exc_info=True)
 
@@ -126,11 +126,11 @@ class EditMenu(qt.QMenu):
         Internal callback function that is called each time Regenerate UUIDs action is triggered by the user.
         """
 
-        if self.scene is None:
+        if self.graph is None:
             return
 
         try:
-            self.scene.regenerate_uuids()
+            self.graph.regenerate_uuids()
         except Exception:
             logger.exception('Regenerate UUIDs exception', exc_info=True)
 
@@ -139,11 +139,11 @@ class EditMenu(qt.QMenu):
         Internal callback function that is called each time Undo action is triggered by the user.
         """
 
-        if self.scene is None:
+        if self.graph is None:
             return
 
         try:
-            self.scene.history.undo()
+            self.graph.history.undo()
             self._main_window.refresh_variables()
         except Exception:
             logger.exception('Undo exception', exc_info=True)
@@ -153,11 +153,11 @@ class EditMenu(qt.QMenu):
         Internal callback function that is called each time Redo action is triggered by the user.
         """
 
-        if self.scene is None:
+        if self.graph is None:
             return
 
         try:
-            self.scene.history.redo()
+            self.graph.history.redo()
             self._main_window.refresh_variables()
         except Exception:
             logger.exception('Redo exception', exc_info=True)
@@ -167,37 +167,37 @@ class EditMenu(qt.QMenu):
         Internal callback function that is called each time Copy action is triggered by the user.
         """
 
-        if self.scene is None:
+        if self.graph is None:
             return
 
-        self.scene.copy_selected()
+        self.graph.copy_selected()
 
     def _on_cut_action_triggered(self):
         """
         Internal callback function that is called each time Cut action is triggered by the user.
         """
 
-        if self.scene is None:
+        if self.graph is None:
             return
 
-        self.scene.cut_selected()
+        self.graph.cut_selected()
 
     def _on_paste_action_triggered(self):
         """
         Internal callback function that is called each time Paste action is triggered by the user.
         """
 
-        if self.scene is None:
+        if self.graph is None:
             return
 
-        self.scene.paste_from_clipboard()
+        self.graph.paste_from_clipboard()
 
     def _on_delete_action_triggered(self):
         """
         Internal callback function that is called each time Delete action is triggered by the user.
         """
 
-        if self.scene is None:
+        if self.graph is None:
             return
 
-        self.scene.delete_selected()
+        self.graph.delete_selected()

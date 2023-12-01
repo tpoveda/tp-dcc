@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import typing
 
+from tp.common.nodegraph.core import consts
+
 if typing.TYPE_CHECKING:
     from tp.common.nodegraph.core.node import BaseNode
 
@@ -15,8 +17,29 @@ class NodeGraphModel:
         super().__init__()
 
         self.nodes: dict[str, BaseNode] = {}
+        self.layout_direction = consts.LayoutDirection.Horizontal.value
 
         self._common_node_properties: dict[str, dict] = {}
+
+    def common_properties(self) -> dict:
+        """
+        Returns all common node properties.
+
+        :return: common node properties.
+        """
+
+        return self._common_node_properties
+
+    def node_common_properties(self, node_type: int | str) -> dict | None:
+        """
+        Returns all the common properties for the registered node.
+
+        :param str or int node_type: node type to get common properties of.
+        :return: dictionary of node common properties.
+        :rtype: dict or None
+        """
+
+        return self._common_node_properties.get(node_type)
 
     def set_node_common_properties(self, node_attributes: dict):
         """

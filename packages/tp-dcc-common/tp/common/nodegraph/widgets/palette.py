@@ -15,8 +15,7 @@ from tp.common.nodegraph import registers
 from tp.common.nodegraph.core import edge
 
 if typing.TYPE_CHECKING:
-    from tp.common.nodegraph.core.scene import Scene
-    from tp.common.nodegraph.editor import NodeEditor
+    from tp.common.nodegraph.core.graph import NodeGraph
     from tp.common.nodegraph.graphics.view import GraphicsView
 
 logger = log.rigLogger
@@ -280,7 +279,7 @@ class PopupNodesPalette(qt.QDialog):
         super().__init__(parent=parent or view)
 
         self._view = view
-        self._scene: Scene = self._view.graphics_scene.scene
+        self._graph: NodeGraph = self._view.graphics_scene.graph
         self._nodes_palette: NodesPalette | None = None
 
         self.setWindowFlags(qt.Qt.FramelessWindowHint | qt.Qt.Dialog)
@@ -358,7 +357,7 @@ class PopupNodesPalette(qt.QDialog):
 
         node_id = item.data(0, NodesTreeWidget.NODE_ID_ROLE)
         json_data = item.data(0, NodesTreeWidget.JSON_DATA_ROLE)
-        new_node = self._scene.spawn_node_from_data(node_id, json_data, self._view.last_scene_mouse_pos)
+        new_node = self._graph.spawn_node_from_data(node_id, json_data, self._view.last_scene_mouse_pos)
         if not new_node:
             logger.warning('Was not possible to create node!')
             self.close()
@@ -373,7 +372,7 @@ class PopupNodesPalette(qt.QDialog):
             if not socket_to_connect:
                 socket_to_connect = new_node.find_first_input_of_datatype(start_socket.data_type)
             if start_node._exec_out_socket and not start_node._exec_out_socket.has_edge() and new_node._exec_in_socket:
-                edge.Edge(self._scene, start_socket=start_node._exec_out_socket, end_socket=new_node._exec_in_socket)
+                edge.Edge(self._graph, start_socket=start_node._exec_out_socket, end_socket=new_node._exec_in_socket)
             self._view.dragging.end_edge_drag(socket_to_connect)
         # Input -> Output
         elif self.is_dragging_from_input():
@@ -383,7 +382,7 @@ class PopupNodesPalette(qt.QDialog):
             if not socket_to_connect:
                 socket_to_connect = new_node.find_first_output_of_datatype(end_socket.data_type)
             if end_node._exec_in_socket and not end_node._exec_in_socket.has_edge() and new_node._exec_out_socket:
-                edge.Edge(self._scene, start_socket=new_node._exec_out_socket, end_socket=end_node._exec_in_socket)
+                edge.Edge(self._graph, start_socket=new_node._exec_out_socket, end_socket=end_node._exec_in_socket)
             self._view.dragging.end_edge_drag(socket_to_connect)
         self.close()
 

@@ -280,7 +280,7 @@ class GraphicsNode(BaseGraphicsNode):
         super().mouseReleaseEvent(event)
         if self._was_moved:
             self._was_moved = False
-            self.node.scene.history.store_history('Node moved', set_modified=True)
+            self.node.graph.history.store_history('Node moved', set_modified=True)
 
     @override
     def paint(

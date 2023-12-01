@@ -6,16 +6,16 @@ from tp.common.nodegraph.core import edge, serializer
 
 
 if typing.TYPE_CHECKING:
-    from tp.common.nodegraph.core.scene import Scene
+    from tp.common.nodegraph.core.graph import NodeGraph
     from tp.common.nodegraph.core.node import Node
     from tp.common.nodegraph.core.socket import Socket
 
 
 class SceneClipboard:
-    def __init__(self, scene: Scene):
+    def __init__(self, graph: NodeGraph):
         super().__init__()
 
-        self._scene = scene
+        self._graph = graph
 
     def serialize_selected(self, delete: bool = False) -> dict:
         """
@@ -28,10 +28,10 @@ class SceneClipboard:
 
         selected_nodes: list[dict] = []
         selected_sockets: dict[str, Socket] = {}
-        selected_edges: list[edge.Edge] = self._scene.selected_edges
+        selected_edges: list[edge.Edge] = self._graph.selected_edges
 
         # Sort edges and nodes
-        for node in self._scene.selected_nodes:
+        for node in self._graph.selected_nodes:
             selected_nodes.append(serializer.serialize_node(node))
             for input_socket in node.inputs:
                 selected_sockets[input_socket.uuid] = input_socket
@@ -56,8 +56,8 @@ class SceneClipboard:
         }
 
         if delete:
-            self._scene.delete_selected(store_history=False)
-            self._scene.history.store_history('Cut items', set_modified=True)
+            self._graph.delete_selected(store_history=False)
+            self._graph.history.store_history('Cut items', set_modified=True)
 
         return data
 
@@ -73,7 +73,7 @@ class SceneClipboard:
         hashmap = {}
 
         # Calculate mouse pointer - paste position
-        view = self._scene.view
+        view = self._graph.view
         mouse_scene_pos = view.last_scene_mouse_pos
         mouse_x, mouse_y = mouse_scene_pos.x(), mouse_scene_pos.y()
 
@@ -89,8 +89,8 @@ class SceneClipboard:
         created_nodes: list[Node] = []
         # Create each node
         for node_data in data['nodes']:
-            node_class = self._scene.class_from_node_data(node_data)
-            new_node = node_class(self._scene)      # type: Node
+            node_class = self._graph.class_from_node_data(node_data)
+            new_node = node_class(self._graph)      # type: Node
             serializer.deserialize_node(new_node, node_data, hashmap, restore_id=False)
             created_nodes.append(new_node)
 
@@ -101,9 +101,9 @@ class SceneClipboard:
 
         # Create each edge
         for edge_data in data['edges']:
-            new_edge = edge.Edge(self._scene)
+            new_edge = edge.Edge(self._graph)
             serializer.deserialize_edge(new_edge, edge_data, hashmap, restore_id=False)
 
-        self._scene.history.store_history('Paste items', set_modified=True)
+        self._graph.history.store_history('Paste items', set_modified=True)
 
         return created_nodes

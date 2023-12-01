@@ -10,7 +10,7 @@ from tp.common.nodegraph import registers
 
 
 if typing.TYPE_CHECKING:
-    from tp.common.nodegraph.core.scene import Scene
+    from tp.common.nodegraph.core.graph import NodeGraph
     from tp.common.nodegraph.nodes.node_getset import GetNode, SetNode
 
 logger = log.tpLogger
@@ -22,17 +22,17 @@ class SceneVars:
         valueChanged = qt.Signal(str)
         dataTypeChanged = qt.Signal(str)
 
-    def __init__(self, scene: Scene):
+    def __init__(self, graph: NodeGraph):
         super().__init__()
 
-        self._scene = scene
+        self._graph = graph
         self._signals = SceneVars.Signals()
         self._vars = {}
         self._setup_signals()
 
     @property
-    def scene(self) -> Scene:
-        return self._scene
+    def graph(self) -> NodeGraph:
+        return self._graph
 
     @property
     def signals(self) -> Signals:
@@ -68,7 +68,7 @@ class SceneVars:
 
         name = self.unique_variable_name(name)
         self._vars[name] = [0.0, 'NUMERIC']
-        self.scene.history.store_history(f'Added variable {name}')
+        self.graph.history.store_history(f'Added variable {name}')
 
     def rename_variable(self, old_name: str, new_name: str):
         """
@@ -84,7 +84,7 @@ class SceneVars:
             [(new_name, old_value) if k == old_name else (k, v) for k, v in self._vars.items()])
         for node in self.list_setters(old_name) + self.list_getters(old_name):
             node.set_var_name(new_name)
-        self.scene.history.store_history(f'Renamed variable {old_name} -> {new_name}')
+        self.graph.history.store_history(f'Renamed variable {old_name} -> {new_name}')
 
     def delete_variable(self, name: str):
         """
@@ -99,7 +99,7 @@ class SceneVars:
         for node in self.list_setters(name) + self.list_getters(name):
             node.set_invalid(True)
         self._vars.pop(name)
-        self.scene.history.store_history(f'Deleted variable: {name}')
+        self.graph.history.store_history(f'Deleted variable: {name}')
 
     def value(self, name: str) -> Any:
         """
@@ -147,7 +147,7 @@ class SceneVars:
         self._vars[name][0] = registers.DATA_TYPES_REGISTER[type_name]['default']
         self._vars[name][1] = type_name
         self.signals.dataTypeChanged.emit(name)
-        self.scene.history.store_history(f'Variable {name} data type changed to {type_name}')
+        self.graph.history.store_history(f'Variable {name} data type changed to {type_name}')
 
     def list_getters(self, var_name: str) -> list[GetNode]:
         """
@@ -158,7 +158,7 @@ class SceneVars:
         :rtype: list[GetNode]
         """
 
-        return [getter_node for getter_node in self.scene.nodes if getter_node.ID == 103
+        return [getter_node for getter_node in self.graph.nodes if getter_node.ID == 103
                 and getter_node.var_name == var_name]
 
     def update_getters(self, var_name: str):
@@ -183,7 +183,7 @@ class SceneVars:
         :rtype: list[SetNode]
         """
 
-        return [setter_node for setter_node in self.scene.nodes if setter_node.ID == 104
+        return [setter_node for setter_node in self.graph.nodes if setter_node.ID == 104
                 and setter_node.var_name == var_name]
 
     def update_setters(self, var_name: str):

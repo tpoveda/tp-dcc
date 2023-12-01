@@ -8,15 +8,15 @@ from overrides import override
 from tp.common.qt import api as qt
 
 if typing.TYPE_CHECKING:
-    from tp.common.nodegraph.core.scene import Scene
+    from tp.common.nodegraph.core.graph import NodeGraph
     from tp.common.nodegraph.graphics.view import GraphicsView
 
 
 class GraphicsScene(qt.QGraphicsScene):
-    def __init__(self, scene: Scene, parent: qt.QWidget | None = None):
+    def __init__(self, graph: NodeGraph, parent: qt.QWidget | None = None):
         super().__init__(parent=parent)
 
-        self._scene = scene
+        self._graph = graph
 
         self._grid_size = 20
         self._grid_squares = 5
@@ -33,8 +33,8 @@ class GraphicsScene(qt.QGraphicsScene):
         self.setBackgroundBrush(self._color_background)
 
     @property
-    def scene(self) -> Scene:
-        return self._scene
+    def graph(self) -> NodeGraph:
+        return self._graph
 
     @override
     def dragMoveEvent(self, event: qt.QGraphicsSceneDragDropEvent) -> None:

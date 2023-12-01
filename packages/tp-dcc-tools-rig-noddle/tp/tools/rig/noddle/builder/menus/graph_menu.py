@@ -7,7 +7,7 @@ from tp.common.resources import api as resources
 from tp.common.nodegraph.core import edge
 
 if typing.TYPE_CHECKING:
-    from tp.common.nodegraph.core.scene import Scene
+    from tp.common.nodegraph.core.graph import NodeGraph
     from tp.tools.rig.noddle.builder.window import NoddleBuilderWindow
     from tp.common.nodegraph.core.executor import GraphExecutor
 
@@ -29,12 +29,12 @@ class GraphMenu(qt.QMenu):
     @property
     def executor(self) -> GraphExecutor | None:
         editor = self._main_window.current_editor
-        return editor.scene.executor if editor else None
+        return editor.executor if editor else None
 
     @property
-    def scene(self) -> Scene:
+    def graph(self) -> NodeGraph:
         editor = self._main_window.current_editor
-        return editor.scene if editor else None
+        return editor.graphics_scene.graph if editor else None
 
     def _setup_actions(self):
         """
@@ -107,7 +107,7 @@ class GraphMenu(qt.QMenu):
         Internal function that updates the enable state of actions for this menu.
         """
 
-        is_scene_set = self.scene is not None
+        is_scene_set = self.graph is not None
         self._scene_edge_type_menu.setEnabled(is_scene_set)
         self._reset_stepped_execution.setEnabled(is_scene_set)
         self._execute_step_action.setEnabled(is_scene_set)
@@ -128,11 +128,11 @@ class GraphMenu(qt.QMenu):
         self._edge_type_direct_action.setEnabled(True)
         self._edge_type_bezier_action.setEnabled(True)
         self._edge_type_square_action.setEnabled(True)
-        if self.scene.edge_type == edge.Edge.Type.DIRECT:
+        if self.graph.edge_type == edge.Edge.Type.DIRECT:
             self._edge_type_direct_action.setChecked(True)
-        if self.scene.edge_type == edge.Edge.Type.BEZIER:
+        if self.graph.edge_type == edge.Edge.Type.BEZIER:
             self._edge_type_bezier_action.setChecked(True)
-        if self.scene.edge_type == edge.Edge.Type.SQUARE:
+        if self.graph.edge_type == edge.Edge.Type.SQUARE:
             self._edge_type_square_action.setChecked(True)
 
     def _on_edge_type_direct_action_toggled(self, state: bool):
@@ -144,7 +144,7 @@ class GraphMenu(qt.QMenu):
 
         if not self._main_window.current_editor or not state:
             return
-        self.scene.edge_type = edge.Edge.Type.DIRECT
+        self.graph.edge_type = edge.Edge.Type.DIRECT
 
     def _on_edge_type_bezier_action_toggled(self, state: bool):
         """
@@ -155,7 +155,7 @@ class GraphMenu(qt.QMenu):
 
         if not self._main_window.current_editor or not state:
             return
-        self.scene.edge_type = edge.Edge.Type.BEZIER
+        self.graph.edge_type = edge.Edge.Type.BEZIER
 
     def _on_edge_type_square_action_toggled(self, state: bool):
         """
@@ -166,7 +166,7 @@ class GraphMenu(qt.QMenu):
 
         if not self._main_window.current_editor or not state:
             return
-        self.scene.edge_type = edge.Edge.Type.SQUARE
+        self.graph.edge_type = edge.Edge.Type.SQUARE
 
     def _on_reset_stepped_action_triggered(self):
         """

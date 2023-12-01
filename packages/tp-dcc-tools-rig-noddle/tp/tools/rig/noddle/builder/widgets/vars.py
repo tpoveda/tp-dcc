@@ -12,8 +12,8 @@ from tp.common.resources import api as resources
 from tp.common.nodegraph import registers
 
 if typing.TYPE_CHECKING:
-    from tp.common.nodegraph.core.scene import Scene
     from tp.common.nodegraph.core.vars import SceneVars
+    from tp.common.nodegraph.core.graph import NodeGraph
     from tp.tools.rig.noddle.builder.window import NoddleBuilderWindow
     from tp.tools.rig.noddle.builder.widgets.attributeseditor import AttributesEditor
 
@@ -39,7 +39,7 @@ class SceneVarsWidget(qt.QWidget):
 
     @property
     def scene_vars(self) -> SceneVars | None:
-        return self._main_window.current_editor.scene.vars if self._main_window.current_editor else None
+        return self._main_window.current_editor.vars if self._main_window.current_editor else None
 
     @property
     def attributes_editor(self) -> AttributesEditor:
@@ -225,11 +225,11 @@ class VarAttributeWidget(qt.QGroupBox):
 
     dataTypeSwitched = qt.Signal(qt.QListWidgetItem, str)
 
-    def __init__(self, list_item: qt.QListWidgetItem, scene: Scene, parent: qt.QWidget | None = None):
+    def __init__(self, list_item: qt.QListWidgetItem, graph: NodeGraph, parent: qt.QWidget | None = None):
         super().__init__(parent=parent)
 
         self._list_item = list_item
-        self._scene = scene
+        self._graph = graph
         self._value_widget: qt.QWidget | None = None
 
         json_data = self._list_item.data(VarsListWidget.JSON_DATA_ROLE)
@@ -245,9 +245,9 @@ class VarAttributeWidget(qt.QGroupBox):
         Internal function that creates all UI widgets.
         """
 
-        var_data_type_name = self._scene.vars.data_type(self._var_name, as_dict=False)
-        var_data_type = self._scene.vars.data_type(self._var_name, as_dict=True)
-        var_value = self._scene.vars.value(self._var_name)
+        var_data_type_name = self._graph.vars.data_type(self._var_name, as_dict=False)
+        var_data_type = self._graph.vars.data_type(self._var_name, as_dict=True)
+        var_value = self._graph.vars.value(self._var_name)
 
         self._data_type_combo = qt.combobox()
         types_list = list(registers.DATA_TYPES_REGISTER.keys())
@@ -294,11 +294,11 @@ class VarAttributeWidget(qt.QGroupBox):
         self._data_type_combo.currentTextChanged.connect(self._on_data_type_combo_current_text_changed)
         if self._value_widget is not None:
             if isinstance(self._value_widget, qt.QLineEdit):
-                self._value_widget.textChanged.connect(lambda text: self._scene.vars.set_value(self._var_name, text))
+                self._value_widget.textChanged.connect(lambda text: self._graph.vars.set_value(self._var_name, text))
             elif isinstance(self._value_widget, qt.QAbstractSpinBox):
-                self._value_widget.valueChanged.connect(lambda value: self._scene.vars.set_value(self._var_name, value))
+                self._value_widget.valueChanged.connect(lambda value: self._graph.vars.set_value(self._var_name, value))
             elif isinstance(self._value_widget, qt.QCheckBox):
-                self._value_widget.toggled.connect(lambda state: self._scene.vars.set_value(self._var_name, state))
+                self._value_widget.toggled.connect(lambda state: self._graph.vars.set_value(self._var_name, state))
 
     def _on_data_type_combo_current_text_changed(self, type_name: str):
         """
@@ -307,5 +307,5 @@ class VarAttributeWidget(qt.QGroupBox):
         :param str type_name: type name.
         """
 
-        self._scene.vars.set_data_type(self._var_name, type_name)
+        self._graph.vars.set_data_type(self._var_name, type_name)
         self.dataTypeSwitched.emit(self._list_item, self._var_name)

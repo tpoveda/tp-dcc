@@ -10,7 +10,7 @@ from tp.preferences.interfaces import noddle
 from tp.common.nodegraph.core import serializer
 
 if typing.TYPE_CHECKING:
-    from tp.common.nodegraph.core.scene import Scene
+    from tp.common.nodegraph.core.graph import NodeGraph
 
 logger = log.rigLogger
 
@@ -23,10 +23,10 @@ class SceneHistory:
         changed = qt.Signal()
         stepChanged = qt.Signal(int)
 
-    def __init__(self, scene: Scene):
+    def __init__(self, graph: NodeGraph):
         super().__init__()
 
-        self._scene = scene
+        self._graph = graph
         self._prefs = noddle.noddle_interface()
         self._signals = SceneHistory.Signals()
         self._enabled = self._prefs.builder_history_enabled()
@@ -68,12 +68,12 @@ class SceneHistory:
 
         def _create_stamp():
             selection = {
-                'nodes': [node.uuid for node in self._scene.selected_nodes],
-                'edges': [edge.uuid for edge in self._scene.selected_edges]
+                'nodes': [node.uuid for node in self._graph.selected_nodes],
+                'edges': [edge.uuid for edge in self._graph.selected_edges]
             }
             return {
                 'desc': description,
-                'snapshot': serializer.serialize_scene(self._scene),
+                'snapshot': serializer.serialize_graph(self._graph),
                 'selection': selection
             }
 
@@ -96,7 +96,7 @@ class SceneHistory:
             set_modified = False
 
         if set_modified:
-            self._scene.has_been_modified = True
+            self._graph.has_been_modified = True
 
         self._signals.changed.emit()
         self._signals.stepChanged.emit(self._current_step)
@@ -133,6 +133,9 @@ class SceneHistory:
             logger.info(f'> Undo {self._stack[self._current_step]["desc"]}')
             self._current_step -= 1
             self.restore_history()
+
+            print(self._graph.model.nodes)
+
             self.signals.stepChanged.emit(self._current_step)
         else:
             logger.warning('No more steps to undo')
@@ -161,7 +164,7 @@ class SceneHistory:
         self._enabled = False
         try:
             self._restore_stamp(self._stack[self._current_step])
-            self._scene.has_been_modified = True
+            self._graph.has_been_modified = True
         finally:
             self._enabled = True
 
@@ -181,15 +184,15 @@ class SceneHistory:
         """
 
         try:
-            serializer.deserialize_scene(self._scene, stamp['snapshot'])
-            self._scene.graphics_scene.clearSelection()
+            serializer.deserialize_graph(self._graph, stamp['snapshot'])
+            self._graph.graphics_scene.clearSelection()
             for edge_uid in stamp['selection']['edges']:
-                for edge in self._scene.edges:
+                for edge in self._graph.edges:
                     if edge.uuid == edge_uid:
                         edge.graphics_edge.setSelected(True)
                         break
             for node_uid in stamp['selection']['nodes']:
-                for node in self._scene.nodes:
+                for node in self._graph.nodes:
                     if node.uuid == node_uid:
                         node.graphics_node.setSelected(True)
                     break

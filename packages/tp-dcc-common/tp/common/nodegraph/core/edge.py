@@ -9,7 +9,7 @@ from tp.common.nodegraph.core import socket
 from tp.common.nodegraph.graphics import edge
 
 if typing.TYPE_CHECKING:
-    from tp.common.nodegraph.core.scene import Scene
+    from tp.common.nodegraph.core.graph import NodeGraph
 
 logger = log.rigLogger
 
@@ -22,12 +22,12 @@ class Edge:
         SQUARE = edge.GraphicsEdgeSquare
 
     def __init__(
-            self, scene: Scene, start_socket: socket.Socket | None = None, end_socket: socket.Socket | None = None,
+            self, graph: NodeGraph, start_socket: socket.Socket | None = None, end_socket: socket.Socket | None = None,
             silent: bool = False):
         super().__init__()
 
         self._uuid = str(uuid.uuid4())
-        self._scene = scene
+        self._graph = graph
         self._start_socket: socket.Socket | None = None
         self._end_socket: socket.Socket | None = None
         self._graphics_edge: edge.GraphicsEdge | None = None
@@ -35,7 +35,7 @@ class Edge:
         self.set_start_socket(start_socket, silent=silent)
         self.set_end_socket(end_socket, silent=silent)
         self.update_edge_graphics_type()
-        self._scene.add_edge(self)
+        self._graph.add_edge(self)
 
     def __str__(self) -> str:
         return f'<{self.__class__.__name__} {hex(id(self))[2:5]}..{hex(id(self))[-3]}>'
@@ -81,10 +81,10 @@ class Edge:
             self._edge_type = Edge.Type.BEZIER
 
         if hasattr(self, '_graphics_edge') and self._graphics_edge is not None:
-            self._scene.graphics_scene.removeItem(self._graphics_edge)
+            self._graph.graphics_scene.removeItem(self._graphics_edge)
 
         self._graphics_edge = self._edge_type.value(self)
-        self._scene.graphics_scene.addItem(self._graphics_edge)
+        self._graph.graphics_scene.addItem(self._graphics_edge)
         if self.start_socket or self.end_socket:
             self.update_positions()
 
@@ -179,7 +179,7 @@ class Edge:
         Internal function that forces the update of the graphics type.
         """
 
-        self.edge_type = self._scene.edge_type
+        self.edge_type = self._graph.edge_type
 
     def remove_from_sockets(self, silent: bool = False):
         """
@@ -199,7 +199,7 @@ class Edge:
         """
 
         self.remove_from_sockets(silent=silent)
-        self._scene.graphics_scene.removeItem(self._graphics_edge)
+        self._graph.graphics_scene.removeItem(self._graphics_edge)
         self._graphics_edge = None
-        if self in self._scene.edges:
-            self._scene.remove_edge(self)
+        if self in self._graph.edges:
+            self._graph.remove_edge(self)

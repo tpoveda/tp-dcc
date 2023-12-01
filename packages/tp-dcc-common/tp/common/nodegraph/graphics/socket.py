@@ -89,7 +89,7 @@ class GraphicsSocket(qt.QGraphicsItem):
             self, painter: qt.QPainter, option: qt.QStyleOptionGraphicsItem,
             widget: Union[qt.QWidget, None] = ...) -> None:
 
-        zoom = self.socket.node.scene.view.zoom_value()
+        zoom = self.socket.node.graph.view.zoom_value()
         self.text_item.setVisible(zoom > self.TEXT_ZOOM_OUT_LIMIT)
         if zoom < self.SOCKET_ZOOM_OUT_LIMIT:
             return

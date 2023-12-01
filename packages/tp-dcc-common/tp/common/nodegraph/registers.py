@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import typing
 import numbers
 from typing import Any, Callable
 
@@ -9,6 +10,9 @@ from tp.common.qt import api as qt
 from tp.common.python import modules
 
 logger = log.rigLogger
+
+if typing.TYPE_CHECKING:
+    from tp.common.nodegraph.core.node import BaseNode
 
 
 DATA_TYPES_REGISTER = {}
@@ -98,6 +102,7 @@ def node_class_from_id(node_id: int) -> type:
 
     :param int node_id: node ID.
     :return: node class.
+    :rtype: type
     :raises NodeIDNotFoundError: if given node ID was not found within register.
     """
 

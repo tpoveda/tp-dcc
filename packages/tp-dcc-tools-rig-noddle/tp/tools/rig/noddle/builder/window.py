@@ -250,11 +250,11 @@ class NoddleBuilderWindow(qt.FramelessWindow):
         new_editor_widget = new_editor.widget()
         sub_window = self._mdi_area.addSubWindow(new_editor_widget)
         self._editor_map[sub_window] = new_editor
-        new_editor.scene.signals.fileNameChanged.connect(self._update_title)
-        new_editor.scene.signals.modified.connect(self._update_title)
-        new_editor.scene.signals.itemSelected.connect(self._attributes_editor.update_current_node_widget)
-        new_editor.scene.signals.itemsDeselected.connect(self._attributes_editor.clear)
-        new_editor.scene.signals.fileLoadFinished.connect(self._vars_widget.refresh)
+        new_editor.fileNameChanged.connect(self._update_title)
+        new_editor.modified.connect(self._update_title)
+        new_editor.itemSelected.connect(self._attributes_editor.update_current_node_widget)
+        new_editor.itemsDeselected.connect(self._attributes_editor.clear)
+        new_editor.fileLoadFinished.connect(self._vars_widget.refresh)
         new_editor_widget.aboutToClose.connect(self._on_sub_window_close)
 
         return sub_window

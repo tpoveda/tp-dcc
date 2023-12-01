@@ -11,7 +11,7 @@ if typing.TYPE_CHECKING:
     from tp.common.nodegraph.core.socket import Socket, OutputSocket, InputSocket
     from tp.common.nodegraph.core.node import Node
     from tp.common.nodegraph.core.vars import SceneVars
-    from tp.common.nodegraph.core.scene import Scene
+    from tp.common.nodegraph.core.graph import NodeGraph
 
 
 logger = log.tpLogger
@@ -138,24 +138,24 @@ def deserialize_edge(edge_instance: edge.Edge, data: dict, hashmap: dict | None 
     edge_instance.update_edge_graphics_type()
 
 
-def serialize_scene(scene_to_serialize: Scene) -> dict:
+def serialize_graph(graph_to_serialize: NodeGraph) -> dict:
     nodes: list[dict] = []
     edges: list[dict] = []
-    for n in scene_to_serialize.nodes:
+    for n in graph_to_serialize.nodes:
         nodes.append(serialize_node(n))
-    for e in scene_to_serialize.edges:
+    for e in graph_to_serialize.edges:
         if not e.start_socket or not e.end_socket:
             continue
         edges.append(serialize_edge(e))
 
     return {
-        'id': scene_to_serialize.uuid,
-        'vars': serialize_vars(scene_to_serialize.vars),
-        'scene_width': scene_to_serialize._scene_width,
-        'scene_height': scene_to_serialize._scene_height,
+        'id': graph_to_serialize.uuid,
+        'vars': serialize_vars(graph_to_serialize.vars),
+        'scene_width': graph_to_serialize._scene_width,
+        'scene_height': graph_to_serialize._scene_height,
         'nodes': nodes,
         'edges': edges,
-        'edge_type': scene_to_serialize.edge_type.name
+        'edge_type': graph_to_serialize.edge_type.name
     }
 
 
@@ -180,17 +180,17 @@ def deserialize_vars(vars_instance: SceneVars, data: dict):
     vars_instance.vars.update(data)
 
 
-def deserialize_scene(scene_instance: Scene, data: dict, hashmap: dict | None = None, restore_id: bool = True):
+def deserialize_graph(graph_instance: NodeGraph, data: dict, hashmap: dict | None = None, restore_id: bool = True):
     hashmap = hashmap or {}
 
     if restore_id:
-        scene_instance.uuid = data['id']
+        graph_instance.uuid = data['id']
 
     # Deserialize variables
-    deserialize_vars(scene_instance.vars, data.get('vars', {}))
+    deserialize_vars(graph_instance.vars, data.get('vars', {}))
 
     # Deserialize nodes
-    all_nodes = scene_instance.nodes[:]
+    all_nodes = graph_instance.nodes[:]
     for node_data in data['nodes']:
         found = False
         for scene_node in all_nodes:
@@ -198,7 +198,7 @@ def deserialize_scene(scene_instance: Scene, data: dict, hashmap: dict | None = 
                 found = scene_node
                 break
         if not found:
-            new_node = scene_instance.class_from_node_data(node_data)(scene_instance)
+            new_node = graph_instance.class_from_node_data(node_data)(graph_instance)
             deserialize_node(new_node, node_data, hashmap, restore_id=restore_id)
         else:
             deserialize_node(found, node_data, hashmap, restore_id=restore_id)
@@ -208,7 +208,7 @@ def deserialize_scene(scene_instance: Scene, data: dict, hashmap: dict | None = 
         node_to_remove.remove()
 
     # Deserialize edges
-    all_edges = scene_instance.edges[:]
+    all_edges = graph_instance.edges[:]
     for edge_data in data['edges']:
         found = False
         for scene_edge in all_edges:
@@ -216,7 +216,7 @@ def deserialize_scene(scene_instance: Scene, data: dict, hashmap: dict | None = 
                 found = scene_edge
                 break
         if not found:
-            new_edge = edge.Edge(scene_instance)
+            new_edge = edge.Edge(graph_instance)
             deserialize_edge(new_edge, edge_data, hashmap, restore_id)
         else:
             deserialize_edge(found, edge_data, hashmap, restore_id)
@@ -224,10 +224,10 @@ def deserialize_scene(scene_instance: Scene, data: dict, hashmap: dict | None = 
     while all_edges:
         edge_to_delete = all_edges.pop()
         try:
-            scene_instance.edges.index(edge_to_delete)
+            graph_instance.edges.index(edge_to_delete)
         except ValueError:
             continue
         edge_to_delete.remove()
 
     # Set edge type
-    scene_instance.edge_type = data.get('edge_type', edge.Edge.Type.BEZIER)
+    graph_instance.edge_type = data.get('edge_type', edge.Edge.Type.BEZIER)

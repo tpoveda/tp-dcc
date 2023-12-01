@@ -19,12 +19,12 @@ class FunctionNode(api.NoddleNode):
     DEFAULT_TITLE = 'Function'
     CATEGORY = 'INTERNAL'
 
-    def __init__(self, scene: api.Scene, title: str | None = None):
+    def __init__(self, graph: api.NodeGraph):
 
         self._func_signature = ''
         self._func_desc = {}
 
-        super().__init__(scene=scene, title=title)
+        super().__init__(graph)
 
     @property
     def func_signature(self) -> str:

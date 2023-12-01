@@ -1,7 +1,7 @@
 from tp.core import dcc
 
 from tp.common.nodegraph.api import (
-    dt, DataType, DATA_TYPES_REGISTER, function_from_signature, Scene, InputSocket, OutputSocket, NoddleNode
+    dt, DataType, DATA_TYPES_REGISTER, function_from_signature, NodeGraph, InputSocket, OutputSocket, NoddleNode
 )
 
 if dcc.is_maya():

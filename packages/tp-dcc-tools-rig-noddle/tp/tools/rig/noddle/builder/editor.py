@@ -43,7 +43,7 @@ class NodeEditor(graph.NodeGraph):
             None, 'Save build graph to file', asset.Asset.get().new_build_path, rig_filter)[0]
         if not file_path:
             return False
-        self.scene.save_to_file(file_path)
+        self.save_to_file(file_path)
         return True
 
     @override
@@ -66,7 +66,7 @@ class NodeEditor(graph.NodeGraph):
         if not file_path:
             return False
 
-        self.scene.load_from_file(file_path)
+        self.load_from_file(file_path)
 
         return True
 

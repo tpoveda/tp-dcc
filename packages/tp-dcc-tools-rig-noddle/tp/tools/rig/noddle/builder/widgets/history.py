@@ -28,7 +28,7 @@ class SceneHistoryWidget(qt.QListWidget):
             self._tracked_history = None
             return
 
-        self._tracked_history = current_editor.scene.history
+        self._tracked_history = current_editor.history
         self._tracked_history.signals.changed.connect(self._update_view)
         self._tracked_history.signals.stepChanged.connect(self._update_current_step)
 

@@ -18,11 +18,9 @@ class VarNode(api.NoddleNode):
     DEFAULT_TITLE = ''
     CATEGORY = 'INTERNAL'
 
-    def __init__(self, scene: api.Scene, title: str | None = None):
-
+    def __init__(self, graph: api.NodeGraph):
         self._var_name = ''
-
-        super().__init__(scene=scene, title=title)
+        super().__init__(graph)
 
     @property
     def var_name(self) -> str:
@@ -37,7 +35,7 @@ class VarNode(api.NoddleNode):
         """
 
         self._var_name = name
-        var_exists = name in self.scene.vars._vars.keys()
+        var_exists = name in self.graph.vars._vars.keys()
         self.set_invalid(not var_exists)
         if not var_exists:
             logger.warning(f'Variable "{name}" no longer exists.')
@@ -56,7 +54,7 @@ class VarNode(api.NoddleNode):
         """
 
         try:
-            return self.scene.vars.value(self._var_name)
+            return self.graph.vars.value(self._var_name)
         except KeyError:
             return None
 
@@ -68,7 +66,7 @@ class VarNode(api.NoddleNode):
         """
 
         try:
-            self.scene.vars.set_value(self._var_name, value)
+            self.graph.vars.set_value(self._var_name, value)
         except KeyError:
             logger.error(f'Variable "{self._var_name}" does not exist!')
             raise
@@ -84,7 +82,7 @@ class VarNode(api.NoddleNode):
     @override
     def verify(self) -> bool:
         result = super().verify()
-        if self._var_name not in self.scene.vars._vars.keys():
+        if self._var_name not in self.graph.vars._vars.keys():
             self.append_tooltip(f'Variable "{self._var_name}" does not exist')
             result = False
 
@@ -120,13 +118,13 @@ class GetNode(VarNode):
         super().setup_sockets()
 
         self.out_value = self.add_output(
-            self.scene.vars.data_type(self.var_name, as_dict=True),
-            value=self.scene.vars.value(self.var_name))
+            self.graph.vars.data_type(self.var_name, as_dict=True),
+            value=self.graph.vars.value(self.var_name))
         self.out_value.value = self.var_value
 
     @override
     def update(self):
-        var_type = self.scene.vars.data_type(self.var_name, as_dict=True)
+        var_type = self.graph.vars.data_type(self.var_name, as_dict=True)
         if not self.out_value.data_type == var_type:
             self.out_value.label = var_type['label']
             self.out_value.data_type = var_type
@@ -147,14 +145,14 @@ class SetNode(VarNode):
         if not self.var_name:
             return
 
-        self.in_value = self.add_input(self.scene.vars.data_type(self.var_name, as_dict=True))
-        self.out_value = self.add_output(self.scene.vars.data_type(self.var_name, as_dict=True), label='')
+        self.in_value = self.add_input(self.graph.vars.data_type(self.var_name, as_dict=True))
+        self.out_value = self.add_output(self.graph.vars.data_type(self.var_name, as_dict=True), label='')
         self.out_value.value = self.var_value
         self.mark_input_as_required(self.in_value)
 
     @override
     def update(self):
-        var_type = self.scene.vars.data_type(self.var_name, as_dict=True)
+        var_type = self.graph.vars.data_type(self.var_name, as_dict=True)
         if not self.in_value.data_type == var_type:
             self.in_value.label = var_type['label']
             self.in_value.data_type = var_type

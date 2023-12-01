@@ -8,24 +8,24 @@ from tp.core import log
 
 if typing.TYPE_CHECKING:
     from tp.common.nodegraph.core.node import Node
-    from tp.common.nodegraph.core.scene import Scene
+    from tp.common.nodegraph.core.graph import NodeGraph
     from tp.common.nodegraph.nodes.node_graph_inout import GraphInputNode
 
 logger = log.tpLogger
 
 
 class GraphExecutor:
-    def __init__(self, scene: Scene):
+    def __init__(self, graph: NodeGraph):
         super().__init__()
 
-        self._scene = scene
+        self._graph = graph
         self._step = 0
         self._exec_chain: deque[Node] = deque()
         self._exec_set: set[Node] = set()
 
     @property
-    def scene(self) -> Scene:
-        return self._scene
+    def graph(self) -> NodeGraph:
+        return self._graph
 
     @property
     def exec_chain(self) -> deque[Node]:
@@ -57,7 +57,7 @@ class GraphExecutor:
         :rtype: GraphInputNode or None
         """
 
-        input_nodes = [node for node in self.scene.nodes if node.IS_INPUT]         # type: list[GraphInputNode]
+        input_nodes: list[GraphInputNode] = [node for node in self.graph.nodes if node.IS_INPUT]
         if not input_nodes:
             logger.error('At least one input node is required!')
             return None
@@ -121,14 +121,14 @@ class GraphExecutor:
             return
 
         try:
-            self.scene.is_executing = True
+            self.graph.is_executing = True
             node_to_execute = self._exec_chain[self._step]
             node_to_execute.execute()
             self._step += 1
         except Exception:
             logger.exception(f'Failed to execute {node_to_execute.title}', exc_info=True)
         finally:
-            self.scene.is_executing = False
+            self.graph.is_executing = False
 
     def execute_graph(self):
         """
@@ -141,7 +141,7 @@ class GraphExecutor:
 
         logger.info('Initializing new build...')
         start_time = timeit.default_timer()
-        self.scene.is_executing = True
+        self.graph.is_executing = True
 
         try:
             for node in self.exec_chain:
@@ -149,18 +149,18 @@ class GraphExecutor:
                     node._exec()
                 except Exception:
                     logger.exception(f'Failed to execute {node.title}', exc_info=True)
-                    self.scene.is_executing = False
+                    self.graph.is_executing = False
                     return
         finally:
             logger.info('Build finished in {0:.2f}s'.format(timeit.default_timer() - start_time))
-            self.scene.is_executing = False
+            self.graph.is_executing = False
 
     def _reset_nodes_compiled_data(self):
         """
         Internal function that resets the compile status for all the nodes within the graph.
         """
 
-        for node in self.scene.nodes:
+        for node in self.graph.nodes:
             if not node.COMPILABLE:
                 continue
             node.set_compiled(False, emit_signal=False)

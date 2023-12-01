@@ -199,7 +199,7 @@ class Socket:
         """
         Returns whether this socket can be connected to the given one.
 
-        :param Socket other_socket socket to connect.
+        :param Socket other_socket: socket to connect.
         :return: True if this socket can be connected to the given one; False otherwise.
         :rtype: bool
         """
@@ -345,7 +345,7 @@ class Socket:
         """
 
         self.remove_all_edges(silent=silent)
-        self.node.scene.graphics_scene.removeItem(self._graphics_socket)
+        self.node.graph.graphics_scene.removeItem(self._graphics_socket)
 
     def _setup_signals(self):
         """

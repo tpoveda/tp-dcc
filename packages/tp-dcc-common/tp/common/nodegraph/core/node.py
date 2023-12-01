@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import typing
 from collections import deque
-from typing import Iterator, Any
+from typing import Any
 
 from overrides import override
 
 from tp.core import log
 from tp.common.qt import api as qt
+from tp.common.python import decorators
 from tp.common.nodegraph import datatypes
 from tp.common.nodegraph.core import consts, socket
 from tp.common.nodegraph.models import node as node_model
@@ -16,13 +17,13 @@ from tp.common.nodegraph.widgets import attributes
 
 if typing.TYPE_CHECKING:
     from tp.common.nodegraph.core.graph import NodeGraph
-    from tp.common.nodegraph.core.scene import Scene
 
 logger = log.rigLogger
 
 
 class BaseNode:
 
+    NODE_NAME: str | None = None
     GRAPHICS_CLASS = node_graphics.BaseGraphicsNode
 
     ID: int | None = None
@@ -37,23 +38,33 @@ class BaseNode:
     COMPILABLE = False
     IS_INPUT = False
 
-    def __init__(self, scene: Scene, title: str | None = None):
+    def __init__(self, graph: NodeGraph):
         super().__init__()
 
-        self._graph: NodeGraph | None = None
+        self._graph = graph
         self._model = node_model.NodeModel()
-        self._scene = scene
+        self._model.graph_model = self._graph.model
         self._title = ''
 
         self._graphics_node = self.GRAPHICS_CLASS(self)
 
-        self.title = title or self.__class__.DEFAULT_TITLE
+        self.title = self.__class__.NODE_NAME or self.__class__.DEFAULT_TITLE
 
-        self.scene.add_node(self)
-        self.scene.graphics_scene.addItem(self._graphics_node)
+        self._graph.add_node(self)
 
     def __repr__(self):
         return '<{}("{}") object at {}>'.format(self.__class__.__name__, self.ID, hex(id(self)))
+
+    @decorators.classproperty
+    def type(cls) -> str:
+        """
+        Returns the node  following by the class name.
+
+        :return: node type.
+        :rtype: int or str
+        """
+
+        return f'{cls.ID}.{cls.__name__}'
 
     @classmethod
     def as_str(cls, name_only: bool = False) -> str:
@@ -69,7 +80,7 @@ class BaseNode:
     @property
     def graph(self) -> NodeGraph | None:
         """
-        Getter method that returns the parent node graph.
+        Getter method that returns the parent node graph this node belongs to.
 
         :return: parent node graph.
         :rtype: NodeGraph or None
@@ -111,20 +122,18 @@ class BaseNode:
 
         return self.model.uuid
 
-    # @uuid.setter
-    # def uuid(self, value: str):
-    #     self._uuid = value
-
-    @property
-    def scene(self) -> Scene:
+    @uuid.setter
+    def uuid(self, value: str):
         """
-        Getter method that returns scene node belongs to.
+        Setter method that sets node unique ID.
 
-        :return: node scene.
-        :rtype: Scene
+        :param str value: node unique identifier.
         """
 
-        return self._scene
+        if self.graph:
+            self.graph.model.nodes[value] = self.graph.model.nodes.pop(self.uuid)
+
+        self.model.uuid = value
 
     @property
     def graphics_node(self) -> node_graphics.BaseGraphicsNode:
@@ -309,9 +318,9 @@ class BaseNode:
         """
 
         try:
-            self.scene.graphics_scene.removeItem(self._graphics_node)
+            self.graph.remove_node(self)
+            self.graph.graphics_scene.removeItem(self._graphics_node)
             self._graphics_node = None
-            self.scene.remove_node(self)
         except Exception:
             logger.exception(f'Failed to delete node {self}', exc_info=True)
 
@@ -331,8 +340,8 @@ class Node(BaseNode):
     INPUT_POSITION = socket.Socket.Position.LeftTop.value
     OUTPUT_POSITION = socket.Socket.Position.RightTop.value
 
-    def __init__(self, scene: Scene, title: str | None = None):
-        super().__init__(scene=scene, title=title)
+    def __init__(self, graph: NodeGraph):
+        super().__init__(graph=graph)
 
         self._signals = Node.Signals()
 
@@ -785,7 +794,7 @@ class Node(BaseNode):
         """
 
         for socket_to_delete in self._inputs + self._outputs:
-            self._scene.graphics_scene.removeItem(socket_to_delete.graphics_socket)
+            self.graph.graphics_scene.removeItem(socket_to_delete.graphics_socket)
         self._inputs.clear()
         self._outputs.clear()
 
@@ -968,4 +977,4 @@ class Node(BaseNode):
         new_title = new_title or self.DEFAULT_TITLE
         old_title = self.title
         self.title = new_title
-        self.scene.history.store_history(f'Renamed Node {old_title} -> {new_title}')
+        self.graph.history.store_history(f'Renamed Node {old_title} -> {new_title}')

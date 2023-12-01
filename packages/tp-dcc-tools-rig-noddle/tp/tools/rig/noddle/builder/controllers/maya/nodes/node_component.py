@@ -14,8 +14,8 @@ class ComponentNode(api.NoddleNode):
     TITLE_EDITABLE = True
     COMPONENT_CLASS = component.Component
 
-    def __init__(self, scene: api.Scene, title: str | None = None):
-        super().__init__(scene=scene, title=title)
+    def __init__(self, graph: api.NodeGraph):
+        super().__init__(graph)
 
         self._component_instance: component.Component | None = None
 

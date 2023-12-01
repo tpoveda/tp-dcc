@@ -19,9 +19,9 @@ class ConstantNode(api.NoddleNode):
     MIN_WIDTH = 100
     CONSTANT_DATA_TYPE = None
 
-    def __init__(self, scene: api.Scene, title: str | None = None):
+    def __init__(self, graph: api.NodeGraph):
         self._data_type = getattr(api.DataType, self.CONSTANT_DATA_TYPE)
-        super().__init__(scene=scene, title=title)
+        super().__init__(graph)
         self.update_title()
 
     @override
