@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 from overrides import override
 
-from tp.libs.rig.noddle.core.components import fkik
+from tp.libs.rig.noddle.core import components
 from tp.tools.rig.noddle.builder import api
 
 
@@ -16,7 +16,7 @@ class FKIKComponentNode(api.AnimComponentNode):
     DEFAULT_TITLE = 'FKIK'
     CATEGORY = 'Components'
     UNIQUE = False
-    COMPONENT_CLASS = fkik.FKIKComponent
+    COMPONENT_CLASS = components.FKIKComponent
 
     @override
     def setup_sockets(self):
@@ -56,7 +56,7 @@ class FKIKComponentNode(api.AnimComponentNode):
 
 def register_plugin(register_node: Callable, register_function: Callable, register_data_type: Callable):
     register_data_type(
-        'FKIKComponent', fkik.FKIKComponent,
+        'FKIKComponent', components.FKIKComponent,
         api.DataType.COMPONENT.get('color'), label='FKIK Component', default_value=None)
 
     register_node(FKIKComponentNode.ID, FKIKComponentNode)

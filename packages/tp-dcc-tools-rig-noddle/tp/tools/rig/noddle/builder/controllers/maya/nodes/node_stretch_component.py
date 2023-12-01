@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 from overrides import override
 
-from tp.libs.rig.noddle.core.components import stretch
+from tp.libs.rig.noddle.core import components
 from tp.tools.rig.noddle.builder import api
 
 
@@ -15,7 +15,7 @@ class IKSplineStretchComponentNode(api.ComponentNode):
     ICON = None
     DEFAULT_TITLE = 'Spline Stretch'
     CATEGORY = 'Components'
-    COMPONENT_CLASS = stretch.IKSplineStretchComponent
+    COMPONENT_CLASS = components.IKSplineStretchComponent
 
     @override
     def setup_sockets(self):
@@ -49,7 +49,7 @@ class IKSplineStretchComponentNode(api.ComponentNode):
 
 def register_plugin(register_node: Callable, register_function: Callable, register_data_type: Callable):
     register_data_type(
-        'IkSplineStretchComponent', stretch.IKSplineStretchComponent,
+        'IkSplineStretchComponent', components.IKSplineStretchComponent,
         api.DataType.COMPONENT.get('color'), label='Spline Stretch', default_value=None)
 
     register_node(IKSplineStretchComponentNode.ID, IKSplineStretchComponentNode)

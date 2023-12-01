@@ -7,7 +7,7 @@ from overrides import override
 from tp.maya import api
 from tp.libs.rig.noddle.core import control
 from tp.libs.rig.noddle.maya.meta import animcomponent
-from tp.libs.rig.noddle.maya.functions import attributes, joints
+from tp.libs.rig.noddle.maya.functions import naming, attributes, joints
 
 if typing.TYPE_CHECKING:
     from tp.libs.rig.noddle.core.hook import Hook
@@ -87,3 +87,35 @@ class FKComponent(animcomponent.AnimComponent):
             self.add_util_nodes(parent_constraint_nodes)
 
         return result
+
+    def add_auto_aim(self, follow_control: control.Control, mirrored_chain: bool = False, default_value: float = 5.0):
+
+        if not isinstance(follow_control, control.Control):
+            raise ValueError(f'{self}: {follow_control} is not a control instance.')
+
+        # Create aim transforms
+        aim_group = api.factory.create_dag_node(
+            naming.generate_name([self.indexed_name(), 'aim'], side=self.side(), suffix='grp'), 'transform',
+            parent=self.controls()[0].group)
+        no_aim_group = api.factory.create_dag_node(
+            naming.generate_name([self.indexed_name(), 'noaim'], side=self.side(), suffix='grp'), 'transform',
+            parent=self.controls()[0].group)
+        constraint_group = api.factory.create_dag_node(
+            naming.generate_name([self.indexed_name(), 'aimconstr'], side=self.side(), suffix='grp'), 'transform',
+            parent=self.controls()[0].group)
+        target_group = api.factory.create_dag_node(
+            naming.generate_name([self.indexed_name(), 'target'], side=self.side(), suffix='grp'), 'transform',
+            parent=follow_control)
+
+        # Set aim vector to -X or X
+        aim_vector = [-1, 0, 0] if mirrored_chain else [1, 0, 0]
+
+        # Create aim setup
+        cns, aim_nodes = api.build_constraint(
+            aim_group,
+            drivers={
+                'targets': ((target_group.fullPathName(partial_name=True, include_namespace=False), target_group),)},
+            constraint_type='aim', worldUpType='object', worldUpObject=self.controls()[0].fullPathName(),
+            aimVector=aim_vector
+        )
+        self.add_util_nodes(aim_nodes)

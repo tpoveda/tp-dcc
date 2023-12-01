@@ -14,9 +14,12 @@ if typing.TYPE_CHECKING:
 
 
 class GraphicsBackdrop(graphics_node.BaseGraphicsNode):
+    """
+    Base backdrop item.
+    """
 
-    def __init__(self, node: Node, parent: qt.QWidget | None = None):
-        super().__init__(node=node, parent=parent)
+    def __init__(self, node: Node, name: str = 'backdrop', text: str = '', parent: qt.QWidget | None = None):
+        super().__init__(node=node, name=name, parent=parent)
 
         self._properties['backdrop_text'] = ''
         self._min_size = 80, 80

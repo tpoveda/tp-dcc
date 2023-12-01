@@ -13,7 +13,6 @@ from tp.common.nodegraph.core import consts, edgedrag
 from tp.common.nodegraph.graphics import node, socket, edge, slicer
 
 if typing.TYPE_CHECKING:
-    from tp.common.nodegraph.core.scene import Scene
     from tp.common.nodegraph.graphics.scene import GraphicsScene
 
 logger = log.rigLogger
@@ -30,6 +29,7 @@ class GraphicsView(qt.QGraphicsView):
         Cut = 3
         CutFreehand = 4
 
+    nodeDoubleClicked = qt.Signal(str)
     nodeBackdropUpdated = qt.Signal(object, str, dict)
 
     def __init__(self, graphics_scene: GraphicsScene, parent: qt.QWidget | None = None):
@@ -82,6 +82,10 @@ class GraphicsView(qt.QGraphicsView):
 
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}() object at {hex(id(self))}>'
+
+    @property
+    def graphics_scene(self) -> GraphicsScene:
+        return self._graphics_scene
 
     @property
     def is_view_dragging(self) -> bool:

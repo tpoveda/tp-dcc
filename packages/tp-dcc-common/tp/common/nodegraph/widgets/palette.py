@@ -280,7 +280,7 @@ class PopupNodesPalette(qt.QDialog):
         super().__init__(parent=parent or view)
 
         self._view = view
-        self._scene: Scene = self._view.scene
+        self._scene: Scene = self._view.graphics_scene.scene
         self._nodes_palette: NodesPalette | None = None
 
         self.setWindowFlags(qt.Qt.FramelessWindowHint | qt.Qt.Dialog)

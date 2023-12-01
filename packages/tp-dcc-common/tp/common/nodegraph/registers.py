@@ -230,10 +230,24 @@ class DataType:
             DATA_TYPES_REGISTER[type_name] = type_dict
 
     @classmethod
+    def is_type_registered(cls, type_name: str) -> bool:
+        """
+        Returns whether given type name is already registered.
+
+        :param str type_name: type name to check.
+        :return: True if given type name is already registered; False otherwise.
+        :rtype: bool
+        """
+
+        return type_name in DATA_TYPES_REGISTER.keys()
+
+    @classmethod
     def register_data_type(
             cls, type_name: str, type_class: type, color: qt.QColor, label: str = 'custom_data',
-            default_value: Any = None):
-        if type_name in DATA_TYPES_REGISTER.keys():
+            default_value: Any = None, raise_existence_exception: bool = False):
+        if cls.is_type_registered(type_name):
+            if not raise_existence_exception:
+                return
             logger.error(f'Datatype {type_name} is already registered')
             raise InvalidDataTypeRegistrationError
 

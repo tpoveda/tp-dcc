@@ -74,7 +74,7 @@ class TwistComponent(animcomponent.AnimComponent):
             tag: str = ''):
 
         side = side or parent.side()
-        component_name = '_'.join([parent.indexed_name, component_name])
+        component_name = '_'.join([parent.indexed_name(), component_name])
 
         super().setup(parent=parent, component_name=component_name, side=side, character=character, tag=tag)
 

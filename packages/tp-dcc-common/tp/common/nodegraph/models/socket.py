@@ -1,0 +1,2 @@
+class SocketModel:
+    pass

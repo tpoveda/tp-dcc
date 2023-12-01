@@ -48,16 +48,19 @@ class MayaNoddleController(abstract.AbstractNoddleController):
 
     @override
     def load_data_types(self):
-
-        registers.DataType.register_data_type(
-            'CONTROL', control.Control, qt.QColor("#2BB12D"), label='Color', default_value=None)
-        registers.DataType.register_data_type(
-            'COMPONENT', component.Component, qt.QColor("#6495ED"), label='Component', default_value=None)
-        registers.DataType.register_data_type(
-            'ANIM_COMPONENT', animcomponent.AnimComponent, qt.QColor("#6495ED"), label='AnimComponent',
-            default_value=None)
-        registers.DataType.register_data_type(
-            'CHARACTER', character.Character, qt.QColor("#5767FF"), label='Character', default_value=None)
+        if not registers.DataType.is_type_registered('CONTROL'):
+            registers.DataType.register_data_type(
+                'CONTROL', control.Control, qt.QColor("#2BB12D"), label='Color', default_value=None)
+        if not registers.DataType.is_type_registered('COMPONENT'):
+            registers.DataType.register_data_type(
+                'COMPONENT', component.Component, qt.QColor("#6495ED"), label='Component', default_value=None)
+        if not registers.DataType.is_type_registered('ANIM_COMPONENT'):
+            registers.DataType.register_data_type(
+                'ANIM_COMPONENT', animcomponent.AnimComponent, qt.QColor("#6495ED"), label='AnimComponent',
+                default_value=None)
+        if not registers.DataType.is_type_registered('CHARACTER'):
+            registers.DataType.register_data_type(
+                'CHARACTER', character.Character, qt.QColor("#5767FF"), label='Character', default_value=None)
 
     @override
     def reference_model(self):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import typing
-from typing import List, Dict, Iterable, Iterator
+from typing import Iterable, Iterator
 
 from overrides import override
 
@@ -195,19 +195,19 @@ class AnimComponent(component.Component):
 
         outliner.set_color(self.root_group(), color)
 
-    def scale_controls(self, scale_dict: Dict[control.Control, float]):
+    def scale_controls(self, scale_dict: dict[control.Control, float]):
         """
         Scale given controls shapes.
 
-        :param Dict[Control, float] scale_dict: dictionary with controls as values and their scale values as keys.
+        :param dict[Control, float] scale_dict: dictionary with controls as values and their scale values as keys.
         """
 
         clamped_size = 1.0
         if self.character() and self.character().clamped_size() > 1.0:
             clamped_size = self.character().clamped_size()
 
-        for control, factor in scale_dict.items():
-            control.scale_shapes(clamped_size, factor=factor)
+        for found_control, factor in scale_dict.items():
+            found_control.scale_shapes(clamped_size, factor=factor)
 
     def iterate_bind_joints(self) -> Iterator[api.Joint]:
         """
@@ -223,15 +223,25 @@ class AnimComponent(component.Component):
                 continue
             yield joint_node
 
-    def bind_joints(self) -> List[api.Joint]:
+    def bind_joints(self) -> list[api.Joint]:
         """
         Returns all bind joints of this component.
 
         :return: bind joints.
-        :rtype: List[api.Joint]
+        :rtype: list[api.Joint]
         """
 
         return list(self.iterate_bind_joints())
+
+    def bind_joint_names(self) -> list[str]:
+        """
+        Returns all bind joint names of this component.
+
+        :return: list of bind joint names.
+        :rtype: list[str]
+        """
+
+        return [joint.fullPathName() for joint in self.bind_joints()]
 
     def iterate_control_joints(self) -> Iterator[api.Joint]:
         """
@@ -247,15 +257,25 @@ class AnimComponent(component.Component):
                 continue
             yield joint_node
 
-    def control_joints(self) -> List[api.Joint]:
+    def control_joints(self) -> list[api.Joint]:
         """
         Returns all control joints of this component.
 
         :return: control joints.
-        :rtype: List[api.Joint]
+        :rtype: list[api.Joint]
         """
 
         return list(self.iterate_control_joints())
+
+    def control_joint_names(self) -> list[str]:
+        """
+        Returns all control joint names of this component.
+
+        :return: list of control joint names.
+        :rtype: list[str]
+        """
+
+        return [joint.fullPathName() for joint in self.control_joints()]
 
     def iterate_controls(self) -> Iterator[control.Control]:
         """
@@ -271,12 +291,12 @@ class AnimComponent(component.Component):
                 continue
             yield control.Control(node=control_node.object())
 
-    def controls(self) -> List[control.Control]:
+    def controls(self) -> list[control.Control]:
         """
         Returns all controls of this component.
 
         :return: controls.
-        :rtype: List[control.Control]
+        :rtype: list[control.Control]
         """
 
         return list(self.iterate_controls())
@@ -311,6 +331,18 @@ class AnimComponent(component.Component):
 
         return found_hook
 
+    def hook_name(self, index: int) -> str | None:
+        """
+        Returns the component attach point name at given index.
+
+        :param int index: attach point name.
+        :return: found attach point name at given index.
+        :rtype: str or None
+        """
+
+        found_hook = self.hook(index)
+        return found_hook.fullPathName() if found_hook else None
+
     def iterate_out_hooks(self) -> Iterator[core_hook.Hook]:
         """
         Generator function that iterates over all output hooks.
@@ -327,12 +359,12 @@ class AnimComponent(component.Component):
                 continue
             yield core_hook.Hook(source.object())
 
-    def out_hooks(self) -> List[core_hook.Hook]:
+    def out_hooks(self) -> list[core_hook.Hook]:
         """
         Returns all output hooks.
 
         :return: output hooks.
-        :rtype: List[core_hook.Hook]
+        :rtype: list[core_hook.Hook]
         """
 
         return list(self.iterate_out_hooks())
@@ -347,6 +379,17 @@ class AnimComponent(component.Component):
 
         in_node = self.sourceNodeByName('inHook')
         return core_hook.Hook(node=in_node.object()) if in_node else None
+
+    def in_hook_index(self) -> int | None:
+        """
+        Returns the index of the input hook for this component.
+
+        :return: input hook index.
+        :rtype: int or None
+        """
+
+        hook = self.in_hook()
+        return hook.index if hook else None
 
     def connect_to_character(
             self, character_component: Character | None = None, character_name: str | None = None,
@@ -413,12 +456,12 @@ class AnimComponent(component.Component):
             )
             self.add_util_nodes(parent_constraint_nodes)
 
-    def _connect_bind_joints(self, joint_chain: List[api.Joint]):
+    def _connect_bind_joints(self, joint_chain: list[api.Joint]):
         """
         Internal function that connects given joint chain as the bind joint chain
         of this component.
 
-        :param List[api.Joint] joint_chain: joint chain to bind to this component.
+        :param list[api.Joint] joint_chain: joint chain to bind to this component.
         """
 
         attributes.add_meta_parent_attribute(joint_chain)
@@ -427,12 +470,12 @@ class AnimComponent(component.Component):
                 jnt.attribute(base.MPARENT_ATTR_NAME).connect(
                     self.attribute('bindJoints').nextAvailableDestElementPlug())
 
-    def _connect_control_joints(self, joint_chain: List[api.Joint]):
+    def _connect_control_joints(self, joint_chain: list[api.Joint]):
         """
         Internal function that connects given joint chain as the control joint chain
         of this component.
 
-        :param List[api.Joint] joint_chain: joint chain to control this component.
+        :param list[api.Joint] joint_chain: joint chain to control this component.
         """
 
         attributes.add_meta_parent_attribute(joint_chain)
@@ -441,11 +484,11 @@ class AnimComponent(component.Component):
                 jnt.attribute(base.MPARENT_ATTR_NAME).connect(
                     self.attribute('ctlChain').nextAvailableDestElementPlug())
 
-    def _connect_controls(self, controls: List[control.Control]):
+    def _connect_controls(self, controls: list[control.Control]):
         """
         Internal function that connects given control as the controls of this component.
 
-        :param List[Control] controls: controls to control this component.
+        :param list[Control] controls: controls to control this component.
         """
 
         for found_control in controls:

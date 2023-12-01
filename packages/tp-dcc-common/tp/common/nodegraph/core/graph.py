@@ -1,16 +1,20 @@
 from __future__ import annotations
 
 import json
+import typing
 from typing import Any
 
 from overrides import override
 
 from tp.core import log
 from tp.common.qt import api as qt
-from tp.common.nodegraph.core import scene
+from tp.common.nodegraph.core import factory, scene
 from tp.common.nodegraph.models import graph as graph_model
 from tp.common.nodegraph.graphics import view
 from tp.common.nodegraph.widgets import palette, graph as graph_widget
+
+if typing.TYPE_CHECKING:
+    from tp.common.nodegraph.core.node import BaseNode
 
 
 logger = log.rigLogger
@@ -30,8 +34,6 @@ class NodeGraph(qt.QObject):
         self._viewer = viewer or view.GraphicsView(self._scene.graphics_scene)
         self._widget: graph_widget.NodeGraphWidget | None = None
 
-        # self._setup_actions()
-        # self._setup_layouts()
         self._setup_signals()
 
         self._update_title()
@@ -90,6 +92,56 @@ class NodeGraph(qt.QObject):
     #     except Exception:
     #         logger.exception('contextMenuEvent exception', exc_info=True)
 
+    def node_by_id(self, node_id: str | None) -> BaseNode | None:
+        """
+        Returns the node from given node ID string.
+
+        :param str node_id: ID of the node to retrieve.
+        :return: node instance with given ID.
+        :rtype: BaseNode or None
+        """
+
+        return self._model.nodes.get(node_id)
+
+    def node_by_name(self, name: str) -> BaseNode | None:
+        """
+        Returns the node from given name.
+
+        :param str name: name of the node to get.
+        :return: node instance with given name.
+        :rtype: BaseNode or None
+        """
+
+        found_node: BaseNode | None = None
+        for node in self._model.nodes.values():
+            if node.name() == name:
+                found_node = node
+                break
+
+        return found_node
+
+    def create_node(
+            self, node_type: int | str, name: str | None = None, selected: bool = True,
+            color: tuple[int, int, int] | str | None = None, text_color: tuple[int, int, int] | str | None = None,
+            header_color: tuple[int, int, int] | str | None = None, pos: list[int, int] | None = None,
+            push_undo: bool = True) -> BaseNode:
+        """
+        Creates a new node in the node graph.
+
+        :param int or str node_type: node instance type.
+        :param str name: name of the node.
+        :param bool selected: whether created node should be set as selected.
+        :param tuple[int, int, int] or str or None color: optional node color.
+        :param tuple[int, int, int] or str or None text_color: optional node text color.
+        :param tuple[int, int, int] or str or None header_color: optional node header color.
+        :param list[int, int] pos: optional node position within scene.
+        :param bool push_undo: whether command should be registered within undo stack.
+        :return: newly created node instance.
+        :rtype: BaseNode
+        """
+
+        new_node = factory.create_node(node_type)
+
     def widget(self) -> graph_widget.NodeGraphWidget:
         """
         Returns graph widget for adding graph into a layout.
@@ -111,6 +163,8 @@ class NodeGraph(qt.QObject):
             tab_btn.deleteLater()
             tab_bar.setTabButton(0, btn_flag, None)
         self._widget.tabCloseRequested.connect(self._on_close_sub_graph_tab)
+
+        self._setup_actions(self._widget)
 
         return self._widget
 
@@ -136,7 +190,7 @@ class NodeGraph(qt.QObject):
             return True
 
         res = qt.QMessageBox.warning(
-            self, 'Build not saved', 'Save Changes to current build?',
+            self.widget(), 'Build not saved', 'Save Changes to current build?',
             qt.QMessageBox.Save | qt.QMessageBox.No | qt.QMessageBox.Cancel)
         if res == qt.QMessageBox.Save:
             return self.save_build()
@@ -156,7 +210,7 @@ class NodeGraph(qt.QObject):
         """
 
         graph_filter = 'Graph (*.graph)'
-        file_path = qt.QFileDialog.getSaveFileName(self, 'Save graph to file', '', graph_filter)[0]
+        file_path = qt.QFileDialog.getSaveFileName(self.widget(), 'Save graph to file', '', graph_filter)[0]
         if not file_path:
             return False
 
@@ -176,7 +230,7 @@ class NodeGraph(qt.QObject):
             return False
 
         graph_filter = 'Graph (*.graph)'
-        file_path = qt.QFileDialog.getOpenFileName(self, 'Open graph', '', graph_filter)[0]
+        file_path = qt.QFileDialog.getOpenFileName(self.widget(), 'Open graph', '', graph_filter)[0]
         if not file_path:
             return False
 
@@ -211,22 +265,12 @@ class NodeGraph(qt.QObject):
 
         return res
 
-    def _setup_actions(self):
+    def _setup_actions(self, widget: graph_widget.NodeGraphWidget):
         """
         Internal function that setup all actions.
         """
 
-        self.addAction(palette.PopupNodesPalette.show_action(self, self._viewer))
-
-    # def _setup_layouts(self):
-    #     """
-    #     Internal function that creates all UI layouts and add all widgets to them.
-    #     """
-    #
-    #     self._main_layout = qt.vertical_layout(spacing=0, margins=(0, 0, 0, 0))
-    #     self.setLayout(self._main_layout)
-    #
-    #     self._main_layout.addWidget(self._viewer)
+        widget.addAction(palette.PopupNodesPalette.show_action(self, self._viewer))
 
     def _setup_signals(self):
         """
@@ -298,15 +342,15 @@ class NodeGraph(qt.QObject):
                             > DATA: {data}
                             > SCENE POS {scene_pos}'''.format(data=json_data, scene_pos=scene_pos))
             var_name = json_data['var_name']
-            get_set_menu = qt.QMenu(self)
+            get_set_menu = qt.QMenu(self.widget())
             getter_action = qt.QAction('Get', get_set_menu)
             setter_action = qt.QAction('Set', get_set_menu)
             get_set_menu.addAction(getter_action)
             get_set_menu.addAction(setter_action)
-            result_action = get_set_menu.exec_(self.mapToGlobal(event.pos()))
+            result_action = get_set_menu.exec_(self.widget().mapToGlobal(event.pos()))
             if result_action is None:
                 return
-            self.scene.spawn_getset(var_name, scene_pos, setter=result_action==setter_action)
+            self.scene.spawn_getset(var_name, scene_pos, setter=result_action == setter_action)
             event.setDropAction(qt.Qt.MoveAction)
             event.accept()
 
@@ -329,9 +373,7 @@ class NodeGraph(qt.QObject):
         :param Any value: updated property value.
         """
 
-        pass
-
-        # backdrop_node = self.node_by_id(node_id)
+        backdrop_node = self.node_by_id(node_id)
         # if backdrop_node and isinstance(backdrop_node, node_backdrop.BackdropNode):
         #     backdrop_node.update_property(update_property, value)
 

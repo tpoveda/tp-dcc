@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import typing
-from typing import Any
 from collections import deque
+from typing import Iterator, Any
 
 from overrides import override
 
@@ -15,6 +15,7 @@ from tp.common.nodegraph.graphics import node as node_graphics
 from tp.common.nodegraph.widgets import attributes
 
 if typing.TYPE_CHECKING:
+    from tp.common.nodegraph.core.graph import NodeGraph
     from tp.common.nodegraph.core.scene import Scene
 
 logger = log.rigLogger
@@ -39,6 +40,7 @@ class BaseNode:
     def __init__(self, scene: Scene, title: str | None = None):
         super().__init__()
 
+        self._graph: NodeGraph | None = None
         self._model = node_model.NodeModel()
         self._scene = scene
         self._title = ''
@@ -65,9 +67,20 @@ class BaseNode:
         return cls.__name__ if name_only else '.'.join([cls.__module__, cls.__name__])
 
     @property
+    def graph(self) -> NodeGraph | None:
+        """
+        Getter method that returns the parent node graph.
+
+        :return: parent node graph.
+        :rtype: NodeGraph or None
+        """
+
+        return self._graph
+
+    @property
     def model(self) -> node_model.NodeModel:
         """
-        Returns node model.
+        Getter method that returns node model.
 
         :return: node model.
         :rtype: node_model.NodeModel
@@ -78,7 +91,7 @@ class BaseNode:
     @model.setter
     def model(self, value: node_model.NodeModel):
         """
-        Sets the node model.
+        Setter method that sets the node model.
 
         :param node_model.NodeModel value: node model.
         """
@@ -90,7 +103,7 @@ class BaseNode:
     @property
     def uuid(self) -> str:
         """
-        Returns node unique ID.
+        Getter method that returns node unique ID.
 
         :return: node unique identifier.
         :rtype: str
@@ -98,16 +111,30 @@ class BaseNode:
 
         return self.model.uuid
 
-    @uuid.setter
-    def uuid(self, value: str):
-        self._uuid = value
+    # @uuid.setter
+    # def uuid(self, value: str):
+    #     self._uuid = value
 
     @property
     def scene(self) -> Scene:
+        """
+        Getter method that returns scene node belongs to.
+
+        :return: node scene.
+        :rtype: Scene
+        """
+
         return self._scene
 
     @property
-    def graphics_node(self) -> node_graphics.GraphicsNode:
+    def graphics_node(self) -> node_graphics.BaseGraphicsNode:
+        """
+        Getter method that returns node view instance.
+
+        :return: node view.
+        :rtype: node_graphics.BaseGraphicsNode
+        """
+
         return self._graphics_node
 
     @property
@@ -123,6 +150,82 @@ class BaseNode:
             # Node graphics do not need to have title in all scenarios
             # TODO: Improve this
             pass
+
+    def add_property(
+            self, name: str, value: Any, items: list[str] | None = None, value_range: tuple[int, int] | None = None,
+            widget_type: int | None = None, widget_tooltip: str | None = None, tab: str | None = None):
+        """
+        Adds a custom property to the node.
+
+        :param str name: name of the property.
+        :param Any value: property value to set.
+        :param list[str] or None items: list of items (used by NODE_PROPERTY_COMBOBOX).
+        :param tuple[int, int] or None value_range: minimum and maximum values (used by NODE_PROPERTY_SLIDER).
+        :param str or None widget_type: widget type flag.
+        :param str or None widget_tooltip: custom tooltip for the property widget.
+        :param str or None tab: widget tab name.
+        """
+
+        self._model.add_property(
+            name, value, items=items, value_range=value_range, widget_type=widget_type,
+            widget_tooltip=widget_tooltip, tab=tab)
+
+    def properties(self) -> dict[str, dict]:
+        """
+        Generator function that yields all node properties.
+
+        :return: iterated node properties.
+        :rtype: dict[str, dict]]
+        """
+
+        props = self.model.to_dict()[self.uuid].copy()
+        props['uuid'] = self.uuid
+        return props
+
+    def property(self, name: str) -> Any:
+        """
+        Returns the node custom property value.
+
+        :param str name: name of the property whose value we want to retrieve.
+        :return: property value.
+        :rtype: Any
+        """
+
+        if self.graph and name == 'selected':
+            self.model.set_property(name, self.graphics_node.selected)
+
+        return self.model.property(name)
+
+    def set_property(self, name, value, push_undo: bool = True):
+        """
+        Sets the value on the node custom property.
+
+        :param str name: name of the property to set.
+        :param Any value: node value.
+        :param bool push_undo: whether to register the command to the undo stack.
+        """
+
+        if self.property(name) == value:
+            return
+
+    def name(self) -> str:
+        """
+        Returns name of the node.
+
+        :return: name of the node.
+        :rtype: str
+        """
+
+        return self.model.name
+
+    def set_name(self, name: str = ''):
+        """
+        Sets the name of the node.
+
+        :param str name: new node name.
+        """
+
+        self.set_property('name', name)
 
     def update(self):
         """

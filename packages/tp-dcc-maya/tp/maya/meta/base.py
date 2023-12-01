@@ -640,6 +640,16 @@ class MetaBase(base.DGNode):
 
         return False
 
+    def tag(self) -> str:
+        """
+        Returns meta node tag.
+
+        :return: meta node tag.
+        :rtype: str
+        """
+
+        return self.attribute(MTAG_ATTR_NAME).value()
+
     def set_tag(self, tag_name: str):
         """
         Sets meta node tag attribute.
@@ -788,12 +798,13 @@ class MetaBase(base.DGNode):
 
     def iterate_meta_children(self, depth_limit: int = 256, check_type: str | Type | None = None) -> Iterator[MetaBase]:
         """
-        Generator function that iterates over all children meta node instances connected to the metaChildren plug of
-        this meta node instance.
+        Generator function that yields all children meta node instances connected to the metaChildren plug of this meta
+        node instance.
 
         :param int depth_limit: recursive depth limit.
         :param str or Type or None check_type: meta node type to search for.
-        :return: Iterator[MetaBase]
+        :return: iterated meta children.
+        :rtype: Iterator[MetaBase]
         """
 
         is_type = inspect.isclass(check_type)
@@ -817,6 +828,18 @@ class MetaBase(base.DGNode):
                     yield child_meta
             for sub_child in child_meta.iterate_meta_children(depth_limit=depth_limit - 1, check_type=check_type):
                 yield sub_child
+
+    def meta_children(self, depth_limit: int = 256, check_type: str | Type | None = None) -> list[MetaBase]:
+        """
+        Returns all children meta node instances connected to the metaChildren plug of this meta node instance.
+
+        :param int depth_limit: recursive depth limit.
+        :param str or Type or None check_type: meta node type to search for.
+        :return: meta children.
+        :rtype: list[MetaBase]
+        """
+
+        return list(self.iterate_meta_children(depth_limit=depth_limit, check_type=check_type))
 
     def iterate_children(
             self, filter_types: Set | None = None, include_meta: bool = False) -> Iterator[base.DGNode | base.DagNode]:

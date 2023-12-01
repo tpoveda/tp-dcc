@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 from overrides import override
 
-from tp.libs.rig.noddle.core.components import spine
+from tp.libs.rig.noddle.core import components
 from tp.tools.rig.noddle.builder import api
 
 
@@ -16,7 +16,7 @@ class SpineNode(api.AnimComponentNode):
     DEFAULT_TITLE = 'Spine'
     CATEGORY = 'Components'
     UNIQUE = False
-    COMPONENT_CLASS = spine.SpineComponent
+    COMPONENT_CLASS = components.SpineComponent
 
     @override
     def setup_sockets(self):
@@ -31,7 +31,7 @@ class FKIKSpineNode(SpineNode):
 
     ID = 8
     DEFAULT_TITLE = 'FKIK Spine'
-    COMPONENT_CLASS = spine.FKIKSpineComponent
+    COMPONENT_CLASS = components.FKIKSpineComponent
 
     @override
     def setup_sockets(self):
@@ -73,10 +73,10 @@ class FKIKSpineNode(SpineNode):
 
 def register_plugin(register_node: Callable, register_function: Callable, register_data_type: Callable):
     register_data_type(
-        'SpineComponent', spine.SpineComponent,
+        'SpineComponent', components.SpineComponent,
         api.DataType.COMPONENT.get('color'), label='Spine', default_value=None)
     register_data_type(
-        'FkIkSpineComponent', spine.FKIKSpineComponent,
+        'FkIkSpineComponent', components.FKIKSpineComponent,
         api.DataType.COMPONENT.get('color'), label='Spine', default_value=None)
 
     register_node(FKIKSpineNode.ID, FKIKSpineNode)
@@ -124,9 +124,9 @@ def register_plugin(register_node: Callable, register_function: Callable, regist
         nice_name='Get Hips Hook', category='FKIK Spine')
     register_function(
         FKIKSpineNode.COMPONENT_CLASS.mid_hook_index, api.DataType.FkIkSpineComponent,
-        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'Hook Mid': api.dt.String},
+        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'Hook Mid': api.dt.Numeric},
         nice_name='Get Mid Hook', category='FKIK Spine')
     register_function(
         FKIKSpineNode.COMPONENT_CLASS.chest_hook_index, api.DataType.FkIkSpineComponent,
-        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'Hook Chest': api.dt.String},
+        inputs={'FKIK Spine': api.DataType.FkIkSpineComponent}, outputs={'Hook Chest': api.dt.Numeric},
         nice_name='Get Chest Hook', category='FKIK Spine')

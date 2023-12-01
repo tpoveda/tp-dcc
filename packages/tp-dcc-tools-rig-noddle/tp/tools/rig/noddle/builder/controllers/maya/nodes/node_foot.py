@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 from overrides import override
 
-from tp.libs.rig.noddle.core.components import foot
+from tp.libs.rig.noddle.core import components
 from tp.tools.rig.noddle.builder import api
 
 
@@ -16,7 +16,7 @@ class FootComponentNode(api.AnimComponentNode):
     DEFAULT_TITLE = 'Foot'
     CATEGORY = 'Components'
     UNIQUE = False
-    COMPONENT_CLASS = foot.FootComponent
+    COMPONENT_CLASS = components.FootComponent
 
     @override
     def setup_sockets(self):
@@ -57,7 +57,7 @@ class FootComponentNode(api.AnimComponentNode):
 
 def register_plugin(register_node: Callable, register_function: Callable, register_data_type: Callable):
     register_data_type(
-        'FootComponent', foot.FootComponent,
+        'FootComponent', components.FootComponent,
         api.DataType.COMPONENT.get('color'), label='Foot', default_value=None)
 
     register_node(FootComponentNode.ID, FootComponentNode)

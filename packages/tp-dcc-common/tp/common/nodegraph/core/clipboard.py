@@ -40,14 +40,15 @@ class SceneClipboard:
 
         # Remove all edges not connected to a node in selected list
         edges_to_remove = []
-        for edge in selected_edges:
-            if edge.start_socket.uid not in selected_sockets or edge.end_socket.uid not in selected_sockets:
-                edges_to_remove.append(edge)
-        for edge in edges_to_remove:
-            selected_edges.remove(edge)
+        for selected_edge in selected_edges:
+            if selected_edge.start_socket.uuid not in selected_sockets or \
+                    selected_edge.end_socket.uuid not in selected_sockets:
+                edges_to_remove.append(selected_edge)
+        for edge_to_remove in edges_to_remove:
+            selected_edges.remove(edge_to_remove)
         edges_final = []
-        for edge in selected_edges:
-            edges_final.append(edge.serialize())
+        for selected_edge in selected_edges:
+            edges_final.append(serializer.serialize_edge(selected_edge))
 
         data = {
             'nodes': selected_nodes,

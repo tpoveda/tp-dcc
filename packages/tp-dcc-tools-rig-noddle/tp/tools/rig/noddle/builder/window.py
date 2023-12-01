@@ -29,7 +29,7 @@ class NoddleBuilderWindow(qt.FramelessWindow):
         self._window_title = 'Noddle Builder v0.0.1'
         self._editor_map: dict[qt.QMdiSubWindow, editor.NodeEditor] = {}
 
-        super().__init__(title='', parent=parent)
+        super().__init__(title=self._window_title, parent=parent)
 
     @property
     def controller(self) -> NoddleController:

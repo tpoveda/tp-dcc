@@ -23,7 +23,7 @@ class BaseGraphicsNode(qt.QGraphicsItem):
     FONT_NAME: str | None = None
     FONT_SIZE: int | None = None
 
-    def __init__(self, node: BaseNode, parent: qt.QWidget | None = None):
+    def __init__(self, node: BaseNode, name: str = 'node', parent: qt.QWidget | None = None):
         super().__init__(parent=parent)
 
         if GraphicsNode.FONT_NAME is None or GraphicsNode.FONT_SIZE is None:
@@ -41,14 +41,16 @@ class BaseGraphicsNode(qt.QGraphicsItem):
 
         self._properties = {
             'id': None,
-            'name': node.title,
+            'type': 'BaseGraphicsNode',
+            'name': name.strip(),
             'color': consts.NODE_COLOR,
             'border_color': consts.NODE_BORDER_COLOR,
             'text_color': consts.NODE_TEXT_COLOR,
             'header_color': consts.NODE_HEADER_COLOR,
             'selected': False,
             'disabled': False,
-            'visible': False
+            'visible': False,
+            'layout_direction': consts.LayoutDirection.Horizontal.value
         }
 
         self._setup_ui()

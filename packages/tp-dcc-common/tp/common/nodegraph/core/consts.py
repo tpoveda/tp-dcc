@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import enum
+
 from tp.common.qt import api as qt
 
 # Graph Viewer constants
@@ -41,3 +43,38 @@ EDGE_Z_VALUE = -1
 NODE_Z_VALUE = 1
 SOCKET_Z_VALUE = 2
 WIDGET_Z_VALUE = 3
+
+
+class LayoutDirection(enum.IntEnum):
+    """
+    Node graph nodes layout direction.
+    """
+
+    Horizontal = 0          # layout nodes from left to right.
+    Vertical = 1            # layout nodes from top to bottom.
+
+
+class NodePropertyWidget(enum.IntEnum):
+    """
+    Enumerator used by PropertiesBinWidget to display a node property of the given widget type.
+    """
+
+    Hidden = 0
+    Label = 1
+    LineEdit = 2
+    TextEdit = 3
+    ComboBox = 4
+    CheckBox = 5
+    SpinBox = 7
+    ColorPicker = 8
+    Color4Picker = 9
+    Slider = 10
+    DoubleSlider = 11
+    FileOpen = 12
+    FileSave = 13
+    Vector2 = 14
+    Vector3 = 15
+    Vector4 = 16
+    Float = 17
+    Int = 18
+    Button = 19

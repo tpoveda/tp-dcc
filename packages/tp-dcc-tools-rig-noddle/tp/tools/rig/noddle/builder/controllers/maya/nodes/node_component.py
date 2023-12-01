@@ -153,7 +153,29 @@ def register_plugin(register_node: Callable, register_function: Callable, regist
         ComponentNode.COMPONENT_CLASS.component_name, api.DataType.COMPONENT,
         inputs={'Component': api.DataType.COMPONENT}, outputs={'Name': api.DataType.STRING},
         nice_name='Get Name', category='Component')
+    register_function(
+        ComponentNode.COMPONENT_CLASS.tag, api.DataType.COMPONENT,
+        inputs={'Component': api.DataType.COMPONENT}, outputs={'Tag': api.DataType.STRING},
+        nice_name='Get Tag', category='Component')
+    register_function(
+        ComponentNode.COMPONENT_CLASS.meta_parent, api.DataType.COMPONENT,
+        inputs={'Component': api.DataType.COMPONENT}, outputs={'Parent': api.DataType.COMPONENT},
+        nice_name='Get Parent', category='Component')
+    register_function(
+        ComponentNode.COMPONENT_CLASS.meta_children, api.DataType.COMPONENT,
+        inputs={'Component': api.DataType.COMPONENT, 'Sample Type': api.DataType.COMPONENT,
+                'By Tag': api.DataType.STRING}, outputs={'Children': api.DataType.LIST},
+        nice_name='Get Children', category='Component')
 
+    register_function(
+        AnimComponentNode.COMPONENT_CLASS.meta_parent, api.DataType.ANIM_COMPONENT,
+        inputs={'AnimComponent': api.DataType.ANIM_COMPONENT},
+        outputs={'Parent': api.DataType.ANIM_COMPONENT},
+        nice_name='Get Parent', category='Anim Component')
+    register_function(
+        AnimComponentNode.COMPONENT_CLASS.in_hook_index, api.DataType.ANIM_COMPONENT,
+        inputs={'AnimComponent': api.DataType.ANIM_COMPONENT}, outputs={'Hook Index': api.DataType.NUMERIC},
+        nice_name='Get In Hook Index', category='Anim Component')
     register_function(
         AnimComponentNode.COMPONENT_CLASS.character, api.DataType.ANIM_COMPONENT,
         inputs={'AnimComponent': api.DataType.ANIM_COMPONENT}, outputs={'Character': api.DataType.CHARACTER},
@@ -163,6 +185,27 @@ def register_plugin(register_node: Callable, register_function: Callable, regist
         inputs={'AnimComponent': api.DataType.ANIM_COMPONENT}, outputs={'Controls': api.dt.List},
         nice_name='List Controls', category='Anim Component')
     register_function(
-        AnimComponentNode.COMPONENT_CLASS.control_joints, api.DataType.ANIM_COMPONENT,
+        AnimComponentNode.COMPONENT_CLASS.control_joint_names, api.DataType.ANIM_COMPONENT,
         inputs={'AnimComponent': api.DataType.ANIM_COMPONENT}, outputs={'Joint Chain': api.dt.List},
         nice_name='Get Control Joints', category='Anim Component')
+    register_function(
+        AnimComponentNode.COMPONENT_CLASS.bind_joint_names, api.DataType.ANIM_COMPONENT,
+        inputs={'AnimComponent': api.DataType.ANIM_COMPONENT}, outputs={'Bind Joints': api.dt.List},
+        nice_name='Get Bind Joints', category='Anim Component')
+    register_function(
+        AnimComponentNode.COMPONENT_CLASS.root_group, api.DataType.ANIM_COMPONENT,
+        inputs={'AnimComponent': api.DataType.ANIM_COMPONENT}, outputs={'Root Group': api.dt.String},
+        nice_name='Get Root Group', category='Anim Component')
+    register_function(
+        AnimComponentNode.COMPONENT_CLASS.controls_group, api.DataType.ANIM_COMPONENT,
+        inputs={'AnimComponent': api.DataType.ANIM_COMPONENT}, outputs={'Controls Group': api.dt.String},
+        nice_name='Get Controls Group', category='Anim Component')
+    register_function(
+        AnimComponentNode.COMPONENT_CLASS.joints_group, api.DataType.ANIM_COMPONENT,
+        inputs={'AnimComponent': api.DataType.ANIM_COMPONENT}, outputs={'Joints Group': api.dt.String},
+        nice_name='Get Joints Group', category='Anim Component')
+    register_function(
+        AnimComponentNode.COMPONENT_CLASS.hook_name, api.DataType.ANIM_COMPONENT,
+        inputs={'AnimComponent': api.DataType.ANIM_COMPONENT, 'Hook Index': api.DataType.NUMERIC},
+        outputs={'Hook Transform': api.dt.String},
+        nice_name='Get Hook Transform', category='Anim Component')
