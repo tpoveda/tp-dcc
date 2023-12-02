@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import enum
 import typing
-from typing import List
 
 from overrides import override
 
@@ -24,14 +23,6 @@ class HeadComponent(fk.FKComponent):
         HEAD = -1
         NECK_BASE = 0
 
-    @property
-    def head_control(self) -> Control:
-        return self.controls()[-1]
-
-    @property
-    def neck_controls(self) -> List[Control]:
-        return self.controls()[:-1]
-
     @override(check_signature=False)
     def setup(
             self, parent: animcomponent.AnimComponent | None = None, hook: int | None = None,
@@ -41,16 +32,63 @@ class HeadComponent(fk.FKComponent):
 
         super().setup(
             parent=parent, component_name=component_name, side=side, character=character, hook=hook,
-            start_joint=start_joint, end_joint=end_joint, add_end_control=head_joint_index == -1,
+            start_joint=start_joint, end_joint=end_joint, add_end_control=int(head_joint_index) == -1,
             lock_translate=lock_translate, tag=tag)
 
         self.addAttribute(
-            'headJointIndex', type=api.kMFnNumericLong, keyable=False, default=head_joint_index, lock=True)
+            'headJointIndex', type=api.kMFnNumericLong, keyable=False, default=int(head_joint_index), lock=True)
 
         control_chain = self.control_joints()
         head_control_move_vector = transforms.get_vector(control_chain[-2], control_chain[-1])
-        self.head_control.set_shape('circle_pointed')
-        scale_dict = {self.head_control: 0.4}
+        self.head_control().set_shape('circle_pointed')
+        scale_dict = {self.head_control(): 0.4}
         self.scale_controls(scale_dict)
-        self.head_control.rotate_shape((0, 0, 90))
-        self.head_control.move_shapes(head_control_move_vector)
+        self.head_control().rotate_shape((0, 0, 90))
+        self.head_control().move_shapes(head_control_move_vector)
+
+    def head_control(self) -> Control:
+        """
+        Returns head control.
+
+        :return: head control.
+        :rtype: Control
+        """
+
+        return self.controls()[-1]
+
+    def neck_controls(self) -> list[Control]:
+        """
+        Returns list of neck controls.
+
+        :return: neck controls.
+        :rtype: list[Control]
+        """
+
+        return self.controls()[:-1]
+
+    def head_hook_index(self) -> int:
+        """
+        Returns head hook index.
+
+        :return: head hook index.
+        :rtype: int
+        """
+
+        return self.Hooks.HEAD.value
+
+    def neck_base_hook_index(self) -> int:
+        """
+        Returns neck base hook index.
+
+        :return: neck base hook index.
+        :rtype: int
+        """
+
+        return self.Hooks.NECK_BASE.value
+
+    def add_orient_attribute(self):
+        """
+        Adds orient switch attribute to head control.
+        """
+
+        self.head_control().add_orient_switch(self.character().world_locator(), self.neck_controls()[-1])

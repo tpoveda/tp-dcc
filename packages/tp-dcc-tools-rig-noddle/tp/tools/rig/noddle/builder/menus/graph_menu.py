@@ -107,11 +107,11 @@ class GraphMenu(qt.QMenu):
         Internal function that updates the enable state of actions for this menu.
         """
 
-        is_scene_set = self.graph is not None
-        self._scene_edge_type_menu.setEnabled(is_scene_set)
-        self._reset_stepped_execution.setEnabled(is_scene_set)
-        self._execute_step_action.setEnabled(is_scene_set)
-        self._execute_action.setEnabled(is_scene_set)
+        is_graph_set = self.graph is not None
+        self._scene_edge_type_menu.setEnabled(is_graph_set)
+        self._reset_stepped_execution.setEnabled(is_graph_set)
+        self._execute_step_action.setEnabled(is_graph_set)
+        self._execute_action.setEnabled(is_graph_set)
 
     def _on_scene_edge_type_menu_about_to_show(self):
         """

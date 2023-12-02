@@ -28,8 +28,8 @@ class Control(api.DagNode):
 
     LINE_WIDTH = None
 
-    def __repr__(self) -> str:
-        return f'Control({self.fullPathName(partial_name=True, include_namespace=False)})'
+    # def __repr__(self) -> str:
+    #     return f'Control({self.fullPathName(partial_name=True, include_namespace=False)})'
 
     @property
     def tag_node(self) -> api.DGNode:
@@ -409,6 +409,18 @@ class Control(api.DagNode):
             for shape in temp_transform.shapes():
                 cmds.parent(shape.fullPathName(), self.fullPathName(), s=True, r=True)
             temp_transform.delete()
+
+    def add_orient_switch(
+            self, space_target: api.DagNode, local_parent: api.DagNode | None = None, default_state: float = 1.0):
+        """
+
+        :param space_target:
+        :param local_parent:
+        :param default_state:
+        :return:
+        """
+
+        pass
 
     def pose(self) -> dict:
         """

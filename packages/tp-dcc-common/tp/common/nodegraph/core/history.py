@@ -194,7 +194,7 @@ class SceneHistory:
             for node_uid in stamp['selection']['nodes']:
                 for node in self._graph.nodes:
                     if node.uuid == node_uid:
-                        node.graphics_node.setSelected(True)
+                        node.view.setSelected(True)
                     break
         except Exception:
             logger.exception('Restore history stamp exception.')

@@ -33,6 +33,10 @@ class AbstractFKIKSpineComponent(AbstractSpineComponent):
         CHEST = 3
 
 
+class AbstractHandComponent(animcomponent.AbstractAnimComponent):
+    pass
+
+
 class AbstractIKSplineStretchComponent(animcomponent.AbstractAnimComponent):
     pass
 

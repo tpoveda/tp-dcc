@@ -6,11 +6,13 @@ import inspect
 from overrides import override
 
 import maya.cmds as cmds
+import maya.mel as mel
 
 from tp.common.qt import api as qt
 from tp.common.nodegraph import registers
 from tp.tools.rig.noddle.builder.controllers import abstract
 from tp.libs.rig.noddle.core import control, component, animcomponent, character
+from tp.libs.rig.noddle.maya.io import skin
 
 
 class MayaNoddleController(abstract.AbstractNoddleController):
@@ -77,3 +79,36 @@ class MayaNoddleController(abstract.AbstractNoddleController):
     @override
     def save_file_as(self, file_type):
         pass
+
+    @override
+    def bind_skin(self):
+        mel.eval('SmoothBindSkinOptions;')
+
+    @override
+    def detach_skin(self):
+        mel.eval('DetachSkinOptions;')
+
+    @override
+    def mirror_skin_weights(self):
+        mel.eval('MirrorSkinWeightsOptions;')
+
+    @override
+    def copy_skin_weights(self):
+        mel.eval('CopySkinWeightsOptions;')
+
+    @override
+    def export_asset_weights(self):
+        skin.SkinManager.export_all()
+
+    @override
+    def import_asset_weights(self):
+        skin.SkinManager.import_all()
+
+    @override
+    def export_selected_weights(self):
+        skin.SkinManager.export_selected()
+
+    @override
+    def import_selected_weights(self):
+        skin.SkinManager.import_selected()
+

@@ -221,3 +221,15 @@ class NoddleInterface(preference.PreferenceInterface):
 		"""
 
 		return self.settings(root=root).get('settings', {}).get('rig', {}).get('display', {}).get('lineWidth', 2.0)
+
+	def skin_file_format(self, root: str | None = None) -> str:
+		"""
+		Returns the format to use when saving skin weights.
+
+		:param str root: root name to search. If None, then all roots will be searched until relativePath is found.
+		:return: skin file format.
+		:rtype: str
+		"""
+
+		return self.settings(root=root).get(
+			'settings', {}).get('rig', {}).get('io', {}).get('skin', {}).get('fileFormat', 'pickle')

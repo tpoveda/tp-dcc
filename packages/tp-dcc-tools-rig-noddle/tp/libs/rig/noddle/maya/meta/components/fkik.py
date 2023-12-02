@@ -230,7 +230,7 @@ class FKIKComponent(animcomponent.AnimComponent):
         self.add_hook(control_chain[-1], 'end_joint')
 
         self.connect_to_character(character_component=character, parent=True)
-        self.attach_to_component(parent, hook)
+        self.attach_to_component(parent, int(hook))
 
         scale_dict = {
             ik_control: 0.1,

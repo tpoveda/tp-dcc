@@ -99,7 +99,8 @@ def iterate_influences(skin_cluster: OpenMaya.MObject) -> Iterator[OpenMaya.MObj
             continue
 
 
-def find_skin_cluster(dag_path: OpenMaya.MDagPath | None = None) -> tuple[OpenMayaAnim.MFnSkinCluster | None, str | None]:
+def find_skin_cluster(
+        dag_path: str | OpenMaya.MDagPath | None = None) -> tuple[OpenMayaAnim.MFnSkinCluster | None, str | None]:
     """
     Loops through the DAG hierarchy of the given DAG path finding a skin cluster.
 
@@ -173,11 +174,11 @@ def iterate_weights_list(
         yield vertex_index, weights
 
 
-def skin_weights(skin_cluster: str | OpenMaya.MDagPath, mesh_shape_name: str):
+def skin_weights(skin_cluster: str | OpenMayaAnim.MFnSkinCluster, mesh_shape_name: str):
     """
     Returns the skin weights of the given skin cluster in the given mesh.
 
-    :param str or OpenMaya.MDagPath skin_cluster: skin cluster node.
+    :param str or OpenMayaAnim.MFnSkinCluster skin_cluster: skin cluster node.
     :param str mesh_shape_name: name of the mesh to get skin weights of.
     :return:
     """

@@ -123,6 +123,10 @@ class Asset:
         return self._settings
 
     @property
+    def weights(self) -> Asset.WeightDirectoryStruct:
+        return self._weights
+
+    @property
     def data(self) -> Asset.DataDirectoryStruct:
         return self._data
 

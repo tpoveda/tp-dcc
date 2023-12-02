@@ -53,3 +53,35 @@ class AbstractNoddleController(abc.ABC):
     @abc.abstractmethod
     def save_file_as(self, file_type):
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def bind_skin(self):
+        pass
+
+    @abc.abstractmethod
+    def detach_skin(self):
+        pass
+
+    @abc.abstractmethod
+    def mirror_skin_weights(self):
+        pass
+
+    @abc.abstractmethod
+    def copy_skin_weights(self):
+        pass
+
+    @abc.abstractmethod
+    def export_asset_weights(self):
+        pass
+
+    @abc.abstractmethod
+    def import_asset_weights(self):
+        pass
+
+    @abc.abstractmethod
+    def export_selected_weights(self):
+        pass
+
+    @abc.abstractmethod
+    def import_selected_weights(self):
+        pass

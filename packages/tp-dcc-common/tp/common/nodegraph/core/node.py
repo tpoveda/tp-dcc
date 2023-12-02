@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 from collections import deque
-from typing import Any
+from typing import Iterable, Any
 
 from overrides import override
 
@@ -10,7 +10,7 @@ from tp.core import log
 from tp.common.qt import api as qt
 from tp.common.python import decorators
 from tp.common.nodegraph import datatypes
-from tp.common.nodegraph.core import consts, socket
+from tp.common.nodegraph.core import consts, socket, commands
 from tp.common.nodegraph.models import node as node_model
 from tp.common.nodegraph.graphics import node as node_graphics
 from tp.common.nodegraph.widgets import attributes
@@ -136,7 +136,7 @@ class BaseNode:
         self.model.uuid = value
 
     @property
-    def graphics_node(self) -> node_graphics.BaseGraphicsNode:
+    def view(self) -> node_graphics.BaseGraphicsNode:
         """
         Getter method that returns node view instance.
 
@@ -201,11 +201,11 @@ class BaseNode:
         """
 
         if self.graph and name == 'selected':
-            self.model.set_property(name, self.graphics_node.selected)
+            self.model.set_property(name, self.view.selected)
 
         return self.model.property(name)
 
-    def set_property(self, name, value, push_undo: bool = True):
+    def set_property(self, name, value, push_undo: bool = False):
         """
         Sets the value on the node custom property.
 
@@ -214,8 +214,28 @@ class BaseNode:
         :param bool push_undo: whether to register the command to the undo stack.
         """
 
+        if push_undo:
+            undo_command = commands.PropertyChangedCommand(self, name, value)
+            self.graph.undo_stack.push(undo_command)
+
         if self.property(name) == value:
             return
+
+        # Prevent nodes from having the same name.
+        if self.graph and name == 'name':
+            value = self.graph.unique_node_name(value)
+            self.NODE_NAME = value
+
+        # Make sure that view widgets values match new property value
+        if hasattr(self.view, 'widgets') and name in self.view.widgets.keys():
+            if self.view.widgets[name].value() != value:
+                self.view.widgets[name].set_value(value)
+
+        if name in self.view.properties:
+            name = 'xy_pos' if name == 'pos' else name
+            setattr(self.view, name, value)
+
+        self.graph.propertyChanged.emit(self, name, value)
 
     def name(self) -> str:
         """
@@ -291,15 +311,48 @@ class BaseNode:
 
         self._graphics_node.setPos(x, y)
 
-    def position(self) -> qt.QPointF:
+    def position(self) -> list[float, float]:
         """
         Returns node position within scene.
 
         :return: node position.
-        :rtype: qt.QPointF
+        :rtype: list[float, float]
         """
 
-        return self._graphics_node.pos()
+        if self.view.xy_pos and self.view.xy_pos != self.model.pos:
+            self.model.pos = self.view.xy_pos
+
+        return self.model.pos
+
+    def x_position(self) -> float:
+        """
+        Returns the node X position in the node graph.
+
+        :return: node X position.
+        :rtype: float
+        """
+
+        return self.position()[0]
+
+    def y_position(self) -> float:
+        """
+        Returns the node Y position in the node graph.
+
+        :return: node Y position.
+        :rtype: float
+        """
+
+        return self.position()[1]
+
+    def set_position(self, x: float, y: float):
+        """
+        Sets the node X and Y position in the node graph.
+
+        :param float x: X position of the node in the node graph.
+        :param float y: Y position of the node in the node graph.
+        """
+
+        self.set_property('pos', [float(x), float(y)])
 
     def append_tooltip(self, text: str):
         """
@@ -509,15 +562,15 @@ class Node(BaseNode):
                 socket.Socket.Position.LeftTop, socket.Socket.Position.LeftCenter, socket.Socket.Position.LeftBottom):
             x = 0
         else:
-            x = self.graphics_node.width
+            x = self.view.width
 
         if position in (socket.Socket.Position.LeftBottom, socket.Socket.Position.RightBottom):
             # start from top
-            y = self.graphics_node.height - self.graphics_node.edge_roundness - self.graphics_node.title_horizontal_padding - index * self._socket_spacing
+            y = self.view.height - self.view.edge_roundness - self.view.title_horizontal_padding - index * self._socket_spacing
         elif position in (socket.Socket.Position.LeftCenter, socket.Socket.Position.RightCenter):
             num_sockets = count_on_this_side
-            node_height = self.graphics_node.height
-            top_offset = self.graphics_node.title_height + 2 * self.graphics_node.title_vertical_padding + self.graphics_node.edge_padding
+            node_height = self.view.height
+            top_offset = self.view.title_height + 2 * self.view.title_vertical_padding + self.view.edge_padding
             available_height = node_height - top_offset
 
             y = top_offset + available_height / 2.0 + (index - 0.5) * self._socket_spacing
@@ -526,7 +579,7 @@ class Node(BaseNode):
 
         elif position in (socket.Socket.Position.LeftTop, socket.Socket.Position.RightTop):
             # start from bottom
-            y = self.graphics_node.title_height + self.graphics_node.title_horizontal_padding + self.graphics_node.edge_roundness + index * self._socket_spacing
+            y = self.view.title_height + self.view.title_horizontal_padding + self.view.edge_roundness + index * self._socket_spacing
         else:
             y = 0
 
@@ -575,11 +628,11 @@ class Node(BaseNode):
         else:
             logger.error(f'Invalid required "input socket" argument {input_socket_to_mark_as_required}')
 
-    def mark_inputs_as_required(self, input_sockets: list[socket.InputSocket]):
+    def mark_inputs_as_required(self, input_sockets: Iterable[socket.InputSocket]):
         """
         Marks given input sockets as required sockets for the node to be executed.
 
-        :param list[socket.InputSocket] input_sockets: list of input sockets to mark as required.
+        :param Iterable[socket.InputSocket] input_sockets: list of input sockets to mark as required.
         """
 
         for input_socket in input_sockets:
@@ -864,7 +917,7 @@ class Node(BaseNode):
             logger.warning(f'Title for node {self.title} is not editable')
             return
 
-        self.graphics_node.title_item.edit()
+        self.view.title_item.edit()
 
     def attributes_widget(self) -> attributes.AttributesWidget:
         """

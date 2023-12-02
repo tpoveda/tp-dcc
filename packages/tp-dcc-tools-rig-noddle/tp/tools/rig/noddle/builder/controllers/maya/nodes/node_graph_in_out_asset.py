@@ -57,7 +57,7 @@ class GraphOutputNodeAsset(node_graph_inout.GraphOutputNode):
 
     @override
     def _setup_sockets(self, reset: bool = True):
-        super().__init_subclass__()
+        super()._setup_sockets()
 
         self._in_character = self.add_input(api.DataType.CHARACTER, label='Character')
         self.mark_input_as_required(self._in_character)
@@ -67,9 +67,9 @@ class GraphOutputNodeAsset(node_graph_inout.GraphOutputNode):
         try:
             self.in_character.value().save_bind_pose()
             gui.switch_xray_joints()
-            cmds.viewFit(self.in_character.value().root_control().group)
-            self.in_character.value().geometry_group.overrideEnabled.set(True)
-            self.in_character.value().geometry_group.overrideColor.set(True)
+            cmds.viewFit(self.in_character.value().root_control().group.fullPathName())
+            self.in_character.value().geometry_group().overrideEnabled.set(True)
+            self.in_character.value().geometry_group().overrideColor.set(True)
             return 0
         except Exception:
             logger.exception(f'Failed to exec {self.title} node', exc_info=True)

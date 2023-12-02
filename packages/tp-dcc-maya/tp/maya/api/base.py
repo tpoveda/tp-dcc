@@ -342,7 +342,9 @@ class DGNode:
         :rtype: str
         """
 
-        return '<{}> {}'.format(self.__class__.__name__, self.fullPathName())
+        return self.fullPathName()
+
+        # return '<{}> {}'.format(self.__class__.__name__, self.fullPathName())
 
     def __str__(self):
         """

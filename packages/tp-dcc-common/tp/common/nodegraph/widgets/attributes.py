@@ -137,7 +137,7 @@ class AttributesWidget(qt.QGroupBox):
                     widget.setValue(socket_to_update.value())
             elif issubclass(socket_to_update.data_class, registers.DataType.CONTROL.get('class')):
                 if socket_to_update.value():
-                    widget.setText(str(socket_to_update.value().transform))
+                    widget.setText(str(socket_to_update.value().fullPathName()))
                 else:
                     widget.clear()
             elif issubclass(socket_to_update.data_class, registers.DataType.COMPONENT.get('class')):

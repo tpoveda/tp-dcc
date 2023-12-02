@@ -325,7 +325,7 @@ class AnimComponent(component.Component):
 
         found_hook = None
         try:
-            found_hook = self.out_hooks()[index]
+            found_hook = self.out_hooks()[int(index)]
         except IndexError:
             pass
 

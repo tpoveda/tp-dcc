@@ -59,8 +59,8 @@ def serialize_node(node_to_serialize: Node) -> dict:
         'id': node_to_serialize.uuid,
         'node_id': node_to_serialize.__class__.ID,
         'title': node_to_serialize.title,
-        'pos_x': node_to_serialize.graphics_node.scenePos().x(),
-        'pos_y': node_to_serialize.graphics_node.scenePos().y(),
+        'pos_x': node_to_serialize.view.scenePos().x(),
+        'pos_y': node_to_serialize.view.scenePos().y(),
         'inputs': inputs,
         'outputs': outputs
     }

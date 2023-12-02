@@ -56,6 +56,7 @@ class FKIKSpineNode(SpineNode):
 
     @override
     def execute(self) -> Any:
+
         self._component_instance = self.COMPONENT_CLASS(
             character=self.in_character.value(),
             component_name=self.in_name.value(),

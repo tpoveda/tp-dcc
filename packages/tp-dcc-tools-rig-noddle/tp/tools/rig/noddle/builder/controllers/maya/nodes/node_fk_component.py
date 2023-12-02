@@ -27,8 +27,8 @@ class FKComponentNode(api.AnimComponentNode):
 
         self.in_start_joint = self.add_input(api.dt.String, label='Start Joint', value=None)
         self.in_end_joint = self.add_input(api.dt.String, label='End Joint', value=None)
-        self.add_end_control = self.add_input(api.dt.Boolean, label='End Control', value=True)
-        self.lock_translation = self.add_input(api.dt.Boolean, label='Lock Translation', value=True)
+        self.in_add_end_control = self.add_input(api.dt.Boolean, label='End Control', value=True)
+        self.in_lock_translate = self.add_input(api.dt.Boolean, label='Lock Translation', value=True)
 
     @override
     def execute(self) -> Any:
@@ -40,8 +40,8 @@ class FKComponentNode(api.AnimComponentNode):
             hook=self.in_hook.value(),
             start_joint=self.in_start_joint.value(),
             end_joint=self.in_end_joint.value(),
-            add_end_control=self.add_end_control.value(),
-            lock_translate=self.lock_translation.value(),
+            add_end_control=self.in_add_end_control.value(),
+            lock_translate=self.in_lock_translate.value(),
             parent=self.in_meta_parent.value())
 
         self.out_self.set_value(self._component_instance)

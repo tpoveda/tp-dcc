@@ -4,6 +4,8 @@ import typing
 
 from overrides import override
 
+import maya.cmds as cmds
+
 from tp.maya import api
 from tp.libs.rig.noddle.core import control
 from tp.libs.rig.noddle.maya.meta import animcomponent
@@ -111,11 +113,43 @@ class FKComponent(animcomponent.AnimComponent):
         aim_vector = [-1, 0, 0] if mirrored_chain else [1, 0, 0]
 
         # Create aim setup
-        cns, aim_nodes = api.build_constraint(
+        _, aim_nodes = api.build_constraint(
             aim_group,
             drivers={
                 'targets': ((target_group.fullPathName(partial_name=True, include_namespace=False), target_group),)},
-            constraint_type='aim', worldUpType='object', worldUpObject=self.controls()[0].fullPathName(),
+            constraint_type='aim', worldUpType='object', worldUpObject=self.controls()[0].group.fullPathName(),
             aimVector=aim_vector
         )
         self.add_util_nodes(aim_nodes)
+        cmds.delete(cmds.aimConstraint(
+            target_group.fullPathName(), no_aim_group.fullPathName(), worldUpType='object',
+            worldUpObject=self.controls()[0].group.fullPathName(), aimVector=aim_vector))
+        orient_cns, orient_nodes = api.build_constraint(
+            constraint_group,
+            drivers={
+                'targets': (
+                    (no_aim_group.fullPathName(partial_name=True, include_namespace=False), no_aim_group),
+                    (aim_group.fullPathName(partial_name=True, include_namespace=False), aim_group),
+                )},
+            constraint_type='orient'
+        )
+        self.add_util_nodes(orient_nodes)
+
+        # Add attribute to control
+        self.controls()[0].addAttribute(
+            'autoAim', type=api.kMFnNumericFloat, value=default_value, dv=default_value, min=0.0, max=10.0,
+            keyable=True)
+
+        mdl_node = api.factory.create_dg_node(
+            naming.generate_name([self.indexed_name(), 'auto_aim'], side=self.side(), suffix='rev'), 'multDoubleLinear')
+        rev_node = api.factory.create_dg_node(
+            naming.generate_name([self.indexed_name(), 'rev'], side=self.side(), suffix='rev'), 'reverse')
+        mdl_node.input2.set(0.1)
+        self.controls()[0].attribute('autoAim').connect(mdl_node.attribute('input1'))
+        mdl_node.attribute('output').connect(rev_node.attribute('inputX'))
+        mdl_node.attribute('output').connect(
+            orient_cns.constraint_node.target[0].child(orient_cns.CONSTRAINT_TARGET_INDEX))
+        rev_node.attribute('outputX').connect(
+            orient_cns.constraint_node.target[1].child(orient_cns.CONSTRAINT_TARGET_INDEX))
+
+        self._connect_settings([self.controls()[0].attribute('autoAim')])

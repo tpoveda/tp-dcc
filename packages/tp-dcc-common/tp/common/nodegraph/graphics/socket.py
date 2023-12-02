@@ -21,7 +21,7 @@ class GraphicsSocket(qt.QGraphicsItem):
     SOCKET_ZOOM_OUT_LIMIT = -0.75
 
     def __init__(self, socket: Socket):
-        super().__init__(socket.node.graphics_node)
+        super().__init__(socket.node.view)
 
         if GraphicsSocket.FONT_NAME is None or GraphicsSocket.FONT_SIZE is None:
             prefs = noddle.noddle_interface()

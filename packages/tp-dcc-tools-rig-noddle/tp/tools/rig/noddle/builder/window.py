@@ -11,7 +11,7 @@ from tp.common.resources import api as resources
 
 from tp.tools.rig.noddle.builder import editor
 from tp.tools.rig.noddle.builder.widgets import workspace, history, vars, attributeseditor
-from tp.tools.rig.noddle.builder.menus import file_menu, edit_menu, graph_menu
+from tp.tools.rig.noddle.builder.menus import file_menu, edit_menu, graph_menu, skin_menu
 
 
 logger = log.rigLogger
@@ -236,10 +236,12 @@ class NoddleBuilderWindow(qt.FramelessWindow):
         self._file_menu = file_menu.FileMenu(self)
         self._edit_menu = edit_menu.EditMenu(self)
         self._graph_menu = graph_menu.GraphMenu(self)
+        self._skin_menu = skin_menu.SkinMenu(self)
 
         self._menubar.addMenu(self._file_menu)
         self._menubar.addMenu(self._edit_menu)
         self._menubar.addMenu(self._graph_menu)
+        self._menubar.addMenu(self._skin_menu)
 
     def _create_mdi_child(self):
         """

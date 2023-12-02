@@ -7,8 +7,6 @@ import timeit
 import typing
 from typing import Iterator, Any
 
-from overrides import override
-
 from tp.core import log
 from tp.common.qt import api as qt
 from tp.common.python import jsonio
@@ -38,9 +36,18 @@ class NodeGraph(qt.QObject):
     itemDropped = qt.Signal(qt.QDropEvent)
     fileLoadFinished = qt.Signal()
 
+    # Signal triggered when a node is created in the node graph.
+    nodeCreated = qt.Signal(node.BaseNode)
+
+    # Signal triggered when nodes haven been deleted from the node graph.
+    nodesDeleted = qt.Signal(list)
+
+    # Signal triggered when a node property has changed on a node.
+    propertyChanged = qt.Signal(node.BaseNode, str, object)
+
     def __init__(
             self, model: graph_model.NodeGraphModel | None = None, viewer: view.GraphicsView | None = None,
-            parent: qt.QObject | None = None):
+            undo_stack: qt.QUndoStack | None = None, parent: qt.QObject | None = None):
         super().__init__(parent=parent)
 
         self.setObjectName('NodeGraph')
@@ -66,6 +73,8 @@ class NodeGraph(qt.QObject):
 
         self._history = history.SceneHistory(self)
         self._clipboard = clipboard.SceneClipboard(self)
+        self._undo_stack = undo_stack or qt.QUndoStack(self)
+        self._undo_view: qt.QUndoView | None = None
 
         self._setup_signals()
 
@@ -98,6 +107,32 @@ class NodeGraph(qt.QObject):
     @property
     def history(self) -> history.SceneHistory:
         return self._history
+
+    @property
+    def undo_stack(self) -> qt.QUndoStack:
+        """
+        Getter method that returns the undo stack used in the node graph.
+
+        :return: node graph undo stack.
+        :rtype: qt.QUndoStack
+        """
+
+        return self._undo_stack
+
+    @property
+    def undo_view(self) -> qt.QUndoView:
+        """
+        Getter method that returns the node graph undo view widget.
+
+        :return: undo graph view.
+        :rtype: qt.QUndoView
+        """
+
+        if not self._undo_view:
+            self._undo_view = qt.QUndoView(self._undo_stack)
+            self._undo_view.setWindowTitle('Undo History')
+
+        return self._undo_view
 
     @property
     def file_name(self) -> str:
@@ -168,7 +203,7 @@ class NodeGraph(qt.QObject):
 
     @property
     def selected_nodes(self) -> list[node.BaseNode]:
-        return [found_node for found_node in self.nodes if found_node.graphics_node.isSelected()]
+        return [found_node for found_node in self.nodes if found_node.view.isSelected()]
 
     @property
     def selected_edges(self) -> list[edge.Edge]:
@@ -250,15 +285,59 @@ class NodeGraph(qt.QObject):
 
         return found_node
 
-    def add_node(self, node_to_add: BaseNode):
+    def add_node(self, node_to_add: BaseNode, pos: tuple[float, float] | None = None, emit_signal: bool = True):
         """
-        Adds given node into the graph.
+        Adds a node into graph.
+        Handles the update of the graph model and ads node item into the scene view.
 
-        :param BaseNode node_to_add: node to add.
+        :param BaseNode node_to_add: node we want to add into the graph.
+        :param tuple[float, float] pos: optional position where node will be placed within viewer.
+        :param bool emit_signal: whether to notify other graph listeners that a new node has been added.
         """
 
         self.model.nodes[node_to_add.uuid] = node_to_add
-        self.graphics_scene.addItem(node_to_add.graphics_node)
+        self.view.add_node(node_to_add.view, pos)
+
+        # node with and height is calculated when is added to the scene, so we have to update
+        # the node model here
+        node_to_add.model.width = node_to_add.view.width
+        node_to_add.model.height = node_to_add.view.height
+
+        if emit_signal:
+            self.nodeCreated.emit(node_to_add)
+
+    def remove_node(self, node_to_remove: BaseNode, emit_signal: bool = True):
+        """
+        Removes given node from graph.
+        Handles the removal of the node from graph model and makes sure node view is removed from viewer.
+
+        :param BaseNode node_to_remove: node we want to remove from graph.
+        :param bool emit_signal: whether to notify other graph listeners that a new node has been removed.
+        """
+
+        node_id = node_to_remove.uuid
+        self.model.nodes.pop(node_to_remove.uuid)
+        node_to_remove.view.delete()
+        if emit_signal:
+            self.nodesDeleted.emit([node_id])
+
+    def remove_nodes(self, nodes_to_remove: list[BaseNode], emit_signal: bool = True):
+        """
+        Removes given nodes from graph.
+        Handles the removal of the node from graph model and makes sure node view is removed from viewer.
+
+        :param BaseNode nodes_to_remove: nodes we want to remove from graph.
+        :param bool emit_signal: whether to notify other graph listeners that a new nodes have been removed.
+        """
+
+        node_ids: list[str] = []
+        for node_to_remove in nodes_to_remove:
+            node_ids.append(node_to_remove.uuid)
+            self.model.nodes.pop(node_to_remove.uuid)
+            node_to_remove.view.delete()
+
+        if emit_signal:
+            self.nodesDeleted.emit(node_ids)
 
     def create_node(
             self, node_type: int | str, name: str | None = None, selected: bool = True,

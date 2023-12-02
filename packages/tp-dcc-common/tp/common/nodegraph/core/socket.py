@@ -107,7 +107,7 @@ class Socket:
         if hasattr(self, '_graphics_socket'):
             self._graphics_socket.color_background = self._data_type.get('color')
             self._graphics_socket.update()
-        self.node.graphics_node.update_size()
+        self.node.view.update_size()
 
     @property
     def data_class(self) -> type:
@@ -277,9 +277,9 @@ class Socket:
         def _label_position():
             text_width = self._graphics_socket.text_item.boundingRect().width()
             if self._node_position in [Socket.Position.LeftTop, Socket.Position.LeftBottom]:
-                return [self.node.graphics_node.width / 25.0, Socket.LABEL_VERTICAL_PADDING]
+                return [self.node.view.width / 25.0, Socket.LABEL_VERTICAL_PADDING]
             else:
-                return [-text_width - self.node.graphics_node.width / 25, Socket.LABEL_VERTICAL_PADDING]
+                return [-text_width - self.node.view.width / 25, Socket.LABEL_VERTICAL_PADDING]
 
         self._graphics_socket.setPos(
             *self.node.socket_position(self._index, self._node_position, self._count_on_this_side))

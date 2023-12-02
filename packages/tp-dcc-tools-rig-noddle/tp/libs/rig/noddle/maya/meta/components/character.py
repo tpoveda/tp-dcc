@@ -107,11 +107,55 @@ class Character(component.Component):
 
         return self.sourceNodeByName('controlRig')
 
+    def control_rig_group_path(self) -> str:
+        """
+        Returns the full path of the node under rig controls should be placed within the scene hierarchy.
+
+        :return: control rig group full path.
+        :rtype: str
+        """
+
+        return self.control_rig_group().fullPathName()
+
     def deformation_rig_group(self) -> api.DagNode:
+        """
+        Returns the node under skeleton should be placed within the scene hierarchy.
+
+        :return: deformation rig group.
+        :rtype: api.DagNode
+        """
+
         return self.sourceNodeByName('deformationRig')
 
+    def deformation_rig_group_path(self) -> str:
+        """
+        Returns the full path of the node under skeleton should be placed within the scene hierarchy.
+
+        :return: deformation rig group full path.
+        :rtype: str
+        """
+
+        return self.deformation_rig_group().fullPathName()
+
     def geometry_group(self) -> api.DagNode:
+        """
+        Returns the node under geometry should be placed within the scene hierarchy.
+
+        :return: geometry rig group.
+        :rtype: api.DagNode
+        """
+
         return self.sourceNodeByName('geometryGroup')
+
+    def geometry_rig_group_path(self) -> str:
+        """
+        Returns the full path of the node under geometry should be placed within the scene hierarchy.
+
+        :return: geometry rig group full path.
+        :rtype: str
+        """
+
+        return self.geometry_group().fullPathName()
 
     def locators_group(self) -> api.DagNode:
         return self.sourceNodeByName('geometryGroup')
@@ -124,6 +168,9 @@ class Character(component.Component):
 
     def world_locator(self) -> api.DagNode:
         return self.sourceNodeByName('worldLocator')
+
+    def world_locator_path(self) -> str:
+        return self.world_locator().fullPathName()
 
     def set_outliner_color(self, color: int | str | Iterable[float, float, float]):
         """
@@ -177,6 +224,16 @@ class Character(component.Component):
 
         :return: root motion joint.
         :rtype: api.Joint
+        """
+
+        return self.attribute('rootMotionJoint').sourceNode()
+
+    def root_motion_path(self) -> str:
+        """
+        Returns the root motion joint full path.
+
+        :return: root motion joint full path.
+        :rtype: str
         """
 
         return self.attribute('rootMotionJoint').sourceNode()

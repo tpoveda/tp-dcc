@@ -113,7 +113,7 @@ class FreehandSlicer(Slicer):
             pt1 = self.point(i)
             pt2 = self.point(i + 1)
             # TODO: Should be optimized as gets slow with large scenes.
-            for scene_edge in self.scene().scene.edges[:]:
+            for scene_edge in self.scene().graph.edges[:]:
                 if scene_edge.graphics_edge.intersects_with(pt1, pt2):
                     found_edges.append(scene_edge.graphics_edge)
 

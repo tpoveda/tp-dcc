@@ -21,15 +21,15 @@ class BackdropNode(node.BaseNode):
 
     @override
     def post_serialization(self, data: dict):
-        data['width'] = self.graphics_node.width
-        data['height'] = self.graphics_node.height
-        data['backdrop_text'] = self.graphics_node.backdrop_text
+        data['width'] = self.view.width
+        data['height'] = self.view.height
+        data['backdrop_text'] = self.view.backdrop_text
 
     @override
     def pre_deserialization(self, data: dict):
-        self.graphics_node.width = data['width']
-        self.graphics_node.height = data['height']
-        self.graphics_node.backdrop_text = data['backdrop_text']
+        self.view.width = data['width']
+        self.view.height = data['height']
+        self.view.backdrop_text = data['backdrop_text']
 
 
 def register_plugin(register_node: Callable, register_function: Callable, register_data_type: Callable):

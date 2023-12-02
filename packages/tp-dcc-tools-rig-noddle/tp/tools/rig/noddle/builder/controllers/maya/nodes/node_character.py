@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 from overrides import override
 
-from tp.libs.rig.noddle.core import character
+from tp.libs.rig.noddle.core import control, character
 from tp.tools.rig.noddle.builder import api
 
 
@@ -44,18 +44,22 @@ class CharacterNode(api.ComponentNode):
         self.out_geometry_group.set_value(self.component_instance.geometry_group().fullPathName())
 
 
+def add_root_motion(in_character: character.Character, in_follow_control: control.Control, in_root_joint: str) -> str:
+    return in_character.add_root_motion(in_follow_control, in_root_joint).fullPathName()
+
+
 def register_plugin(register_node: Callable, register_function: Callable, register_data_type: Callable):
     register_node(CharacterNode.ID, CharacterNode)
     register_function(
-        CharacterNode.COMPONENT_CLASS.control_rig_group, api.DataType.CHARACTER,
+        CharacterNode.COMPONENT_CLASS.control_rig_group_path, api.DataType.CHARACTER,
         inputs={'Character': api.DataType.CHARACTER}, outputs={'Control Rig': api.dt.String},
         nice_name='Get Control Rig', category='Character')
     register_function(
-        CharacterNode.COMPONENT_CLASS.deformation_rig_group, api.DataType.CHARACTER,
+        CharacterNode.COMPONENT_CLASS.deformation_rig_group_path, api.DataType.CHARACTER,
         inputs={'Character': api.DataType.CHARACTER}, outputs={'Deformation Rig': api.dt.String},
         nice_name='Get Deformation Rig', category='Character')
     register_function(
-        CharacterNode.COMPONENT_CLASS.geometry_group, api.DataType.CHARACTER,
+        CharacterNode.COMPONENT_CLASS.geometry_rig_group_path, api.DataType.CHARACTER,
         inputs={'Character': api.DataType.CHARACTER}, outputs={'Geometry Group': api.dt.String},
         nice_name='Get Geometry Group', category='Character')
     register_function(
@@ -63,16 +67,17 @@ def register_plugin(register_node: Callable, register_function: Callable, regist
         inputs={'Character': api.DataType.CHARACTER}, outputs={'Root Control': api.DataType.CONTROL},
         nice_name='Get Root Control', category='Character')
     register_function(
-        CharacterNode.COMPONENT_CLASS.world_locator, api.DataType.CHARACTER,
+        CharacterNode.COMPONENT_CLASS.world_locator_path, api.DataType.CHARACTER,
         inputs={'Character': api.DataType.CHARACTER}, outputs={'World Locator': api.dt.String},
         nice_name='Get World Locator', category='Character')
     register_function(
-        CharacterNode.COMPONENT_CLASS.root_motion, api.DataType.CHARACTER,
+        CharacterNode.COMPONENT_CLASS.root_motion_path, api.DataType.CHARACTER,
         inputs={'Character': api.DataType.CHARACTER}, outputs={'Root Joint': api.dt.String},
         nice_name='Get Root Joint', category='Character')
     register_function(
-        CharacterNode.COMPONENT_CLASS.add_root_motion, api.DataType.CHARACTER,
-        inputs={'Character': api.DataType.CHARACTER, 'Follow Control': api.DataType.CONTROL, 'Root Joint': api.dt.String},
+        add_root_motion, api.DataType.CHARACTER,
+        inputs={
+            'Character': api.DataType.CHARACTER, 'Follow Control': api.DataType.CONTROL, 'Root Joint': api.dt.String},
         outputs={'Root Joint': api.dt.String}, nice_name='Add Root Motion', category='Character')
     register_function(
         CharacterNode.COMPONENT_CLASS.attach_to_skeleton, api.DataType.CHARACTER,

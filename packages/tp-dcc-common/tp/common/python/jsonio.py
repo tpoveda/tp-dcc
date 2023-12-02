@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
 Utility methods related to write/read json files
 """
@@ -27,7 +24,8 @@ def validate_json(dictionary_to_validate: dict) -> bool:
     try:
         json.dumps(dictionary_to_validate)
         return True
-    except Exception:
+    except Exception as err:
+        logger.error(err)
         return False
 
 
@@ -42,7 +40,7 @@ def convert_dict_to_string(input_dict: dict) -> str:
 
     if not validate_json(input_dict):
         logger.error('The dictionary is not able to convert to a string.')
-        return
+        return ''
     return json.dumps(input_dict)
 
 
@@ -68,10 +66,10 @@ def write_to_file(data: dict, filename: str, **kwargs) -> str | None:
         with open(filename, 'w') as json_file:
             json.dump(data, json_file, indent=indent, **kwargs)
     except IOError:
-        logger.error('Data not saved to file {}'.format(filename))
+        logger.error(f'Data not saved to file {filename}')
         return None
 
-    logger.debug('File correctly saved to: {}'.format(filename))
+    logger.debug(f'File correctly saved to: {filename}')
 
     return filename
 
@@ -87,12 +85,12 @@ def read_file(filename: str) -> dict | None:
 
     if os.stat(filename).st_size == 0:
         return None
-    else:
-        try:
-            with open(filename, 'r') as json_file:
-                data = json.load(json_file)
-        except Exception as err:
-            logger.warning('Could not read {0}'.format(filename))
-            raise err
+
+    try:
+        with open(filename, 'r') as json_file:
+            data = json.load(json_file)
+    except Exception as err:
+        logger.exception(f'Could not read {filename}', exc_info=True)
+        raise err
 
     return data

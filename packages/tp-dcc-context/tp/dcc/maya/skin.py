@@ -34,11 +34,12 @@ class MayaSkin(node.Node, skin.AbstractSkin):
 
     @classmethod
     @override(check_signature=False)
-    def create(cls, mesh: OpenMaya.MObject) -> MayaSkin:
+    def create(cls, mesh: OpenMaya.MObject, skin_name: str | None = None) -> MayaSkin:
         """
         Creates a skin and assigns it to the given mesh.
 
         :param OpenMaya.MObject mesh: mesh to apply skin to.
+        :param str skin_name: optional name for the skin name.
         :return: newly created skin.
         :rtype: MayaSkin
         """
@@ -47,9 +48,11 @@ class MayaSkin(node.Node, skin.AbstractSkin):
         skin_utils.lock_transform(mesh)
 
         mesh_name = dagpath.dag_path(mesh).fullPathName()
-        skin_name = cmds.deformer(mesh_name, type='skinCluster')[0]
-
-        return cls(skin_name)
+        skin_cluster_kwargs = {'type': 'skinCluster'}
+        if skin_name:
+            skin_cluster_kwargs['name'] = skin_name
+        skin_cluster = cmds.deformer(mesh_name, **skin_cluster_kwargs)[0]
+        return cls(skin_cluster)
 
     @override(check_signature=False)
     def set_object(self, obj: str | OpenMaya.MObject | OpenMaya.MDagPath):

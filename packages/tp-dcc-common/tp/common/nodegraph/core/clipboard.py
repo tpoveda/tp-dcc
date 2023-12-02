@@ -95,7 +95,7 @@ class SceneClipboard:
             created_nodes.append(new_node)
 
             # Adjust node position
-            pos_x, pos_y = new_node.position().x(), new_node.position().y()
+            pos_x, pos_y = new_node.x_position(), new_node.y_position()
             new_x, new_y = mouse_x + pos_x - minx, mouse_y + pos_y - miny
             new_node.set_position(new_x, new_y)
 

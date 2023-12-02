@@ -868,7 +868,7 @@ def find_deformer_by_type(node: OpenMaya.MObject | OpenMaya.MDagPath, api_type: 
     :param int api_type: API type of the deformer to retrieve.
     :return: found deformer of given type.
     :rtype: OpenMaya.MObject or None
-    :raises TypeError: ig more that one deformer found.
+    :raises TypeError: ig more than one deformer found.
     """
 
     deformers = associated_deformers(node, api_type=api_type)
@@ -891,7 +891,6 @@ def decompose_deformer(deformer: OpenMaya.MObject) -> tuple[OpenMaya.MObject, Op
     :raises TypeError:  if the deformer was not setup correctly.
     """
 
-    transform, shape, intermediate_object = None, None, None
     shapes = dependents(deformer, api_type=OpenMaya.MFn.kShape)
     num_shapes = len(shapes)
     if num_shapes == 1:

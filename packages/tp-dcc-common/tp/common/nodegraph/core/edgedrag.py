@@ -50,11 +50,11 @@ class EdgeDrag:
             if isinstance(item.socket, socket.OutputSocket):
                 logger.debug('Assign start socket to: {0}'.format(item.socket))
                 self._drag_edge = edge.Edge(
-                    self._graphics_view._graphics_scene.scene, start_socket=item.socket, end_socket=None, silent=True)
+                    self._graphics_view.graphics_scene.graph, start_socket=item.socket, end_socket=None, silent=True)
             else:
                 logger.debug('Assign end socket to: {0}'.format(item.socket))
                 self._drag_edge = edge.Edge(
-                    self._graphics_view._graphics_scene.scene, start_socket=None, end_socket=item.socket, silent=True)
+                    self._graphics_view.graphics_scene.graph, start_socket=None, end_socket=item.socket, silent=True)
         except Exception:
             logger.exception('Start edge drag exception')
             self._drag_edge.remove(silent=True)
@@ -88,10 +88,10 @@ class EdgeDrag:
             start_socket = self._drag_start_socket
             end_socket = item.socket
         try:
-            new_edge = edge.Edge(self._graphics_view._graphics_scene.scene, start_socket=start_socket, end_socket=end_socket)
+            new_edge = edge.Edge(self._graphics_view.graphics_scene.graph, start_socket=start_socket, end_socket=end_socket)
             self._drag_start_socket = None
             logger.debug(f'EdgeDrag: created new edge {new_edge.start_socket} -> {new_edge.end_socket}')
-            self._graphics_view._graphics_scene.scene.history.store_history('Edge created by dragging', set_modified=True)
+            self._graphics_view.graphics_scene.graph.history.store_history('Edge created by dragging', set_modified=True)
             return True
         except Exception:
             self._drag_start_socket = None

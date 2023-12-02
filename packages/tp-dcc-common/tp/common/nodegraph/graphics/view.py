@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 import typing
+from typing import Iterable
 
 from overrides import override
 
@@ -51,7 +52,8 @@ class GraphicsView(qt.QGraphicsView):
         self._shift_state = False
         self._origin_mouse_pos = qt.QPointF(0.0, 0.0)                   # origin position when user click on the scene.
         self._mouse_pos = qt.QPointF(0.0, 0.0)                          # current mouse position.
-        self._prev_mouse_pos = qt.QPoint(self.width(), self.height())   # previous click operation mouse position.
+        # self._prev_mouse_pos = qt.QPoint(self.width(), self.height())   # previous click operation mouse position.
+        self._prev_mouse_pos = qt.QPoint(int(self.width() / 2), int(self.height() / 2))
 
         self._is_view_dragging = False
         self._rubberband_dragging_rect = False
@@ -205,6 +207,7 @@ class GraphicsView(qt.QGraphicsView):
 
     @override
     def mouseMoveEvent(self, event: qt.QMouseEvent) -> None:
+
         scene_pos = self.mapToScene(event.pos())
         self._is_view_dragging = not self.isInteractive()
         try:
@@ -409,6 +412,19 @@ class GraphicsView(qt.QGraphicsView):
         super().drawBackground(painter, rect)
         polygon = self.mapToScene(self.viewport().rect())
         self._graph_label.setPos(polygon[0])
+
+    def add_node(self, node_view: node.BaseGraphicsNode, pos: Iterable[float, float] | None = None):
+        """
+        Adds node view into the scene.
+
+        :param BaseGraphicsNode node_view: node view to add.
+        :param Iterable[float, float] pos: optional position to place the item within the viewer.
+        """
+
+        pos = pos or (self._prev_mouse_pos.x(), self._prev_mouse_pos.y())
+        node_view.pre_init(self, pos)
+        self.scene().addItem(node_view)
+        node_view.post_init(self, pos)
 
     def zoom_value(self) -> float:
         """

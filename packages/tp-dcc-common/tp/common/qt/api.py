@@ -22,7 +22,7 @@ from Qt.QtWidgets import (
     QDoubleSpinBox, QSlider, QLayout, QStyleOptionViewItem, QHeaderView, QGraphicsSceneMouseEvent, QGraphicsItem,
     QToolTip, QGraphicsSceneDragDropEvent, QGraphicsSceneHelpEvent, QGraphicsSceneContextMenuEvent,
     QGraphicsSceneHoverEvent, QRubberBand, QScrollBar, QStyleOptionGraphicsItem, QGraphicsBlurEffect, QGraphicsPathItem,
-    QAbstractSpinBox, QGraphicsTextItem, QOpenGLWidget
+    QAbstractSpinBox, QGraphicsTextItem, QOpenGLWidget, QUndoView, QUndoGroup, QUndoStack, QUndoCommand
 )
 from Qt.QtGui import (
     QCursor, QKeySequence, QFont, QFontMetrics, QFontMetricsF, QColor, QIcon, QPixmap, QImage, QPen, QBrush, QPainter,

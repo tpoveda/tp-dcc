@@ -4,13 +4,14 @@ from tp.core import dcc
 
 
 if dcc.is_maya():
-    from tp.libs.rig.noddle.maya.meta.components import fk, head, fkik, foot, spine, stretch, twist
+    from tp.libs.rig.noddle.maya.meta.components import fk, head, fkik, foot, spine, hand, stretch, twist
     FKComponent = fk.FKComponent
     HeadComponent = head.HeadComponent
     FKIKComponent = fkik.FKIKComponent
     FootComponent = foot.ReverseFootComponent
     SpineComponent = spine.SpineComponent
     FKIKSpineComponent = spine.FKIKSpineComponent
+    HandComponent = hand.HandComponent
     IKSplineStretchComponent = stretch.IKSplineStretchComponent
     TwistComponent = twist.TwistComponent
 else:
@@ -21,5 +22,6 @@ else:
     FootComponent = components.AbstractReverseFootComponent
     SpineComponent = components.AbstractSpineComponent
     FKIKSpineComponent = components.AbstractFKIKSpineComponent
+    HandComponent = components.AbstractHandComponent
     IKSplineStretchComponent = components.AbstractIKSplineStretchComponent
     TwistComponent = components.AbstractTwistComponent

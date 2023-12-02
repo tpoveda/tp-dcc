@@ -158,14 +158,14 @@ class Edge:
 
         if self.start_socket is not None:
             source_pos = self.start_socket.position()
-            source_pos[0] += self.start_socket.node.graphics_node.pos().x()
-            source_pos[1] += self.start_socket.node.graphics_node.pos().y()
+            source_pos[0] += self.start_socket.node.view.pos().x()
+            source_pos[1] += self.start_socket.node.view.pos().y()
             self._graphics_edge.set_source(*source_pos)
 
         if self.end_socket is not None:
             end_pos = self.end_socket.position()
-            end_pos[0] += self.end_socket.node.graphics_node.pos().x()
-            end_pos[1] += self.end_socket.node.graphics_node.pos().y()
+            end_pos[0] += self.end_socket.node.view.pos().x()
+            end_pos[1] += self.end_socket.node.view.pos().y()
             self._graphics_edge.set_destination(*end_pos)
 
         if not self.start_socket:

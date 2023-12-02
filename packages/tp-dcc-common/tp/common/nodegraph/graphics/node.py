@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import typing
-from typing import Union
+from typing import Union, Any
 
 from overrides import override
 
@@ -68,6 +68,13 @@ class BaseGraphicsNode(qt.QGraphicsItem):
         self.setToolTip('node: {}'.format(value))
 
     @property
+    def properties(self) -> dict[str, Any]:
+        props = {'width': self.width, 'height': self.height, 'pos': self.xy_pos}
+        props.update(self._properties)
+
+        return props
+
+    @property
     def node(self) -> BaseNode:
         return self._node
 
@@ -88,6 +95,10 @@ class BaseGraphicsNode(qt.QGraphicsItem):
         self._height = value
 
     @property
+    def size(self) -> tuple[int, int]:
+        return self._width, self._height
+
+    @property
     def properties(self) -> dict:
         props = dict(
             width=self.width,
@@ -97,10 +108,6 @@ class BaseGraphicsNode(qt.QGraphicsItem):
         props.update(self._properties)
 
         return props
-
-    @property
-    def size(self) -> tuple[int, int]:
-        return self._width, self._height
 
     @property
     def xy_pos(self) -> list[float, float]:
@@ -191,6 +198,16 @@ class BaseGraphicsNode(qt.QGraphicsItem):
         # return qt.QRectF(0.0, 0.0, self.width, self.height)
         return qt.QRectF(0.0, 0.0, self.width, self.height).normalized()
 
+    @override
+    def mousePressEvent(self, event: qt.QGraphicsSceneMouseEvent) -> None:
+        self._properties['selected'] = True
+        super().mousePressEvent(event)
+
+    @override
+    def setSelected(self, selected: bool) -> None:
+        self._properties['selected'] = selected
+        super().setSelected(selected)
+
     def viewer(self) -> GraphicsView | None:
         """
         Returns graph viewer this node belongs to.
@@ -199,8 +216,36 @@ class BaseGraphicsNode(qt.QGraphicsItem):
         :rtype: GraphicsView or None
         """
 
-        current_scene = self.scene()        # type: GraphicsScene
+        current_scene: GraphicsScene = self.scene()
         return current_scene.viewer() if current_scene else None
+
+    def pre_init(self, graph_view: GraphicsView, pos: tuple[int, int] | None = None):
+        """
+        Called beefore node has been added into the scene.
+
+        :param GraphicsView graph_view: graph viewer.
+        :param tuple[int, int] pos: cursor position where node was added into the viewer.
+        """
+
+        pass
+
+    def post_init(self, graph_view: GraphicsView, pos: tuple[int, int] | None = None):
+        """
+        Called after node has been added into the scene.
+
+        :param GraphicsView graph_view: graph viewer.
+        :param tuple[int, int] pos: cursor position where node was added into the viewer.
+        """
+
+        pass
+
+    def delete(self):
+        """
+        Removes node view from the scene.
+        """
+
+        if self.scene():
+            self.scene().removeItem(self)
 
     def _setup_ui(self):
         """
