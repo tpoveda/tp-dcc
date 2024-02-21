@@ -152,7 +152,7 @@ class LogsManager:
         self.json_formatter = "%(asctime) %(name) %(processName) %(pathname)  %(funcName) %(levelname) %(lineno) %(" \
                               "module) %(threadName) %(message)"
         self.rotate_formatter = "%(asctime)s: [%(process)d - %(name)s - %(levelname)s]: %(message)s"
-        self.shell_formatter = "[%(levelname)1.1s|%(name)s|%(module)s:%(funcName)s] > %(message)s"
+        self.shell_formatter = "[%(levelname)1.1s|%(name)s|%(module)s:%(funcName)s:%(lineno)s] > %(message)s"
         self.gui_formatter = "[%(name)s]: %(message)s"
 
     def add_log(self, logger):

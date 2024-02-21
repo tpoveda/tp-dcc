@@ -50,13 +50,13 @@ def init(**kwargs):
     # Make sure tp-dcc-tools Python paths have been set up
     root_path = os.path.abspath(os.environ.get('TPDCC_TOOLS_ROOT', ''))
     root_path = root_path or os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    root_python_path = os.path.abspath(os.path.join(root_path, 'bootstrap', 'python'))
-    if not root_python_path:
-        raise ValueError('tp-dcc-tools framework is missing "TPDCC_TOOLS_ROOT" environment variable.')
-    elif not os.path.isdir(root_python_path):
-        raise ValueError(f'Failed to find valid tp-dcc-tools Python folder. Found "{root_python_path}"')
-    if root_python_path not in sys.path:
-        sys.path.append(root_python_path)
+    # bootstrap_path = os.path.abspath(os.path.join(root_path, 'packages', 'tp-dcc-bootstrap'))
+    # if not bootstrap_path:
+    #     raise ValueError('tp-dcc-tools framework is missing "TPDCC_TOOLS_ROOT" environment variable.')
+    # elif not os.path.isdir(bootstrap_path):
+    #     raise ValueError(f'Failed to find valid tp-dcc-tools bootstrap folder. Found "{bootstrap_path}"')
+    # if bootstrap_path not in sys.path:
+    #     sys.path.append(bootstrap_path)
 
     packages_folder_path = kwargs.get('packages_folder_path', '')
     package_version_file = kwargs.get('package_version_file', '')
