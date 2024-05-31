@@ -1,0 +1,11 @@
+@import "../definitions";
+
+
+FramelessTitleBar
+{
+  border-top-right-radius: $frameless-round-size;
+  border-top-left-radius: $frameless-round-size;
+  border-bottom-right-radius: 0px;
+  border-bottom-left-radius: 0px;
+  background-color: $dynamic-black-color;
+}

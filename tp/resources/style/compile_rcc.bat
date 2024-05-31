@@ -1,0 +1,1 @@
+"C:\Program Files\Python39\Lib\site-packages\PySide2\rcc.exe" --binary ./icons.qrc -o ./icons.rcc

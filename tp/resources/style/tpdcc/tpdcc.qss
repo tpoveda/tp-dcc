@@ -1,0 +1,6 @@
+FramelessTitleBar {
+  border-top-right-radius: 2px;
+  border-top-left-radius: 2px;
+  border-bottom-right-radius: 0px;
+  border-bottom-left-radius: 0px;
+  background-color: #1e1e1e; }
