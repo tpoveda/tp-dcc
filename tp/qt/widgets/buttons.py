@@ -3,11 +3,16 @@ from __future__ import annotations
 from typing import Any
 from functools import partial
 
+from ...externals.Qt.QtCore import Qt, Signal, Property, QPoint, QSize, QTimer, QEvent
+from ...externals.Qt.QtWidgets import (
+    QSizePolicy, QWidget, QFrame, QLabel, QPushButton, QToolButton, QAction, QMenu, QGridLayout
+)
+from ...externals.Qt.QtGui import (
+    QFontMetrics, QCursor, QColor, QPixmap, QIcon, QPainter, QRegion, QResizeEvent, QMouseEvent, QKeyEvent
+)
 from . import menus
-from .. import dpi, icon
-from ...externals.Qt.QtCore import Qt, Signal, QPoint, QSize, QTimer, QEvent
-from ...externals.Qt.QtWidgets import QWidget, QPushButton, QAction
-from ...externals.Qt.QtGui import QFontMetrics, QCursor, QColor, QIcon, QPainter, QResizeEvent, QMouseEvent, QKeyEvent
+from ...resources.style import theme
+from .. import dpi, icon, color, utils as qtutils
 
 
 class AbstractButton(dpi.DPIScaling):
@@ -773,6 +778,193 @@ class BaseButton(QPushButton, AbstractButton):
             self.rightMenuChanged.emit()
 
 
+class BasePushButton(BaseButton):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        qtutils.set_stylesheet_object_name(self, 'DefaultButton')
+
+
+class BaseToolButton(QToolButton):
+    def __init__(self, tooltip: str | None = None, parent: QWidget | None = None):
+        super().__init__(parent=parent)
+
+        self._image: QIcon | None = None
+        self._theme = theme.instance()
+
+        self.setAutoExclusive(False)
+        self.setAutoRaise(True)
+
+        self._polish_icon()
+        self.toggled.connect(self._polish_icon)
+        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+
+        if tooltip:
+            self.setToolTip(tooltip)
+
+        self._theme_size = self._theme.sizes.default
+
+    def enterEvent(self, arg__1: QEvent) -> None:
+        if self._image:
+            accent_color = self._theme.primary_color
+            self.setIcon(icon.colorize_icon(self._image, color=color.from_string(accent_color)))
+        return super().enterEvent(arg__1)
+
+    def leaveEvent(self, arg__1: QEvent) -> None:
+        self._polish_icon()
+        return super().leaveEvent(arg__1)
+
+    def image(self, image_icon: QIcon, **kwargs):
+        """
+        Sets the name of the image to use by the tool button.
+
+        :param image_icon: name of the icon to use.
+        :return: itself instance.
+        """
+
+        self._image = image_icon
+        self._polish_icon(**kwargs)
+
+        return self
+
+    def tiny(self) -> BaseToolButton:
+        """
+        Sets tool button to tiny size.
+
+        :return: itself instance.
+        """
+
+        self.theme_size = self._theme.sizes.tiny
+
+        return self
+
+    def small(self) -> BaseToolButton:
+        """
+        Sets tool button to small size.
+
+        :return: itself instance.
+        """
+
+        self.theme_size = self._theme.sizes.small
+
+        return self
+
+    def medium(self) -> BaseToolButton:
+        """
+        Sets tool button to medium size.
+
+        :return: itself instance.
+        """
+
+        self.theme_size = self._theme.sizes.medium
+
+        return self
+
+    def large(self) -> BaseToolButton:
+        """
+        Sets tool button to large size.
+
+        :return: itself instance.
+        """
+
+        self.theme_size = self._theme.sizes.large
+
+        return self
+
+    def huge(self) -> BaseToolButton:
+        """
+        Sets tool button to huge size.
+
+        :return: itself instance.
+        """
+
+        self.theme_size = self._theme.sizes.huge
+
+        return self
+
+    def icon_only(self) -> BaseToolButton:
+        """
+        Sets tool button style to icon only.
+
+        :return: itself instance.
+        """
+
+        self.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.setFixedSize(self.theme_size, self.theme_size)
+
+        return self
+
+    def text_only(self) -> BaseToolButton:
+        """
+        Sets tool button style to text only.
+
+        :return: itself instance.
+        """
+
+        self.setToolButtonStyle(Qt.ToolButtonTextOnly)
+
+        return self
+
+    def text_beside_icon(self) -> BaseToolButton:
+        """
+        Sets tool button style to text beside icon.
+
+        :return: itself instance.
+        """
+
+        self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+
+        return self
+
+    def text_under_icon(self) -> BaseToolButton:
+        """
+        Sets tool button style to text under icon.
+
+        :return: itself instance.
+        """
+
+        self.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+
+        return self
+
+    # noinspection PyUnusedLocal
+    def _polish_icon(self, **kwargs):
+        """
+        Internal function that polishes button icon.
+        """
+
+        if self._image and not self._image.isNull():
+            accent_color = self._theme.primary_color
+            if self.isCheckable() and self.isChecked():
+                self.setIcon(icon.colorize_icon(self._image, color=color.from_string(accent_color)))
+            else:
+                self.setIcon(self._image)
+
+    def _get_theme_size(self) -> int:
+        """
+        Internal function that returns the button height size.
+
+        :return: button height size.
+        :rtype: int
+        """
+
+        return self._theme_size
+
+    def _set_theme_size(self, value: int):
+        """
+        Sets button height size.
+
+        :param int value: button height size.
+        """
+
+        self._theme_size = value
+        self.style().polish(self)
+        if self.toolButtonStyle() == Qt.ToolButtonIconOnly:
+            self.setFixedSize(self._theme_size, self._theme_size)
+
+    theme_size = Property(int, _get_theme_size, _set_theme_size)
+
+
 class IconMenuButton(BaseButton):
     """
     Custom menu that represents a button with an icon (no text). Clicking it will pop up a context menu.
@@ -780,7 +972,7 @@ class IconMenuButton(BaseButton):
 
     def __init__(
             self, button_icon: QIcon | str | None = None, icon_hover: QIcon | str | None = None,
-            double_click_enabled: bool = False, color: tuple[int, int, int] | None = None,
+            double_click_enabled: bool = False, button_color: tuple[int, int, int] | None = None,
             tint_color: tuple[int, int, int] | None = None, menu_name: str = '', switch_icon_on_click: bool = False,
             theme_updates: bool = True, parent: QWidget | None = None):
         """
@@ -789,7 +981,7 @@ class IconMenuButton(BaseButton):
         :param button_icon: The icon for the button, either as a QIcon or a string path. Default is None.
         :param icon_hover: The icon to display when hovering, either as a QIcon or a string path. Default is None.
         :param double_click_enabled: Whether double-click is enabled. Default is False.
-        :param color: The color of the button as an (R, G, B) tuple. Default is None.
+        :param button_color: The color of the button as an (R, G, B) tuple. Default is None.
         :param tint_color: The tint color for the button as an (R, G, B) tuple. Default is None.
         :param menu_name: The name of the menu. Default is an empty string.
         :param switch_icon_on_click: Whether to switch the icon on click. Default is False.
@@ -802,7 +994,7 @@ class IconMenuButton(BaseButton):
             theme_updates=theme_updates, parent=parent)
 
         self._tint_color = tint_color
-        self._icon_color = color or (255, 255, 255)
+        self._icon_color = button_color or (255, 255, 255)
         self._current_text = menu_name
         self._switch_icon = switch_icon_on_click
 
@@ -903,3 +1095,376 @@ class IconMenuButton(BaseButton):
         """
 
         self.set_menu_name(action.text())
+
+
+class RoundButton(QPushButton, dpi.DPIScaling):
+    """
+    Custom round button. It can be rendered in two different ways:
+        1. Mask: will cut the button into a circle. Allow also stylesheets. It is pixelated when drawing it out.
+        2. Stylesheet: creates a smooth circle button without pixelation. For rectangle buttons it will not be round
+            and also the user will not be able to user their own stylesheet.
+    """
+
+    class RenderingMethod:
+        MASK = 0
+        STYLESHEET = 1
+
+    def __init__(
+            self, text: str | None = None, button_icon: QIcon | None = None, method: int = RenderingMethod.STYLESHEET,
+            tooltip='', parent: QWidget | None = None):
+        super().__init__(parent=parent)
+
+        if text:
+            self.setText(text)
+        if button_icon:
+            self.setIcon(button_icon)
+
+        self._method = method
+        self._custom_style = ''
+        self.setToolTip(tooltip)
+
+        self._update_button()
+
+    def resizeEvent(self, event: QResizeEvent):
+        self._update_button()
+        super().resizeEvent(event)
+
+    def setStyleSheet(self, text: str):
+        if self._method == self.RenderingMethod.STYLESHEET:
+            self._custom_style = text
+            self._update_button()
+        else:
+            super().setStyleSheet(text)
+
+    def set_method(self, method: int):
+        """
+        Sets the rendering method to use.
+            - Mask: pixelated edges but can set custom stylesheets.
+            - Stylesheet: Smooth edges but cannot set custom stylesheets.
+        :param method: render method to use.
+        """
+
+        self._method = method
+        self._update_button()
+
+    def _round_style(self) -> str:
+        """
+        Internal function that returns custom rounded stylesheet string.
+
+        :return: rounded stylesheet string.
+        """
+
+        radius = (min(self.rect().width() * 0.5, self.rect().height() * 0.5) - 1.0)
+        return 'border-radius: {}px;'.format(radius)
+
+    def _update_button(self):
+        """
+        Internal function that updates the button drawing.
+        """
+
+        if self._method == self.RenderingMethod.MASK:
+            self.setMask(QRegion(self.rect(), QRegion.Ellipse))
+        else:
+            super().setStyleSheet(self._round_style() + self._custom_style)
+
+
+class ShadowedButtonImage(QLabel, dpi.DPIScaling):
+    """
+    stylesheet purposes
+    """
+
+    pass
+
+
+class ShadowedButtonShadow(QFrame, dpi.DPIScaling):
+    """
+    stylesheet purposes
+    """
+
+    pass
+
+
+class ShadowedButton(BaseButton):
+    """
+    Custom button with shadow indicator.
+    """
+
+    _MENU_INDICATOR_ICON = 'menu_indicator'
+
+    def __init__(
+            self, text: str = '', shadow_height: int = 4, force_upper: bool = False, tooltip: str = '',
+            icon_color_theme: str | None = None, theme_updates: bool = True, parent: QWidget | None = None):
+
+        super(ShadowedButton, self).__init__(
+            icon_color_theme=icon_color_theme, theme_updates=theme_updates, parent=parent)
+
+        self._main_layout: QGridLayout | None = None
+        self._text_label: QLabel | None = None
+        self._image_widget: ShadowedButtonImage | None = None
+        self._shadow: ShadowedButtonShadow | None = None
+        self._spacing_widget: QWidget | None = None
+        self._force_upper = force_upper
+        self._mouse_entered = True
+        self._icon_pixmap: QPixmap | None = None
+        self._icon_hovered_pixmap: QPixmap | None = None
+        self._icon_pressed_pixmap: QPixmap | None = None
+        self._is_menu = True
+        self._icon_size = dpi.size_by_dpi(QSize(16, 16))
+        self._icon_names: list[str] = []
+
+        self.setup_ui()
+
+        self.setToolTip(tooltip)
+        self.setText(text)
+        self.set_shadow_height(shadow_height)
+
+    @property
+    def is_menu(self) -> bool:
+        return self._is_menu
+
+    @is_menu.setter
+    def is_menu(self, flag: bool):
+        self._is_menu = flag
+
+    def setFixedHeight(self, height: int):
+        self.update_image_widget(height)
+        super().setFixedHeight(height)
+
+    # noinspection PyMethodOverriding
+    def setFixedSize(self, size: QSize):
+        self.update_image_widget(size.height())
+        super(ShadowedButton, self).setFixedSize(size)
+
+    def setText(self, text: str):
+        if not self._text_label:
+            return
+        if self._force_upper and text is not None:
+            text = text.upper()
+
+        self._text_label.setText(text)
+
+    def setIconSize(self, size: QSize):
+        self._icon_size = dpi.size_by_dpi(size)
+        self._image_widget.setFixedSize(self._icon_size)
+
+    def enterEvent(self, event: QEvent):
+        self._mouse_entered = True
+        qtutils.set_stylesheet_object_name(self, '')
+        qtutils.set_stylesheet_object_name(self._shadow, 'buttonShadowHover')
+        qtutils.set_stylesheet_object_name(self._image_widget, 'shadowedImageHover')
+        qtutils.set_stylesheet_object_name(self._text_label, 'shadowedLabelHover')
+        self._image_widget.setPixmap(self._icon_hovered_pixmap)
+
+    def leaveEvent(self, event: QEvent):
+        self._mouse_entered = False
+        qtutils.set_stylesheet_object_name(self, '')
+        qtutils.set_stylesheet_object_name(self._shadow, '')
+        qtutils.set_stylesheet_object_name(self._image_widget, '')
+        qtutils.set_stylesheet_object_name(self._text_label, '')
+        self._image_widget.setPixmap(self._icon_pixmap)
+
+    def mousePressEvent(self, e: QMouseEvent):
+        qtutils.set_stylesheet_object_name(self, 'shadowedButtonPressed')
+        qtutils.set_stylesheet_object_name(self._shadow, 'buttonShadowPressed')
+        qtutils.set_stylesheet_object_name(self._image_widget, 'shadowedImagePressed')
+        qtutils.set_stylesheet_object_name(self._text_label, 'shadowedLabelPressed')
+        self._image_widget.setPixmap(self._icon_pressed_pixmap)
+
+        return super().mousePressEvent(e)
+
+    def mouseReleaseEvent(self, e: QMouseEvent):
+        # if mouse still entered while mouse released then set it back to hovered style
+        if self._mouse_entered:
+            self.enterEvent(e)
+
+        return super().mouseReleaseEvent(e)
+
+    def mouseDoubleClickEvent(self, event: QMouseEvent):
+        event.ignore()
+        return super().mouseDoubleClickEvent(event)
+
+    # def update_theme(self, event):
+    #     if self._theme_updates_color:
+    #         self._icon_color_theme = self._icon_color_theme or '$BUTTON_ICON_COLOR'
+
+    def setup_ui(self):
+        """
+        Initializes shadow button UI.
+        """
+
+        self._main_layout = QGridLayout(spacing=0)
+        self.setLayout(self._main_layout)
+
+        self._image_widget = ShadowedButtonImage(parent=self)
+        self._text_label = QLabel(parent=self)
+        self._shadow = ShadowedButtonShadow(parent=self)
+
+        self._image_widget.setFixedHeight(self.sizeHint().height())
+        self._image_widget.setAlignment(Qt.AlignCenter)
+        self._text_label.setAlignment(Qt.AlignCenter)
+        self._spacing_widget = QWidget(parent=self)
+
+        self._main_layout.addWidget(self._image_widget, 0, 0, 1, 1)
+        self._main_layout.addWidget(self._text_label, 0, 1, 1, 1)
+        self._main_layout.addWidget(self._spacing_widget, 0, 2, 1, 1)
+        self._main_layout.addWidget(self._shadow, 1, 0, 1, 3)
+        self._main_layout.setContentsMargins(0, 0, 0, 0)
+
+    def set_force_upper(self, flag: bool):
+        """
+        Sets whether button text should appear as upper case.
+
+        :param flag: whether to force text upper case.
+        """
+
+        self._force_upper = flag
+
+    def set_shadow_height(self, height: int):
+        """
+        Sets the shadow height in pixels.
+
+        :param height: shadow height (in pixels).
+        """
+
+        self._shadow.setFixedHeight(height)
+
+    def set_icon(
+            self, icons: QIcon | list[QIcon], colors: QColor | None = None,
+            hover_colors: QColor | None = None, size: int | None = None,
+            pressed_colors: QColor | None = None, scaling: tuple[float, float, float] | None = None):
+        """
+        Set button icon.
+
+        :param icons: icon to set.
+        :param colors: optional icon color.
+        :param hover_colors: optional hover icon color.
+        :param size: optional icon size.
+        :param pressed_colors: optional icon pressed colors.
+        :param scaling: optional scaling.
+        """
+
+        if size is not None:
+            self.setIconSize(QSize(size, size))
+
+        hover_colors = hover_colors or colors
+        pressed_colors = pressed_colors or colors
+
+        colors = [colors]
+        hover_color = [hover_colors]
+        pressed_color = [pressed_colors]
+
+        self._icon_names = icons
+
+        if self._is_menu:
+            self._icon_names = [icons, self._MENU_INDICATOR_ICON]
+            colors += colors
+            hover_color += hover_color
+            pressed_color += pressed_color
+
+        new_size = self._icon_size.width()
+        self._icon_pixmap = icon.colorize_layered_icon(
+            self._icon_names, colors=colors, scaling=scaling).pixmap(QSize(new_size, new_size))
+        self._icon_hovered_pixmap = icon.colorize_layered_icon(
+            self._icon_names, colors=hover_color, scaling=scaling).pixmap(QSize(new_size, new_size))
+        self._icon_pressed_pixmap = icon.colorize_layered_icon(
+            self._icon_names, colors=pressed_color, scaling=scaling).pixmap(QSize(new_size, new_size))
+
+        self._image_widget.setPixmap(self._icon_pixmap)
+
+    def update_image_widget(self, new_height: int):
+        """
+        Updates button to make sure widget is always square.
+
+        :param new_height: new height of the widget to update to.
+        """
+
+        self._image_widget.setFixedSize(QSize(new_height, new_height))
+        self._spacing_widget.setFixedWidth(int(dpi.dpi_scale(new_height) * 0.5))
+
+
+class LeftAlignedButton(QPushButton):
+    """
+    Custom button that is left aligned with text and icon.
+    """
+
+    def __init__(
+            self, text: str = '', button_icon: QIcon | None = None, tooltip: str | None = None,
+            parent: QWidget | None = None):
+        text = f' {text}' if text else text
+        super().__init__(text, parent)
+
+        self._mouse_buttons: dict[Qt.MouseButton, QMenu] = {}
+
+        if button_icon is not None:
+            self.setIcon(button_icon)
+        if tooltip:
+            self.setToolTip(tooltip)
+
+        self.setStyleSheet(
+            "QPushButton {} text-align: left; padding-left: {}px; {}".format("{", str(dpi.dpi_scale(7)), "}"))
+
+    def menu(self, mouse_button: Qt.MouseButton = Qt.LeftButton) -> QMenu | None:
+        """
+        Returns the menu associated to the given mouse button.
+
+        :param mouse_button: mouse button.
+        :return: menu for the given menu.
+        """
+
+        return self._mouse_buttons.get(mouse_button, None)
+
+    def set_menu(self, menu: QMenu, mouse_button: Qt.MouseButton):
+        """
+        Sets the given menu to the given mouse button.
+
+        :param menu: menu to set to mouse button.
+        :param mouse_button: mouse button.
+        """
+
+        assert mouse_button in (Qt.LeftButton, Qt.RightButton), f'Unsupported mouse button: {mouse_button}'
+        menu.setParent(self)
+        self._mouse_buttons[mouse_button] = menu
+        if mouse_button == Qt.RightButton:
+            self.setContextMenuPolicy(Qt.CustomContextMenu)
+            self.customContextMenuRequested.connect(self._on_custom_context_menu_requested)
+        elif mouse_button == Qt.LeftButton:
+            super().setMenu(menu)
+
+    def create_menu_item(
+            self, text: str = '', menu_item_icon: QIcon | None = None, connection: callable = None,
+            mouse_button: Qt.MouseButton = Qt.RightButton) -> QAction:
+        """
+        Creates a menu item to the specific mouse menu. If menu at given mouse button does not exist, it will be
+        created.
+
+        :param text:  menu item text label.
+        :param menu_item_icon: menu item icon.
+        :param connection: optional function that should be called when item is clicked by the user.
+        :param mouse_button: mouse button to create the menu item for.
+        :return: menu item as an action instance.
+        :rtype: QAction
+        """
+
+        menu = self.menu(mouse_button)
+        if not menu:
+            menu = QMenu(self)
+            self.set_menu(menu, mouse_button)
+
+        action = menu.addAction(text)
+        if menu_item_icon:
+            action.setIcon(menu_item_icon)
+
+        if connection:
+            action.triggered.connect(connection)
+
+        return action
+
+    def _on_custom_context_menu_requested(self, pos: QPoint):
+        """
+        Internal callback function that is called when button custom context menu is requested.
+
+        :param pos: the position to show the context menu at.
+        """
+
+        menu = self._mouse_buttons[Qt.RightButton]
+        menu.exec_(self.mapToGlobal(pos))

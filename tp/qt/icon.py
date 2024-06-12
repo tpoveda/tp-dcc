@@ -4,12 +4,12 @@ from typing import Iterable
 
 from . import dpi, pixmap
 from ..externals.Qt.QtCore import Qt, QSize
-from ..externals.Qt.QtGui import QColor, QIcon, QPainter
+from ..externals.Qt.QtGui import QColor, QIcon
 
 
 def colorize_icon(
-        icon: QIcon, size: int | None = None, color: tuple[int, int, int] = (255, 255, 255),
-        overlay_icon: QIcon | None = None, overlay_color: tuple[int, int, int] = (255, 255, 255)) -> QIcon:
+        icon: QIcon, size: int | None = None, color: tuple[int, int, int] | QColor = (255, 255, 255),
+        overlay_icon: QIcon | None = None, overlay_color: tuple[int, int, int] | QColor = (255, 255, 255)) -> QIcon:
     """
     Colorizes the given icon.
 

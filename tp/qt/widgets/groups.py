@@ -38,9 +38,14 @@ class RadioButtonGroup(QWidget):
         self._radio_buttons: list[QRadioButton] = []
         self._group = QButtonGroup(parent=self)
         if vertical:
-            radio_layout = layouts.vertical_layout(margins=margins, spacing=spacing, alignment=alignment)
+            radio_layout = layouts.VerticalLayout()
         else:
-            radio_layout = layouts.horizontal_layout(margins=margins, spacing=spacing, alignment=alignment)
+            radio_layout = layouts.HorizontalLayout()
+
+        radio_layout.setContentsMargins(*margins)
+        radio_layout.setSpacing(spacing)
+        if alignment is not None:
+            radio_layout.setAlignment(alignment)
         self.setLayout(radio_layout)
 
         radio_names = radio_names or []

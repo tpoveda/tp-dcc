@@ -27,6 +27,8 @@ FRAMELESS_HORIZONTAL_PADDING = 10		# horizontal padding for frameless resizers.
 MARGINS = (2, 2, 2, 2)                  # default left, top, right, bottom widget margins.
 WINDOW_MARGINS = (WINDOW_SIDE_PADDING, WINDOW_BOTTOM_PADDING, WINDOW_SIDE_PADDING, WINDOW_TOP_PADDING)
 
+BUTTON_WIDTH_ICON_MEDIUM = 30
+
 
 class Sizes:
     """
@@ -59,3 +61,15 @@ class Sizes:
     FramelessHorizontalPadding = 10
     WindowSizePadding = 6
     WindowBottomPadding = 6
+
+
+class ButtonStyles:
+    """
+    Class that contains available button styles.
+    """
+
+    Default = 0                         # default BaseButton with optional text or an icon.
+    TransparentBackground = 1           # default BaseButton with a transparent background.
+    IconShadow = 2						# button with a shadow underline.
+    DefaultQt = 3                       # default style using standard Qt PushButton.
+    Rounded = 4                         # rounded button with a background color and a colored icon.

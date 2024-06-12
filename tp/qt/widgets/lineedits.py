@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from ...externals.Qt.QtCore import Qt, Signal
-from ...externals.Qt.QtWidgets import QWidget, QLineEdit, QPushButton
+from ...externals.Qt.QtWidgets import QWidget, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout
 from ...externals.Qt.QtGui import (
     QValidator, QIntValidator, QDoubleValidator, QMouseEvent, QFocusEvent, QDragEnterEvent, QDragMoveEvent, QDropEvent
 )
@@ -483,10 +483,9 @@ class StringLineEditWidget(QWidget):
         self._label: labels.BaseLabel | None = None
         self._button: QPushButton | None = None
 
-        if orientation == Qt.Horizontal:
-            self._layout = layouts.horizontal_layout(margins=(0, 0, 0, 0), spacing=uiconsts.SPACING)
-        else:
-            self._layout = layouts.vertical_layout(margins=(0, 0, 0, 0), spacing=uiconsts.SPACING)
+        self._layout = QHBoxLayout() if orientation == Qt.Horizontal else QVBoxLayout()
+        self._layout.setSpacing(uiconsts.SPACING)
+        self._layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self._layout)
 
         self._line_edit = self._setup_line_edit(text, placeholder_text, tooltip, edit_width, parent)

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Sequence, Any
+from typing import Sequence, Iterator, Any
 
 from ...externals.Qt.QtCore import Qt, Signal
-from ...externals.Qt.QtWidgets import QSizePolicy, QWidget, QLabel, QComboBox
+from ...externals.Qt.QtWidgets import QSizePolicy, QWidget, QLabel, QComboBox, QHBoxLayout
 from ...externals.Qt.QtGui import QIcon, QKeyEvent, QWheelEvent
 from .. import uiconsts, dpi
 from . import layouts, labels
@@ -113,6 +113,13 @@ class ComboBoxAbstractWidget(QWidget):
         """
 
         def __init__(self, previous_index: int, current_index: int, parent: ComboBoxAbstractWidget):
+            """
+            Initializes the ComboItemChangedEvent.
+
+            :param previous_index: The previous index of the combo box.
+            :param current_index: The current index of the combo box.
+            :param parent: The parent ComboBoxAbstractWidget instance.
+            """
 
             self._previous_index = previous_index
             self._index = current_index
@@ -194,14 +201,49 @@ class ComboBoxAbstractWidget(QWidget):
         self._box: QComboBox | None = None
 
     def __getattr__(self, item):
+        """
+         Gets the attribute from the combo box if it exists.
+
+         This method returns the attribute from the combo box if it exists.
+
+         :param item: The attribute name.
+         :return: attribute value.
+         """
+
         if hasattr(self._box, item):
             return getattr(self._box, item)
 
     def blockSignals(self, flag: bool):
+        """
+        Blocks or unblocks signals for the combo box and label.
+
+        This method blocks or unblocks signals for the combo box and label based on the flag provided.
+
+        :param flag: If True, signals are blocked. If False, signals are unblocked.
+        """
+
         self._box.blockSignals(flag)
         if self._label:
             self._label.blockSignals(flag)
         super().blockSignals(flag)
+
+    def value(self) -> str:
+        """
+        Returns the literal value of the combobox.
+
+        :return: combobox value.
+        """
+
+        return str(self._box.currentText())
+
+    def count(self) -> int:
+        """
+        Returns the total number of items within the combobox.
+
+        :return: combobox items count.
+        """
+
+        return self._box.count()
 
     def add_item(self, item: str, sort_alphabetically: bool = False, user_data: Any = None):
         """
@@ -216,7 +258,7 @@ class ComboBoxAbstractWidget(QWidget):
         if sort_alphabetically:
             self._box.model().sort(0)
 
-    def add_items(self, items: list[str], sort_alphabetically: bool = False):
+    def add_items(self, items: Sequence[str], sort_alphabetically: bool = False):
         """
         Adds given items to the combobox.
 
@@ -269,6 +311,16 @@ class ComboBoxAbstractWidget(QWidget):
 
         return self._box.itemText(index)
 
+    def iterate_item_texts(self) -> Iterator[str]:
+        """
+        Generator function that yields all item texts in the combobox.
+
+        :return: iterated item texts.
+        """
+
+        for i in range(self._box.count()):
+            yield self.item_text(i)
+
     def set_item_text(self, index: int, text: str):
         """
         Sets the text of the item at given index.
@@ -288,17 +340,36 @@ class ComboBoxAbstractWidget(QWidget):
 
         return self._box.currentText()
 
-    def set_to_text(self, text: str, flags: Qt.MatchFlags = Qt.MatchFixedString):
+    def set_to_text(self, text: str, flags: Qt.MatchFlags = Qt.MatchFixedString, quiet: bool = False):
         """
         Sets the index based on given text.
 
         :param text: text to search and switch the combo box to.
         :param Qt.MatchFlags flags: optional match flags.
+        :param quiet: whether to block signals before setting text.
+        """
+
+        if quiet:
+            self._box.blockSignals(True)
+        try:
+            index = self._box.findText(text, flags)
+            if index >= 0:
+                self.setCurrentIndex(index)
+        finally:
+            if quiet:
+                self._box.blockSignals(False)
+
+    def remove_item_by_text(self, text: str, flags: Qt.MatchFlags = Qt.MatchFixedString):
+        """
+        Removes the index based on the text from the combobox.
+
+        :param text: text to search and delete based on given flags.
+        :param flags: optional match flags.
         """
 
         index = self._box.findText(text, flags)
         if index >= 0:
-            self.setCurrentIndex(index)
+            self._box.removeItem(index)
 
     def item_data(self, index: int, role: Qt.ItemDataRole = Qt.UserRole) -> Any:
         """
@@ -310,6 +381,16 @@ class ComboBoxAbstractWidget(QWidget):
         """
 
         return self._box.itemData(index, role)
+
+    def iterate_item_data(self) -> Iterator[Any]:
+        """
+        Generator function that yields all item data available in the combo box.
+
+        :return: iterated data.
+        """
+
+        for i in range(self._box.count()):
+            yield self._box.itemData(i)
 
     def current_data(self, role: Qt.ItemDataRole = Qt.UserRole) -> Any:
         """
@@ -331,6 +412,24 @@ class ComboBoxAbstractWidget(QWidget):
 
         self._box.setItemData(index, value)
 
+    def set_label_fixed_width(self, width: int):
+        """
+        Sets the fixed width of the label.
+
+        :param width: new label fixed width in pixels.
+        """
+
+        self._label.setFixedWidth(dpi.dpi_scale(width))
+
+    def set_combo_box_fixed_width(self, width: int):
+        """
+        Sets the fixed width of the combobox.
+
+        :param int width: new combobox fixed width in pixels.
+        """
+
+        self._box.setFixedWidth(dpi.dpi_scale(width))
+
     def on_item_changed(self):
         """
         Callback function that is called by internal combo box when current its index changes.
@@ -347,20 +446,37 @@ class ComboBoxRegularWidget(ComboBoxAbstractWidget):
     Standard widget that contains a regular (not searchable) combo box with a label.
     """
 
+    # noinspection SpellCheckingInspection
     def __init__(
             self, label: str = '', items: Sequence[str] | None = None, label_ratio: int | None = None,
             box_ratio: int | None = None, tooltip: str = '', set_index: int = 0, sort_alphabetically: bool = False,
             margins: tuple[int, int, int, int] = (0, 0, 0, 0), spacing: int = uiconsts.SMALL_SPACING,
             box_min_width: int | None = None, item_data: Sequence[Any] | None = None,
             support_middle_mouse_scroll: bool = True, parent: QWidget | None = None):
+        """
+        Initializes the ComboBoxRegularWidget.
+
+        :param label: The text for the label. Defaults to an empty string.
+        :param items: The items to be added to the combo box. Defaults to None.
+        :param label_ratio: The ratio of the label width. Defaults to None.
+        :param box_ratio: The ratio of the box width. Defaults to None.
+        :param tooltip: The tooltip text for the combo box. Defaults to an empty string.
+        :param set_index: The index to be set as selected. Defaults to 0.
+        :param sort_alphabetically: If True, sorts the items alphabetically. Defaults to False.
+        :param margins: The margins around the widget. Defaults to (0, 0, 0, 0).
+        :param spacing: The spacing between the label and the combo box. Defaults to uiconsts.SMALL_SPACING.
+        :param box_min_width: The minimum width for the combo box. Defaults to None.
+        :param item_data: Additional data associated with the combo box items. Defaults to None.
+        :param support_middle_mouse_scroll: If True, supports scrolling with the middle mouse button. Defaults to True.
+        :param parent: The parent widget. Defaults to None.
+        """
+
         super().__init__(parent=parent)
 
-        self._box = BaseComboBox(items=items)
-
         if not support_middle_mouse_scroll:
-            self._box = NoWheelComboBox(parent)
+            self._box = NoWheelComboBox(parent=parent)
         else:
-            self._box = BaseComboBox(parent)
+            self._box = BaseComboBox(parent=parent)
 
         if sort_alphabetically:
             self._box.setInsertPolicy(QComboBox.InsertAlphabetically)
@@ -376,7 +492,11 @@ class ComboBoxRegularWidget(ComboBoxAbstractWidget):
         if set_index:
             self._box.setCurrentIndex(set_index)
 
-        layout = layouts.horizontal_layout(margins=margins, spacing=spacing, parent=self)
+        layout = QHBoxLayout()
+        layout.setContentsMargins(*margins)
+        layout.setSpacing(spacing)
+        self.setLayout(layout)
+
         if label:
             self._label = labels.BaseLabel(label, tooltip=tooltip, parent=parent)
             layout.addWidget(self._label, label_ratio) if label_ratio else layout.addWidget(self._label)
@@ -395,3 +515,52 @@ class ComboBoxRegularWidget(ComboBoxAbstractWidget):
         """
 
         return self._label
+
+
+class ComboBoxSearchable(ComboBoxAbstractWidget):
+
+    # noinspection SpellCheckingInspection
+    def __init__(
+            self, label: str = '', items: Sequence[str] | None = None, label_ratio: int | None = None,
+            box_ratio: int | None = None, tooltip: str = '', set_index: int = 0, sort_alphabetically: bool = False,
+            parent: QWidget | None = None):
+        """
+        Initializes the ComboBoxSearchable.
+
+        :param label: The text for the label. Defaults to an empty string.
+        :param items: The items to be added to the combo box. Defaults to None.
+        :param label_ratio: The ratio of the label width. Defaults to None.
+        :param box_ratio: The ratio of the box width. Defaults to None.
+        :param tooltip: The tooltip text for the combo box. Defaults to an empty string.
+        :param set_index: The index to be set as selected. Defaults to 0.
+        :param sort_alphabetically: If True, sorts the items alphabetically. Defaults to False.
+        :param parent: The parent widget. Defaults to None.
+        """
+
+        super().__init__(parent=parent)
+
+        main_layout = layouts.HorizontalLayout()
+        self.setLayout(main_layout)
+
+        self._box = BaseComboBox(items=items, parent=self)
+        self._box.setToolTip(tooltip)
+        self._box.setFixedHeight(dpi.dpi_scale(20))
+        if sort_alphabetically:
+            self._box.setInsertPolicy(QComboBox.InsertAlphabetically)
+            self._box.clear()
+            self.add_items(items)
+
+        if set_index:
+            self._box.setCurrentIndex(set_index)
+        if label:
+            self._label = labels.BaseLabel(text=label, tooltip=tooltip, parent=self)
+            if label_ratio:
+                main_layout.addWidget(self._label, label_ratio)
+            else:
+                main_layout.addWidget(self._label)
+        if box_ratio:
+            main_layout.addWidget(self._box, box_ratio)
+        else:
+            main_layout.addWidget(self._box)
+
+        self._box.currentIndexChanged.connect(self.on_item_changed)

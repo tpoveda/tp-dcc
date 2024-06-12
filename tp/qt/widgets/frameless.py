@@ -12,7 +12,7 @@ from ... import dcc
 from ...dcc import ui
 from ...python import paths
 from ...resources.style import theme
-from ...qt import dpi, utils, icon, uiconsts
+from ...qt import dpi, utils, icon, uiconsts, factory
 from ...qt.widgets import layouts, labels, buttons, overlay
 from ...externals.Qt.QtCore import Qt, QObject, Signal, QPoint, QSize, QTimer, QEvent, QSettings
 from ...externals.Qt.QtWidgets import (
@@ -242,7 +242,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         """
 
         size = 24
-        ui_layout = layouts.vertical_layout(margins=(0, 0, 0, 0))
+        ui_layout = factory.vertical_layout(margins=(0, 0, 0, 0))
         ui_layout.addWidget(self._logo_icon)
         self.setLayout(ui_layout)
         # noinspection SpellCheckingInspection
@@ -1064,7 +1064,7 @@ class FramelessWindow(QWidget):
 
         self.attach_to_frameless_window()
         self._minimized = False
-        self._frameless_layout = layouts.grid_layout()
+        self._frameless_layout = factory.grid_layout()
         self._setup_frameless_layout()
         self._window_resizer = WindowResizer(install_to_layout=self._frameless_layout, parent=self)
 
@@ -1262,17 +1262,17 @@ class FramelessTitleBar(QFrame):
         self._move_enabled = True
         self._move_threshold = 5
 
-        self._main_layout = layouts.horizontal_layout(parent=self)
+        self._main_layout = factory.horizontal_layout(parent=self)
         self._left_contents = QFrame(parent=self)
         self._right_contents = QWidget(parent=self)
 
-        self._main_right_layout = layouts.horizontal_layout(spacing=0)
-        self._contents_layout = layouts.horizontal_layout()
-        self._corner_contents_layout = layouts.horizontal_layout()
-        self._title_layout = layouts.horizontal_layout()
+        self._main_right_layout = factory.horizontal_layout(spacing=0)
+        self._contents_layout = factory.horizontal_layout()
+        self._corner_contents_layout = factory.horizontal_layout()
+        self._title_layout = factory.horizontal_layout()
         self._title_style = self.TitleStyle.DEFAULT
-        self._window_buttons_layout = layouts.horizontal_layout(spacing=0)
-        self._split_layout = layouts.horizontal_layout()
+        self._window_buttons_layout = factory.horizontal_layout(spacing=0)
+        self._split_layout = factory.horizontal_layout()
 
         self._logo_button = SpawnerIcon(window=parent, parent=self)
         self._close_button = buttons.BaseButton(theme_updates=False, parent=self)
@@ -1373,6 +1373,7 @@ class FramelessTitleBar(QFrame):
 
         # Split Layout
         self._split_layout.addWidget(self._left_contents)
+        self._split_layout.addSpacing(dpi.dpi_scale(5))
         self._split_layout.addLayout(self._title_layout, 1)
         self._split_layout.addWidget(self._right_contents)
 

@@ -3,12 +3,104 @@ from __future__ import annotations
 import typing
 
 from .. import utils
-from ...externals.Qt.QtCore import Qt, Signal
+from ...externals.Qt.QtCore import Qt, Signal, QPoint
 from ...externals.Qt.QtWidgets import QMenu, QAction, QWidgetAction
 from ...externals.Qt.QtGui import QIcon, QMouseEvent, QShowEvent
+from .. import dpi
 
 if typing.TYPE_CHECKING:
     from .search import SearchFindWidget
+
+
+def mixin(cls):
+    """
+    Decorator that can be added to custom widgets to automatize the creation of left/right/middle click menus.
+    """
+
+    original_init__ = cls.__init__
+
+    def my__init__(self, *args, **kwargs):
+        original_init__(self, *args, **kwargs)
+
+    # noinspection PyIncorrectDocstring
+    def get_menu(self, mouse_button=Qt.RightButton):
+        """
+        Returns the menu based on the given mouse button.
+
+        :param Qt.ButtonClick mouse_button: the clicked mouse button.
+        :return: registered menu on that mouse button.
+        :rtype: QMenu or None
+        """
+
+        return self._click_menu[mouse_button]
+
+    # noinspection PyIncorrectDocstring
+    def set_menu(self, menu, action_list=None, mouse_button=Qt.RightButton):
+        """
+        Sets the left/middle/right click menu. If a model_list is given, then the menu will be  filled with that info.
+
+        :param QMenu menu: Qt menu to show on left/middle/right click.
+        :param list(tuple(str)) action_list: list of menu modes. Eg: [('icon1', 'menuName1'), (...), ...]
+        :param Qt.ButtonClick mouse_button: the mouse button menu will be assigned to.
+        """
+
+        self._click_menu[mouse_button] = menu
+        self._menu_active[mouse_button] = True
+        if action_list:
+            self._add_action_list(action_list, mouse_button=mouse_button)
+
+    # noinspection PyIncorrectDocstring
+    def show_context_menu(self, mouse_button):
+        """
+        Shows the menu depending on the given mouse click.
+
+        :param Qt.ButtonClick mouse_button: the mouse button menu will be assigned to.
+        """
+
+        if not self._click_menu:
+            return
+
+        menu = self.get_menu(mouse_button=mouse_button)
+        if menu is not None and self._menu_active[mouse_button]:
+            self.setFocus()
+            parent_position = self.mapToGlobal(QPoint(0, 0))
+            pos = parent_position + QPoint(0, dpi.dpi_scale(self._menu_vertical_offset))
+            menu.exec_(pos)
+
+    def _setup_menu_class(self, menu_vertical_offset=20):
+        """
+        Internal function that handles the setup of menu creation.
+
+        :param int menu_vertical_offset: negative vertical offset of the drawn menu
+        """
+
+        self._menu_vertical_offset = menu_vertical_offset
+        self._menu_active = {Qt.LeftButton: False, Qt.MiddleButton: False, Qt.RightButton: False}
+        self._click_menu = {Qt.LeftButton: None, Qt.MiddleButton: None, Qt.RightButton: None}
+        self._menu_searchable = {Qt.LeftButton: False, Qt.MiddleButton: False, Qt.RightButton: False}
+
+    def _add_action_list(self, actions_list, mouse_button=Qt.RightButton):
+        """
+        Internal function that resets the menu and fills its with given list of actions.
+
+        :param list(tuple(str, str)) actions_list: list of menu actions. Eg: [('icon1', 'menuName1'), (...), ...]
+        :param Qt.ButtonClick mouse_button: the mouse button menu will be assigned to.
+
+        ..warning:: this function only works with CPG DCC Tools framework Menu class
+        """
+
+        menu = self.get_menu(mouse_button=mouse_button)
+        if menu is not None:
+            menu.action_connect_list(actions_list)
+
+    setattr(cls, '__init__', my__init__)
+    setattr(cls, 'get_menu', get_menu)
+    setattr(cls, 'set_menu', set_menu)
+    setattr(cls, 'show_context_menu', show_context_menu)
+    setattr(cls, '_setup_menu_class', _setup_menu_class)
+    setattr(cls, '_add_action_list', _add_action_list)
+
+    return cls
 
 
 class BaseMenu(QMenu):
