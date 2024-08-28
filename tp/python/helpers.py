@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-
-from typing import Type, Any
 from collections.abc import Sequence
+from typing import Type, Iterator, Iterable, Any
 
 
 def is_null_or_empty(value: Any) -> bool:
@@ -72,15 +71,49 @@ def force_sequence(var: Any, sequence_type: Type = list):
     if type is not list or not tuple:
         sequence_type = list
 
-    if type(var) == list and sequence_type == tuple:
+    if isinstance(var, list) and sequence_type is tuple:
         var = tuple(var)
-    if type(var) == tuple and sequence_type == list:
+    if isinstance(var, tuple) and sequence_type is list:
         var = list(var)
 
-    if not type(var) == sequence_type:
-        return sequence_type(var)
+    return sequence_type(var) if not isinstance(var, sequence_type) else var
 
-    return var
+
+def index_in_list(list_arg: list, index: int, default: Any = None) -> Any:
+    """
+    Returns the item at given index. If item does not exist, returns default value.
+
+    :param list_arg: list of objects to get from.
+    :param index: index to get object at.
+    :param default: any value to return as default.
+    :return: item at given index.
+    """
+
+    return list_arg[index] if list_arg and len(list_arg) > abs(index) else default
+
+
+def first_in_list(list_arg: list, default: Any = None) -> Any:
+    """
+    Returns the first element of the list. If list is empty, returns default value.
+
+    :param list_arg: An empty or not empty list.
+    :param default: If list is empty, something to return.
+    :return: Returns the first element of the list.  If list is empty, returns default value.
+    """
+
+    return index_in_list(list_arg, 0, default=default)
+
+
+def last_in_list(list_arg: list, default: Any = None):
+    """
+    Returns the last element of the list. If list is empty, returns default value.
+
+    :param list_arg: An empty or not empty list.
+    :param default: If list is empty, something to return.
+    :return: Returns the last element of the list.  If list is empty, returns default value.
+    """
+
+    return index_in_list(list_arg, -1, default=default)
 
 
 def remove_dupes(iterable: list) -> list:
@@ -98,6 +131,38 @@ def remove_dupes(iterable: list) -> list:
             new_iter.append(item)
         unique.add(item)
     return new_iter
+
+
+def duplicates_in_list(seq: Iterable) -> list[Any]:
+    """
+    Returns all duplicates items in given list or tuple.
+
+    :param seq: iterable object.
+    :return: duplicated elements in given iterable.
+    """
+
+    seen = set()
+    duplicates: list[Any] = []
+    for obj in seq:
+        if obj in seen:
+            duplicates.append(obj)
+        seen.add(obj)
+
+    return duplicates
+
+
+def iterate_chunks(iterable: Iterable, size: int, overlap: int = 0) -> Iterator[Any]:
+    """
+    Yield successive sized chunks from the given iterable.
+
+    :param iterable: iterable to chunk.
+    :param size: chunk size.
+    :param overlap: overlap size.
+    """
+
+    # noinspection PyTypeChecker
+    for i in range(0, len(iterable) - overlap, size - overlap):
+        yield iterable[i : i + size]
 
 
 class AttributeDict(dict):

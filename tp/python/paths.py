@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import inspect
 import platform
+
+from .names import FindUniqueString
 
 
 def normalized(path: str) -> str:
@@ -13,13 +16,13 @@ def normalized(path: str) -> str:
     :return: normalized path.
     """
 
-    if platform.system().lower() == 'windows':
+    if platform.system().lower() == "windows":
         # Strip leading slashes on windows (IE /C:path/ -> C:/path/)
-        path = path.lstrip('\\/')
+        path = path.lstrip("\\/")
 
-    # normpath will collapse redundant path separators, convert slashes to platform efault then manually swap 
+    # normpath will collapse redundant path separators, convert slashes to platform efault then manually swap
     # to forward slashes, ignoring the platform default
-    return os.path.normpath(path).replace('\\', '/')  # Forward slashes only
+    return os.path.normpath(path).replace("\\", "/")  # Forward slashes only
 
 
 def normalized_absolute(path: str) -> str:
@@ -49,14 +52,14 @@ def canonical_path(path: str, ignore_members: list[str] | None = None) -> str:
     ignore_members = ignore_members or []
     if not isinstance(ignore_members, list):
         ignore_members = [ignore_members]
-    ignore_members.append('canonical_path')
+    ignore_members.append("canonical_path")
 
     # get the current frame and inspect the stack and loop through the inspect stack and break when not a function
     # to ignore.
     frame = inspect.currentframe()
     inspect_stack = inspect.stack()[1:]
 
-    for (frame, filename, lineno, function, context, index) in inspect_stack:
+    for frame, filename, lineno, function, context, index in inspect_stack:
         if function not in ignore_members:
             break
 
@@ -64,3 +67,54 @@ def canonical_path(path: str, ignore_members: list[str] | None = None) -> str:
     full_path = os.path.join(base_path, normalized(path))
 
     return normalized_absolute(os.path.realpath(full_path))
+
+
+def unique_path_name(directory: str, padding: int = 0) -> str:
+    """
+    Returns a unique path by adding a padding to the given path name if it is not unique.
+
+    :param directory: directory name including path.
+    :param padding: where the padding should start.
+    :return: new unique directory with path.
+    """
+
+    unique_path = FindUniquePath(directory)
+    unique_path.padding = padding
+    return unique_path.get()
+
+
+class FindUniquePath(FindUniqueString):
+    """
+    Class to find a unique path in a given directory.
+    """
+
+    def __init__(self, directory: str):
+        directory = directory or os.getcwd()
+        self.parent_path = os.path.dirname(directory)
+        base_name = os.path.basename(directory)
+        super(FindUniquePath, self).__init__(base_name)
+
+    def _get_scope_list(self):
+        """
+        Returns a list of files and folders in the parent path.
+
+        :return: list of files and folders.
+        """
+
+        # noinspection PyBroadException
+        try:
+            files = os.listdir(self.parent_path)
+        except Exception:
+            files = []
+
+        return files
+
+    def _search(self):
+        """
+        Internal function that generates the unique string.
+
+        :return: unique string.
+        """
+
+        name = super(FindUniquePath, self)._search()
+        return pathlib.Path(self.parent_path, name).as_posix()

@@ -11,18 +11,24 @@ import importlib
 import traceback
 import importlib.util
 from types import ModuleType
-from typing import Iterator, Type, Any
+from typing import Iterator, Iterable, Type, Any
 
 from . import helpers
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-handler.setLevel(logging.INFO)
-# noinspection SpellCheckingInspection
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+
+# File prefixes to exclude for determining a valid python module
+# include Operating System meta files and hidden files to ignore
+MODULE_EXCLUDE_PREFIXES = (
+    "__init__.py",
+    ".__init__",
+    # OSX related metaFiles
+    ".DS_Store",
+    ".Spotlight-V100",
+    ".Trashes",
+    ".fseventsd",
+    "._",
+)
 
 
 def is_dotted_module_path(module_path: str) -> bool:
@@ -36,7 +42,7 @@ def is_dotted_module_path(module_path: str) -> bool:
     :return: True if the module path is in dotted notation, False otherwise.
     """
 
-    return len(module_path.split('.')) > 2
+    return len(module_path.split(".")) > 2
 
 
 def convert_to_dotted_path(path: str) -> str:
@@ -61,15 +67,15 @@ def convert_to_dotted_path(path: str) -> str:
     if current_work_dir in sys_path:
         sys_path.remove(current_work_dir)
 
-    drive_letter = os.path.splitdrive(path)[0] + '\\'
+    drive_letter = os.path.splitdrive(path)[0] + "\\"
     while directory not in sys_path:
         directory, name = os.path.split(directory)
         directory = pathlib.Path(directory).as_posix()
-        if directory == drive_letter or name == '':
-            return ''
+        if directory == drive_letter or name == "":
+            return ""
         package_path.append(name)
 
-    return '.'.join(reversed(package_path))
+    return ".".join(reversed(package_path))
 
 
 def file_path_to_module_path(file_path: str) -> str:
@@ -85,7 +91,7 @@ def file_path_to_module_path(file_path: str) -> str:
 
     python_paths = [os.path.normpath(x) for x in sys.path]
     file_path = os.path.normpath(os.path.expandvars(file_path))
-    if file_path.endswith('__init__.py') or file_path.endswith('__init__.pyc'):
+    if file_path.endswith("__init__.py") or file_path.endswith("__init__.pyc"):
         file_path = os.path.dirname(file_path)
     elif os.path.isfile(file_path):
         file_path, extension = os.path.splitext(file_path)
@@ -93,17 +99,39 @@ def file_path_to_module_path(file_path: str) -> str:
     found = [x for x in python_paths if file_path.startswith(x)]
     num_found = len(found)
     if num_found == 0:
-        return ''
+        return ""
 
-    start_path = max(found)
+    start_path = min(found)
     relative_path = os.path.relpath(file_path, start_path)
 
-    return '.'.join(relative_path.split(os.sep))
+    return ".".join(relative_path.split(os.sep))
+
+
+def valid_module_path(path: str, exclude: Iterable[str] | None = None) -> bool:
+    """
+    Checks if a given module path is valid.
+
+    This function verifies if a given module path is valid by checking if it exists and is not in the exclusion list.
+
+    :param path: The module path to validate.
+    :param exclude: An iterable of module paths to exclude.
+    :return: True if the module path is valid, False otherwise.
+    """
+
+    exclude = exclude or []
+    basename = os.path.basename(path)
+    if not basename.startswith(MODULE_EXCLUDE_PREFIXES) and basename not in exclude:
+        return path.endswith(".py") or path.endswith(".pyc")
+    return False
 
 
 def import_module(
-        module_path: str, name: str | None = None, skip_warnings: bool = True, skip_errors: bool = False,
-        force_reload: bool = False) -> ModuleType | None:
+    module_path: str,
+    name: str | None = None,
+    skip_warnings: bool = True,
+    skip_errors: bool = False,
+    force_reload: bool = False,
+) -> ModuleType | None:
     """
     Imports a module from a given module path.
 
@@ -122,19 +150,24 @@ def import_module(
         try:
             return importlib.import_module(module_path)
         except (NameError, KeyError, AttributeError) as exc:
-            if '__init__' in str(exc) or '__path__' in str(exc):
+            if "__init__" in str(exc) or "__path__" in str(exc):
                 pass
             else:
                 msg = f'Failed to load module: "{module_path}"'
                 logger.error(msg, exc_info=True) if not skip_errors else logger.debug(
-                    f'{msg} | {traceback.format_exc()}')
+                    f"{msg} | {traceback.format_exc()}"
+                )
         except (ImportError, ModuleNotFoundError):
             msg = f'Failed to import module: "{module_path}"'
-            logger.error(msg, exc_info=True) if not skip_errors else logger.debug(f'{msg} | {traceback.format_exc()}')
+            logger.error(msg, exc_info=True) if not skip_errors else logger.debug(
+                f"{msg} | {traceback.format_exc()}"
+            )
             return None
         except SyntaxError:
             msg = f'Module contains syntax errors: "{module_path}"'
-            logger.error(msg, exc_info=True) if not skip_errors else logger.debug(f'{msg} | {traceback.format_exc()}')
+            logger.error(msg, exc_info=True) if not skip_errors else logger.debug(
+                f"{msg} | {traceback.format_exc()}"
+            )
             return None
     try:
         if os.path.exists(module_path):
@@ -148,13 +181,17 @@ def import_module(
                 return sys.modules[name]
         if not name:
             if not skip_warnings:
-                logger.warning(f'Impossible to load module because module path: {module_path} was not found!')
+                logger.warning(
+                    f"Impossible to load module because module path: {module_path} was not found!"
+                )
             return None
         if os.path.isdir(module_path):
-            module_path = os.path.join(module_path, '__init__.py')
+            module_path = os.path.join(module_path, "__init__.py")
             if not os.path.isfile(module_path):
                 raise ValueError(f'Cannot find module path: "{module_path}"')
-        spec = importlib.util.spec_from_file_location(name, os.path.realpath(module_path))
+        spec = importlib.util.spec_from_file_location(
+            name, os.path.realpath(module_path)
+        )
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         sys.modules[name] = mod
@@ -176,11 +213,11 @@ def resolve_module(name: str, log_error: bool = False):
     :return: The resolved module, or None if the module cannot be resolved.
     """
 
-    name = name.split('.')
+    name = name.split(".")
     used = name.pop(0)
     found = __import__(used)
     for n in name:
-        used = used + '.' + n
+        used = used + "." + n
         try:
             found = getattr(found, n)
         except AttributeError:
@@ -196,7 +233,8 @@ def resolve_module(name: str, log_error: bool = False):
 
 
 def iterate_module(
-        module: ModuleType, include_abstract: bool = False, class_filter: type = object) -> Iterator[tuple[str, type]]:
+    module: ModuleType, include_abstract: bool = False, class_filter: type = object
+) -> Iterator[tuple[str, type]]:
     """
     Iterates over the classes in a given module.
 
@@ -217,12 +255,16 @@ def iterate_module(
         if issubclass(item, class_filter) or item in class_filter:
             yield key, item
         else:
-            logger.debug(f'Skipping {key} class')
+            logger.debug(f"Skipping {key} class")
 
 
 def iterate_modules(
-        path: str, exclude: list[str] | None = None, skip_inits: bool = True, recursive: bool = True,
-        return_pyc: bool = False) -> list[str]:
+    path: str,
+    exclude: list[str] | None = None,
+    skip_inits: bool = True,
+    recursive: bool = True,
+    return_pyc: bool = False,
+) -> list[str]:
     """
     Iterates over modules in the given directory path.
 
@@ -239,43 +281,53 @@ def iterate_modules(
     """
 
     exclude = helpers.force_list(exclude)
-    _exclude = ['__init__.py', '__init__.pyc'] if skip_inits else list()
+    _exclude = ["__init__.py", "__init__.pyc"] if skip_inits else list()
 
     modules_found = dict()
 
-    extension_to_skip = '.pyc' if not return_pyc else '.py'
+    extension_to_skip = ".pyc" if not return_pyc else ".py"
 
     if recursive:
         for root, dirs, files in os.walk(path):
-            if '__init__.py' not in files:
+            if "__init__.py" not in files:
                 continue
             for f in files:
                 base_name = os.path.splitext(f)[0]
                 if f not in exclude and base_name not in exclude:
                     module_path = pathlib.Path(root, f).as_posix()
-                    if f.endswith('.py') or f.endswith('.pyc') and base_name:
+                    if f.endswith(".py") or f.endswith(".pyc") and base_name:
                         if base_name in modules_found:
                             if base_name.endswith(extension_to_skip):
                                 continue
                             else:
-                                if base_name.endswith(extension_to_skip) and base_name not in modules_found:
+                                if (
+                                    base_name.endswith(extension_to_skip)
+                                    and base_name not in modules_found
+                                ):
                                     modules_found[base_name] = module_path
                         else:
                             modules_found[base_name] = module_path
     else:
         files = os.listdir(path)
-        if '__init__.py' not in files:
+        if "__init__.py" not in files:
             return list(modules_found.values())
         for file_name in files:
             base_name = os.path.splitext(file_name)[0]
             if file_name not in exclude and base_name not in exclude:
                 module_path = pathlib.Path(path, file_name).as_posix()
-                if file_name.endswith('.py') or file_name.endswith('.pyc') and base_name:
+                if (
+                    file_name.endswith(".py")
+                    or file_name.endswith(".pyc")
+                    and base_name
+                ):
                     if base_name in modules_found:
                         if base_name.endswith(extension_to_skip):
                             continue
                         else:
-                            if base_name.endswith(extension_to_skip) and base_name not in modules_found:
+                            if (
+                                base_name.endswith(extension_to_skip)
+                                and base_name not in modules_found
+                            ):
                                 modules_found[base_name] = module_path
                     else:
                         modules_found[base_name] = module_path
@@ -283,7 +335,9 @@ def iterate_modules(
     return list(modules_found.values())
 
 
-def iterate_package(package_path: str, force_reload: bool = False) -> Iterator[ModuleType]:
+def iterate_package(
+    package_path: str, force_reload: bool = False
+) -> Iterator[ModuleType]:
     """
     Iterates over all modules in a given package.
 
@@ -297,25 +351,31 @@ def iterate_package(package_path: str, force_reload: bool = False) -> Iterator[M
     """
 
     if not os.path.exists(package_path):
-        raise TypeError(f'iterate_package() cannot locate package: {package_path}')
+        raise TypeError(f"iterate_package() cannot locate package: {package_path}")
 
     if os.path.isfile(package_path):
         package_path = os.path.dirname(package_path)
 
     for file_name in os.listdir(package_path):
         module_name, extension = os.path.splitext(file_name)
-        if module_name == '__init__' or extension != '.py':
+        if module_name == "__init__" or extension != ".py":
             continue
 
         # Try and import module
-        file_path = os.path.join(package_path, f'{module_name}.py')
+        file_path = os.path.join(package_path, f"{module_name}.py")
         module_path = file_path_to_module_path(file_path)
         logger.info(f'Attempting to import: "{module_path}" module, from: {file_path}')
         try:
             # Import module and check if it should be reloaded
-            module = __import__(module_path, locals=locals(), globals=globals(), fromlist=[file_path], level=0)
+            module = __import__(
+                module_path,
+                locals=locals(),
+                globals=globals(),
+                fromlist=[file_path],
+                level=0,
+            )
             if force_reload:
-                logger.info('Reloading module...')
+                logger.info("Reloading module...")
                 importlib.reload(module)
             yield module
         except ImportError as exception:
@@ -323,7 +383,9 @@ def iterate_package(package_path: str, force_reload: bool = False) -> Iterator[M
             continue
 
 
-def iterate_module_members(module_to_iterate: ModuleType, predicate: Any = None) -> Iterator[Any]:
+def iterate_module_members(
+    module_to_iterate: ModuleType, predicate: Any = None
+) -> Iterator[Any]:
     """
     Iterates over the members of a given module.
 
@@ -370,7 +432,9 @@ def get_package_children(module_path: str) -> list[str]:
     return [name for _, name, _ in pkgutil.iter_modules([module_path])]
 
 
-def load_module_from_source(file_path: str, unique_namespace=False) -> ModuleType | None:
+def load_module_from_source(
+    file_path: str, unique_namespace=False
+) -> ModuleType | None:
     """
     Loads a module from a source file.
 
@@ -384,23 +448,30 @@ def load_module_from_source(file_path: str, unique_namespace=False) -> ModuleTyp
 
     file_name = os.path.splitext(os.path.basename(file_path))[0]
 
-    module_name = f'{file_name}{str(uuid.uuid4())}' if unique_namespace else file_name
+    module_name = f"{file_name}{str(uuid.uuid4())}" if unique_namespace else file_name
 
     # noinspection PyBroadException
     try:
-        spec = importlib.util.spec_from_file_location(module_name, os.path.realpath(file_path))
+        spec = importlib.util.spec_from_file_location(
+            module_name, os.path.realpath(file_path)
+        )
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         sys.modules[module_name] = mod
         return mod
     except Exception:
-        logger.info(f'Failed trying to direct load : {file_path} | {traceback.format_exc()}')
+        logger.info(
+            f"Failed trying to direct load : {file_path} | {traceback.format_exc()}"
+        )
         return None
 
 
 def find_class(
-        class_name: str, module_path: str, __locals__: dict | None = None,
-        __globals__: dict | None = None) -> type | None:
+    class_name: str,
+    module_path: str,
+    __locals__: dict | None = None,
+    __globals__: dict | None = None,
+) -> type | None:
     """
     Finds and returns a class by its name from a specified module path.
 
@@ -417,13 +488,20 @@ def find_class(
     if helpers.is_null_or_empty(class_name):
         return None
 
-    from_list = module_path.split('.', 1)
-    module = __import__(module_path, locals=__locals__, globals=__globals__, fromlist=from_list, level=0)
+    from_list = module_path.split(".", 1)
+    module = __import__(
+        module_path, locals=__locals__, globals=__globals__, fromlist=from_list, level=0
+    )
 
     return getattr(module, class_name)
 
 
-def try_import(path: str, default: Any = None, __locals__: dict | None = None, __globals__: dict | None = None) -> Any:
+def try_import(
+    path: str,
+    default: Any = None,
+    __locals__: dict | None = None,
+    __globals__: dict | None = None,
+) -> Any:
     """
     Attempts to import a module from the given path.
 
@@ -439,9 +517,10 @@ def try_import(path: str, default: Any = None, __locals__: dict | None = None, _
     """
 
     try:
-
-        from_list = path.split('.', 1)
-        return __import__(path, locals=__locals__, globals=__globals__, fromlist=from_list, level=0)
+        from_list = path.split(".", 1)
+        return __import__(
+            path, locals=__locals__, globals=__globals__, fromlist=from_list, level=0
+        )
     except ImportError as exception:
         logger.info(exception)
         return default
