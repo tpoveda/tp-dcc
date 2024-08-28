@@ -1,30 +1,25 @@
 from __future__ import annotations
 
-import typing
-from abc import abstractmethod
+from Qt.QtWidgets import QMainWindow
 
-from .base import AFnBase
-
-if typing.TYPE_CHECKING:
-    from Qt.QtWidgets import QMainWindow
+from ..abstract.ui import AFnUi
 
 
-class AFnUi(AFnBase):
+class FnUi(AFnUi):
     """
-    Overloads `AFNBase` exposing functions to handle UI related behaviours.
+    Overloads `AFNBase` exposing functions to handle UI related behaviours for Standalone application.
     """
 
-    @abstractmethod
-    def main_window(self) -> QMainWindow:
+    # noinspection PyMethodMayBeStatic
+    def main_window(self) -> QMainWindow | None:
         """
         Returns main window.
 
         :return: main window instance.
         """
 
-        pass
+        return None
 
-    @abstractmethod
     def delete_ui(self, ui_name: str):
         """
         Deletes UI element with given name.

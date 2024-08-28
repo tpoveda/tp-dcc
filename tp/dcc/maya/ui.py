@@ -3,9 +3,10 @@ from __future__ import annotations
 import maya.cmds as cmds
 import maya.OpenMayaUI as OpenMayaUI1
 
+from Qt import QtCompat
+from Qt.QtWidgets import QMainWindow
+
 from ..abstract.ui import AFnUi
-from ...externals.Qt import QtCompat
-from ...externals.Qt.QtWidgets import QMainWindow
 
 
 class FnUi(AFnUi):

@@ -6,8 +6,9 @@ import traceback
 from typing import Iterator, Type, Any
 from dataclasses import dataclass, field
 
-from ..externals.Qt.QtCore import Signal, QObject
-from ..externals.Qt.QtWidgets import QWidget, QLineEdit, QCheckBox,  QStackedWidget
+from Qt.QtCore import Signal, QObject
+from Qt.QtWidgets import QWidget, QLineEdit, QCheckBox, QStackedWidget
+
 from ..dcc import callback
 from ..python import helpers, decorators, plugin
 from ..qt import utils as qtutils
@@ -18,7 +19,7 @@ logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setLevel(logging.INFO)
 # noinspection SpellCheckingInspection
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
@@ -40,9 +41,9 @@ class UiData:
         A flag indicating whether properties should be auto-linked. Defaults to False.
     """
 
-    label: str = ''
-    icon: str = ''
-    tooltip: str = ''
+    label: str = ""
+    icon: str = ""
+    tooltip: str = ""
     auto_link_properties: bool = False
 
 
@@ -106,16 +107,33 @@ class UiPropertyWidgetUpdate:
 
 
 SUPPORT_WIDGET_TYPES: dict[Type, UiPropertyWidgetUpdate] = {
-    comboboxes.ComboBoxRegularWidget:
-        UiPropertyWidgetUpdate('itemChanged', [UiPropertyGetSet('current_index', 'set_index')]),
-    groups.RadioButtonGroup: UiPropertyWidgetUpdate('toggled', [UiPropertyGetSet('checked_index', 'set_checked')]),
-    search.SearchLineEdit: UiPropertyWidgetUpdate('textChanged', [UiPropertyGetSet('text', 'setText')]),
-    lineedits.BaseLineEdit: UiPropertyWidgetUpdate('textChanged', [UiPropertyGetSet('text', 'setText')]),
-    lineedits.StringLineEditWidget: UiPropertyWidgetUpdate('textChanged', [UiPropertyGetSet('text', 'set_text')]),
-    lineedits.FloatLineEditWidget: UiPropertyWidgetUpdate('textChanged', [UiPropertyGetSet('value', 'set_value')]),
-    lineedits.IntLineEditWidget: UiPropertyWidgetUpdate('textChanged', [UiPropertyGetSet('value', 'set_value')]),
-    QLineEdit: UiPropertyWidgetUpdate('textChanged', [UiPropertyGetSet('text', 'setText')]),
-    QCheckBox: UiPropertyWidgetUpdate('toggled', [UiPropertyGetSet('isChecked', 'setChecked')])
+    comboboxes.ComboBoxRegularWidget: UiPropertyWidgetUpdate(
+        "itemChanged", [UiPropertyGetSet("current_index", "set_index")]
+    ),
+    groups.RadioButtonGroup: UiPropertyWidgetUpdate(
+        "toggled", [UiPropertyGetSet("checked_index", "set_checked")]
+    ),
+    search.SearchLineEdit: UiPropertyWidgetUpdate(
+        "textChanged", [UiPropertyGetSet("text", "setText")]
+    ),
+    lineedits.BaseLineEdit: UiPropertyWidgetUpdate(
+        "textChanged", [UiPropertyGetSet("text", "setText")]
+    ),
+    lineedits.StringLineEditWidget: UiPropertyWidgetUpdate(
+        "textChanged", [UiPropertyGetSet("text", "set_text")]
+    ),
+    lineedits.FloatLineEditWidget: UiPropertyWidgetUpdate(
+        "textChanged", [UiPropertyGetSet("value", "set_value")]
+    ),
+    lineedits.IntLineEditWidget: UiPropertyWidgetUpdate(
+        "textChanged", [UiPropertyGetSet("value", "set_value")]
+    ),
+    QLineEdit: UiPropertyWidgetUpdate(
+        "textChanged", [UiPropertyGetSet("text", "setText")]
+    ),
+    QCheckBox: UiPropertyWidgetUpdate(
+        "toggled", [UiPropertyGetSet("isChecked", "setChecked")]
+    ),
 }
 
 
@@ -124,7 +142,7 @@ class Tool(QObject):
     Base class used by tp-dcc-tools framework to implement DCC tools that have access to tp-dcc-tools functionality.
     """
 
-    ID: str = ''
+    ID: str = ""
 
     closed = Signal()
 
@@ -151,7 +169,7 @@ class Tool(QObject):
         This class property returns the identifier associated with the class.
         """
 
-        return ''
+        return ""
 
     # noinspection PyMethodParameters
     @decorators.classproperty
@@ -162,7 +180,7 @@ class Tool(QObject):
         This class property returns the creator associated with the class.
         """
 
-        return 'Tomi Poveda'
+        return "Tomi Poveda"
 
     @decorators.classproperty
     def ui_data(cls) -> UiData:
@@ -226,7 +244,7 @@ class Tool(QObject):
         :return: The property name associated with the widget.
         """
 
-        return widget.property('prop')
+        return widget.property("prop")
 
     # noinspection PyUnusedLocal
     def execute(self, *args, **kwargs) -> frameless.FramelessWindow:
@@ -303,7 +321,9 @@ class Tool(QObject):
         if update_widgets:
             self.update_widgets_from_properties()
 
-    def setup_properties(self, properties: list[UiProperty] | None = None) -> helpers.ObjectDict:
+    def setup_properties(
+        self, properties: list[UiProperty] | None = None
+    ) -> helpers.ObjectDict:
         """
         Sets up the properties associated with the instance.
 
@@ -335,7 +355,7 @@ class Tool(QObject):
 
         for name, widget in self.iterate_linkable_properties(self._stacked_widget):
             skip_children = SUPPORT_WIDGET_TYPES.get(type(widget)).skip_children
-            widget.setProperty('skipChildren', skip_children)
+            widget.setProperty("skipChildren", skip_children)
             if not self.link_property(widget, name):
                 continue
             if name not in names:
@@ -365,12 +385,14 @@ class Tool(QObject):
         """
 
         if self.widget_property_name(widget) is None:
-            widget.setProperty('prop', ui_property_name)
+            widget.setProperty("prop", ui_property_name)
             return True
 
         return False
 
-    def iterate_linkable_properties(self, widget: QObject) -> Iterator[tuple[str, QWidget]]:
+    def iterate_linkable_properties(
+        self, widget: QObject
+    ) -> Iterator[tuple[str, QWidget]]:
         """
         Iterates over linkable properties for the given widget.
 
@@ -402,14 +424,16 @@ class Tool(QObject):
             modified = False
             widget_type = type(widget)
             widget_name = self.widget_property_name(widget)
-            widget_info: UiPropertyWidgetUpdate | None = SUPPORT_WIDGET_TYPES.get(widget_type)
+            widget_info: UiPropertyWidgetUpdate | None = SUPPORT_WIDGET_TYPES.get(
+                widget_type
+            )
             if widget_info:
                 signal = getattr(widget, widget_info.save_signal)
                 signal.connect(self.save_properties)
                 modified = True
 
             if not modified and self._show_warnings:
-                logger.warning(f'Unsupported widget: {widget}. Property: {widget_name}')
+                logger.warning(f"Unsupported widget: {widget}. Property: {widget_name}")
 
     def property_widgets(self) -> list[QWidget]:
         """
@@ -421,8 +445,10 @@ class Tool(QObject):
         """
 
         found_widgets: list[QWidget] = []
-        for child in qtutils.iterate_children(self._stacked_widget, skip='skipChildren'):
-            if child.property('prop') is not None:
+        for child in qtutils.iterate_children(
+            self._stacked_widget, skip="skipChildren"
+        ):
+            if child.property("prop") is not None:
                 found_widgets.append(child)
 
         return found_widgets
@@ -438,8 +464,10 @@ class Tool(QObject):
         """
 
         found_widgets: list[QWidget] = []
-        for child in qtutils.iterate_children(self._stacked_widget, skip='skipChildren'):
-            child_property = child.property('prop')
+        for child in qtutils.iterate_children(
+            self._stacked_widget, skip="skipChildren"
+        ):
+            child_property = child.property("prop")
             if child_property is None or child_property != property_name:
                 continue
             found_widgets.append(child)
@@ -456,21 +484,24 @@ class Tool(QObject):
         modified = False
         widget_type = type(widget)
         widget_name = self.widget_property_name(widget)
-        widget_info: UiPropertyWidgetUpdate | None = SUPPORT_WIDGET_TYPES.get(widget_type)
+        widget_info: UiPropertyWidgetUpdate | None = SUPPORT_WIDGET_TYPES.get(
+            widget_type
+        )
         if widget_info:
             for i, getset in enumerate(widget_info.getsets):
-                prop = 'value' if i == 0 else getset.getter
+                prop = "value" if i == 0 else getset.getter
                 value = getattr(self.properties[widget_name], prop)
                 setter = getattr(widget, getset.setter)
                 try:
                     setter(value)
                 except TypeError as err:
                     raise TypeError(
-                        f'Unable to set widget attribute method: {widget_name}; property: {getset.setter}; '
-                        f'value: {value}: {err}')
+                        f"Unable to set widget attribute method: {widget_name}; property: {getset.setter}; "
+                        f"value: {value}: {err}"
+                    )
                 modified = True
         if not modified and self._show_warnings:
-            logger.warning(f'Unsupported widget: {widget}. Property: {widget_name}')
+            logger.warning(f"Unsupported widget: {widget}. Property: {widget_name}")
 
     def update_widget_from_property(self, ui_property_name: str):
         """
@@ -524,23 +555,25 @@ class Tool(QObject):
 
         widget_type = type(widget)
         widget_name = self.widget_property_name(widget)
-        widget_info: UiPropertyWidgetUpdate | None = SUPPORT_WIDGET_TYPES.get(widget_type)
+        widget_info: UiPropertyWidgetUpdate | None = SUPPORT_WIDGET_TYPES.get(
+            widget_type
+        )
         if widget_info:
             result: dict[str, Any] = {}
             for i, getset in enumerate(widget_info.getsets):
-                prop = 'value' if i == 0 else getset.getter
+                prop = "value" if i == 0 else getset.getter
                 result[prop] = getattr(widget, getset.getter)()
 
             extra_properties: dict = {}
-            if isinstance(widget.property('extraProperties'), dict):
-                extra_properties.update(widget.property('extraProperties'))
+            if isinstance(widget.property("extraProperties"), dict):
+                extra_properties.update(widget.property("extraProperties"))
             for k, v in extra_properties.items():
                 result[k] = getattr(widget, v)()
 
             return result
 
         if self._show_warnings:
-            logger.warning(f'Unsupported widget: {widget}. Property: {widget_name}')
+            logger.warning(f"Unsupported widget: {widget}. Property: {widget_name}")
 
         return {}
 
@@ -560,7 +593,7 @@ class Tool(QObject):
                 setattr(self.properties[property_name], k, v)
             for listener in self._listeners.get(property_name, []):
                 for k, v in widget_values.items():
-                    if k == 'value':
+                    if k == "value":
                         listener(v)
 
     def update_property(self, ui_property_name: str, value: Any):
@@ -592,7 +625,9 @@ class Tool(QObject):
         :param listener: The listener function to register.
         """
 
-        self._listeners[ui_property_name] = self._listeners.get(ui_property_name, []) + [listener]
+        self._listeners[ui_property_name] = self._listeners.get(
+            ui_property_name, []
+        ) + [listener]
 
     def pre_content_setup(self):
         """
@@ -667,4 +702,4 @@ class Tool(QObject):
             self.teardown()
             self._closed = True
         except RuntimeError:
-            logger.error(f'Failed to teardown tool: {self.id}', exc_info=True)
+            logger.error(f"Failed to teardown tool: {self.id}", exc_info=True)
