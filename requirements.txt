@@ -3,10 +3,10 @@
 # ===================================================================
 
 setuptools_scm
+PyYAML
 
 # sphinx
 # sphinx_rtd_theme
-# PyYAML
 # metayaml
 # yamlordereddictloader
 # six
