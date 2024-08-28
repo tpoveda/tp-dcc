@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import enum
 
-from ...externals.Qt.QtCore import Qt, Signal, Property
-from ...externals.Qt.QtWidgets import QSizePolicy, QWidget, QLabel, QStyleOption
-from ...externals.Qt.QtGui import QIcon, QPainter, QMouseEvent, QResizeEvent, QPaintEvent
-from .. import dpi
+from Qt.QtCore import Qt, Signal, Property
+from Qt.QtWidgets import QSizePolicy, QWidget, QLabel, QStyleOption
+from Qt.QtGui import QIcon, QPainter, QMouseEvent, QResizeEvent, QPaintEvent
+
 from . import layouts
+from .. import dpi
 
 
 class BaseLabel(QLabel, dpi.DPIScaling):
@@ -32,13 +33,21 @@ class BaseLabel(QLabel, dpi.DPIScaling):
         Class that defines different label types
         """
 
-        SECONDARY = 'secondary'
-        WARNING = 'warning'
-        DANGER = 'danger'
+        SECONDARY = "secondary"
+        WARNING = "warning"
+        DANGER = "danger"
 
     def __init__(
-            self, text: str = '', tooltip: str = '', status_tip: str = '', upper: bool = False, bold: bool = False,
-            enable_menu: bool = True, parent: QWidget | None = None, elide_mode: Qt.TextElideMode = Qt.ElideNone):
+        self,
+        text: str = "",
+        tooltip: str = "",
+        status_tip: str = "",
+        upper: bool = False,
+        bold: bool = False,
+        enable_menu: bool = True,
+        parent: QWidget | None = None,
+        elide_mode: Qt.TextElideMode = Qt.ElideNone,
+    ):
         """
         Initializes the widget with the specified properties.
 
@@ -59,7 +68,7 @@ class BaseLabel(QLabel, dpi.DPIScaling):
 
         super().__init__(text, parent)
 
-        self._type = ''
+        self._type = ""
         self._level = 0
         self._underline = False
         self._mark = False
@@ -72,7 +81,9 @@ class BaseLabel(QLabel, dpi.DPIScaling):
             self.setToolTip(tooltip)
         if status_tip:
             self.setStatusTip(status_tip)
-        self.setTextInteractionFlags(Qt.TextBrowserInteraction | Qt.LinksAccessibleByMouse)
+        self.setTextInteractionFlags(
+            Qt.TextBrowserInteraction | Qt.LinksAccessibleByMouse
+        )
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
         self.strong(bold)
 
@@ -428,18 +439,20 @@ class BaseLabel(QLabel, dpi.DPIScaling):
         """
 
         font_metrics = self.fontMetrics()
-        elided_text = font_metrics.elidedText(self._actual_text, self._elide_mode, self.width() - 2 * 2)
+        elided_text = font_metrics.elidedText(
+            self._actual_text, self._elide_mode, self.width() - 2 * 2
+        )
         super().setText(elided_text)
 
 
 class ClippedLabel(BaseLabel):
-    """
-
-    """
+    """ """
 
     _width = _text = _elided = None
 
-    def __init__(self, text='', width=0, elide=True, always_show_all=False, parent=None):
+    def __init__(
+        self, text="", width=0, elide=True, always_show_all=False, parent=None
+    ):
         """
         Custom QLabel that clips itself if the widget width is smaller than the text.
 
@@ -477,18 +490,36 @@ class ClippedLabel(BaseLabel):
             # show all text or show nothing
             if self._width >= self.sizeHint().width():
                 self.style().drawItemText(
-                    painter, rect, self.alignment(), option.palette,
-                    self.isEnabled(), self.text(), self.foregroundRole())
+                    painter,
+                    rect,
+                    self.alignment(),
+                    option.palette,
+                    self.isEnabled(),
+                    self.text(),
+                    self.foregroundRole(),
+                )
 
         else:  # if alwaysShowAll is false though, draw the ellipsis as normal
             if self._elide:
                 self.style().drawItemText(
-                    painter, rect, self.alignment(), option.palette, self.isEnabled(),
-                    self._elided, self.foregroundRole())
+                    painter,
+                    rect,
+                    self.alignment(),
+                    option.palette,
+                    self.isEnabled(),
+                    self._elided,
+                    self.foregroundRole(),
+                )
             else:
                 self.style().drawItemText(
-                    painter, rect, self.alignment(), option.palette, self.isEnabled(),
-                    self.text(), self.foregroundRole())
+                    painter,
+                    rect,
+                    self.alignment(),
+                    option.palette,
+                    self.isEnabled(),
+                    self.text(),
+                    self.foregroundRole(),
+                )
 
 
 class IconLabel(QWidget):
@@ -497,8 +528,15 @@ class IconLabel(QWidget):
     """
 
     def __init__(
-            self, icon: QIcon, text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
-            enable_menu: bool = True, parent: QWidget | None = None):
+        self,
+        icon: QIcon,
+        text: str = "",
+        tooltip: str = "",
+        upper: bool = False,
+        bold: bool = False,
+        enable_menu: bool = True,
+        parent: QWidget | None = None,
+    ):
         """
         Initializes the IconLabel widget.
 
@@ -514,11 +552,21 @@ class IconLabel(QWidget):
         super().__init__(parent)
 
         main_layout = layouts.horizontal_layout(
-            margins=(0, 0, 0, 0), spacing=dpi.dpi_scale(4), alignment=Qt.AlignLeft, parent=self)
+            margins=(0, 0, 0, 0),
+            spacing=dpi.dpi_scale(4),
+            alignment=Qt.AlignLeft,
+            parent=self,
+        )
         self.setLayout(main_layout)
 
         self._label = BaseLabel(
-            text=text, tooltip=tooltip, upper=upper, bold=bold, enable_menu=enable_menu, parent=parent)
+            text=text,
+            tooltip=tooltip,
+            upper=upper,
+            bold=bold,
+            enable_menu=enable_menu,
+            parent=parent,
+        )
         icon_size = self._label.sizeHint().height()
         self._icon_pixmap = icon.pixmap(icon_size, icon_size)
         self._icon_label = QLabel(parent=self)

@@ -3,13 +3,13 @@ from __future__ import annotations
 import platform
 from typing import Tuple, Iterable
 
-from ..externals.Qt.QtCore import QPoint, QSize
-from ..externals.Qt.QtWidgets import QApplication
+from Qt.QtCore import QPoint, QSize
+from Qt.QtWidgets import QApplication
 
 
-if platform.system().lower() == 'windows':
+if platform.system().lower() == "windows":
     DPI = 72.0
-elif platform.system().lower() == 'darwin':
+elif platform.system().lower() == "darwin":
     DPI = 96.0
 else:
     DPI = 72.0
@@ -45,10 +45,10 @@ def ui_scale_value(value: int | float | None = None) -> float:
     if value is None:
         value = 1.0
     if isinstance(value, str):
-        if '%' not in value:
+        if "%" not in value:
             value = 1.0
         else:
-            value = value.strip('%')
+            value = value.strip("%")
         # noinspection PyBroadException
         try:
             value = float(value) * 0.01
@@ -102,8 +102,11 @@ def dpi_scale_divide(value: int) -> float:
 
 
 def margins_dpi_scale(
-        left: int | Iterable[int, int, int, int], top: int | None = None, right: int | None = None,
-        bottom: int | None = None) -> Tuple[int, int, int, int]:
+    left: int | Iterable[int, int, int, int],
+    top: int | None = None,
+    right: int | None = None,
+    bottom: int | None = None,
+) -> Tuple[int, int, int, int]:
     """
     Returns proper margins with DPI taking into account
 
@@ -116,7 +119,12 @@ def margins_dpi_scale(
 
     if isinstance(left, (tuple, list)):
         margins = left
-        return dpi_scale(margins[0]), dpi_scale(margins[1]), dpi_scale(margins[2]), dpi_scale(margins[3])
+        return (
+            dpi_scale(margins[0]),
+            dpi_scale(margins[1]),
+            dpi_scale(margins[2]),
+            dpi_scale(margins[3]),
+        )
 
     return dpi_scale(left), dpi_scale(top), dpi_scale(right), dpi_scale(bottom)
 

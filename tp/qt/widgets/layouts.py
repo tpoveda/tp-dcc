@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from Qt.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout
+
 from .. import dpi
-from ...externals.Qt.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout
 
 
 class VerticalLayout(QVBoxLayout):

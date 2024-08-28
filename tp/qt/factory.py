@@ -3,9 +3,16 @@ from __future__ import annotations
 import logging
 from typing import Sequence, Any
 
-from ..externals.Qt.QtCore import Qt, QSize
-from ..externals.Qt.QtWidgets import QWidget, QComboBox, QLineEdit, QTextBrowser, QPushButton, QCheckBox
-from ..externals.Qt.QtGui import QIcon
+from Qt.QtCore import Qt, QSize
+from Qt.QtWidgets import (
+    QWidget,
+    QComboBox,
+    QLineEdit,
+    QTextBrowser,
+    QPushButton,
+    QCheckBox,
+)
+from Qt.QtGui import QIcon
 
 from . import uiconsts, dpi, icon
 from .widgets.layouts import VerticalLayout, HorizontalLayout, GridLayout
@@ -13,7 +20,14 @@ from .widgets.labels import BaseLabel, ClippedLabel, IconLabel
 from .widgets.comboboxes import BaseComboBox, NoWheelComboBox
 from .widgets.lineedits import BaseLineEdit
 from .widgets.search import SearchFindWidget
-from .widgets.buttons import BaseButton, BasePushButton, BaseToolButton, RoundButton, ShadowedButton, LeftAlignedButton
+from .widgets.buttons import (
+    BaseButton,
+    BasePushButton,
+    BaseToolButton,
+    RoundButton,
+    ShadowedButton,
+    LeftAlignedButton,
+)
 from .widgets.checkboxes import BaseCheckBoxWidget
 
 logger = logging.getLogger(__name__)
@@ -21,14 +35,17 @@ logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setLevel(logging.INFO)
 # noinspection SpellCheckingInspection
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
 def vertical_layout(
-        spacing: int = uiconsts.DEFAULT_SPACING, margins: tuple[int, int, int, int] = (2, 2, 2, 2),
-        alignment: Qt.AlignmentFlag | None = None, parent: QWidget | None = None) -> VerticalLayout:
+    spacing: int = uiconsts.DEFAULT_SPACING,
+    margins: tuple[int, int, int, int] = (2, 2, 2, 2),
+    alignment: Qt.AlignmentFlag | None = None,
+    parent: QWidget | None = None,
+) -> VerticalLayout:
     """
     Returns a new vertical layout that automatically handles DPI stuff.
 
@@ -49,8 +66,11 @@ def vertical_layout(
 
 
 def horizontal_layout(
-        spacing: int = uiconsts.DEFAULT_SPACING, margins: tuple[int, int, int, int] = (0, 0, 0, 0),
-        alignment: Qt.AlignmentFlag | None = None, parent: QWidget | None = None) -> HorizontalLayout:
+    spacing: int = uiconsts.DEFAULT_SPACING,
+    margins: tuple[int, int, int, int] = (0, 0, 0, 0),
+    alignment: Qt.AlignmentFlag | None = None,
+    parent: QWidget | None = None,
+) -> HorizontalLayout:
     """
     Returns a new horizontal layout that automatically handles DPI stuff.
 
@@ -71,10 +91,14 @@ def horizontal_layout(
 
 
 def grid_layout(
-        spacing: int = uiconsts.DEFAULT_SPACING, margins: tuple[int, int, int, int] = (0, 0, 0, 0),
-        column_min_width: list[int, int] | None = None, column_min_width_b: list[int, int] | None = None,
-        vertical_spacing: int | None = None, horizontal_spacing: int | None = None,
-        parent: QWidget | None = None) -> GridLayout:
+    spacing: int = uiconsts.DEFAULT_SPACING,
+    margins: tuple[int, int, int, int] = (0, 0, 0, 0),
+    column_min_width: list[int, int] | None = None,
+    column_min_width_b: list[int, int] | None = None,
+    vertical_spacing: int | None = None,
+    horizontal_spacing: int | None = None,
+    parent: QWidget | None = None,
+) -> GridLayout:
     """
     Returns a new grid layout that automatically handles DPI stuff.
 
@@ -104,18 +128,30 @@ def grid_layout(
         new_layout.setVerticalSpacing(vertical_spacing)
 
     if column_min_width:
-        new_layout.setColumnMinimumWidth(column_min_width[0], dpi.dpi_scale(column_min_width[1]))
+        new_layout.setColumnMinimumWidth(
+            column_min_width[0], dpi.dpi_scale(column_min_width[1])
+        )
     if column_min_width_b:
-        new_layout.setColumnMinimumWidth(column_min_width_b[0], dpi.dpi_scale(column_min_width_b[1]))
+        new_layout.setColumnMinimumWidth(
+            column_min_width_b[0], dpi.dpi_scale(column_min_width_b[1])
+        )
 
     return new_layout
 
 
 def label(
-        text: str = '', tooltip: str = '', status_tip: str | None = None, upper: bool = False, bold: bool = False,
-        alignment: Qt.AlignmentFlag | None = None, elide_mode: Qt.TextElideMode = Qt.ElideNone,
-        min_width: int | None = None, max_width: int | None = None, properties: list[tuple[str, Any]] | None = None,
-        parent: QWidget | None = None) -> BaseLabel:
+    text: str = "",
+    tooltip: str = "",
+    status_tip: str | None = None,
+    upper: bool = False,
+    bold: bool = False,
+    alignment: Qt.AlignmentFlag | None = None,
+    elide_mode: Qt.TextElideMode = Qt.ElideNone,
+    min_width: int | None = None,
+    max_width: int | None = None,
+    properties: list[tuple[str, Any]] | None = None,
+    parent: QWidget | None = None,
+) -> BaseLabel:
     """
     Creates a new label widget.
 
@@ -136,7 +172,14 @@ def label(
     """
 
     new_label = BaseLabel(
-        text=text, tooltip=tooltip, status_tip=status_tip, bold=bold, upper=upper, elide_mode=elide_mode, parent=parent)
+        text=text,
+        tooltip=tooltip,
+        status_tip=status_tip,
+        bold=bold,
+        upper=upper,
+        elide_mode=elide_mode,
+        parent=parent,
+    )
     if min_width is not None:
         new_label.setMinimumWidth(min_width)
     if max_width is not None:
@@ -153,9 +196,15 @@ def label(
 
 
 def h1_label(
-        text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
-        elide_mode: Qt.TextElideMode = Qt.ElideNone, min_width: int | None = None, max_width: int | None = None,
-        parent: QWidget | None = False) -> BaseLabel:
+    text: str = "",
+    tooltip: str = "",
+    upper: bool = False,
+    bold: bool = False,
+    elide_mode: Qt.TextElideMode = Qt.ElideNone,
+    min_width: int | None = None,
+    max_width: int | None = None,
+    parent: QWidget | None = False,
+) -> BaseLabel:
     """
     Creates a new H1 label widget.
 
@@ -171,14 +220,27 @@ def h1_label(
     """
 
     return label(
-        text=text, tooltip=tooltip, upper=upper, bold=bold, elide_mode=elide_mode, min_width=min_width,
-        max_width=max_width, parent=parent).h1()
+        text=text,
+        tooltip=tooltip,
+        upper=upper,
+        bold=bold,
+        elide_mode=elide_mode,
+        min_width=min_width,
+        max_width=max_width,
+        parent=parent,
+    ).h1()
 
 
 def h2_label(
-        text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
-        elide_mode: Qt.TextElideMode = Qt.ElideNone, min_width: int | None = None, max_width: int | None = None,
-        parent: QWidget | None = False) -> BaseLabel:
+    text: str = "",
+    tooltip: str = "",
+    upper: bool = False,
+    bold: bool = False,
+    elide_mode: Qt.TextElideMode = Qt.ElideNone,
+    min_width: int | None = None,
+    max_width: int | None = None,
+    parent: QWidget | None = False,
+) -> BaseLabel:
     """
     Creates a new H2 label widget.
 
@@ -194,14 +256,27 @@ def h2_label(
     """
 
     return label(
-        text=text, tooltip=tooltip, upper=upper, bold=bold, elide_mode=elide_mode, min_width=min_width,
-        max_width=max_width, parent=parent).h2()
+        text=text,
+        tooltip=tooltip,
+        upper=upper,
+        bold=bold,
+        elide_mode=elide_mode,
+        min_width=min_width,
+        max_width=max_width,
+        parent=parent,
+    ).h2()
 
 
 def h3_label(
-        text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
-        elide_mode: Qt.TextElideMode = Qt.ElideNone, min_width: int | None = None, max_width: int | None = None,
-        parent: QWidget | None = False) -> BaseLabel:
+    text: str = "",
+    tooltip: str = "",
+    upper: bool = False,
+    bold: bool = False,
+    elide_mode: Qt.TextElideMode = Qt.ElideNone,
+    min_width: int | None = None,
+    max_width: int | None = None,
+    parent: QWidget | None = False,
+) -> BaseLabel:
     """
     Creates a new H3 label widget.
 
@@ -217,14 +292,27 @@ def h3_label(
     """
 
     return label(
-        text=text, tooltip=tooltip, upper=upper, bold=bold, elide_mode=elide_mode, min_width=min_width,
-        max_width=max_width, parent=parent).h3()
+        text=text,
+        tooltip=tooltip,
+        upper=upper,
+        bold=bold,
+        elide_mode=elide_mode,
+        min_width=min_width,
+        max_width=max_width,
+        parent=parent,
+    ).h3()
 
 
 def h4_label(
-        text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
-        elide_mode: Qt.TextElideMode = Qt.ElideNone, min_width: int | None = None, max_width: int | None = None,
-        parent: QWidget | None = False) -> BaseLabel:
+    text: str = "",
+    tooltip: str = "",
+    upper: bool = False,
+    bold: bool = False,
+    elide_mode: Qt.TextElideMode = Qt.ElideNone,
+    min_width: int | None = None,
+    max_width: int | None = None,
+    parent: QWidget | None = False,
+) -> BaseLabel:
     """
     Creates a new H4 label widget.
 
@@ -240,14 +328,27 @@ def h4_label(
     """
 
     return label(
-        text=text, tooltip=tooltip, upper=upper, bold=bold, elide_mode=elide_mode, min_width=min_width,
-        max_width=max_width, parent=parent).h4()
+        text=text,
+        tooltip=tooltip,
+        upper=upper,
+        bold=bold,
+        elide_mode=elide_mode,
+        min_width=min_width,
+        max_width=max_width,
+        parent=parent,
+    ).h4()
 
 
 def h5_label(
-        text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
-        elide_mode: Qt.TextElideMode = Qt.ElideNone, min_width: int | None = None, max_width: int | None = None,
-        parent: QWidget | None = False) -> BaseLabel:
+    text: str = "",
+    tooltip: str = "",
+    upper: bool = False,
+    bold: bool = False,
+    elide_mode: Qt.TextElideMode = Qt.ElideNone,
+    min_width: int | None = None,
+    max_width: int | None = None,
+    parent: QWidget | None = False,
+) -> BaseLabel:
     """
     Creates a new H5 label widget.
 
@@ -263,13 +364,24 @@ def h5_label(
     """
 
     return label(
-        text=text, tooltip=tooltip, upper=upper, bold=bold, elide_mode=elide_mode, min_width=min_width,
-        max_width=max_width, parent=parent).h5()
+        text=text,
+        tooltip=tooltip,
+        upper=upper,
+        bold=bold,
+        elide_mode=elide_mode,
+        min_width=min_width,
+        max_width=max_width,
+        parent=parent,
+    ).h5()
 
 
 def clipped_label(
-        text: str = '', width: int = 0, elide: bool = True, always_show_all: bool = False,
-        parent: QWidget | None = None) -> ClippedLabel:
+    text: str = "",
+    width: int = 0,
+    elide: bool = True,
+    always_show_all: bool = False,
+    parent: QWidget | None = None,
+) -> ClippedLabel:
     """
     Custom QLabel that clips itself if the widget width is smaller than the text.
 
@@ -281,12 +393,24 @@ def clipped_label(
     :return: new clipped label widget instance.
     """
 
-    return ClippedLabel(text=text, width=width, elide=elide, always_show_all=always_show_all, parent=parent)
+    return ClippedLabel(
+        text=text,
+        width=width,
+        elide=elide,
+        always_show_all=always_show_all,
+        parent=parent,
+    )
 
 
 def icon_label(
-        label_icon: QIcon, text: str = '', tooltip: str = '', upper: bool = False, bold: bool = False,
-        enable_menu: bool = True, parent: QWidget | None = None) -> IconLabel:
+    label_icon: QIcon,
+    text: str = "",
+    tooltip: str = "",
+    upper: bool = False,
+    bold: bool = False,
+    enable_menu: bool = True,
+    parent: QWidget | None = None,
+) -> IconLabel:
     """
     Creates a new widget with a horizontal layout with an icon and a label.
 
@@ -301,13 +425,26 @@ def icon_label(
     """
 
     return IconLabel(
-        label_icon, text=text, tooltip=tooltip, upper=upper, bold=bold, enable_menu=enable_menu, parent=parent)
+        label_icon,
+        text=text,
+        tooltip=tooltip,
+        upper=upper,
+        bold=bold,
+        enable_menu=enable_menu,
+        parent=parent,
+    )
 
 
 def combobox(
-        items: Sequence[str] | None = None, item_data: Sequence[Any] | None = None, placeholder_text: str = '',
-        tooltip: str = '', set_index: int = 0, sort_alphabetically: bool = True,
-        support_middle_mouse_scroll: bool = True, parent: QWidget | None = None) -> BaseComboBox:
+    items: Sequence[str] | None = None,
+    item_data: Sequence[Any] | None = None,
+    placeholder_text: str = "",
+    tooltip: str = "",
+    set_index: int = 0,
+    sort_alphabetically: bool = True,
+    support_middle_mouse_scroll: bool = True,
+    parent: QWidget | None = None,
+) -> BaseComboBox:
     """
     Creates a ComboBox widget with the specified parameters.
 
@@ -349,8 +486,12 @@ def combobox(
 
 
 def line_edit(
-        text: str = '', read_only: bool = False, placeholder_text: str = '', tooltip: str = '',
-        parent: QWidget | None = None) -> BaseLineEdit:
+    text: str = "",
+    read_only: bool = False,
+    placeholder_text: str = "",
+    tooltip: str = "",
+    parent: QWidget | None = None,
+) -> BaseLineEdit:
     """
     Creates a basic line edit widget.
 
@@ -387,8 +528,10 @@ def text_browser(parent=None):
 
 
 def search_widget(
-        placeholder_text: str = '', search_line: QLineEdit | None = None,
-        parent: QWidget | None = None) -> SearchFindWidget:
+    placeholder_text: str = "",
+    search_line: QLineEdit | None = None,
+    parent: QWidget | None = None,
+) -> SearchFindWidget:
     """
     Returns widget that allows to do searches within widgets.
 
@@ -406,12 +549,23 @@ def search_widget(
 
 
 def base_button(
-        text: str = '', button_icon: QIcon | None = None, icon_size: int = 16,
-        icon_color: tuple[int, int, int] or None = None, icon_color_theme: str | None = None,
-        min_width: int | None = None, max_width: int | None = None, min_height: int | None = None,
-        max_height: int | None = None, style: int = uiconsts.ButtonStyles.Default, tooltip: str = '',
-        status_tip: str = '', theme_updates: bool = True, checkable: bool = False, checked: bool = False,
-        parent: QWidget | None = None) -> BaseButton | BasePushButton:
+    text: str = "",
+    button_icon: QIcon | None = None,
+    icon_size: int = 16,
+    icon_color: tuple[int, int, int] or None = None,
+    icon_color_theme: str | None = None,
+    min_width: int | None = None,
+    max_width: int | None = None,
+    min_height: int | None = None,
+    max_height: int | None = None,
+    style: int = uiconsts.ButtonStyles.Default,
+    tooltip: str = "",
+    status_tip: str = "",
+    theme_updates: bool = True,
+    checkable: bool = False,
+    checked: bool = False,
+    parent: QWidget | None = None,
+) -> BaseButton | BasePushButton:
     """
     Creates an extended PushButton with a transparent background or with its regular style.
 
@@ -435,13 +589,26 @@ def base_button(
     """
 
     if icon:
-        kwargs = dict(text=text, icon_color_theme=icon_color_theme, theme_updates=theme_updates, parent=parent)
-        new_button = BasePushButton(**kwargs) if style == uiconsts.ButtonStyles.Default else BaseButton(**kwargs)
+        kwargs = dict(
+            text=text,
+            icon_color_theme=icon_color_theme,
+            theme_updates=theme_updates,
+            parent=parent,
+        )
+        new_button = (
+            BasePushButton(**kwargs)
+            if style == uiconsts.ButtonStyles.Default
+            else BaseButton(**kwargs)
+        )
         if button_icon:
             new_button.set_icon(button_icon, size=icon_size, colors=icon_color)
     else:
         kwargs = dict(text=text, icon_color_theme=icon_color_theme, parent=parent)
-        new_button = BasePushButton(**kwargs) if style == uiconsts.ButtonStyles.Default else BaseButton(**kwargs)
+        new_button = (
+            BasePushButton(**kwargs)
+            if style == uiconsts.ButtonStyles.Default
+            else BaseButton(**kwargs)
+        )
     if tooltip:
         new_button.setToolTip(tooltip)
     if status_tip:
@@ -463,11 +630,21 @@ def base_button(
 
 
 def regular_button(
-        text: str = '', button_icon: str | QIcon | None = None, icon_size: int = 16,
-        icon_color: tuple[int, int, int] or None = None, min_width: int | None = None, max_width: int | None = None,
-        min_height: int | None = None, max_height: int | None = None, tooltip: str = '',
-        overlay_icon_color: tuple[int, int, int] or None = None, overlay_icon: str | QIcon | None = None,
-        checkable: bool = False, checked: bool = False, parent: QWidget | None = None) -> QPushButton:
+    text: str = "",
+    button_icon: str | QIcon | None = None,
+    icon_size: int = 16,
+    icon_color: tuple[int, int, int] or None = None,
+    min_width: int | None = None,
+    max_width: int | None = None,
+    min_height: int | None = None,
+    max_height: int | None = None,
+    tooltip: str = "",
+    overlay_icon_color: tuple[int, int, int] or None = None,
+    overlay_icon: str | QIcon | None = None,
+    checkable: bool = False,
+    checked: bool = False,
+    parent: QWidget | None = None,
+) -> QPushButton:
     """
     Creates a standard Qt QPushButton.
 
@@ -490,9 +667,15 @@ def regular_button(
 
     new_button = QPushButton(text, parent=parent)
     if button_icon:
-        new_button.setIcon(icon.colorize_icon(
-            button_icon, size=dpi.dpi_scale(icon_size), color=icon_color,
-            overlay_icon=overlay_icon, overlay_color=overlay_icon_color))
+        new_button.setIcon(
+            icon.colorize_icon(
+                button_icon,
+                size=dpi.dpi_scale(icon_size),
+                color=icon_color,
+                overlay_icon=overlay_icon,
+                overlay_color=overlay_icon_color,
+            )
+        )
     new_button.setToolTip(tooltip)
 
     if min_width is not None:
@@ -511,10 +694,17 @@ def regular_button(
 
 
 def rounded_button(
-        text: str = '', button_icon: QIcon | None = None, icon_size: int = 16,
-        icon_color: tuple[int, int, int] or None = None, tooltip: str = '', button_width: int = 24,
-        button_height: int = 24, checkable: bool = False, checked: bool = False,
-        parent: QWidget | None = None) -> RoundButton:
+    text: str = "",
+    button_icon: QIcon | None = None,
+    icon_size: int = 16,
+    icon_color: tuple[int, int, int] or None = None,
+    tooltip: str = "",
+    button_width: int = 24,
+    button_height: int = 24,
+    checkable: bool = False,
+    checked: bool = False,
+    parent: QWidget | None = None,
+) -> RoundButton:
     """
     Creates a rounded button with an icon within a round circle.
 
@@ -535,7 +725,9 @@ def rounded_button(
     button_icon = button_icon or QIcon()
     if button_icon and not button_icon.isNull():
         button_icon = icon.colorize_icon(button_icon, size=icon_size, color=icon_color)
-    new_button = RoundButton(text=text, button_icon=button_icon, tooltip=tooltip, parent=parent)
+    new_button = RoundButton(
+        text=text, button_icon=button_icon, tooltip=tooltip, parent=parent
+    )
     new_button.setFixedSize(QSize(button_width, button_height))
     if checkable:
         new_button.setCheckable(True)
@@ -545,11 +737,20 @@ def rounded_button(
 
 
 def shadowed_button(
-        text: str = '', button_icon: QIcon | None = None, icon_size: int | None = None,
-        icon_color: tuple[int, int, int, int] or None = None, min_width: int | None = None,
-        max_width: int | None = None, max_height: int | None = None, shadow_height: int = 4, force_upper: bool = False,
-        tooltip: str = '', icon_color_theme: str | None = None, theme_updates: bool = True,
-        parent: QWidget | None = None) -> ShadowedButton:
+    text: str = "",
+    button_icon: QIcon | None = None,
+    icon_size: int | None = None,
+    icon_color: tuple[int, int, int, int] or None = None,
+    min_width: int | None = None,
+    max_width: int | None = None,
+    max_height: int | None = None,
+    shadow_height: int = 4,
+    force_upper: bool = False,
+    tooltip: str = "",
+    icon_color_theme: str | None = None,
+    theme_updates: bool = True,
+    parent: QWidget | None = None,
+) -> ShadowedButton:
     """
     Creates a new shadowed button with the icon in a coloured box and a button shadow ath the bottom of the button.
 
@@ -570,8 +771,14 @@ def shadowed_button(
     """
 
     new_button = ShadowedButton(
-        text=text, shadow_height=shadow_height, force_upper=force_upper, tooltip=tooltip,
-        icon_color_theme=icon_color_theme, theme_updates=theme_updates, parent=parent)
+        text=text,
+        shadow_height=shadow_height,
+        force_upper=force_upper,
+        tooltip=tooltip,
+        icon_color_theme=icon_color_theme,
+        theme_updates=theme_updates,
+        parent=parent,
+    )
     if button_icon:
         new_button.set_icon(button_icon, colors=icon_color, size=icon_size)
     if max_height is not None:
@@ -585,8 +792,11 @@ def shadowed_button(
 
 
 def tool_button(
-        text: str = '', button_icon: QIcon | None = None, tooltip: str = '',
-        parent: QWidget | None = None) -> BaseToolButton:
+    text: str = "",
+    button_icon: QIcon | None = None,
+    tooltip: str = "",
+    parent: QWidget | None = None,
+) -> BaseToolButton:
     """
     Creates a new QToolButton instance.
 
@@ -608,10 +818,16 @@ def tool_button(
 
 
 def left_aligned_button(
-        text: str, button_icon: QIcon | None = None, tooltip: str = '', icon_size_override: int | None = None,
-        transparent_background: bool = False, padding_override: tuple[int, int, int, int] | None = None,
-        alignment: str = 'left', show_left_click_menu_indicator: bool = False,
-        parent: QWidget | None = None) -> LeftAlignedButton:
+    text: str,
+    button_icon: QIcon | None = None,
+    tooltip: str = "",
+    icon_size_override: int | None = None,
+    transparent_background: bool = False,
+    padding_override: tuple[int, int, int, int] | None = None,
+    alignment: str = "left",
+    show_left_click_menu_indicator: bool = False,
+    parent: QWidget | None = None,
+) -> LeftAlignedButton:
     """
     Creates a left aligned button.
 
@@ -628,29 +844,59 @@ def left_aligned_button(
     """
 
     icon_size = dpi.dpi_scale(icon_size_override if icon_size_override else 16)
-    padding = padding_override if padding_override else dpi.margins_dpi_scale([7, 4, 4, 4])
-    alignment_text = f'text-align: {alignment};'
-    padding_text = f'padding-left: {padding[0]}px; padding-top: {padding[1]}px; ' \
-                   f'padding-right: {padding[2]}px; padding-bottom: {padding[3]}px'
-    menu_indicator = '' if show_left_click_menu_indicator else 'QPushButton::menu-indicator{image: none;};'
-    transparency = '' if not transparent_background else 'background-color: transparent;'
-    new_button = LeftAlignedButton(text, button_icon=button_icon, tooltip=tooltip, parent=parent)
+    padding = (
+        padding_override if padding_override else dpi.margins_dpi_scale([7, 4, 4, 4])
+    )
+    alignment_text = f"text-align: {alignment};"
+    padding_text = (
+        f"padding-left: {padding[0]}px; padding-top: {padding[1]}px; "
+        f"padding-right: {padding[2]}px; padding-bottom: {padding[3]}px"
+    )
+    menu_indicator = (
+        ""
+        if show_left_click_menu_indicator
+        else "QPushButton::menu-indicator{image: none;};"
+    )
+    transparency = (
+        "" if not transparent_background else "background-color: transparent;"
+    )
+    new_button = LeftAlignedButton(
+        text, button_icon=button_icon, tooltip=tooltip, parent=parent
+    )
     new_button.setIconSize(QSize(icon_size, icon_size))
-    new_button.setStyleSheet("QPushButton {} {} {} {} {} \n{}".format(
-        "{", alignment_text, padding_text, transparency, "}", menu_indicator))
+    new_button.setStyleSheet(
+        "QPushButton {} {} {} {} {} \n{}".format(
+            "{", alignment_text, padding_text, transparency, "}", menu_indicator
+        )
+    )
 
     return new_button
 
 
 def styled_button(
-        text: str = '', button_icon: QIcon | None = None, icon_size: int = 16,
-        icon_color: tuple[int, int, int] or None = None, overlay_icon_color: tuple[int, int, int] or None = None,
-        overlay_icon: QIcon | None = None, icon_color_theme: str | None = None, min_width: int | None = None,
-        max_width: int | None = None, min_height: int | None = None, max_height: int | None = None,
-        width: int | None = None, height: int | None = None, style: int = uiconsts.ButtonStyles.Default,
-        tooltip: str = '', theme_updates: bool = True, checkable: bool = False, checked: bool = False,
-        force_upper: bool = False, button_width: int | None = None, button_height: int | None = None,
-        parent: QWidget | None = None) -> QPushButton | BaseButton | ShadowedButton | RoundButton:
+    text: str = "",
+    button_icon: QIcon | None = None,
+    icon_size: int = 16,
+    icon_color: tuple[int, int, int] or None = None,
+    overlay_icon_color: tuple[int, int, int] or None = None,
+    overlay_icon: QIcon | None = None,
+    icon_color_theme: str | None = None,
+    min_width: int | None = None,
+    max_width: int | None = None,
+    min_height: int | None = None,
+    max_height: int | None = None,
+    width: int | None = None,
+    height: int | None = None,
+    style: int = uiconsts.ButtonStyles.Default,
+    tooltip: str = "",
+    theme_updates: bool = True,
+    checkable: bool = False,
+    checked: bool = False,
+    force_upper: bool = False,
+    button_width: int | None = None,
+    button_height: int | None = None,
+    parent: QWidget | None = None,
+) -> QPushButton | BaseButton | ShadowedButton | RoundButton:
     """
     Creates a new button with the given options.
 
@@ -692,35 +938,91 @@ def styled_button(
     min_height = min_height if height is None else height
     max_height = max_height if height is None else height
 
-    if style in (uiconsts.ButtonStyles.Default, uiconsts.ButtonStyles.TransparentBackground):
+    if style in (
+        uiconsts.ButtonStyles.Default,
+        uiconsts.ButtonStyles.TransparentBackground,
+    ):
         new_button = base_button(
-            text=text, button_icon=button_icon, icon_size=icon_size, icon_color=icon_color,
-            icon_color_theme=icon_color_theme, min_width=min_width, max_width=max_width, min_height=min_height,
-            max_height=max_height, style=style, tooltip=tooltip, theme_updates=theme_updates, checkable=checkable,
-            checked=checked, parent=parent)
+            text=text,
+            button_icon=button_icon,
+            icon_size=icon_size,
+            icon_color=icon_color,
+            icon_color_theme=icon_color_theme,
+            min_width=min_width,
+            max_width=max_width,
+            min_height=min_height,
+            max_height=max_height,
+            style=style,
+            tooltip=tooltip,
+            theme_updates=theme_updates,
+            checkable=checkable,
+            checked=checked,
+            parent=parent,
+        )
     elif style == uiconsts.ButtonStyles.IconShadow:
         new_button = shadowed_button(
-            text=text, button_icon=button_icon, icon_color=icon_color, icon_color_theme=icon_color_theme,
-            min_width=min_width, max_width=max_width, max_height=max_height, tooltip=tooltip,
-            theme_updates=theme_updates, force_upper=force_upper, parent=parent)
+            text=text,
+            button_icon=button_icon,
+            icon_color=icon_color,
+            icon_color_theme=icon_color_theme,
+            min_width=min_width,
+            max_width=max_width,
+            max_height=max_height,
+            tooltip=tooltip,
+            theme_updates=theme_updates,
+            force_upper=force_upper,
+            parent=parent,
+        )
     elif style == uiconsts.ButtonStyles.DefaultQt:
         new_button = regular_button(
-            text=text, button_icon=button_icon, icon_size=icon_size, icon_color=icon_color,
-            overlay_icon_color=overlay_icon_color, overlay_icon=overlay_icon, min_width=min_width, max_width=max_width,
-            min_height=min_height, max_height=max_height, tooltip=tooltip, checkable=checkable, checked=checked,
-            parent=parent)
+            text=text,
+            button_icon=button_icon,
+            icon_size=icon_size,
+            icon_color=icon_color,
+            overlay_icon_color=overlay_icon_color,
+            overlay_icon=overlay_icon,
+            min_width=min_width,
+            max_width=max_width,
+            min_height=min_height,
+            max_height=max_height,
+            tooltip=tooltip,
+            checkable=checkable,
+            checked=checked,
+            parent=parent,
+        )
     elif style == uiconsts.ButtonStyles.Rounded:
         new_button = rounded_button(
-            text=text, button_icon=button_icon, icon_size=icon_size, icon_color=icon_color, tooltip=tooltip,
-            button_width=width, button_height=height, checkable=checkable, checked=checked, parent=parent
+            text=text,
+            button_icon=button_icon,
+            icon_size=icon_size,
+            icon_color=icon_color,
+            tooltip=tooltip,
+            button_width=width,
+            button_height=height,
+            checkable=checkable,
+            checked=checked,
+            parent=parent,
         )
     else:
-        logger.warning(f'Button style "{style}" is not supported. Default button will be created')
+        logger.warning(
+            f'Button style "{style}" is not supported. Default button will be created'
+        )
         new_button = regular_button(
-            text=text, button_icon=button_icon, icon_size=icon_size, icon_color=icon_color,
-            overlay_icon_color=overlay_icon_color, overlay_icon=overlay_icon, min_width=min_width, max_width=max_width,
-            min_height=min_height, max_height=max_height, tooltip=tooltip, checkable=checkable, checked=checked,
-            parent=parent)
+            text=text,
+            button_icon=button_icon,
+            icon_size=icon_size,
+            icon_color=icon_color,
+            overlay_icon_color=overlay_icon_color,
+            overlay_icon=overlay_icon,
+            min_width=min_width,
+            max_width=max_width,
+            min_height=min_height,
+            max_height=max_height,
+            tooltip=tooltip,
+            checkable=checkable,
+            checked=checked,
+            parent=parent,
+        )
 
     if button_width is not None:
         new_button.setFixedWidth(button_width)
@@ -730,7 +1032,12 @@ def styled_button(
     return new_button
 
 
-def checkbox(text: str = '', checked: bool = False, tooltip: str = '', parent: QWidget | None = None) -> QCheckBox:
+def checkbox(
+    text: str = "",
+    checked: bool = False,
+    tooltip: str = "",
+    parent: QWidget | None = None,
+) -> QCheckBox:
     """
     Creates a basic QCheckBox widget.
 
@@ -751,8 +1058,15 @@ def checkbox(text: str = '', checked: bool = False, tooltip: str = '', parent: Q
 
 
 def checkbox_widget(
-        text: str = '', checked: bool = False, tooltip: str = '', enable_menu: bool = True, right: bool = False,
-        label_ratio: int = 0, box_ratio: int = 0, parent: QWidget | None = None) -> BaseCheckBoxWidget:
+    text: str = "",
+    checked: bool = False,
+    tooltip: str = "",
+    enable_menu: bool = True,
+    right: bool = False,
+    label_ratio: int = 0,
+    box_ratio: int = 0,
+    parent: QWidget | None = None,
+) -> BaseCheckBoxWidget:
     """
     Creates a BaseCheckbox widget instance.
 
@@ -769,5 +1083,12 @@ def checkbox_widget(
     """
 
     return BaseCheckBoxWidget(
-        text=text, checked=checked, tooltip=tooltip, enable_menu=enable_menu, label_ratio=label_ratio,
-        box_ratio=box_ratio, right=right, parent=parent)
+        text=text,
+        checked=checked,
+        tooltip=tooltip,
+        enable_menu=enable_menu,
+        label_ratio=label_ratio,
+        box_ratio=box_ratio,
+        right=right,
+        parent=parent,
+    )

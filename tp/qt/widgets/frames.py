@@ -1,18 +1,27 @@
 from __future__ import annotations
 
-from ...externals.Qt.QtCore import Signal, QSize
-from ...externals.Qt.QtWidgets import (
-    QApplication, QSizePolicy, QWidget, QFrame, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton,
-    QSpacerItem, QCheckBox
+from Qt.QtCore import Signal, QSize
+from Qt.QtWidgets import (
+    QApplication,
+    QSizePolicy,
+    QWidget,
+    QFrame,
+    QVBoxLayout,
+    QHBoxLayout,
+    QGridLayout,
+    QLabel,
+    QPushButton,
+    QSpacerItem,
+    QCheckBox,
 )
-from ...externals.Qt.QtGui import QFont, QIcon, QMouseEvent
-from ...python import paths
-from .. import uiconsts, dpi, utils as qtutils
+from .Qt.QtGui import QFont, QIcon, QMouseEvent
+
 from . import dividers
+from .. import uiconsts, dpi, utils as qtutils
+from ...python import paths
 
 
 class BaseFrame(QFrame):
-
     mouseReleased = Signal(QMouseEvent)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
@@ -33,9 +42,16 @@ class CollapsibleFrame(QWidget):
     toggled = Signal()
 
     def __init__(
-            self, title: str, collapsed: bool = False, collapsable: bool = True, checkable: bool = False,
-            checked: bool = True, content_margins: tuple[int, int, int, int] = uiconsts.MARGINS,
-            content_spacing: int = uiconsts.SPACING, parent: QWidget | None = None):
+        self,
+        title: str,
+        collapsed: bool = False,
+        collapsable: bool = True,
+        checkable: bool = False,
+        checked: bool = True,
+        content_margins: tuple[int, int, int, int] = uiconsts.MARGINS,
+        content_spacing: int = uiconsts.SPACING,
+        parent: QWidget | None = None,
+    ):
         """
         Initializes CollapsibleFrame
 
@@ -69,9 +85,13 @@ class CollapsibleFrame(QWidget):
         self._checkbox: QCheckBox | None = None
 
         if CollapsibleFrame._COLLAPSED_ICON is None:
-            CollapsibleFrame._COLLAPSED_ICON = QIcon(paths.canonical_path('../../resources/icons/arrow_forward.svg'))
+            CollapsibleFrame._COLLAPSED_ICON = QIcon(
+                paths.canonical_path("../../resources/icons/arrow_forward.svg")
+            )
         if CollapsibleFrame._EXPAND_ICON is None:
-            CollapsibleFrame._EXPAND_ICON = QIcon(paths.canonical_path('../../resources/icons/arrow_expand.svg'))
+            CollapsibleFrame._EXPAND_ICON = QIcon(
+                paths.canonical_path("../../resources/icons/arrow_expand.svg")
+            )
 
         self._main_layout = QVBoxLayout()
         self._main_layout.setSpacing(0)
@@ -145,7 +165,7 @@ class CollapsibleFrame(QWidget):
         self._main_layout.addWidget(self._title_frame)
         self._main_layout.addWidget(self._hider_widget)
 
-        qtutils.set_stylesheet_object_name(self._title_frame, 'collapsed')
+        qtutils.set_stylesheet_object_name(self._title_frame, "collapsed")
 
     def _setup_signals(self):
         """
@@ -177,13 +197,17 @@ class CollapsibleFrame(QWidget):
         self._icon_button.setFixedSize(dpi.size_by_dpi(QSize(15, 15)))
         self._icon_button.setFlat(True)
         self._icon_button.setContentsMargins(0, 0, 0, 0)
-        self._icon_button.setIcon(self._COLLAPSED_ICON if self._collapsed else self._EXPAND_ICON)
+        self._icon_button.setIcon(
+            self._COLLAPSED_ICON if self._collapsed else self._EXPAND_ICON
+        )
         self._title_label = QLabel(self._title, parent=self)
         font: QFont = self._title_label.font()
         font.setBold(True)
         self._title_label.setFont(font)
         self._title_label.setContentsMargins(0, 0, 0, 0)
-        self._spacer_item = QSpacerItem(10, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self._spacer_item = QSpacerItem(
+            10, 0, QSizePolicy.Expanding, QSizePolicy.Minimum
+        )
         self._horizontal_layout.addSpacing(5)
         self._horizontal_layout.addWidget(self._checkbox)
         self._horizontal_layout.addWidget(self._icon_button)
@@ -245,7 +269,6 @@ class CollapsibleFrame(QWidget):
 
 
 class CollapsibleFrameThin(CollapsibleFrame):
-
     def _build_title_frame(self):
         super()._build_title_frame()
 

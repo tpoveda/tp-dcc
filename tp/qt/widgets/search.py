@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from Qt.QtCore import Qt, QObject, Signal, QSize, QEvent
+from Qt.QtWidgets import QWidget, QLineEdit, QToolButton, QStyle
+from Qt.QtGui import QPixmap, QIcon, QResizeEvent, QKeyEvent, QFocusEvent
+
 from .. import dpi
-from ...python import paths
 from ..widgets import layouts, buttons
-from ...externals.Qt.QtCore import Qt, QObject, Signal, QSize, QEvent
-from ...externals.Qt.QtWidgets import QWidget, QLineEdit, QToolButton, QStyle
-from ...externals.Qt.QtGui import QPixmap, QIcon, QResizeEvent, QKeyEvent, QFocusEvent
+from ...python import paths
 
 
 class SearchFindWidget(QWidget, dpi.DPIScaling):
@@ -24,7 +25,9 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
     editingFinished = Signal(str)
     returnPressed = Signal()
 
-    def __init__(self, search_line: QLineEdit | None = None, parent: QWidget | None = None):
+    def __init__(
+        self, search_line: QLineEdit | None = None, parent: QWidget | None = None
+    ):
         """
         Initializes the SearchFindWidget.
 
@@ -48,14 +51,18 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
             icon_size = 62
 
         self._clear_button = buttons.IconMenuButton(parent=self)
-        self._clear_button.setIcon(QIcon(paths.canonical_path('../../resources/icons/close.png')))
+        self._clear_button.setIcon(
+            QIcon(paths.canonical_path("../../resources/icons/close.png"))
+        )
         self._clear_button.setIconSize(QSize(icon_size - 6, icon_size - 6))
         self._clear_button.setFixedSize(QSize(icon_size, icon_size))
         self._clear_button.setFocusPolicy(Qt.NoFocus)
         self._clear_button.hide()
         self._search_button = buttons.IconMenuButton(parent=self)
         self._search_button.setAttribute(Qt.WA_TransparentForMouseEvents, True)
-        self._search_button.setIcon(QIcon(paths.canonical_path('../../resources/icons/search.png')))
+        self._search_button.setIcon(
+            QIcon(paths.canonical_path("../../resources/icons/search.png"))
+        )
         self._search_button.setIconSize(QSize(icon_size, icon_size))
         self._search_button.setFixedSize(QSize(icon_size, icon_size))
         self._search_button.setEnabled(True)
@@ -64,7 +71,8 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         self._search_line.setStyleSheet(
             """
             QLineEdit { padding-left: %spx; padding-right: %spx; border-radius:10px; }
-            """ % (self._search_button_padded_width(), self._clear_button_padded_width())
+            """
+            % (self._search_button_padded_width(), self._clear_button_padded_width())
         )
 
         self.update_minimum_size()
@@ -99,6 +107,7 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
                 self._clear_button.setEnabled(enabled)
         except AttributeError:
             pass
+
     # 	super().changeEvent(event)
 
     def resizeEvent(self, event: QResizeEvent) -> None:
@@ -117,7 +126,9 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         y = (self.height() - self._clear_button.height()) * 0.5
         self._clear_button.move(int(x - 6), int(y))
         self._search_button.move(
-            self._search_line_frame_width() * 3, int((self.height() - self._search_button.height()) * 0.5))
+            self._search_line_frame_width() * 3,
+            int((self.height() - self._search_button.height()) * 0.5),
+        )
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         """
@@ -158,7 +169,7 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         """
 
         if not self._search_line:
-            return ''
+            return ""
         return self._search_line.text()
 
     def set_text(self, text: str):
@@ -183,7 +194,7 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         """
 
         if not self._search_line:
-            return ''
+            return ""
 
         return self._search_line.text()
 
@@ -240,10 +251,15 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         self._search_line.setMinimumSize(
             max(
                 self._search_line.minimumSizeHint().width(),
-                self._clear_button_padded_width() + self._search_button_padded_width()),
+                self._clear_button_padded_width() + self._search_button_padded_width(),
+            ),
             max(
                 self._search_line.minimumSizeHint().height(),
-                max(self._clear_button_padded_width(), self._search_button_padded_width()))
+                max(
+                    self._clear_button_padded_width(),
+                    self._search_button_padded_width(),
+                ),
+            ),
         )
 
     def _search_line_frame_width(self) -> int:
@@ -319,16 +335,24 @@ class SearchLineEdit(QLineEdit, dpi.DPIScaling):
     textCleared = Signal()
 
     def __init__(
-            self, search_pixmap: QPixmap | None = None, clear_pixmap: QPixmap | None = None,
-            icons_enabled: bool = True, parent: QWidget | None = None):
+        self,
+        search_pixmap: QPixmap | None = None,
+        clear_pixmap: QPixmap | None = None,
+        icons_enabled: bool = True,
+        parent: QWidget | None = None,
+    ):
         super().__init__(parent)
 
         self._icons_enabled = icons_enabled
         # self._theme_pref = core.theme_preference_interface()
         self._background_color = None
 
-        clear_pixmap = clear_pixmap or QPixmap(paths.canonical_path('../../resources/icons/close.png'))
-        search_pixmap = search_pixmap or QPixmap(paths.canonical_path('../../resources/icons/search.png'))
+        clear_pixmap = clear_pixmap or QPixmap(
+            paths.canonical_path("../../resources/icons/close.png")
+        )
+        search_pixmap = search_pixmap or QPixmap(
+            paths.canonical_path("../../resources/icons/search.png")
+        )
         # clear_pixmap = clear_pixmap or resources.pixmap('close', size=dpi.dpi_scale(16), color=(128, 128, 128))
         # search_pixmap = search_pixmap or resources.pixmap('search', size=dpi.dpi_scale(16), color=(128, 128, 128))
         self._clear_button = ClearToolButton(parent=self)
@@ -349,7 +373,9 @@ class SearchLineEdit(QLineEdit, dpi.DPIScaling):
         frame_width = self.style().pixelMetric(QStyle.PM_DefaultFrameWidth)
         rect = self.rect()
         y_pos = int(abs(rect.bottom() - size.height()) * 0.5 + dpi.dpi_scale(1))
-        self._clear_button.move(self.rect().right() - frame_width - size.width(), y_pos - 2)
+        self._clear_button.move(
+            self.rect().right() - frame_width - size.width(), y_pos - 2
+        )
         self._search_button.move(self.rect().left() + dpi.dpi_scale(1), y_pos)
         self._update_stylesheet()
 
@@ -382,14 +408,22 @@ class SearchLineEdit(QLineEdit, dpi.DPIScaling):
             self._update_stylesheet()
             min_size = self.minimumSizeHint()
             self.setMinimumSize(
-                max(min_size.width(), self._search_button.sizeHint().width() +
-                    self._clear_button.sizeHint().width() + frame_width * 2 + 2),
-                max(min_size.height(), self._clear_button.sizeHint().height() + frame_width * 2 + 2)
+                max(
+                    min_size.width(),
+                    self._search_button.sizeHint().width()
+                    + self._clear_button.sizeHint().width()
+                    + frame_width * 2
+                    + 2,
+                ),
+                max(
+                    min_size.height(),
+                    self._clear_button.sizeHint().height() + frame_width * 2 + 2,
+                ),
             )
         else:
             self._search_button.hide()
             self._clear_button.hide()
-            self.setStyleSheet('')
+            self.setStyleSheet("")
 
         self._icons_enabled = flag
 
@@ -399,13 +433,13 @@ class SearchLineEdit(QLineEdit, dpi.DPIScaling):
         """
 
         self._clear_button.setCursor(Qt.ArrowCursor)
-        self._clear_button.setStyleSheet('QToolButton {border: none; padding: 1px;}')
+        self._clear_button.setStyleSheet("QToolButton {border: none; padding: 1px;}")
         self._clear_button.hide()
         self._clear_button.clicked.connect(self.clear)
         self.textChanged.connect(self._on_text_changed)
-        self._search_button.setStyleSheet('QToolButton {border: none; padding: 1px;}')
+        self._search_button.setStyleSheet("QToolButton {border: none; padding: 1px;}")
         self.set_icons_enabled(self._icons_enabled)
-        self.setProperty('clearFocus', True)
+        self.setProperty("clearFocus", True)
 
     def _update_stylesheet(self):
         """
@@ -414,16 +448,27 @@ class SearchLineEdit(QLineEdit, dpi.DPIScaling):
 
         # if self._background_color is None:
         #     self._background_color = self._theme_pref.TEXT_BOX_BG_COLOR
-        background_color = str(self._background_color) if self._background_color is not None else ''
+        background_color = (
+            str(self._background_color) if self._background_color is not None else ""
+        )
 
-        background_style = f'background-color: rgba{background_color}'
+        background_style = f"background-color: rgba{background_color}"
         frame_width = self.style().pixelMetric(QStyle.PM_DefaultFrameWidth)
-        top_pad = 0 if self.height() < dpi.dpi_scale(25) else -2 if dpi.dpi_multiplier() == 1.0 else 0
+        top_pad = (
+            0
+            if self.height() < dpi.dpi_scale(25)
+            else -2
+            if dpi.dpi_multiplier() == 1.0
+            else 0
+        )
         self.setStyleSheet(
-            'QLineEdit {{ padding-left: {}px; padding-right: {}px; {}; padding-top: {}px; }}'.format(
+            "QLineEdit {{ padding-left: {}px; padding-right: {}px; {}; padding-top: {}px; }}".format(
                 self._search_button.sizeHint().width() + frame_width + dpi.dpi_scale(1),
                 self._clear_button.sizeHint().width() + frame_width + dpi.dpi_scale(1),
-                background_style, top_pad))
+                background_style,
+                top_pad,
+            )
+        )
 
     # def _on_theme_updated(self, event: 'ThemeUpdateEvent'):
     #     """

@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import typing
 
-from .. import utils
-from ...externals.Qt.QtCore import Qt, Signal, QPoint
-from ...externals.Qt.QtWidgets import QMenu, QAction, QWidgetAction
-from ...externals.Qt.QtGui import QIcon, QMouseEvent, QShowEvent
+from Qt.QtCore import Qt, Signal, QPoint
+from Qt.QtWidgets import QMenu, QAction, QWidgetAction
+from Qt.QtGui import QIcon, QMouseEvent, QShowEvent
+
 from .. import dpi
+from .. import utils
 
 if typing.TYPE_CHECKING:
     from .search import SearchFindWidget
@@ -75,9 +76,21 @@ def mixin(cls):
         """
 
         self._menu_vertical_offset = menu_vertical_offset
-        self._menu_active = {Qt.LeftButton: False, Qt.MiddleButton: False, Qt.RightButton: False}
-        self._click_menu = {Qt.LeftButton: None, Qt.MiddleButton: None, Qt.RightButton: None}
-        self._menu_searchable = {Qt.LeftButton: False, Qt.MiddleButton: False, Qt.RightButton: False}
+        self._menu_active = {
+            Qt.LeftButton: False,
+            Qt.MiddleButton: False,
+            Qt.RightButton: False,
+        }
+        self._click_menu = {
+            Qt.LeftButton: None,
+            Qt.MiddleButton: None,
+            Qt.RightButton: None,
+        }
+        self._menu_searchable = {
+            Qt.LeftButton: False,
+            Qt.MiddleButton: False,
+            Qt.RightButton: False,
+        }
 
     def _add_action_list(self, actions_list, mouse_button=Qt.RightButton):
         """
@@ -93,12 +106,12 @@ def mixin(cls):
         if menu is not None:
             menu.action_connect_list(actions_list)
 
-    setattr(cls, '__init__', my__init__)
-    setattr(cls, 'get_menu', get_menu)
-    setattr(cls, 'set_menu', set_menu)
-    setattr(cls, 'show_context_menu', show_context_menu)
-    setattr(cls, '_setup_menu_class', _setup_menu_class)
-    setattr(cls, '_add_action_list', _add_action_list)
+    setattr(cls, "__init__", my__init__)
+    setattr(cls, "get_menu", get_menu)
+    setattr(cls, "set_menu", set_menu)
+    setattr(cls, "show_context_menu", show_context_menu)
+    setattr(cls, "_setup_menu_class", _setup_menu_class)
+    setattr(cls, "_add_action_list", _add_action_list)
 
     return cls
 
@@ -133,7 +146,12 @@ class SearchableMenu(BaseMenu):
         Class that defines a searchable tag action.
         """
 
-        def __init__(self, label: str, icon: QIcon | None = None, parent: SearchableMenu | None = None):
+        def __init__(
+            self,
+            label: str,
+            icon: QIcon | None = None,
+            parent: SearchableMenu | None = None,
+        ):
             super().__init__(label, parent)
 
             self._tags = set()  # Set[str]
@@ -188,14 +206,18 @@ class SearchableMenu(BaseMenu):
             return False
 
     def __init__(self, *args, **kwargs):
-        self._search_visible = kwargs.pop('search_visible') if kwargs.get('search_visible', None) is not None else True
+        self._search_visible = (
+            kwargs.pop("search_visible")
+            if kwargs.get("search_visible", None) is not None
+            else True
+        )
         super(SearchableMenu, self).__init__(*args, **kwargs)
 
         self._search_action: QWidgetAction | None = None
         self._search_edit: SearchFindWidget | None = None
 
-        self.setObjectName(kwargs.get('objectName', ''))
-        self.setTitle(kwargs.get('title', ''))
+        self.setObjectName(kwargs.get("objectName", ""))
+        self.setTitle(kwargs.get("title", ""))
         self._init_search_edit()
         self.set_search_visible(self._search_visible)
 
@@ -275,7 +297,9 @@ class SearchableMenu(BaseMenu):
                 # continue
                 if action.isSeparator():
                     continue
-                elif isinstance(action, SearchableMenu.SearchableTaggedAction) and not action.has_tag(search_str):
+                elif isinstance(
+                    action, SearchableMenu.SearchableTaggedAction
+                ) and not action.has_tag(search_str):
                     action.setVisible(False)
 
             for sub_menu in _menu.findChildren(QMenu):
@@ -307,7 +331,7 @@ class SearchableMenu(BaseMenu):
             menu_vis = any(action.isVisible() for action in actions)
             _menu.menuAction().setVisible(menu_vis)
 
-        search_str = str(search_string or '').lower()
+        search_str = str(search_string or "").lower()
         tags = search_str.split()
         if not search_str:
             utils.recursively_set_menu_actions_visibility(menu=self, state=True)
@@ -327,10 +351,12 @@ class SearchableMenu(BaseMenu):
         from . import search
 
         self._search_action = QWidgetAction(self)
-        self._search_action.setObjectName('SearchAction')
+        self._search_action.setObjectName("SearchAction")
         self._search_edit = search.SearchFindWidget(parent=self)
-        self._search_edit.setStyleSheet('QPushButton {background-color: transparent; border: none;}')
-        self._search_edit.set_placeholder_text('Search ...')
+        self._search_edit.setStyleSheet(
+            "QPushButton {background-color: transparent; border: none;}"
+        )
+        self._search_edit.set_placeholder_text("Search ...")
         self._search_edit.textChanged.connect(self._on_update_search)
         self._search_action.setDefaultWidget(self._search_edit)
         self.addAction(self._search_action)

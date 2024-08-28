@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from ...externals.Qt.QtCore import Qt, Signal
-from ...externals.Qt.QtWidgets import QWidget, QFrame, QHBoxLayout
+from Qt.QtCore import Qt, Signal
+from Qt.QtWidgets import QWidget, QFrame, QHBoxLayout
+
 from .. import dpi
 from . import labels
 
@@ -13,15 +14,16 @@ class Divider(QWidget, dpi.DPIScaling):
 
     textChanged = Signal(str)
 
-    _ALIGN_MAP = {
-        Qt.AlignCenter: 50,
-        Qt.AlignLeft: 20,
-        Qt.AlignRight: 80
-    }
+    _ALIGN_MAP = {Qt.AlignCenter: 50, Qt.AlignLeft: 20, Qt.AlignRight: 80}
 
     def __init__(
-            self, text: str | None = None, shadow: bool = True, orientation: Qt.Orientation = Qt.Horizontal,
-            alignment: Qt.AlignmentFlag = Qt.AlignLeft, parent: QWidget | None = None):
+        self,
+        text: str | None = None,
+        shadow: bool = True,
+        orientation: Qt.Orientation = Qt.Horizontal,
+        alignment: Qt.AlignmentFlag = Qt.AlignLeft,
+        parent: QWidget | None = None,
+    ):
         """
         Initializes Divider.
 
@@ -54,25 +56,35 @@ class Divider(QWidget, dpi.DPIScaling):
         if orientation == Qt.Horizontal:
             self._first_line.setFrameShape(QFrame.HLine)
             self._first_line.setFrameShadow(QFrame.Sunken)
-            self._first_line.setFixedHeight(2) if shadow else self._first_line.setFixedHeight(1)
+            self._first_line.setFixedHeight(
+                2
+            ) if shadow else self._first_line.setFixedHeight(1)
             self._second_line.setFrameShape(QFrame.HLine)
             self._second_line.setFrameShadow(QFrame.Sunken)
-            self._second_line.setFixedHeight(2) if shadow else self._second_line.setFixedHeight(1)
+            self._second_line.setFixedHeight(
+                2
+            ) if shadow else self._second_line.setFixedHeight(1)
         else:
             self._label.setVisible(False)
             self._second_line.setVisible(False)
             self._first_line.setFrameShape(QFrame.VLine)
             self._first_line.setFrameShadow(QFrame.Sunken)
             self.setFixedWidth(2)
-            self._first_line.setFixedWidth(2) if shadow else self._first_line.setFixedWidth(1)
+            self._first_line.setFixedWidth(
+                2
+            ) if shadow else self._first_line.setFixedWidth(1)
 
-        main_layout.setStretchFactor(self._first_line, self._ALIGN_MAP.get(alignment, 50))
-        main_layout.setStretchFactor(self._second_line, 100 - self._ALIGN_MAP.get(alignment, 50))
+        main_layout.setStretchFactor(
+            self._first_line, self._ALIGN_MAP.get(alignment, 50)
+        )
+        main_layout.setStretchFactor(
+            self._second_line, 100 - self._ALIGN_MAP.get(alignment, 50)
+        )
 
         self.set_text(text)
 
     @classmethod
-    def left(cls, text: str = '') -> Divider:
+    def left(cls, text: str = "") -> Divider:
         """
         Creates a horizontal splitter with text at left.
 
@@ -83,7 +95,7 @@ class Divider(QWidget, dpi.DPIScaling):
         return cls(text, alignment=Qt.AlignLeft)
 
     @classmethod
-    def right(cls, text: str = '') -> Divider:
+    def right(cls, text: str = "") -> Divider:
         """
         Creates a horizontal splitter with text at right
 
@@ -94,7 +106,7 @@ class Divider(QWidget, dpi.DPIScaling):
         return cls(text, alignment=Qt.AlignRight)
 
     @classmethod
-    def center(cls, text: str = '') -> Divider:
+    def center(cls, text: str = "") -> Divider:
         """
         Creates a horizontal splitter with text at center.
 

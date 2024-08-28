@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import contextlib
 
-from ..externals.Qt.QtCore import QObject
-from ..externals.Qt.QtWidgets import QWidget
+from Qt.QtCore import QObject
+from Qt.QtWidgets import QWidget
 
 
 @contextlib.contextmanager

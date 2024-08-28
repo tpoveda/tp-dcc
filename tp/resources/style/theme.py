@@ -4,18 +4,20 @@ import os
 import enum
 import logging
 
+from Qt.QtCore import QResource
+from Qt.QtWidgets import QWidget
+
 from . import setup, style_file_path
 from ...qt import dpi
 from ...python import helpers
-from ...externals.Qt.QtCore import QResource
-from ...externals.Qt.QtWidgets import QWidget
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setLevel(logging.INFO)
 # noinspection SpellCheckingInspection
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
@@ -41,78 +43,80 @@ class Theme:
         Class that defines available theme colors.
         """
 
-        MatteBlack = '#151515'
-        DynamicBlack = '#1e1e1e'
-        VerifiedBlack = '#242424'
-        TricornBlack = '#2f2f2f'
-        Jet = '#353535'
-        DeadPixel = '#3a3a3a'
-        PigIron = '#494949'
-        BlackOak = '#4f4f4f'
-        StoneColor = '#555555'
-        ShadowMountain = '#575757'
-        IndustrialRevolution = '#737373'
-        SilverSnippet = '#8f8f8f'
-        GrayWhite = '#c0c0c0'
-        Quicksilver = '#a6a6a6'
-        Silver = '#c0c0c0'
-        Orochimaru = '#d9d9d9'
-        White = '#ffffff'
-        BlueDiamond = '#0664c3'
-        BlueRuin = '#0070e0'
-        ClearChill = '#1890ff'
-        SagatPurple = '#722ed1'
-        CalaBenirrasBlue = '#13c2c2'
-        Luigi = '#52c41a'
-        Pinkinity = '#eb2f96'
-        MediumPink = '#ef5b97'
-        RougeSarde = '#f5222d'
-        LadduOrange = '#fa8c16'
-        IsleOfSand = '#fa8c16'
-        TomateConcasse = '#fa541c'
-        VeteranysDayBlue = '#2f54eb'
-        MootGreen = '#a0d911'
-        DesertMoss = '#bd9f63'
-        Beer = '#faad14'
+        MatteBlack = "#151515"
+        DynamicBlack = "#1e1e1e"
+        VerifiedBlack = "#242424"
+        TricornBlack = "#2f2f2f"
+        Jet = "#353535"
+        DeadPixel = "#3a3a3a"
+        PigIron = "#494949"
+        BlackOak = "#4f4f4f"
+        StoneColor = "#555555"
+        ShadowMountain = "#575757"
+        IndustrialRevolution = "#737373"
+        SilverSnippet = "#8f8f8f"
+        GrayWhite = "#c0c0c0"
+        Quicksilver = "#a6a6a6"
+        Silver = "#c0c0c0"
+        Orochimaru = "#d9d9d9"
+        White = "#ffffff"
+        BlueDiamond = "#0664c3"
+        BlueRuin = "#0070e0"
+        ClearChill = "#1890ff"
+        SagatPurple = "#722ed1"
+        CalaBenirrasBlue = "#13c2c2"
+        Luigi = "#52c41a"
+        Pinkinity = "#eb2f96"
+        MediumPink = "#ef5b97"
+        RougeSarde = "#f5222d"
+        LadduOrange = "#fa8c16"
+        IsleOfSand = "#fa8c16"
+        TomateConcasse = "#fa541c"
+        VeteranysDayBlue = "#2f54eb"
+        MootGreen = "#a0d911"
+        DesertMoss = "#bd9f63"
+        Beer = "#faad14"
 
     class Sizes(enum.Enum):
         """
         Enumerator that defines available theme sizes.
         """
 
-        Default = 'default'
-        Tiny = 'tiny'
-        Small = 'small'
-        Medium = 'medium'
-        Large = 'large'
-        Huge = 'huge'
+        Default = "default"
+        Tiny = "tiny"
+        Small = "small"
+        Medium = "medium"
+        Large = "large"
+        Huge = "huge"
 
     def __init__(self):
         super().__init__()
 
-        self._default_qss: str = ''
-        self._custom_qss: str = ''
+        self._default_qss: str = ""
+        self._custom_qss: str = ""
         self._registered_rcc_resources: list[str] = []
 
         qss_style = style_file_path()
         if not qss_style:
             logger.warning(f'TNM QSS file path does not exist: "{qss_style}"')
-            raise RuntimeError('No TNM QSS file found')
+            raise RuntimeError("No TNM QSS file found")
 
         setup()
-        with open(qss_style, 'r') as f:
+        with open(qss_style, "r") as f:
             self._default_qss = f.read()
 
         scale_factor = dpi.dpi_multiplier()
         self._sizes: helpers.AttributeDict[str, int] = helpers.AttributeDict()
-        self._sizes.update({
-            Theme.Sizes.Default.value: int(32 * scale_factor),
-            Theme.Sizes.Tiny.value: int(18 * scale_factor),
-            Theme.Sizes.Small.value: int(24 * scale_factor),
-            Theme.Sizes.Medium.value: int(32 * scale_factor),
-            Theme.Sizes.Large.value: int(40 * scale_factor),
-            Theme.Sizes.Huge.value: int(48 * scale_factor),
-        })
+        self._sizes.update(
+            {
+                Theme.Sizes.Default.value: int(32 * scale_factor),
+                Theme.Sizes.Tiny.value: int(18 * scale_factor),
+                Theme.Sizes.Small.value: int(24 * scale_factor),
+                Theme.Sizes.Medium.value: int(32 * scale_factor),
+                Theme.Sizes.Large.value: int(40 * scale_factor),
+                Theme.Sizes.Huge.value: int(48 * scale_factor),
+            }
+        )
 
         self._primary_color = Theme.Colors.DesertMoss
         self._info_color = Theme.Colors.ClearChill
@@ -208,7 +212,9 @@ class Theme:
 
         return self._hyperlink_style
 
-    def update_from_qss_file_path(self, qss_file_path: str, resources_rcc_file_path: str | None = None):
+    def update_from_qss_file_path(
+        self, qss_file_path: str, resources_rcc_file_path: str | None = None
+    ):
         """
         Updates current theme with the contents of the given QSS file.
 
@@ -217,10 +223,12 @@ class Theme:
         """
 
         if not qss_file_path or not os.path.isfile(qss_file_path):
-            logger.warning(f'Was not possible to update TNM theme. QSS file path is not valid: {qss_file_path}')
+            logger.warning(
+                f"Was not possible to update TNM theme. QSS file path is not valid: {qss_file_path}"
+            )
             return
 
-        with open(qss_file_path, 'r') as f:
+        with open(qss_file_path, "r") as f:
             self._custom_qss += f.read()
 
         if resources_rcc_file_path:
@@ -253,6 +261,6 @@ class Theme:
 
         stylesheet_to_apply: str = self._default_qss
         if self._custom_qss:
-            stylesheet_to_apply += f'\n{self._custom_qss}'
+            stylesheet_to_apply += f"\n{self._custom_qss}"
 
         widget.setStyleSheet(stylesheet_to_apply)

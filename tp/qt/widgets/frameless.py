@@ -7,6 +7,46 @@ import logging
 import platform
 import webbrowser
 from typing import Type
+from distutils.util import strtobool
+
+from Qt.QtCore import (
+    Qt,
+    QObject,
+    Signal,
+    QPoint,
+    QSize,
+    QTimer,
+    QEvent,
+    QSettings,
+)
+from Qt.QtWidgets import (
+    QSizePolicy,
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QFrame,
+    QToolButton,
+    QSpacerItem,
+    QSplitter,
+    QTabWidget,
+    QLayout,
+    QVBoxLayout,
+    QHBoxLayout,
+    QGridLayout,
+)
+from Qt.QtGui import (
+    QCursor,
+    QColor,
+    QIcon,
+    QPainter,
+    QResizeEvent,
+    QShowEvent,
+    QMouseEvent,
+    QKeyEvent,
+    QMoveEvent,
+    QCloseEvent,
+    QPaintEvent,
+)
 
 from ... import dcc
 from ...dcc import ui
@@ -14,29 +54,23 @@ from ...python import paths
 from ...resources.style import theme
 from ...qt import dpi, utils, icon, uiconsts, factory
 from ...qt.widgets import layouts, labels, buttons, overlay
-from ...externals.Qt.QtCore import Qt, QObject, Signal, QPoint, QSize, QTimer, QEvent, QSettings
-from ...externals.Qt.QtWidgets import (
-    QSizePolicy, QApplication, QMainWindow, QWidget, QFrame, QToolButton, QSpacerItem, QSplitter, QTabWidget,
-    QLayout, QVBoxLayout, QHBoxLayout, QGridLayout
-)
-from ...externals.Qt.QtGui import (
-    QCursor, QColor, QIcon, QPainter, QResizeEvent, QShowEvent, QMouseEvent, QKeyEvent, QMoveEvent, QCloseEvent,
-    QPaintEvent
-)
 
 if dcc.is_maya():
     from maya.app.general import mayaMixin
+
     DockableMixin = mayaMixin.MayaQWidgetDockableMixin
 else:
+
     class DockableMixin:
         pass
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setLevel(logging.INFO)
 # noinspection SpellCheckingInspection
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
@@ -80,7 +114,11 @@ class ContainerWidget:
         :return: type container.
         """
 
-        return ContainerType.FramelessWindow.value if self.is_frameless_window() else ContainerType.Docking.value
+        return (
+            ContainerType.FramelessWindow.value
+            if self.is_frameless_window()
+            else ContainerType.Docking.value
+        )
 
     def set_widget(self, widget: QWidget):
         """
@@ -107,7 +145,13 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
     Custom widget container that can be docked withing DCCs
     """
 
-    def __init__(self, parent: QMainWindow | None = None, workspace_control_name: str | None = None, *args, **kwargs):
+    def __init__(
+        self,
+        parent: QMainWindow | None = None,
+        workspace_control_name: str | None = None,
+        *args,
+        **kwargs,
+    ):
         super(DockingContainer, self).__init__(parent=parent, *args, **kwargs)
 
         self._main_widget: FramelessWindow | None = None
@@ -202,7 +246,9 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         pos = QCursor.pos()
         window = self._win
         if self._win == ui.FnUi().main_window() and self._win is not None:
-            logger.error(f'{self._workspace_control_name}: Found window instead of DockingContainer!')
+            logger.error(
+                f"{self._workspace_control_name}: Found window instead of DockingContainer!"
+            )
             return
         offset = utils.window_offset(window)
         half = utils.widget_center(window)
@@ -220,11 +266,15 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
 
         # noinspection PyUnresolvedReferences
         if self.isFloating():
-            frameless = self._main_widget.attach_to_frameless_window(save_window_pref=False)
+            frameless = self._main_widget.attach_to_frameless_window(
+                save_window_pref=False
+            )
             pos = self.mapToGlobal(QPoint())
             width = self._container_size.width()
             frameless.show()
-            frameless.setGeometry(pos.x(), pos.y(), width, self._orig_widget_size.height())
+            frameless.setGeometry(
+                pos.x(), pos.y(), width, self._orig_widget_size.height()
+            )
             # self._main_widget.title_bar.logo_button.delete_control()
             self._main_widget.undocked.emit()
             self._workspace_control = None
@@ -247,7 +297,11 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         self.setLayout(ui_layout)
         # noinspection SpellCheckingInspection
         self._logo_icon.setIcon(
-            icon.colorize_icon(QIcon(paths.canonical_path('../../resources/icons/tpdcc.png')), size=size))
+            icon.colorize_icon(
+                QIcon(paths.canonical_path("../../resources/icons/tpdcc.png")),
+                size=size,
+            )
+        )
         self._logo_icon.setIconSize(dpi.size_by_dpi(QSize(size, size)))
         self._logo_icon.clicked.connect(self.close)
         self._win = self.window()
@@ -261,8 +315,13 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
     closed = Signal()
 
     def __init__(
-            self, width: int | None = None, height: int | None = None, save_window_pref: bool = True,
-            on_top: bool = False, parent: QWidget | None = None):
+        self,
+        width: int | None = None,
+        height: int | None = None,
+        save_window_pref: bool = True,
+        on_top: bool = False,
+        parent: QWidget | None = None,
+    ):
         """
         Initialize a new instance of the class.
 
@@ -277,9 +336,9 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         if dcc.is_blender():
             self._on_top = True
 
-        QMainWindow.__init__(self, parent=parent)
+        super().__init__(parent)
 
-        if platform.system().lower() == 'darwin':
+        if platform.system().lower() == "darwin":
             # macOS needs it the saveWindowPref all the time otherwise it will be behind the other windows.
             self.save_window_pref()
             QTimer.singleShot(0, lambda: self._setup_size(width, height))
@@ -326,7 +385,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         self.set_shadow_effect_enabled(True)
 
         # Disable for macOS because it seems to create an invisible window in front.
-        if not platform.system().lower() == 'darwin':
+        if not platform.system().lower() == "darwin":
             self._set_new_object_name(widget)
 
     def set_on_top(self, flag: bool):
@@ -354,10 +413,14 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         """
 
         if not self.frameless_window:
-            logger.warning('Cannot apply shadow effect window because no frameless window set')
+            logger.warning(
+                "Cannot apply shadow effect window because no frameless window set"
+            )
             return False
 
-        self._shadow_effect = utils.set_shadow_effect_enabled(self.frameless_window, flag)
+        self._shadow_effect = utils.set_shadow_effect_enabled(
+            self.frameless_window, flag
+        )
 
         return True
 
@@ -385,7 +448,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         ..note:: this functionality is only supported in Maya
         """
 
-        self.setProperty('saveWindowPref', True)
+        self.setProperty("saveWindowPref", True)
 
     def _setup_size(self, width: int, height: int):
         """
@@ -409,7 +472,9 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
 
         self.setAttribute(Qt.WA_TranslucentBackground)
         if utils.is_pyside6() or utils.is_pyside2() or utils.is_pyqt5():
-            window_flags = self.windowFlags() | Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint
+            window_flags = (
+                self.windowFlags() | Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint
+            )
         else:
             window_flags = self.windowFlags() | Qt.FramelessWindowHint
         if self._on_top:
@@ -425,13 +490,14 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         :param widget: frameless window central widget.
         """
 
-        self.setObjectName(widget.objectName() + 'Frameless')
+        self.setObjectName(widget.objectName() + "Frameless")
 
 
 class FramelessWindow(QWidget):
-
-    WINDOW_SETTINGS_PATH = 'tp'              # Window settings path (e.g: tp)
-    HELP_URL = ''                            # Web URL to use when displaying the help documentation for this window
+    WINDOW_SETTINGS_PATH = "tp"  # Window settings path (e.g: tp)
+    HELP_URL = (
+        ""  # Web URL to use when displaying the help documentation for this window
+    )
     MINIMIZED_WIDTH = 390
     _INSTANCES: list[FramelessWindow] = []
 
@@ -440,11 +506,24 @@ class FramelessWindow(QWidget):
     minimized = Signal()
 
     def __init__(
-            self, name: str = '', title: str = '', width: int | None = None, height: int | None = None,
-            resizable: bool = True, modal: bool = False, init_pos: tuple[int, int] | None = None,
-            title_bar_class: Type | None = None, as_overlay: bool = True, always_show_all_title: bool = False,
-            on_top: bool = False, save_window_pref: bool = False, minimize_enabled: bool = True,
-            minimize_button: bool = False, maximize_button: bool = False, parent: QWidget | None = None):
+        self,
+        name: str = "",
+        title: str = "",
+        width: int | None = None,
+        height: int | None = None,
+        resizable: bool = True,
+        modal: bool = False,
+        init_pos: tuple[int, int] | None = None,
+        title_bar_class: Type | None = None,
+        as_overlay: bool = True,
+        always_show_all_title: bool = False,
+        on_top: bool = False,
+        save_window_pref: bool = False,
+        minimize_enabled: bool = True,
+        minimize_button: bool = False,
+        maximize_button: bool = False,
+        parent: QWidget | None = None,
+    ):
         """
         Initializes the window with the specified properties.
 
@@ -480,9 +559,15 @@ class FramelessWindow(QWidget):
         self._on_top = on_top
         self._minimized = False
         self._settings = QSettings(
-            QSettings.IniFormat, QSettings.UserScope, self.WINDOW_SETTINGS_PATH, name or self.__class__.__name__)
+            QSettings.IniFormat,
+            QSettings.UserScope,
+            self.WINDOW_SETTINGS_PATH,
+            name or self.__class__.__name__,
+        )
         self._save_window_pref = save_window_pref
-        self._parent_container: DockingContainer | FramelessWindowContainer | None = None
+        self._parent_container: DockingContainer | FramelessWindowContainer | None = (
+            None
+        )
         self._window_resizer: WindowResizer | None = None
         self._minimize_enabled = minimize_enabled
         self._modal = modal
@@ -496,7 +581,9 @@ class FramelessWindow(QWidget):
         self._main_contents: FramelessWindowContents | None = None
 
         title_bar_class = title_bar_class or FramelessTitleBar
-        self._title_bar = title_bar_class(always_show_all=always_show_all_title, parent=self)
+        self._title_bar = title_bar_class(
+            always_show_all=always_show_all_title, parent=self
+        )
 
         self._setup_ui()
         self.set_title(title)
@@ -507,9 +594,14 @@ class FramelessWindow(QWidget):
         self._overlay = None
         if as_overlay:
             self._overlay = FramelessOverlay(
-                parent=self, title_bar=self._title_bar, top_left=self._window_resizer.top_left_resizer,
-                top_right=self._window_resizer.top_right_resizer, bottom_left=self._window_resizer.bottom_right_resizer,
-                bottom_right=self._window_resizer.bottom_right_resizer, resizable=resizable)
+                parent=self,
+                title_bar=self._title_bar,
+                top_left=self._window_resizer.top_left_resizer,
+                top_right=self._window_resizer.top_right_resizer,
+                bottom_left=self._window_resizer.bottom_right_resizer,
+                bottom_right=self._window_resizer.bottom_right_resizer,
+                resizable=resizable,
+            )
             self._overlay.widgetMousePress.connect(self.mousePressEvent)
             self._overlay.widgetMouseMove.connect(self.mouseMoveEvent)
             self._overlay.widgetMouseRelease.connect(self.mouseReleaseEvent)
@@ -555,7 +647,7 @@ class FramelessWindow(QWidget):
         """
 
         for instance in cls._INSTANCES:
-            logger.info(f'Deleting {instance}')
+            logger.info(f"Deleting {instance}")
             # noinspection PyBroadException
             try:
                 instance.setParent(None)
@@ -736,8 +828,8 @@ class FramelessWindow(QWidget):
         result = super().close()
 
         # self.removeEventFilter(self._filter)
-        # self.closed.emit()
-        # self._parent_container.close()
+        self.closed.emit()
+        self._parent_container.close()
 
         return result
 
@@ -757,17 +849,27 @@ class FramelessWindow(QWidget):
         """
 
         position = QPoint(*(self._init_pos or ()))
-        init_pos = position or self._settings.value('pos')
+        init_pos = position or self._settings.value("pos")
         self._init_pos = init_pos
 
         if not self.is_docked() and self._parent_container:
             self._parent_container.restoreGeometry(
-                self._settings.value('geometry', self._parent_container.saveGeometry()))
-            self._parent_container.restoreState(self._settings.value('saveState', self._parent_container.saveState()))
-            if self._settings.value('maximized', self._parent_container.isMaximized()):
+                self._settings.value("geometry", self._parent_container.saveGeometry())
+            )
+            self._parent_container.restoreState(
+                self._settings.value("saveState", self._parent_container.saveState())
+            )
+
+            if strtobool(
+                self._settings.value(
+                    "maximized", str(self._parent_container.isMaximized())
+                )
+            ):
                 self._parent_container.showMaximized()
             else:
-                self._parent_container.resize(self._settings.value('size', self._parent_container.size()))
+                self._parent_container.resize(
+                    self._settings.value("size", self._parent_container.size())
+                )
 
     def save_settings(self):
         """
@@ -775,12 +877,12 @@ class FramelessWindow(QWidget):
         """
 
         if not self.is_docked() and self._parent_container:
-            self._settings.setValue('geometry', self._parent_container.saveGeometry())
-            self._settings.setValue('saveState', self._parent_container.saveState())
-            self._settings.setValue('maximized', self._parent_container.isMaximized())
+            self._settings.setValue("geometry", self._parent_container.saveGeometry())
+            self._settings.setValue("saveState", self._parent_container.saveState())
+            self._settings.setValue("maximized", self._parent_container.isMaximized())
             if not self._parent_container.isMaximized():
-                self._settings.setValue('pos', self._parent_container.pos())
-                self._settings.setValue('size', self._parent_container.size())
+                self._settings.setValue("pos", self._parent_container.pos())
+                self._settings.setValue("size", self._parent_container.size())
 
     def main_layout(self) -> QVBoxLayout | QHBoxLayout | QGridLayout | QLayout:
         """
@@ -791,7 +893,10 @@ class FramelessWindow(QWidget):
         """
 
         if self._main_contents.layout() is None:
-            self._main_contents.setLayout(layouts.VerticalLayout())
+            main_layout = layouts.VerticalLayout()
+            main_layout.setSpacing(0)
+            main_layout.setContentsMargins(0, 0, 0, 0)
+            self._main_contents.setLayout(main_layout)
 
         return self._main_contents.layout()
 
@@ -877,7 +982,7 @@ class FramelessWindow(QWidget):
         try:
             theme.instance().apply(self)
         except ImportError:
-            logger.error('Error while setting default stylesheet ...')
+            logger.error("Error while setting default stylesheet ...")
 
     def center_to_parent(self):
         """
@@ -893,7 +998,9 @@ class FramelessWindow(QWidget):
             widget_center = utils.current_screen_geometry().center()
             pos = QPoint(0, 0)
 
-        self._parent_container.move(widget_center + pos - QPoint(int(size.width() / 2), int(size.height() / 3)))
+        self._parent_container.move(
+            widget_center + pos - QPoint(int(size.width() / 2), int(size.height() / 3))
+        )
 
     def is_minimized(self) -> bool:
         """
@@ -938,7 +1045,11 @@ class FramelessWindow(QWidget):
         :return: True if window is docked; False otherwise.
         """
 
-        return self._parent_container.is_docking_container() if self._parent_container else False
+        return (
+            self._parent_container.is_docking_container()
+            if self._parent_container
+            else False
+        )
 
     def minimize(self):
         """
@@ -1025,8 +1136,12 @@ class FramelessWindow(QWidget):
 
         self._parent = self._parent or ui.FnUi().main_window()
         self._parent_container = FramelessWindowContainer(
-            width=self._init_width, height=self._init_height, save_window_pref=save_window_pref, on_top=self._on_top,
-            parent=self._parent)
+            width=self._init_width,
+            height=self._init_height,
+            save_window_pref=save_window_pref,
+            on_top=self._on_top,
+            parent=self._parent,
+        )
         self._parent_container.set_widget(self)
         if self._modal:
             self._parent_container.setWindowModality(Qt.ApplicationModal)
@@ -1066,7 +1181,9 @@ class FramelessWindow(QWidget):
         self._minimized = False
         self._frameless_layout = factory.grid_layout()
         self._setup_frameless_layout()
-        self._window_resizer = WindowResizer(install_to_layout=self._frameless_layout, parent=self)
+        self._window_resizer = WindowResizer(
+            install_to_layout=self._frameless_layout, parent=self
+        )
 
         self.apply_stylesheet()
 
@@ -1100,8 +1217,8 @@ class FramelessWindow(QWidget):
         self._frameless_layout.setContentsMargins(0, 0, 0, 0)
         self._frameless_layout.addWidget(self._title_bar, 1, 1, 1, 1)
         self._frameless_layout.addWidget(self._main_contents, 2, 1, 1, 1)
-        self._frameless_layout.setColumnStretch(1, 1)                            # title column
-        self._frameless_layout.setColumnStretch(2, 1)                            # main contents row
+        self._frameless_layout.setColumnStretch(1, 1)  # title column
+        self._frameless_layout.setColumnStretch(2, 1)  # main contents row
 
     def _move_to_init_pos(self):
         """
@@ -1209,8 +1326,13 @@ class FramelessTitleLabel(labels.ClippedLabel):
     """
 
     def __init__(
-            self, text: str = '', width: int = 0, elide: bool = True, always_show_all: bool = False,
-            parent: QWidget | None = None):
+        self,
+        text: str = "",
+        width: int = 0,
+        elide: bool = True,
+        always_show_all: bool = False,
+        parent: QWidget | None = None,
+    ):
         """
         Initializes the widget with the specified properties.
 
@@ -1223,7 +1345,12 @@ class FramelessTitleLabel(labels.ClippedLabel):
         """
 
         super().__init__(
-            text=text, width=width, elide=elide, always_show_all=always_show_all, parent=parent)
+            text=text,
+            width=width,
+            elide=elide,
+            always_show_all=always_show_all,
+            parent=parent,
+        )
 
         self.setAttribute(Qt.WA_TransparentForMouseEvents)
         # self.setAlignment(Qt.AlignRight)
@@ -1238,10 +1365,15 @@ class FramelessTitleBar(QFrame):
     moving = Signal(object, object)
 
     class TitleStyle:
-        DEFAULT = 'DEFAULT'
-        THIN = 'THIN'
+        DEFAULT = "DEFAULT"
+        THIN = "THIN"
 
-    def __init__(self, show_title: bool = True, always_show_all: bool = False, parent: FramelessWindow | None = None):
+    def __init__(
+        self,
+        show_title: bool = True,
+        always_show_all: bool = False,
+        parent: FramelessWindow | None = None,
+    ):
         super().__init__(parent)
         """
         Initialize a new instance of the class.
@@ -1279,7 +1411,9 @@ class FramelessTitleBar(QFrame):
         self._minimize_button = buttons.BaseButton(theme_updates=False, parent=self)
         self._maximize_button = buttons.BaseButton(theme_updates=False, parent=self)
         self._help_button = buttons.BaseButton(theme_updates=False, parent=self)
-        self._title_label = FramelessTitleLabel(always_show_all=always_show_all, parent=self)
+        self._title_label = FramelessTitleLabel(
+            always_show_all=always_show_all, parent=self
+        )
         self._spacing_item: QSpacerItem | None = None
         self._spacing_item_2: QSpacerItem | None = None
 
@@ -1345,14 +1479,29 @@ class FramelessTitleBar(QFrame):
         self.setFixedHeight(dpi.dpi_scale(self._title_bar_height))
         self.setLayout(self._main_layout)
 
-        self._close_button.set_icon(QIcon(paths.canonical_path('../../resources/icons/window_close.png')))
-        self._minimize_button.set_icon(QIcon(paths.canonical_path('../../resources/icons/window_minimize.png')))
-        self._maximize_button.set_icon(QIcon(paths.canonical_path('../../resources/icons/window_maximize.png')))
-        self._maximize_button.set_icon(QIcon(paths.canonical_path('../../resources/icons/window_maximize.png')))
-        self._help_button.set_icon(QIcon(paths.canonical_path('../../resources/icons/question.png')))
+        self._close_button.set_icon(
+            QIcon(paths.canonical_path("../../resources/icons/window_close.png"))
+        )
+        self._minimize_button.set_icon(
+            QIcon(paths.canonical_path("../../resources/icons/window_minimize.png"))
+        )
+        self._maximize_button.set_icon(
+            QIcon(paths.canonical_path("../../resources/icons/window_maximize.png"))
+        )
+        self._maximize_button.set_icon(
+            QIcon(paths.canonical_path("../../resources/icons/window_maximize.png"))
+        )
+        self._help_button.set_icon(
+            QIcon(paths.canonical_path("../../resources/icons/question.png"))
+        )
 
         # Button Setup
-        for button in [self._help_button, self._close_button, self._minimize_button, self._maximize_button]:
+        for button in [
+            self._help_button,
+            self._close_button,
+            self._minimize_button,
+            self._maximize_button,
+        ]:
             button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
             button.double_click_enabled = False
 
@@ -1551,12 +1700,14 @@ class FramelessTitleBar(QFrame):
         self._title_style = style
 
         if style == self.TitleStyle.DEFAULT:
-            utils.set_stylesheet_object_name(self, '')
-            utils.set_stylesheet_object_name(self._title_label, '')
+            utils.set_stylesheet_object_name(self, "")
+            utils.set_stylesheet_object_name(self._title_label, "")
             self.setFixedHeight(dpi.dpi_scale(self._title_bar_height))
             self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 2, 2, 6))
             # self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 5, 0, 7))
-            self._main_right_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 5, 6, 0))
+            self._main_right_layout.setContentsMargins(
+                *dpi.margins_dpi_scale(0, 5, 6, 0)
+            )
             self._logo_button.setFixedSize(QSize(30, 24))
             self._logo_button.setIconSize(QSize(16, 16))
             self._minimize_button.setFixedSize(QSize(28, 24))
@@ -1573,7 +1724,9 @@ class FramelessTitleBar(QFrame):
             self.setFixedHeight(dpi.dpi_scale(int(self._title_bar_height / 2)))
             # self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 3, 15, 7))
             self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 0, 0, 6))
-            self._main_right_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 0, 6, 0))
+            self._main_right_layout.setContentsMargins(
+                *dpi.margins_dpi_scale(0, 0, 6, 0)
+            )
             self._logo_button.setIconSize(QSize(12, 12))
             self._logo_button.setFixedSize(QSize(14, 16))
             self._minimize_button.setFixedSize(QSize(14, 14))
@@ -1582,10 +1735,12 @@ class FramelessTitleBar(QFrame):
             self._title_label.setFixedHeight(dpi.dpi_scale(16))
             self._window_buttons_layout.setSpacing(dpi.dpi_scale(6))
             self._help_button.hide()
-            utils.set_stylesheet_object_name(self, 'Minimized')
-            utils.set_stylesheet_object_name(self._title_label, 'Minimized')
+            utils.set_stylesheet_object_name(self, "Minimized")
+            utils.set_stylesheet_object_name(self._title_label, "Minimized")
         else:
-            logger.error(f'{style} style does not exists for {self._frameless_window.__class__.__name__}!')
+            logger.error(
+                f"{style} style does not exists for {self._frameless_window.__class__.__name__}!"
+            )
 
     def set_minimize_button_visible(self, flag: bool):
         """
@@ -1679,7 +1834,6 @@ class FramelessTitleBar(QFrame):
 
 
 class FramelessKeyboardModifierFilter(QObject):
-
     modifierPressed = Signal()
     windowEvent = Signal(object)
 
@@ -1705,14 +1859,19 @@ class FramelessWindowContents(QFrame):
 
 
 class FramelessOverlay(overlay.OverlayWidget):
-
     MOVED_BUTTON = Qt.MiddleButton
     RESIZE_BUTTON = Qt.RightButton
 
     def __init__(
-            self, parent: FramelessWindow, title_bar: FramelessTitleBar, top_left: CornerResizer | None = None,
-            top_right: CornerResizer | None = None, bottom_left: CornerResizer | None = None,
-            bottom_right: CornerResizer | None = None, resizable: bool = True):
+        self,
+        parent: FramelessWindow,
+        title_bar: FramelessTitleBar,
+        top_left: CornerResizer | None = None,
+        top_right: CornerResizer | None = None,
+        bottom_left: CornerResizer | None = None,
+        bottom_right: CornerResizer | None = None,
+        resizable: bool = True,
+    ):
         """
         Initialize a new instance of FramelessOverlay.
 
@@ -1768,7 +1927,11 @@ class FramelessOverlay(overlay.OverlayWidget):
             self._title_bar.start_move()
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
 
-        if self.is_modifier() and event.buttons() & self.RESIZE_BUTTON and self._resizable:
+        if (
+            self.is_modifier()
+            and event.buttons() & self.RESIZE_BUTTON
+            and self._resizable
+        ):
             self._resize_direction = self._quadrant()
             # noinspection PyUnresolvedReferences
             if self._resize_direction == ResizerDirection.Top | ResizerDirection.Right:
@@ -1777,15 +1940,22 @@ class FramelessOverlay(overlay.OverlayWidget):
             elif self._resize_direction == ResizerDirection.Top | ResizerDirection.Left:
                 self._top_left.window_resize_start()
                 self.setCursor(Qt.CursorShape.SizeFDiagCursor)
-            elif self._resize_direction == ResizerDirection.Bottom | ResizerDirection.Left:
+            elif (
+                self._resize_direction
+                == ResizerDirection.Bottom | ResizerDirection.Left
+            ):
                 self._bottom_left.window_resize_start()
                 self.setCursor(Qt.CursorShape.SizeBDiagCursor)
-            elif self._resize_direction == ResizerDirection.Bottom | ResizerDirection.Right:
+            elif (
+                self._resize_direction
+                == ResizerDirection.Bottom | ResizerDirection.Right
+            ):
                 self._bottom_right.window_resize_start()
                 self.setCursor(Qt.CursorShape.SizeFDiagCursor)
 
         if (not self.is_modifier() and event.buttons() & self.MOVED_BUTTON) or (
-                not self.is_modifier() and event.buttons() & self.RESIZE_BUTTON):
+            not self.is_modifier() and event.buttons() & self.RESIZE_BUTTON
+        ):
             self.hide()
 
         event.ignore()
@@ -1819,9 +1989,15 @@ class FramelessOverlay(overlay.OverlayWidget):
                 self._top_right.windowResized.emit()
             elif self._resize_direction == ResizerDirection.Top | ResizerDirection.Left:
                 self._top_left.windowResized.emit()
-            elif self._resize_direction == ResizerDirection.Bottom | ResizerDirection.Left:
+            elif (
+                self._resize_direction
+                == ResizerDirection.Bottom | ResizerDirection.Left
+            ):
                 self._bottom_left.windowResized.emit()
-            elif self._resize_direction == ResizerDirection.Bottom | ResizerDirection.Right:
+            elif (
+                self._resize_direction
+                == ResizerDirection.Bottom | ResizerDirection.Right
+            ):
                 self._bottom_right.windowResized.emit()
 
         event.ignore()
@@ -1884,7 +2060,7 @@ class FramelessOverlay(overlay.OverlayWidget):
         if self.isEnabled():
             super().show()
         else:
-            logger.warning('FramelessOverlay.show() was called when it is disabled')
+            logger.warning("FramelessOverlay.show() was called when it is disabled")
 
     def update_stylesheet(self):
         """
@@ -1943,7 +2119,6 @@ class Resizers:
 
 
 class WindowResizer(QObject):
-
     resizeFinished = Signal()
 
     def __init__(self, parent, install_to_layout=None):
@@ -2079,10 +2254,18 @@ class WindowResizer(QObject):
         self._bottom_resizer.set_resize_direction(ResizerDirection.Bottom)
         self._right_resizer.set_resize_direction(ResizerDirection.Right)
         self._left_resizer.set_resize_direction(ResizerDirection.Left)
-        self._top_left_resizer.set_resize_direction(ResizerDirection.Left | ResizerDirection.Top)
-        self._top_right_resizer.set_resize_direction(ResizerDirection.Right | ResizerDirection.Top)
-        self._bottom_left_resizer.set_resize_direction(ResizerDirection.Left | ResizerDirection.Bottom)
-        self._bottom_right_resizer.set_resize_direction(ResizerDirection.Right | ResizerDirection.Bottom)
+        self._top_left_resizer.set_resize_direction(
+            ResizerDirection.Left | ResizerDirection.Top
+        )
+        self._top_right_resizer.set_resize_direction(
+            ResizerDirection.Right | ResizerDirection.Top
+        )
+        self._bottom_left_resizer.set_resize_direction(
+            ResizerDirection.Left | ResizerDirection.Bottom
+        )
+        self._bottom_right_resizer.set_resize_direction(
+            ResizerDirection.Right | ResizerDirection.Bottom
+        )
 
     # noinspection SpellCheckingInspection
     def set_resizer_active(self, flag: bool):
@@ -2114,7 +2297,9 @@ class WindowResizer(QObject):
         """
 
         if not isinstance(grid_layout, QGridLayout):
-            logger.error('Resizers only can be installed on grid layouts (QGridLayout)!')
+            logger.error(
+                "Resizers only can be installed on grid layouts (QGridLayout)!"
+            )
             return
 
         self._layout = grid_layout
@@ -2123,14 +2308,28 @@ class WindowResizer(QObject):
         self._bottom_resizer = VerticalResizer(ResizerDirection.Bottom, parent=parent)
         self._right_resizer = HorizontalResizer(ResizerDirection.Right, parent=parent)
         self._left_resizer = HorizontalResizer(ResizerDirection.Left, parent=parent)
-        self._top_left_resizer = CornerResizer(ResizerDirection.Left | ResizerDirection.Top, parent=parent)
-        self._top_right_resizer = CornerResizer(ResizerDirection.Right | ResizerDirection.Top, parent=parent)
-        self._bottom_left_resizer = CornerResizer(ResizerDirection.Left | ResizerDirection.Bottom, parent=parent)
-        self._bottom_right_resizer = CornerResizer(ResizerDirection.Right | ResizerDirection.Bottom, parent=parent)
+        self._top_left_resizer = CornerResizer(
+            ResizerDirection.Left | ResizerDirection.Top, parent=parent
+        )
+        self._top_right_resizer = CornerResizer(
+            ResizerDirection.Right | ResizerDirection.Top, parent=parent
+        )
+        self._bottom_left_resizer = CornerResizer(
+            ResizerDirection.Left | ResizerDirection.Bottom, parent=parent
+        )
+        self._bottom_right_resizer = CornerResizer(
+            ResizerDirection.Right | ResizerDirection.Bottom, parent=parent
+        )
 
         self._resizers = [
-            self._top_resizer, self._top_right_resizer, self._right_resizer, self._bottom_right_resizer,
-            self._bottom_resizer, self._bottom_left_resizer, self._left_resizer, self._top_left_resizer
+            self._top_resizer,
+            self._top_right_resizer,
+            self._right_resizer,
+            self._bottom_right_resizer,
+            self._bottom_resizer,
+            self._bottom_left_resizer,
+            self._left_resizer,
+            self._top_left_resizer,
         ]
 
         grid_layout.addWidget(self._top_left_resizer, 0, 0, 1, 1)
@@ -2159,21 +2358,21 @@ class Resizer(QWidget):
     Those resizers can be used in windows and dialogs
     """
 
-    windowResized = Signal()                  # signal emitted when a resize operation is being done
-    windowResizedStarted = Signal()           # signal emitted when a resize operation starts
-    windowResizedFinished = Signal()          # signal emitted when a resize operation ends
+    windowResized = Signal()  # signal emitted when a resize operation is being done
+    windowResizedStarted = Signal()  # signal emitted when a resize operation starts
+    windowResizedFinished = Signal()  # signal emitted when a resize operation ends
 
     def __init__(self, direction, parent, debug=False):
         super().__init__(parent)
 
-        self._direction = direction         # resize direction
-        self._widget_mouse_pos = None       # caches the position of the mouse
-        self._widget_geometry = None        # caches the geometry of the resized widget
+        self._direction = direction  # resize direction
+        self._widget_mouse_pos = None  # caches the position of the mouse
+        self._widget_geometry = None  # caches the geometry of the resized widget
 
         if not debug:
-            self.setStyleSheet('background-color: transparent;')
+            self.setStyleSheet("background-color: transparent;")
         else:
-            self.setStyleSheet('background-color: #88990000')
+            self.setStyleSheet("background-color: #88990000")
 
         self.set_resize_direction(direction)
 
@@ -2264,9 +2463,13 @@ class Resizer(QWidget):
             if new_geo.height() <= min_height:
                 new_geo.setTop(top)
         if self._direction & ResizerDirection.Right == ResizerDirection.Right:
-            new_geo.setRight(pos.x() + (self.minimumSize().width() - self._widget_mouse_pos.x()))
+            new_geo.setRight(
+                pos.x() + (self.minimumSize().width() - self._widget_mouse_pos.x())
+            )
         if self._direction & ResizerDirection.Bottom == ResizerDirection.Bottom:
-            new_geo.setBottom(pos.y() + (self.minimumSize().height() - self._widget_mouse_pos.y()))
+            new_geo.setBottom(
+                pos.y() + (self.minimumSize().height() - self._widget_mouse_pos.y())
+            )
 
         x = new_geo.x()
         y = new_geo.y()
@@ -2304,11 +2507,15 @@ class CornerResizer(Resizer, object):
     def set_resize_direction(self, direction):
         super().set_resize_direction(direction)
 
-        if direction == ResizerDirection.Left | ResizerDirection.Top or \
-                direction == ResizerDirection.Right | ResizerDirection.Bottom:
+        if (
+            direction == ResizerDirection.Left | ResizerDirection.Top
+            or direction == ResizerDirection.Right | ResizerDirection.Bottom
+        ):
             self.setCursor(Qt.SizeFDiagCursor)
-        elif direction == ResizerDirection.Right | ResizerDirection.Top or \
-                direction == ResizerDirection.Left | ResizerDirection.Bottom:
+        elif (
+            direction == ResizerDirection.Right | ResizerDirection.Top
+            or direction == ResizerDirection.Left | ResizerDirection.Bottom
+        ):
             self.setCursor(Qt.SizeBDiagCursor)
 
 
@@ -2317,7 +2524,11 @@ class VerticalResizer(Resizer, object):
     Resizer implementation for top and bottom sides of the window
     """
 
-    def __init__(self, direction: int | Qt.CursorShape = Qt.SizeVerCursor, parent: QWidget | None = None):
+    def __init__(
+        self,
+        direction: int | Qt.CursorShape = Qt.SizeVerCursor,
+        parent: QWidget | None = None,
+    ):
         """
         Initialize a new instance of the VerticalResizer class.
 
@@ -2497,7 +2708,11 @@ class SpawnerIcon(buttons.IconMenuButton):
         ..note:: this should match frameless window name.
         """
 
-        return self._window.title or self._window.name or f'Window [{str(uuid.uuid4())[:4]}]'
+        return (
+            self._window.title
+            or self._window.name
+            or f"Window [{str(uuid.uuid4())[:4]}]"
+        )
 
     # noinspection SpellCheckingInspection
     def set_logo_highlight(self, flag: bool):
@@ -2509,14 +2724,22 @@ class SpawnerIcon(buttons.IconMenuButton):
 
         min_size = 0.55 if self._window.isMinimized() else 1
         size = uiconsts.Sizes.TitleLogoIcon * min_size
-        logo_icon = QIcon(paths.canonical_path('../../resources/icons/tpdcc.png'))
+        logo_icon = QIcon(paths.canonical_path("../../resources/icons/tpdcc.png"))
 
         if flag:
-            self.set_icon(logo_icon, colors=[None, None], size=size, scaling=[1], color_offset=40)
+            self.set_icon(
+                logo_icon, colors=[None, None], size=size, scaling=[1], color_offset=40
+            )
         else:
             self.set_icon(
-                logo_icon, colors=[None], tint_composition=QPainter.CompositionMode_Plus, size=size, scaling=[1],
-                color_offset=40, grayscale=True)
+                logo_icon,
+                colors=[None],
+                tint_composition=QPainter.CompositionMode_Plus,
+                size=size,
+                scaling=[1],
+                color_offset=40,
+                grayscale=True,
+            )
 
     def move_to_mouse(self):
         """
@@ -2572,7 +2795,9 @@ class SpawnerIcon(buttons.IconMenuButton):
 
         size = uiconsts.Sizes.TitleLogoIcon
         self.setIconSize(QSize(size, size))
-        self.setFixedSize(QSize(size + uiconsts.Sizes.Margin / 2, size + uiconsts.Sizes.Margin / 2))
+        self.setFixedSize(
+            QSize(size + uiconsts.Sizes.Margin / 2, size + uiconsts.Sizes.Margin / 2)
+        )
         # self._tooltip_action = self.addAction('Toggle Tooltips', checkable=True, connect=self._on_toggle_tooltips)
         self.menu_align = Qt.AlignLeft
 
@@ -2588,7 +2813,9 @@ class SpawnerIcon(buttons.IconMenuButton):
     #     self.move_to_mouse()
 
     @staticmethod
-    def _splitter_ancestor(widget: QWidget) -> tuple[QWidget, QSplitter] | tuple[None, None]:
+    def _splitter_ancestor(
+        widget: QWidget,
+    ) -> tuple[QWidget, QSplitter] | tuple[None, None]:
         """
         Internal function that returns widgets splitter ancestors.
 

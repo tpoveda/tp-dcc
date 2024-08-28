@@ -4,20 +4,19 @@ import logging
 from typing import Type, Iterator
 
 from . import dpi
+
 # noinspection PyUnresolvedReferences
-from ..externals.Qt import __binding__
-from ..externals.Qt.QtCore import Qt, QObject, QPoint, QRect
-from ..externals.Qt.QtWidgets import QApplication, QMainWindow, QWidget, QMenu, QGraphicsDropShadowEffect
-from ..externals.Qt.QtGui import QCursor, QColor
-# TODO: This should be handled using QtSiteConfig file
-try:
-    from ..externals.Qt.QtGui import QGuiApplication, QScreen
-except ImportError:
-    try:
-        from PySide2.QtGui import QGuiApplication, QScreen
-    except ImportError:
-        # noinspection PyUnresolvedReferences,PyPackageRequirements
-        from PySide6.QtGui import QGuiApplication, QScreen
+from Qt import __binding__
+from Qt.QtCore import Qt, QObject, QPoint, QRect
+from Qt.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QMenu,
+    QGraphicsDropShadowEffect,
+)
+from Qt.QtGui import QCursor, QColor, QGuiApplication, QScreen
+
 
 _QT_TEST_AVAILABLE = True
 try:
@@ -31,7 +30,7 @@ logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setLevel(logging.INFO)
 # noinspection SpellCheckingInspection
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
@@ -41,7 +40,7 @@ def is_pyqt() -> bool:
     Returns True if the current Qt binding is PyQt
     """
 
-    return 'PyQt' in __binding__
+    return "PyQt" in __binding__
 
 
 def is_pyqt4() -> bool:
@@ -49,7 +48,7 @@ def is_pyqt4() -> bool:
     Returns True if the current Qt binding is PyQt4
     """
 
-    return __binding__ == 'PyQt4'
+    return __binding__ == "PyQt4"
 
 
 def is_pyqt5() -> bool:
@@ -57,7 +56,7 @@ def is_pyqt5() -> bool:
     Returns True if the current Qt binding is PyQt5
     """
 
-    return __binding__ == 'PyQt5'
+    return __binding__ == "PyQt5"
 
 
 def is_pyside() -> bool:
@@ -65,7 +64,7 @@ def is_pyside() -> bool:
     Returns True if the current Qt binding is PySide
     """
 
-    return __binding__ == 'PySide'
+    return __binding__ == "PySide"
 
 
 def is_pyside2() -> bool:
@@ -73,7 +72,7 @@ def is_pyside2() -> bool:
     Returns True if the current Qt binding is PySide2
     """
 
-    return __binding__ == 'PySide2'
+    return __binding__ == "PySide2"
 
 
 def is_pyside6() -> bool:
@@ -81,7 +80,7 @@ def is_pyside6() -> bool:
     Returns True if the current Qt binding is PySide6
     """
 
-    return __binding__ == 'PySide6'
+    return __binding__ == "PySide6"
 
 
 def window_offset(window: QMainWindow | QWidget):
@@ -204,11 +203,16 @@ def recursively_set_menu_actions_visibility(menu: QMenu, state: bool):
         if action.isVisible() != state:
             action.setVisible(state)
 
-    if any(action.isVisible() for action in menu.actions()) and menu.isVisible() != state:
+    if (
+        any(action.isVisible() for action in menu.actions())
+        and menu.isVisible() != state
+    ):
         menu.menuAction().setVisible(state)
 
 
-def set_shadow_effect_enabled(widget: QWidget, flag: bool) -> QGraphicsDropShadowEffect | None:
+def set_shadow_effect_enabled(
+    widget: QWidget, flag: bool
+) -> QGraphicsDropShadowEffect | None:
     """
     Sets shadow effect for given widget.
 
@@ -218,10 +222,10 @@ def set_shadow_effect_enabled(widget: QWidget, flag: bool) -> QGraphicsDropShado
 
     shadow_effect = None
     if flag:
-        shadow_effect = widget.property('shadowEffect')
+        shadow_effect = widget.property("shadowEffect")
         if shadow_effect is None:
             shadow_effect = QGraphicsDropShadowEffect(widget)
-            widget.setProperty('shadowEffect', shadow_effect)
+            widget.setProperty("shadowEffect", shadow_effect)
             shadow_effect.setBlurRadius(dpi.dpi_scale(8))
             shadow_effect.setColor(QColor(0, 0, 0, 150))
             shadow_effect.setOffset(dpi.dpi_scale(2))
@@ -248,7 +252,9 @@ def widget_at(pos: QPoint) -> list[tuple[QWidget, QPoint]]:
     while _widget_at:
         found_widgets.append((_widget_at, _widget_at.mapFromGlobal(pos)))
         # make widget invisible to further enquiries
-        widgets_statuses.append((_widget_at, _widget_at.testAttribute(Qt.WA_TransparentForMouseEvents)))
+        widgets_statuses.append(
+            (_widget_at, _widget_at.testAttribute(Qt.WA_TransparentForMouseEvents))
+        )
         _widget_at.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         _widget_at = QApplication.widgetAt(pos)
 
@@ -259,7 +265,9 @@ def widget_at(pos: QPoint) -> list[tuple[QWidget, QPoint]]:
     return found_widgets
 
 
-def iterate_children(widget: QObject, skip: str | None = None, obj_class: Type | None = None) -> Iterator[QWidget]:
+def iterate_children(
+    widget: QObject, skip: str | None = None, obj_class: Type | None = None
+) -> Iterator[QWidget]:
     """
     Iterates over the children of the given widget.
 
@@ -284,8 +292,11 @@ def iterate_children(widget: QObject, skip: str | None = None, obj_class: Type |
 
 
 def click_under(
-        pos: QPoint, under: int = 1, button: Qt.MouseButton = Qt.LeftButton,
-        modifier: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier):
+    pos: QPoint,
+    under: int = 1,
+    button: Qt.MouseButton = Qt.LeftButton,
+    modifier: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier,
+):
     """
     Clicks under the widget.
 
@@ -296,7 +307,7 @@ def click_under(
     """
 
     if not _QT_TEST_AVAILABLE:
-        logger.warning('QtTest module is not available in current Qt version!')
+        logger.warning("QtTest module is not available in current Qt version!")
         return
 
     widgets = widget_at(pos)

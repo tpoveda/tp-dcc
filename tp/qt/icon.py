@@ -2,14 +2,19 @@ from __future__ import annotations
 
 from typing import Iterable
 
+from Qt.QtCore import Qt, QSize
+from Qt.QtGui import QColor, QIcon
+
 from . import dpi, pixmap
-from ..externals.Qt.QtCore import Qt, QSize
-from ..externals.Qt.QtGui import QColor, QIcon
 
 
 def colorize_icon(
-        icon: QIcon, size: int | None = None, color: tuple[int, int, int] | QColor = (255, 255, 255),
-        overlay_icon: QIcon | None = None, overlay_color: tuple[int, int, int] | QColor = (255, 255, 255)) -> QIcon:
+    icon: QIcon,
+    size: int | None = None,
+    color: tuple[int, int, int] | QColor = (255, 255, 255),
+    overlay_icon: QIcon | None = None,
+    overlay_color: tuple[int, int, int] | QColor = (255, 255, 255),
+) -> QIcon:
     """
     Colorizes the given icon.
 
@@ -32,13 +37,18 @@ def colorize_icon(
         overlay_pixmap = overlay_icon.pixmap(orig_size)
         pixmap.overlay_pixmap(colorized_pixmap, overlay_pixmap, overlay_color)
 
-    colorized_pixmap = colorized_pixmap.scaled(size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+    colorized_pixmap = colorized_pixmap.scaled(
+        size, Qt.KeepAspectRatio, Qt.SmoothTransformation
+    )
 
     return QIcon(colorized_pixmap)
 
 
 def colorize_layered_icon(
-        icons: list[QIcon], colors: Iterable[QColor] | None = None, scaling: list[float, float] | None = None):
+    icons: list[QIcon],
+    colors: Iterable[QColor] | None = None,
+    scaling: list[float, float] | None = None,
+):
     """
     Layers multiple icons with various colors into one icon.
 

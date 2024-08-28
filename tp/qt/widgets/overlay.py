@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from typing import Type
 
+from Qt.QtCore import Qt, Signal, QEvent
+from Qt.QtWidgets import QApplication, QWidget, QHBoxLayout, QLayout
+from Qt.QtGui import QMouseEvent, QKeyEvent
+
 from .. import utils
 from ..widgets import dialogs
-from ...externals.Qt.QtCore import Qt, Signal, QEvent
-from ...externals.Qt.QtWidgets import QApplication, QWidget, QHBoxLayout, QLayout
-from ...externals.Qt.QtGui import QMouseEvent, QKeyEvent
 
 
 class OverlayWidget(dialogs.BaseDialog):
-
     widgetMousePress = Signal(object)
     widgetMouseMove = Signal(object)
     widgetMouseRelease = Signal(object)
@@ -29,7 +29,9 @@ class OverlayWidget(dialogs.BaseDialog):
 
     # noinspection PyMethodOverriding
     def update(self):
-        self.setGeometry(0, 0, self.parent().geometry().width(), self.parent().geometry().height())
+        self.setGeometry(
+            0, 0, self.parent().geometry().width(), self.parent().geometry().height()
+        )
         super().update()
 
     def enterEvent(self, event: QEvent) -> None:

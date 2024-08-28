@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from Qt.QtCore import Qt
+from Qt.QtGui import QColor, QPixmap, QPainter
+
 from . import color
-from ..externals.Qt.QtCore import Qt
-from ..externals.Qt.QtGui import QColor, QPixmap, QPainter
 
 
-def colorize_pixmap(pixmap: QPixmap, new_color: str | tuple[int, int, int] | QColor) -> QPixmap:
+def colorize_pixmap(
+    pixmap: QPixmap, new_color: str | tuple[int, int, int] | QColor
+) -> QPixmap:
     """
     Colorizes the given pixmap with a new color based on its alpha map.
 
@@ -28,8 +31,11 @@ def colorize_pixmap(pixmap: QPixmap, new_color: str | tuple[int, int, int] | QCo
 
 
 def overlay_pixmap(
-        pixmap: QPixmap, over_pixmap: QPixmap, overlay_color: str | tuple[int, int, int] | QColor,
-        align: Qt.AlignmentFlag = Qt.AlignCenter):
+    pixmap: QPixmap,
+    over_pixmap: QPixmap,
+    overlay_color: str | tuple[int, int, int] | QColor,
+    align: Qt.AlignmentFlag = Qt.AlignCenter,
+):
     """
     Overlays one pixmap over the other.
 

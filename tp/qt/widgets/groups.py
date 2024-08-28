@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from ...externals.Qt.QtCore import Qt, Signal
-from ...externals.Qt.QtWidgets import QWidget, QButtonGroup, QRadioButton
-from .. import uiconsts
+from Qt.QtCore import Qt, Signal
+from Qt.QtWidgets import QWidget, QButtonGroup, QRadioButton
+
 from . import layouts
+from .. import uiconsts
 
 
 class RadioButtonGroup(QWidget):
@@ -16,11 +17,21 @@ class RadioButtonGroup(QWidget):
     toggled = Signal(int)
 
     def __init__(
-            self, radio_names: Sequence[str] | None = None, tooltips: Sequence[str] | None = None,
-            default: int | None = 0, vertical: bool = False, margins: tuple[int, int, int, int] =
-            (uiconsts.REGULAR_PADDING, uiconsts.REGULAR_PADDING, uiconsts.REGULAR_PADDING, 0),
-            spacing: int = uiconsts.SMALL_SPACING, alignment: Qt.AlignmentFlag | None = None,
-            parent: QWidget | None = None):
+        self,
+        radio_names: Sequence[str] | None = None,
+        tooltips: Sequence[str] | None = None,
+        default: int | None = 0,
+        vertical: bool = False,
+        margins: tuple[int, int, int, int] = (
+            uiconsts.REGULAR_PADDING,
+            uiconsts.REGULAR_PADDING,
+            uiconsts.REGULAR_PADDING,
+            0,
+        ),
+        spacing: int = uiconsts.SMALL_SPACING,
+        alignment: Qt.AlignmentFlag | None = None,
+        parent: QWidget | None = None,
+    ):
         """
         Constructor.
 
@@ -67,7 +78,9 @@ class RadioButtonGroup(QWidget):
             for button in self._radio_buttons:
                 radio_layout.setAlignment(button, alignment)
 
-        self._group.buttonClicked.connect(lambda: self.toggled.emit(self.checked_index()))
+        self._group.buttonClicked.connect(
+            lambda: self.toggled.emit(self.checked_index())
+        )
 
     def checked(self) -> QRadioButton | None:
         """

@@ -3,9 +3,10 @@ from __future__ import annotations
 from typing import Any
 from functools import partial
 
-from ...externals.Qt.QtCore import Qt, Signal
-from ...externals.Qt.QtWidgets import QWidget, QCheckBox, QLabel, QHBoxLayout
-from ...externals.Qt.QtGui import QMouseEvent
+from Qt.QtCore import Qt, Signal
+from Qt.QtWidgets import QWidget, QCheckBox, QLabel, QHBoxLayout
+from Qt.QtGui import QMouseEvent
+
 from .. import contexts
 from . import layouts, menus
 
@@ -22,15 +23,23 @@ class BaseCheckBoxWidget(QWidget):
     stateChanged = Signal(object)
 
     def __init__(
-            self, text: str = '', checked: bool = False, tooltip: str = '', enable_menu: bool = True,
-            menu_vertical_offset: int = 20, right: bool = False, label_ratio: int = 0, box_ratio: int = 0,
-            parent: QWidget | None = None):
+        self,
+        text: str = "",
+        checked: bool = False,
+        tooltip: str = "",
+        enable_menu: bool = True,
+        menu_vertical_offset: int = 20,
+        right: bool = False,
+        label_ratio: int = 0,
+        box_ratio: int = 0,
+        parent: QWidget | None = None,
+    ):
         super().__init__(parent=parent)
 
         self._right = right
         self._label_ratio = label_ratio
         self._box_ratio = box_ratio
-        self._checkbox = QCheckBox(text or '', parent=self)
+        self._checkbox = QCheckBox(text or "", parent=self)
         self._label: QLabel | None = None
         self._main_layout: QHBoxLayout | None = None
 
@@ -84,7 +93,7 @@ class BaseCheckBoxWidget(QWidget):
         if self._label:
             self._label.setText(value)
 
-        self._checkbox.setText('' if self._right else value)
+        self._checkbox.setText("" if self._right else value)
 
     def set_checked_quiet(self, flag: bool):
         """

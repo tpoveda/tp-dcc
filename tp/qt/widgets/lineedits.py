@@ -1,16 +1,28 @@
 from __future__ import annotations
 
 from typing import Any
+from functools import partial
 
-from ...externals.Qt.QtCore import Qt, Signal
-from ...externals.Qt.QtWidgets import QWidget, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout
-from ...externals.Qt.QtGui import (
-    QValidator, QIntValidator, QDoubleValidator, QMouseEvent, QFocusEvent, QDragEnterEvent, QDragMoveEvent, QDropEvent
+from Qt.QtCore import Qt, Signal, QObject, QPoint, QRegularExpression
+from Qt.QtWidgets import QWidget, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout
+from Qt.QtGui import (
+    QValidator,
+    QIntValidator,
+    QDoubleValidator,
+    QMouseEvent,
+    QFocusEvent,
+    QDragEnterEvent,
+    QDragMoveEvent,
+    QDropEvent,
+    QRegularExpressionValidator,
 )
+from ... import dcc
+
 from .. import uiconsts, dpi, contexts, utils as qtutils
-from . import layouts, labels
+from . import labels, menus
 
 
+@menus.mixin
 class BaseLineEdit(QLineEdit):
     """
     A base class for LineEdit widgets.
@@ -28,10 +40,20 @@ class BaseLineEdit(QLineEdit):
     mousePressed = Signal(QMouseEvent)
     mouseMoved = Signal(QMouseEvent)
     mouseReleased = Signal(QMouseEvent)
+    leftClicked = Signal()
+    middleClicked = Signal()
+    rightClicked = Signal()
 
     def __init__(
-            self, text: str = '', placeholder: str = '', tooltip: str = '', edit_width: int | None = None,
-            fixed_width: int | None = None, parent: QWidget | None = None):
+        self,
+        text: str = "",
+        placeholder: str = "",
+        tooltip: str = "",
+        edit_width: int | None = None,
+        fixed_width: int | None = None,
+        enable_menu: bool = False,
+        parent: QWidget | None = None,
+    ):
         """
         Initializes the BaseLineEdit.
 
@@ -68,12 +90,37 @@ class BaseLineEdit(QLineEdit):
 
         self._before_finished = self.value()
 
+        if enable_menu:
+            self._setup_menu_class()
+            self.leftClicked.connect(partial(self.show_context_menu, Qt.LeftButton))
+            self.middleClicked.connect(partial(self.show_context_menu, Qt.MidButton))
+            self.rightClicked.connect(partial(self.show_context_menu, Qt.RightButton))
+        else:
+            # noinspection PyStatementEffect
+            self._click_menu = None
+
     def focusInEvent(self, event: QFocusEvent):
         self._before_finished = self.value()
         super().focusInEvent(event)
 
     def mousePressEvent(self, event: QMouseEvent):
         self.mousePressed.emit(event)
+        if not self._click_menu:
+            super().mousePressEvent(event)
+            return
+
+        for mouse_button, menu in self._click_menu.items():
+            if menu and event.button() == mouse_button:
+                if mouse_button == Qt.LeftButton:
+                    self.leftClicked.emit()
+                    return
+                elif mouse_button == Qt.MidButton:
+                    self.middleClicked.emit()
+                    return
+                elif mouse_button == Qt.RightButton:
+                    self.rightClicked.emit()
+                    return
+
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent):
@@ -106,6 +153,16 @@ class BaseLineEdit(QLineEdit):
         if update_text:
             with contexts.block_signals(self):
                 self.setText(str(value))
+
+    def set_alphanumeric_validator(self):
+        """
+        Sets validator that only accepts numbers and letters.
+        """
+
+        validator = QRegularExpressionValidator(
+            QRegularExpression("[a-zA-Z0-9]+", self)
+        )
+        self.setValidator(validator)
 
     def _setup_validator(self):
         """
@@ -189,8 +246,19 @@ class IntLineEdit(BaseLineEdit):
     """
 
     def __init__(
-            self, text: str = '', placeholder: str = '', tooltip: str = '', edit_width: int | None = None,
-            fixed_width: int | None = None, parent: QWidget | None = None):
+        self,
+        text: str = "",
+        placeholder: str = "",
+        tooltip: str = "",
+        edit_width: int | None = None,
+        fixed_width: int | None = None,
+        slide_distance: float = 0.01,
+        small_slide_distance: float = 0.001,
+        large_slide_distance: float = 0.1,
+        scroll_distance: float = 1.0,
+        update_on_slide_tick: bool = True,
+        parent: QWidget | None = None,
+    ):
         """
         Initializes the IntLineEdit.
 
@@ -199,12 +267,31 @@ class IntLineEdit(BaseLineEdit):
         :param tooltip: The tooltip.
         :param edit_width: The width of the LineEdit for editing. Defaults to None.
         :param fixed_width: The fixed width of the LineEdit. Defaults to None.
+        :param slide_distance: The distance to slide on normal drag. Defaults to 1.0.
+        :param small_slide_distance: The distance to slide on small drag. Defaults to 0.1.
+        :param large_slide_distance: The distance to slide on large drag. Defaults to 5.0.
+        :param scroll_distance: The distance to scroll. Defaults to 1.0.
+        :param update_on_slide_tick: If True, updates on tick events. Defaults to False.
         :param parent: The parent widget.
         """
 
         super().__init__(
-            text=text, placeholder=placeholder, tooltip=tooltip, edit_width=edit_width, fixed_width=fixed_width,
-            parent=parent)
+            text=text,
+            placeholder=placeholder,
+            tooltip=tooltip,
+            edit_width=edit_width,
+            fixed_width=fixed_width,
+            parent=parent,
+        )
+
+        self._mouse_slider = MouseSlider(
+            self,
+            slide_distance=slide_distance,
+            small_slide_distance=small_slide_distance,
+            large_slide_distance=large_slide_distance,
+            scroll_distance=scroll_distance,
+            update_on_tick=update_on_slide_tick,
+        )
 
     @classmethod
     def convert_value(cls, value: Any) -> int:
@@ -216,15 +303,19 @@ class IntLineEdit(BaseLineEdit):
         """
 
         result = 0
-        if value == '0.0' or value == '-':
+        if value == "0.0" or value == "-":
             return result
-        elif value != '':
+        elif value != "":
             try:
                 result = int(float(value))
             except ValueError:
                 pass
 
         return result
+
+    @property
+    def mouse_slider(self) -> MouseSlider:
+        return self._mouse_slider
 
     def value(self) -> int:
         return super().value() or 0
@@ -255,8 +346,20 @@ class FloatLineEdit(BaseLineEdit):
     """
 
     def __init__(
-            self, text: str = '', placeholder: str = '', tooltip: str = '', edit_width: int | None = None,
-            fixed_width: int | None = None, rounding: int = 3, parent: QWidget | None = None):
+        self,
+        text: str = "",
+        placeholder: str = "",
+        tooltip: str = "",
+        edit_width: int | None = None,
+        fixed_width: int | None = None,
+        rounding: int = 3,
+        slide_distance: float = 0.01,
+        small_slide_distance: float = 0.001,
+        large_slide_distance: float = 0.1,
+        scroll_distance: float = 1.0,
+        update_on_slide_tick: bool = True,
+        parent: QWidget | None = None,
+    ):
         """
         Initializes the IntLineEdit.
 
@@ -265,14 +368,39 @@ class FloatLineEdit(BaseLineEdit):
         :param tooltip: The tooltip.
         :param edit_width: The width of the LineEdit for editing. Defaults to None.
         :param fixed_width: The fixed width of the LineEdit. Defaults to None.
+        :param slide_distance: The distance to slide on normal drag. Defaults to 1.0.
+        :param small_slide_distance: The distance to slide on small drag. Defaults to 0.1.
+        :param large_slide_distance: The distance to slide on large drag. Defaults to 5.0.
+        :param scroll_distance: The distance to scroll. Defaults to 1.0.
+        :param update_on_slide_tick: If True, updates on tick events. Defaults to False.
         :param parent: The parent widget.
         """
 
         self._rounding = rounding
 
         super().__init__(
-            text=text, placeholder=placeholder, tooltip=tooltip, edit_width=edit_width, fixed_width=fixed_width,
-            parent=parent)
+            text=text,
+            placeholder=placeholder,
+            tooltip=tooltip,
+            edit_width=edit_width,
+            fixed_width=fixed_width,
+            parent=parent,
+        )
+
+        self._mode: str | None = None
+        if dcc.is_maya():
+            self._mode = dcc.Maya
+        elif dcc.is_blender():
+            self._mode = dcc.Blender
+
+        self._mouse_slider = MouseSlider(
+            self,
+            slide_distance=slide_distance,
+            small_slide_distance=small_slide_distance,
+            large_slide_distance=large_slide_distance,
+            scroll_distance=scroll_distance,
+            update_on_tick=update_on_slide_tick,
+        )
 
     @classmethod
     def convert_value(cls, value: Any) -> float:
@@ -284,9 +412,9 @@ class FloatLineEdit(BaseLineEdit):
         """
 
         result = 0.0
-        if value == '.':
+        if value == ".":
             return result
-        elif value != '':
+        elif value != "":
             try:
                 result = float(value)
             except ValueError:
@@ -294,9 +422,30 @@ class FloatLineEdit(BaseLineEdit):
 
         return result
 
-    def focusOutEvent(self, arg__1: QFocusEvent) -> None:
+    @property
+    def mouse_slider(self) -> MouseSlider:
+        return self._mouse_slider
+
+    @property
+    def rounding(self) -> int:
+        return self._rounding
+
+    @rounding.setter
+    def rounding(self, value: int):
+        self._rounding = value
+
+    def focusInEvent(self, event: QFocusEvent):
+        if self._mode == dcc.Blender:
+            self.blockSignals(True)
+            self.setText(str(self.value()))
+            self.setFocus()
+            self.selectAll()
+            self.blockSignals(False)
+        super().focusInEvent(event)
+
+    def focusOutEvent(self, event: QFocusEvent) -> None:
         self._on_text_modified(self.value())
-        super().focusOutEvent(arg__1)
+        super().focusOutEvent(event)
 
     def clearFocus(self) -> None:
         super().clearFocus()
@@ -340,19 +489,19 @@ class FolderLineEdit(BaseLineEdit):
     def dragEnterEvent(self, arg__1: QDragEnterEvent) -> None:
         data = arg__1.mimeData()
         urls = data.urls()
-        if urls and urls[0].scheme() == 'file':
+        if urls and urls[0].scheme() == "file":
             arg__1.acceptProposedAction()
 
     def dragMoveEvent(self, e: QDragMoveEvent) -> None:
         data = e.mimeData()
         urls = data.urls()
-        if urls and urls[0].scheme() == 'file':
+        if urls and urls[0].scheme() == "file":
             e.acceptProposedAction()
 
     def dropEvent(self, arg__1: QDropEvent) -> None:
         data = arg__1.mimeData()
         urls = data.urls()
-        if urls and urls[0].scheme() == 'file':
+        if urls and urls[0].scheme() == "file":
             self.setText(urls[0].toLocalFile())
 
 
@@ -372,8 +521,14 @@ class EditableLineEditOnClick(QLineEdit):
     """
 
     def __init__(
-            self, text: str, single: bool = False, double: bool = True, pass_through_clicks: bool = True,
-            upper: bool = False, parent: QWidget | None = None):
+        self,
+        text: str,
+        single: bool = False,
+        double: bool = True,
+        pass_through_clicks: bool = True,
+        upper: bool = False,
+        parent: QWidget | None = None,
+    ):
         super().__init__(text, parent=parent)
 
         self._upper = upper
@@ -385,10 +540,10 @@ class EditableLineEditOnClick(QLineEdit):
 
         self.setReadOnly(True)
         self._editing_style = self.styleSheet()
-        self._default_style = 'QLineEdit {border: 0;}'
+        self._default_style = "QLineEdit {border: 0;}"
         self.setStyleSheet(self._default_style)
         self.setContextMenuPolicy(Qt.NoContextMenu)
-        self.setProperty('clearFocus', True)
+        self.setProperty("clearFocus", True)
 
         if single:
             self.mousePressEvent = self.edit_event
@@ -474,9 +629,19 @@ class StringLineEditWidget(QWidget):
     buttonClicked = Signal()
 
     def __init__(
-            self, label: str = '', text: str = '', placeholder_text: str = '', button_text: str | None = None,
-            edit_width: int | None = None, tooltip: str = '', orientation: Qt.AlignmentFlag = Qt.Horizontal,
-            label_ratio: int = 1, edit_ratio: int = 5, button_ratio: int = 1, parent: QWidget | None = None):
+        self,
+        label: str = "",
+        text: str = "",
+        placeholder_text: str = "",
+        button_text: str | None = None,
+        edit_width: int | None = None,
+        tooltip: str = "",
+        orientation: Qt.AlignmentFlag = Qt.Horizontal,
+        label_ratio: int = 1,
+        edit_ratio: int = 5,
+        button_ratio: int = 1,
+        parent: QWidget | None = None,
+    ):
         super().__init__(parent=parent)
 
         self._label: str | None = None
@@ -488,7 +653,9 @@ class StringLineEditWidget(QWidget):
         self._layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self._layout)
 
-        self._line_edit = self._setup_line_edit(text, placeholder_text, tooltip, edit_width, parent)
+        self._line_edit = self._setup_line_edit(
+            text, placeholder_text, tooltip, edit_width, parent
+        )
 
         if label:
             self._label = labels.BaseLabel(text=label, tooltip=tooltip, parent=parent)
@@ -617,8 +784,13 @@ class StringLineEditWidget(QWidget):
         self._line_edit.setValidator(validator)
 
     def _setup_line_edit(
-            self, text: str, placeholder: str, tooltip: str, edit_width: int | None,
-            parent: QWidget | None) -> BaseLineEdit:
+        self,
+        text: str,
+        placeholder: str,
+        tooltip: str,
+        edit_width: int | None,
+        parent: QWidget | None,
+    ) -> BaseLineEdit:
         """
         Internal function that creates the line edit used to edit text.
 
@@ -630,7 +802,13 @@ class StringLineEditWidget(QWidget):
         :return: line edit instance.
         """
 
-        return BaseLineEdit(text=text, placeholder=placeholder, tooltip=tooltip, edit_width=edit_width, parent=parent)
+        return BaseLineEdit(
+            text=text,
+            placeholder=placeholder,
+            tooltip=tooltip,
+            edit_width=edit_width,
+            parent=parent,
+        )
 
     def _setup_signals(self):
         """
@@ -655,20 +833,48 @@ class IntLineEditWidget(StringLineEditWidget):
     """
 
     def __init__(
-            self, label: str = '', text: str = '', placeholder_text: str = '', button_text: str | None = None,
-            edit_width: int | None = None, tooltip: str = '', orientation: Qt.AlignmentFlag = Qt.Horizontal,
-            label_ratio: int = 1, edit_ratio: int = 5, button_ratio: int = 1, parent: QWidget | None = None):
+        self,
+        label: str = "",
+        text: str = "",
+        placeholder_text: str = "",
+        button_text: str | None = None,
+        edit_width: int | None = None,
+        tooltip: str = "",
+        orientation: Qt.AlignmentFlag = Qt.Horizontal,
+        label_ratio: int = 1,
+        edit_ratio: int = 5,
+        button_ratio: int = 1,
+        parent: QWidget | None = None,
+    ):
         super().__init__(
-            label=label, text=text, placeholder_text=placeholder_text, button_text=button_text, edit_width=edit_width,
-            tooltip=tooltip, orientation=orientation, label_ratio=label_ratio, edit_ratio=edit_ratio,
-            button_ratio=button_ratio, parent=parent)
+            label=label,
+            text=text,
+            placeholder_text=placeholder_text,
+            button_text=button_text,
+            edit_width=edit_width,
+            tooltip=tooltip,
+            orientation=orientation,
+            label_ratio=label_ratio,
+            edit_ratio=edit_ratio,
+            button_ratio=button_ratio,
+            parent=parent,
+        )
 
     def _setup_line_edit(
-            self, text: str, placeholder: str, tooltip: str, edit_width: int | None,
-            parent: QWidget | None) -> BaseLineEdit:
-
+        self,
+        text: str,
+        placeholder: str,
+        tooltip: str,
+        edit_width: int | None,
+        parent: QWidget | None,
+    ) -> BaseLineEdit:
         return IntLineEdit(
-            text=text, placeholder=placeholder, tooltip=tooltip, edit_width=edit_width, parent=parent)
+            text=text,
+            placeholder=placeholder,
+            tooltip=tooltip,
+            edit_width=edit_width,
+            parent=parent,
+        )
 
     def set_min_value(self, value: int):
         """
@@ -699,25 +905,52 @@ class FloatLineEditWidget(StringLineEditWidget):
     """
 
     def __init__(
-            self, label: str = '', text: str = '', placeholder_text: str = '', button_text: str | None = None,
-            edit_width: int | None = None, tooltip: str = '', orientation: Qt.AlignmentFlag = Qt.Horizontal,
-            label_ratio: int = 1, edit_ratio: int = 5, button_ratio: int = 1, rounding: int = 3,
-            parent: QWidget | None = None):
-
+        self,
+        label: str = "",
+        text: str = "",
+        placeholder_text: str = "",
+        button_text: str | None = None,
+        edit_width: int | None = None,
+        tooltip: str = "",
+        orientation: Qt.AlignmentFlag = Qt.Horizontal,
+        label_ratio: int = 1,
+        edit_ratio: int = 5,
+        button_ratio: int = 1,
+        rounding: int = 3,
+        parent: QWidget | None = None,
+    ):
         self._rounding = rounding
 
         super().__init__(
-            label=label, text=text, placeholder_text=placeholder_text, button_text=button_text, edit_width=edit_width,
-            tooltip=tooltip, orientation=orientation, label_ratio=label_ratio, edit_ratio=edit_ratio,
-            button_ratio=button_ratio, parent=parent)
+            label=label,
+            text=text,
+            placeholder_text=placeholder_text,
+            button_text=button_text,
+            edit_width=edit_width,
+            tooltip=tooltip,
+            orientation=orientation,
+            label_ratio=label_ratio,
+            edit_ratio=edit_ratio,
+            button_ratio=button_ratio,
+            parent=parent,
+        )
 
     def _setup_line_edit(
-            self, text: str, placeholder: str, tooltip: str, edit_width: int | None,
-            parent: QWidget | None) -> BaseLineEdit:
-
+        self,
+        text: str,
+        placeholder: str,
+        tooltip: str,
+        edit_width: int | None,
+        parent: QWidget | None,
+    ) -> BaseLineEdit:
         return FloatLineEdit(
-            text=text, placeholder=placeholder, tooltip=tooltip, edit_width=edit_width, rounding=self._rounding,
-            parent=parent)
+            text=text,
+            placeholder=placeholder,
+            tooltip=tooltip,
+            edit_width=edit_width,
+            rounding=self._rounding,
+            parent=parent,
+        )
 
     def set_min_value(self, value: float):
         """
@@ -740,3 +973,156 @@ class FloatLineEditWidget(StringLineEditWidget):
         # noinspection PyTypeChecker
         validator: QDoubleValidator = self._line_edit.validator()
         validator.setTop(value)
+
+
+class MouseSlider(QObject):
+    """
+    Signals:
+        tickEvent (Signal): Emitted when a tick event occurs.
+        deltaChanged (Signal): Emitted when the delta value changes.
+        sliderStarted (Signal): Emitted when the slider starts moving.
+        sliderChanged (Signal): Emitted when the slider value changes.
+        sliderFinished (Signal): Emitted when the slider stops moving.
+    """
+
+    tickEvent = Signal(object)
+    deltaChanged = Signal(object)
+    sliderStarted = Signal()
+    sliderChanged = Signal(object)
+    sliderFinished = Signal(object)
+
+    def __init__(
+        self,
+        parent_edit: BaseLineEdit,
+        slide_distance: float = 1.0,
+        small_slide_distance: float = 0.1,
+        large_slide_distance: float = 5.0,
+        scroll_distance: float = 1.0,
+        update_on_tick: bool = False,
+    ):
+        """
+        Initializes the MouseSlider.
+
+        :param parent_edit: The parent line edit widget.
+        :param slide_distance: The distance to slide on normal drag. Defaults to 1.0.
+        :param small_slide_distance: The distance to slide on small drag. Defaults to 0.1.
+        :param large_slide_distance: The distance to slide on large drag. Defaults to 5.0.
+        :param scroll_distance: The distance to scroll. Defaults to 1.0.
+        :param update_on_tick: If True, updates on tick events. Defaults to False.
+        """
+
+        super().__init__()
+
+        self._edit = parent_edit
+        self._update_on_tick = update_on_tick
+        self._slide_distance = slide_distance
+        self._small_slide_distance = small_slide_distance
+        self._large_slide_distance = large_slide_distance
+        self._scroll_distance = scroll_distance
+        self._press_pos: QPoint | None = None
+        self._start_value = 0
+        self._mouse_delta = 0
+        self._delta_x = 0
+        self._prev_delta_x = 0
+        self._enabled = True
+
+        self._setup_signals()
+
+    def set_enabled(self, flag: bool):
+        """
+        Sets whether slider is enabled.
+
+        :param flag: True to enable the slider; False to disable it.
+        """
+
+        self._enabled = flag
+
+    def tick(self, delta: float):
+        """
+        Runs slider tick.
+
+        :param delta: delta value.
+        """
+
+        if not self._enabled:
+            return
+
+        value = self._start_value + float(delta)
+        self._edit.set_value(value)
+        self._edit.update()
+
+        if self._update_on_tick:
+            self._edit.textChanged.emit(self._edit.text())
+            self._edit.textModified.emit(self._edit.text())
+            self.sliderChanged.emit(self._edit.text())
+
+    def _setup_signals(self):
+        """
+        Internal function that handles the connection of the signals for this object.
+        """
+
+        self._edit.mouseMoved.connect(self._on_mouse_moved)
+        self._edit.mousePressed.connect(self._on_mouse_pressed)
+        self._edit.mouseReleased.connect(self._on_mouse_released)
+
+    def _on_mouse_moved(self, event: QMouseEvent):
+        """
+        Internal callback function that is called each time mouseMoved event signal from QLineEdit is emitted.
+
+        :param event: Qt mouse event.
+        """
+
+        if not self._enabled:
+            return
+
+        if self._press_pos:
+            self._mouse_delta = event.pos().x() - self._press_pos.x()
+            if self._mouse_delta % self._scroll_distance == 0:
+                self._delta_x = self._mouse_delta / self._scroll_distance
+                if self._delta_x != self._prev_delta_x:
+                    self.deltaChanged.emit(self._delta_x - self._prev_delta_x)
+                    ctrl_pressed = int(
+                        event.modifiers() == Qt.KeyboardModifier.ControlModifier
+                    )
+                    shift_pressed = int(
+                        event.modifiers() == Qt.KeyboardModifier.ShiftModifier
+                    )
+                    if ctrl_pressed:
+                        self.tickEvent.emit(self._delta_x * self._small_slide_distance)
+                    elif shift_pressed:
+                        self.tickEvent.emit(self._delta_x * self._large_slide_distance)
+                    else:
+                        self.tickEvent.emit(self._delta_x * self._slide_distance)
+                self._prev_delta_x = self._delta_x
+
+    def _on_mouse_pressed(self, event: QMouseEvent):
+        """
+        Internal callback function that is called each time mousePressed event signal from QLineEdit is emitted.
+
+        :param event: Qt mouse event.
+        """
+
+        if not self._enabled:
+            return
+
+        if event.button() == Qt.MiddleButton:
+            self._press_pos = event.pos()
+            self._start_value = self._edit.value()
+            self.sliderStarted.emit()
+
+    def _on_mouse_released(self, event: QMouseEvent):
+        """
+        Internal callback function that is called each time mouseReleased event signal from QLineEdit is emitted.
+
+        :param event: Qt mouse event.
+        """
+
+        if not self._enabled:
+            return
+
+        if event.button() == Qt.MiddleButton:
+            self._press_pos = None
+            self._edit.set_value(self._edit.value())
+            self._edit.textChanged.emit(self._edit.text())
+            self._edit.textModified.emit(self._edit.text())
+            self.sliderFinished.emit()

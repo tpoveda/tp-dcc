@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Sequence, Iterator, Any
 
-from ...externals.Qt.QtCore import Qt, Signal
-from ...externals.Qt.QtWidgets import QSizePolicy, QWidget, QLabel, QComboBox, QHBoxLayout
-from ...externals.Qt.QtGui import QIcon, QKeyEvent, QWheelEvent
+from Qt.QtCore import Qt, Signal
+from Qt.QtWidgets import QSizePolicy, QWidget, QLabel, QComboBox, QHBoxLayout
+from Qt.QtGui import QIcon, QKeyEvent, QWheelEvent
+
 from .. import uiconsts, dpi
 from . import layouts, labels
 
@@ -56,7 +57,13 @@ class BaseComboBox(QComboBox):
             self.itemSelected.emit(self.currentText())
             self.parent().setFocus()
 
-    def addItem(self, icon: QIcon | str | None, text: str = '', user_data: Any = ..., is_checkable: bool = False):
+    def addItem(
+        self,
+        icon: QIcon | str | None,
+        text: str = "",
+        user_data: Any = ...,
+        is_checkable: bool = False,
+    ):
         """
         Adds an item to the ComboBox.
 
@@ -112,7 +119,12 @@ class ComboBoxAbstractWidget(QWidget):
         This class represents an event that occurs when a combo box item is changed.
         """
 
-        def __init__(self, previous_index: int, current_index: int, parent: ComboBoxAbstractWidget):
+        def __init__(
+            self,
+            previous_index: int,
+            current_index: int,
+            parent: ComboBoxAbstractWidget,
+        ):
             """
             Initializes the ComboItemChangedEvent.
 
@@ -202,13 +214,13 @@ class ComboBoxAbstractWidget(QWidget):
 
     def __getattr__(self, item):
         """
-         Gets the attribute from the combo box if it exists.
+        Gets the attribute from the combo box if it exists.
 
-         This method returns the attribute from the combo box if it exists.
+        This method returns the attribute from the combo box if it exists.
 
-         :param item: The attribute name.
-         :return: attribute value.
-         """
+        :param item: The attribute name.
+        :return: attribute value.
+        """
 
         if hasattr(self._box, item):
             return getattr(self._box, item)
@@ -245,7 +257,9 @@ class ComboBoxAbstractWidget(QWidget):
 
         return self._box.count()
 
-    def add_item(self, item: str, sort_alphabetically: bool = False, user_data: Any = None):
+    def add_item(
+        self, item: str, sort_alphabetically: bool = False, user_data: Any = None
+    ):
         """
         Adds an item to the combobox with the given text and containing the given user data.
 
@@ -340,7 +354,9 @@ class ComboBoxAbstractWidget(QWidget):
 
         return self._box.currentText()
 
-    def set_to_text(self, text: str, flags: Qt.MatchFlags = Qt.MatchFixedString, quiet: bool = False):
+    def set_to_text(
+        self, text: str, flags: Qt.MatchFlags = Qt.MatchFixedString, quiet: bool = False
+    ):
         """
         Sets the index based on given text.
 
@@ -359,7 +375,9 @@ class ComboBoxAbstractWidget(QWidget):
             if quiet:
                 self._box.blockSignals(False)
 
-    def remove_item_by_text(self, text: str, flags: Qt.MatchFlags = Qt.MatchFixedString):
+    def remove_item_by_text(
+        self, text: str, flags: Qt.MatchFlags = Qt.MatchFixedString
+    ):
         """
         Removes the index based on the text from the combobox.
 
@@ -436,7 +454,10 @@ class ComboBoxAbstractWidget(QWidget):
         """
 
         event = ComboBoxAbstractWidget.ComboItemChangedEvent(
-            int(self.PREV_INDEX if self.PREV_INDEX is not None else -1), int(self._box.currentIndex()), parent=self)
+            int(self.PREV_INDEX if self.PREV_INDEX is not None else -1),
+            int(self._box.currentIndex()),
+            parent=self,
+        )
         self.itemChanged.emit(event)
         self.PREV_INDEX = self._box.currentIndex()
 
@@ -448,11 +469,21 @@ class ComboBoxRegularWidget(ComboBoxAbstractWidget):
 
     # noinspection SpellCheckingInspection
     def __init__(
-            self, label: str = '', items: Sequence[str] | None = None, label_ratio: int | None = None,
-            box_ratio: int | None = None, tooltip: str = '', set_index: int = 0, sort_alphabetically: bool = False,
-            margins: tuple[int, int, int, int] = (0, 0, 0, 0), spacing: int = uiconsts.SMALL_SPACING,
-            box_min_width: int | None = None, item_data: Sequence[Any] | None = None,
-            support_middle_mouse_scroll: bool = True, parent: QWidget | None = None):
+        self,
+        label: str = "",
+        items: Sequence[str] | None = None,
+        label_ratio: int | None = None,
+        box_ratio: int | None = None,
+        tooltip: str = "",
+        set_index: int = 0,
+        sort_alphabetically: bool = False,
+        margins: tuple[int, int, int, int] = (0, 0, 0, 0),
+        spacing: int = uiconsts.SMALL_SPACING,
+        box_min_width: int | None = None,
+        item_data: Sequence[Any] | None = None,
+        support_middle_mouse_scroll: bool = True,
+        parent: QWidget | None = None,
+    ):
         """
         Initializes the ComboBoxRegularWidget.
 
@@ -499,9 +530,13 @@ class ComboBoxRegularWidget(ComboBoxAbstractWidget):
 
         if label:
             self._label = labels.BaseLabel(label, tooltip=tooltip, parent=parent)
-            layout.addWidget(self._label, label_ratio) if label_ratio else layout.addWidget(self._label)
+            layout.addWidget(
+                self._label, label_ratio
+            ) if label_ratio else layout.addWidget(self._label)
             self._box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        layout.addWidget(self._box, box_ratio) if box_ratio else layout.addWidget(self._box)
+        layout.addWidget(self._box, box_ratio) if box_ratio else layout.addWidget(
+            self._box
+        )
         if box_min_width:
             self._box.setMinimumWidth(dpi.dpi_scale(box_min_width))
         self._box.currentIndexChanged.connect(self.on_item_changed)
@@ -518,12 +553,18 @@ class ComboBoxRegularWidget(ComboBoxAbstractWidget):
 
 
 class ComboBoxSearchable(ComboBoxAbstractWidget):
-
     # noinspection SpellCheckingInspection
     def __init__(
-            self, label: str = '', items: Sequence[str] | None = None, label_ratio: int | None = None,
-            box_ratio: int | None = None, tooltip: str = '', set_index: int = 0, sort_alphabetically: bool = False,
-            parent: QWidget | None = None):
+        self,
+        label: str = "",
+        items: Sequence[str] | None = None,
+        label_ratio: int | None = None,
+        box_ratio: int | None = None,
+        tooltip: str = "",
+        set_index: int = 0,
+        sort_alphabetically: bool = False,
+        parent: QWidget | None = None,
+    ):
         """
         Initializes the ComboBoxSearchable.
 

@@ -2,18 +2,9 @@ from __future__ import annotations
 
 from typing import Tuple
 
-from ...externals.Qt.QtCore import Qt
-from ...externals.Qt.QtWidgets import QApplication, QWidget, QDialog
-from ...externals.Qt.QtGui import QIcon
-# TODO: This should be handled using QtSiteConfig file
-try:
-    from ..externals.Qt.QtGui import QGuiApplication
-except ImportError:
-    try:
-        from PySide2.QtGui import QGuiApplication
-    except ImportError:
-        # noinspection PyUnresolvedReferences,PyPackageRequirements
-        from PySide6.QtGui import QGuiApplication
+from Qt.QtCore import Qt
+from Qt.QtWidgets import QApplication, QWidget, QDialog
+from Qt.QtGui import QIcon, QGuiApplication
 
 
 class BaseDialog(QDialog):
@@ -22,8 +13,15 @@ class BaseDialog(QDialog):
     """
 
     def __init__(
-            self, title: str = '', width: int = 600, height: int = 800, icon: QIcon | None = None,
-            show_on_initialize: bool = True, transparent: bool = False, parent: QWidget | None = None):
+        self,
+        title: str = "",
+        width: int = 600,
+        height: int = 800,
+        icon: QIcon | None = None,
+        show_on_initialize: bool = True,
+        transparent: bool = False,
+        parent: QWidget | None = None,
+    ):
         """
         Initialize a new instance of the class.
 
@@ -84,9 +82,11 @@ class BaseDialog(QDialog):
         """
 
         self.setGeometry(
-            margins[0], margins[1],
+            margins[0],
+            margins[1],
             self.window().geometry().width() - margins[0] - margins[2],
-            self.window().geometry().height() - margins[1] - margins[3])
+            self.window().geometry().height() - margins[1] - margins[3],
+        )
 
     def toggle_maximized(self):
         """

@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import inspect
 
-from ...externals.Qt.QtCore import QResource
+from Qt.QtCore import QResource
 
 RESOURCE_REGISTERED = False
 
@@ -15,8 +15,10 @@ def style_file_path() -> str:
     :return: style file path.
     """
 
-    root_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-    return os.path.join(root_path, 'style.qss')
+    root_path = os.path.dirname(
+        os.path.abspath(inspect.getfile(inspect.currentframe()))
+    )
+    return os.path.join(root_path, "style.qss")
 
 
 def setup():
@@ -28,8 +30,10 @@ def setup():
     if RESOURCE_REGISTERED:
         return
 
-    root_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-    icons_rcc = os.path.join(root_path, 'icons.rcc')
+    root_path = os.path.dirname(
+        os.path.abspath(inspect.getfile(inspect.currentframe()))
+    )
+    icons_rcc = os.path.join(root_path, "icons.rcc")
 
     if os.path.isfile(icons_rcc) and not RESOURCE_REGISTERED:
         QResource.registerResource(icons_rcc)
