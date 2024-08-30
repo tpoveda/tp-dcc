@@ -791,6 +791,13 @@ class NodeGraphView(QGraphicsView):
                     ]
                     self.nodeSelected.emit(node_ids[0])
                     self.nodeSelectionChanged.emit(node_ids, prev_ids)
+                else:
+                    # Make sure to deselect nodes if no nodes are selected.
+                    node_views, _ = self.selected_items()
+                    prev_ids = [
+                        n.id for n in self._previous_selected_nodes if not n.selected
+                    ]
+                    self.nodeSelectionChanged.emit([], prev_ids)
                 self.scene().update(map_rect)
                 return
 
