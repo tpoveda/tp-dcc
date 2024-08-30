@@ -1492,7 +1492,7 @@ class FramelessTitleBar(QFrame):
             QIcon(paths.canonical_path("../../resources/icons/window_maximize.png"))
         )
         self._help_button.set_icon(
-            QIcon(paths.canonical_path("../../resources/icons/question.png"))
+            QIcon(paths.canonical_path("../../resources/icons/question.svg"))
         )
 
         # Button Setup

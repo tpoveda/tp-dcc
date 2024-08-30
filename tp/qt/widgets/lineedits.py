@@ -1,11 +1,23 @@
 from __future__ import annotations
 
+import os
+import enum
 from typing import Any
 from functools import partial
 
 from Qt.QtCore import Qt, Signal, QObject, QPoint, QRegularExpression
-from Qt.QtWidgets import QWidget, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout
+from Qt.QtWidgets import (
+    QWidget,
+    QLineEdit,
+    QPushButton,
+    QAction,
+    QFileDialog,
+    QHBoxLayout,
+    QVBoxLayout,
+)
 from Qt.QtGui import (
+    QIcon,
+    QColor,
     QValidator,
     QIntValidator,
     QDoubleValidator,
@@ -16,23 +28,25 @@ from Qt.QtGui import (
     QDropEvent,
     QRegularExpressionValidator,
 )
-from ... import dcc
 
 from .. import uiconsts, dpi, contexts, utils as qtutils
 from . import labels, menus
+from ... import dcc
+from ...python import paths
 
 
 @menus.mixin
 class BaseLineEdit(QLineEdit):
+    # noinspection GrazieInspection
     """
     A base class for LineEdit widgets.
 
     Signals:
-    textModified (str): Emitted when the text is modified.
-    textChanged (str): Emitted when the text is changed.
-    mousePressed (QMouseEvent): Emitted when the mouse button is pressed.
-    mouseMoved (QMouseEvent): Emitted when the mouse is moved.
-    mouseReleased (QMouseEvent): Emitted when the mouse button is released.
+    textModified: Emitted when the text is modified.
+    textChanged: Emitted when the text is changed.
+    mousePressed: Emitted when the mouse button is pressed.
+    mouseMoved: Emitted when the mouse is moved.
+    mouseReleased: Emitted when the mouse button is released.
     """
 
     textModified = Signal(str)
@@ -91,9 +105,13 @@ class BaseLineEdit(QLineEdit):
         self._before_finished = self.value()
 
         if enable_menu:
+            # noinspection PyUnresolvedReferences
             self._setup_menu_class()
+            # noinspection PyUnresolvedReferences
             self.leftClicked.connect(partial(self.show_context_menu, Qt.LeftButton))
+            # noinspection PyUnresolvedReferences
             self.middleClicked.connect(partial(self.show_context_menu, Qt.MidButton))
+            # noinspection PyUnresolvedReferences
             self.rightClicked.connect(partial(self.show_context_menu, Qt.RightButton))
         else:
             # noinspection PyStatementEffect
@@ -503,6 +521,268 @@ class FolderLineEdit(BaseLineEdit):
         urls = data.urls()
         if urls and urls[0].scheme() == "file":
             self.setText(urls[0].toLocalFile())
+
+
+class FileSystemPathLineEdit(QLineEdit):
+    """
+    Custom QLineEdit that provides a file system path line edit with browse and clear actions.
+    """
+
+    class DialogType(enum.Enum):
+        """Enumerator that defines available path dialog types."""
+
+        Load = "load"
+        Save = "save"
+
+    class Type(enum.Enum):
+        """Enumerator that defines available file system path types."""
+
+        File = "file"
+        Directory = "directory"
+
+    def __init__(
+        self,
+        path_type: Type,
+        dialog_type: DialogType | None = None,
+        path_filter: str = "",
+        validate_path: bool = False,
+        path_description: str | None = None,
+        parent: QWidget | None = None,
+    ):
+        """Constructor.
+
+        :param path_type: type of path.
+        :param dialog_type: optional enumerator that specifies which type of dialog to construct.
+        :param path_filter: QFileDialog supported file type filter.
+        :param validate_path: whether to validate directory. If True, and path is not valid, an error message will be
+            triggerd on the widget.
+        :param path_description: optional path description.
+        :param parent: optional parent widget.
+        """
+
+        super().__init__(parent=parent)
+
+        all_path_types = (
+            FileSystemPathLineEdit.Type.File,
+            FileSystemPathLineEdit.Type.Directory,
+        )
+        if path_type not in all_path_types:
+            raise ValueError(
+                f'Invalid path type {path_type}. Supported path types are {", ".join(map(str, all_path_types))}'
+            )
+
+        self._path_type = path_type
+        self._dialog_type = dialog_type or FileSystemPathLineEdit.DialogType.Load
+        self._path_filter = path_filter
+        self._validate_path = validate_path
+        self._path_description = path_description or self._path_type.value.title()
+        self._error_message: str | None = None
+
+        if self._path_type == FileSystemPathLineEdit.Type.File:
+            browse_icon_key = (
+                "save"
+                if self._dialog_type == FileSystemPathLineEdit.DialogType.Save
+                else "file"
+            )
+        else:
+            browse_icon_key = "folder"
+        self._browse_action = QAction(parent=self)
+        self._browse_action.setIcon(
+            QIcon(paths.canonical_path(f"../../resources/icons/{browse_icon_key}.svg"))
+        )
+        self._clear_action = QAction()
+        self._clear_action.setIcon(
+            QIcon(paths.canonical_path("../../resources/icons/close.svg"))
+        )
+        self.addAction(self._clear_action, QLineEdit.TrailingPosition)
+        self.addAction(self._browse_action, QLineEdit.TrailingPosition)
+        self._clear_action.setVisible(False)
+
+        self._browse_action.triggered.connect(self._on_browse_action_triggered)
+        self._clear_action.triggered.connect(self._on_clear_action_triggered)
+        self.textChanged.connect(self._on_text_changed)
+
+        self.setMouseTracking(True)
+        self.setPlaceholderText(self._path_description or "")
+
+    @property
+    def path_type(self) -> Type:
+        """
+        Getter method that returns the path type.
+
+        :return: path type.
+        """
+
+        return self._path_type
+
+    @property
+    def path_filter(self) -> str:
+        """
+        Getter method that returns the path filter.
+
+        :return: path filter.
+        """
+
+        return self._path_filter
+
+    @path_filter.setter
+    def path_filter(self, value: str):
+        """
+        Setter method that sets the path filter.
+
+        :param value: path filter.
+        """
+
+        self._path_filter = value
+
+    @property
+    def path_description(self) -> str:
+        """
+        Getter method that returns the path description.
+
+        :return: path description.
+        """
+
+        return self._path_description
+
+    @path_description.setter
+    def path_description(self, value: str):
+        """
+        Setter method that sets the path description.
+
+        :param value: path description.
+        :return:
+        """
+
+        self._path_description = value
+        if self._path_description is not None:
+            self.setPlaceholderText(self._path_description)
+
+    @property
+    def validate_path(self) -> bool:
+        """
+        Getter method that returns whether to validate directory.
+
+        :return: whether to validate directory.
+        """
+
+        return self._validate_path
+
+    @validate_path.setter
+    def validate_path(self, flag: bool):
+        """
+        Setter method that sets whether to validate directory.
+
+        :param flag: whether to validate directory.
+        :return:
+        """
+
+        self._validate_path = flag
+        self._do_validate_path()
+
+    @property
+    def error_message(self) -> str:
+        """
+        Getter method that returns the error message.
+
+        :return: error message.
+        """
+
+        return self._error_message or ""
+
+    def setText(self, text: str) -> None:
+        """
+        Overrides base QLineEdit setText function.
+
+        :param text: new text
+        """
+
+        self._clear_action.setVisible(True if text else False)
+        super().setText(text)
+
+    def has_error(self) -> bool:
+        """
+        Returns whether current path is valid.
+
+        :return: whether current path is valid.
+        """
+
+        return self._error_message is not None
+
+    def _do_validate_path(self, path: str | None = None):
+        """
+        Internal function that validates given path.
+
+        :param path: path to validate. If not given, current line edit text will be used.
+        """
+
+        path = path or self.text()
+        self._error_message = None
+        if path and self._validate_path:
+            if not os.path.exists(path):
+                self._error_message = f'Path "{path}" does not exist.'
+            elif (
+                self._path_type == FileSystemPathLineEdit.Type.File
+                and not os.path.isfile(path)
+                or self._path_type == FileSystemPathLineEdit.Type.Directory
+                and not os.path.isdir(path)
+            ):
+                self._error_message = (
+                    f'Path "{path}" is not a valid {self._path_type.value}'
+                )
+
+        if self._error_message is not None:
+            self.setStyleSheet(
+                "QLineEdit { color: " + QColor(Qt.red).lighter(125).name() + "}"
+            )
+            self.setToolTip(self._error_message)
+        else:
+            self.setStyleSheet("")
+            self.setToolTip(self._path_description)
+
+    def _on_browse_action_triggered(self):
+        """
+        Internal callback function that is called when Browse action is triggered by the user.
+        """
+
+        current_path = self.text()
+        caption = f"Choose {self._path_description}"
+        if self._path_type == FileSystemPathLineEdit.Type.File:
+            if self._dialog_type == FileSystemPathLineEdit.DialogType.Save:
+                new_path, _ = QFileDialog.getSaveFileName(
+                    self, caption, os.path.dirname(current_path), self._path_filter
+                )
+            else:
+                default_path = (
+                    current_path
+                    if self._validate_path
+                    else os.path.dirname(current_path)
+                )
+                new_path, _ = QFileDialog.getOpenFileName(
+                    self, caption, default_path, self._path_filter
+                )
+        else:
+            new_path = QFileDialog.getExistingDirectory(self, caption, current_path)
+
+        if new_path and new_path != current_path:
+            self.setText(new_path)
+
+    def _on_clear_action_triggered(self):
+        """
+        Internal callback function that is called when Clear action is triggered by the user.
+        """
+
+        self.setText("")
+
+    def _on_text_changed(self, path: str):
+        """
+        Internal callback function that is called each timeline edit text changes.
+        Validates path during edit.
+
+        :param path: line edit text.
+        """
+
+        self._do_validate_path(path)
 
 
 class UpperCaseValidator(QValidator):

@@ -52,7 +52,7 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
 
         self._clear_button = buttons.IconMenuButton(parent=self)
         self._clear_button.setIcon(
-            QIcon(paths.canonical_path("../../resources/icons/close.png"))
+            QIcon(paths.canonical_path("../../resources/icons/close.svg"))
         )
         self._clear_button.setIconSize(QSize(icon_size - 6, icon_size - 6))
         self._clear_button.setFixedSize(QSize(icon_size, icon_size))
@@ -61,7 +61,7 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         self._search_button = buttons.IconMenuButton(parent=self)
         self._search_button.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         self._search_button.setIcon(
-            QIcon(paths.canonical_path("../../resources/icons/search.png"))
+            QIcon(paths.canonical_path("../../resources/icons/search.svg"))
         )
         self._search_button.setIconSize(QSize(icon_size, icon_size))
         self._search_button.setFixedSize(QSize(icon_size, icon_size))
@@ -348,10 +348,10 @@ class SearchLineEdit(QLineEdit, dpi.DPIScaling):
         self._background_color = None
 
         clear_pixmap = clear_pixmap or QPixmap(
-            paths.canonical_path("../../resources/icons/close.png")
+            paths.canonical_path("../../resources/icons/close.svg")
         )
         search_pixmap = search_pixmap or QPixmap(
-            paths.canonical_path("../../resources/icons/search.png")
+            paths.canonical_path("../../resources/icons/search.svg")
         )
         # clear_pixmap = clear_pixmap or resources.pixmap('close', size=dpi.dpi_scale(16), color=(128, 128, 128))
         # search_pixmap = search_pixmap or resources.pixmap('search', size=dpi.dpi_scale(16), color=(128, 128, 128))

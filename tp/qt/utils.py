@@ -21,18 +21,11 @@ from Qt.QtGui import QCursor, QColor, QGuiApplication, QScreen
 _QT_TEST_AVAILABLE = True
 try:
     # noinspection PyUnresolvedReferences
-    from ..externals.Qt import QtTest
+    from Qt import QtTest
 except ImportError:
     _QT_TEST_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-handler.setLevel(logging.INFO)
-# noinspection SpellCheckingInspection
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
 
 
 def is_pyqt() -> bool:
