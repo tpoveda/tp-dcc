@@ -89,22 +89,26 @@ def file_path_to_module_path(file_path: str) -> str:
     :return: The module path derived from the filesystem path.
     """
 
-    python_paths = [os.path.normpath(x) for x in sys.path]
-    file_path = os.path.normpath(os.path.expandvars(file_path))
-    if file_path.endswith("__init__.py") or file_path.endswith("__init__.pyc"):
-        file_path = os.path.dirname(file_path)
-    elif os.path.isfile(file_path):
-        file_path, extension = os.path.splitext(file_path)
+    directory, file_path = os.path.split(file_path)
+    directory = pathlib.Path(directory).as_posix()
+    file_name = os.path.splitext(file_path)[0]
+    package_path = [file_name]
+    sys_path = list(set([pathlib.Path(p).as_posix() for p in sys.path]))
 
-    found = [x for x in python_paths if file_path.startswith(x)]
-    num_found = len(found)
-    if num_found == 0:
-        return ""
+    # We ignore current working directory. Useful if we want to execute tools directly inside PyCharm
+    current_work_dir = pathlib.Path(os.getcwd()).as_posix()
+    if current_work_dir in sys_path:
+        sys_path.remove(current_work_dir)
 
-    start_path = min(found)
-    relative_path = os.path.relpath(file_path, start_path)
+    drive_letter = os.path.splitdrive(file_path)[0] + "\\"
+    while directory not in sys_path:
+        directory, name = os.path.split(directory)
+        directory = pathlib.Path(directory).as_posix()
+        if directory == drive_letter or name == "":
+            return ""
+        package_path.append(name)
 
-    return ".".join(relative_path.split(os.sep))
+    return ".".join(reversed(package_path))
 
 
 def valid_module_path(path: str, exclude: Iterable[str] | None = None) -> bool:
