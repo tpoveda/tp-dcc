@@ -37,6 +37,7 @@ from ..views.graph import NodeGraphView
 from ..widgets.graph import NodeGraphWidget
 from ..core.settings import NodeGraphSettings
 from ..nodes.node_backdrop import BackdropNode
+from ..nodes.node_function import FunctionNode
 from ..nodes.node_getset import GetNode, SetNode
 from ...python import jsonio
 
@@ -625,6 +626,7 @@ class NodeGraph(QObject):
         text_color: tuple[int, int, int, int] | str | None = None,
         position: tuple[int | float, int | float] | None = None,
         func_signature: str | None = None,
+        func_name: str | None = None,
         push_undo: bool = True,
     ) -> BaseNode:
         """
@@ -637,6 +639,7 @@ class NodeGraph(QObject):
         :param text_color: node text color.
         :param position: initial X, Y node position. Defaults to (0.0, 0.0).
         :param func_signature: function signature.
+        :param func_name: function name.
         :param push_undo: whether to push the command to the undo stack.
         :return: created node.
         :raises NodeCreationError: If the node could not be created.
@@ -721,8 +724,10 @@ class NodeGraph(QObject):
         if position is not None:
             node.model.xy_pos = [float(position[0]), float(position[1])]
 
-        if node.type == "tp.nodegraph.nodes.FunctionNode":
+        if isinstance(node, FunctionNode):
             node.function_signature = func_signature
+            if func_name:
+                node.set_property("name", func_name, push_undo=False)
 
         node.update_view()
 
@@ -956,7 +961,7 @@ class NodeGraph(QObject):
         if not self._viewer.underMouse():
             return
 
-        self._viewer.tab_search_set_nodes(self._factory.node_names)
+        self._viewer.tab_search_set_nodes(self)
         self._viewer.tab_search_toggle()
 
     def serialize_session(self) -> dict:
@@ -2143,8 +2148,12 @@ class NodeGraph(QObject):
         """
 
         func_signature = event.json_data.get("func_signature", None)
+        func_name = event.json_data.get("title", None)
         self.create_node(
-            event.node_id, position=event.position, func_signature=func_signature
+            event.node_id,
+            position=event.position,
+            func_signature=func_signature,
+            func_name=func_name,
         )
 
     def _on_variable_dropped(self, event: DropVariableEvent):
@@ -2159,7 +2168,8 @@ class NodeGraph(QObject):
             if event.setter
             else "tp.nodegraph.nodes.GetNode"
         )
-        node = self.create_node(node_id, position=event.position)
+        # noinspection PyTypeChecker
+        node: GetNode | SetNode = self.create_node(node_id, position=event.position)
         node.set_variable_name(event.variable_name, init_ports=True)
 
     def _on_node_backdrop_updated(
@@ -2191,15 +2201,28 @@ class NodeGraph(QObject):
         menu = self.context_menu_by_name(menu_name)
         self.contextMenuPrompted.emit(menu, node)
 
-    def _on_search_triggered(self, node_type: str, pos: tuple[int, int]):
+    def _on_search_triggered(
+        self,
+        node_type: str,
+        func_signature: str,
+        function_name: str,
+        pos: tuple[int, int],
+    ):
         """
         Internal callback function that is called each time a search is triggered.
 
         :param node_type: type of the node to create.
+        :param func_signature: function signature to create the node with.
+        :param function_name: name of the function.
         :param pos: position to create the node at.
         """
 
-        self.create_node(node_type, position=pos)
+        self.create_node(
+            node_type,
+            position=pos,
+            func_signature=func_signature,
+            func_name=function_name,
+        )
 
     def _on_close_sub_graph_tab(self, index: int):
         """

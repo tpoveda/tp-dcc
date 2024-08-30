@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 import re
+import typing
 
 from Qt.QtCore import Qt, Signal, QObject
 from Qt.QtWidgets import QLineEdit, QMenu, QAction, QWidgetAction
-from Qt.QtGui import QCursor, QKeyEvent
+from Qt.QtGui import QCursor, QPixmap, QIcon, QKeyEvent
 
+from ..core import consts
 from ..views import uiconsts
+
+if typing.TYPE_CHECKING:
+    from ..core.graph import NodeGraph
+    from ..core.datatypes import DataType
 
 
 class NodesTabSearchWidget(QMenu):
@@ -14,17 +20,19 @@ class NodesTabSearchWidget(QMenu):
     Custom QMenu that is used to show the search widget menu.
     """
 
-    searchSubmitted = Signal(str)
+    searchSubmitted = Signal(str, str, str)
 
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent=parent)
 
-        self._rebuild: bool = False
+        self._rebuild: bool = True
         self._block_submit: bool = False
-        self._node_dict: dict[str, str] = {}
         self._menus: dict[str, QMenu] = {}
+        self._category_menus: dict[str, dict[str, QMenu]] = {}
         self._actions: dict[str, QAction] = {}
         self._searched_actions: list[QAction] = []
+        self._data_type_filter: DataType | None = None
+        self._functions_first: bool = False
 
         self._line_edit = NodesTabSearchLineEdit(parent=self)
         self._search_widget = QWidgetAction(self)
@@ -93,28 +101,40 @@ class NodesTabSearchWidget(QMenu):
 
         self._line_edit.keyPressEvent(event)
 
-    def set_nodes(self, node_names: dict[str, list[str]] | None = None):
+    def populate(
+        self,
+        graph: NodeGraph | None,
+        force: bool = False,
+        data_type_filter: DataType | None = None,
+        functions_first: bool | None = None,
+    ):
         """
-        Sets the nodes to search for.
+        Populates the popup menu with the given graph nodes and functions.
 
-        :param node_names: dictionary of node names to search for.
+        :param graph: graph to search for nodes.
+        :param force: force the rebuilding of the menu.
+        :param data_type_filter: data type filter.
+        :param functions_first: flag to show functions first
         """
 
-        if not self._node_dict or self._rebuild:
-            self._node_dict.clear()
+        if not graph:
+            return
+
+        self._data_type_filter = data_type_filter
+
+        if functions_first is not None:
+            self._functions_first = functions_first
+
+        if self._rebuild or force:
             self._clear_actions()
             self._set_menus_visible(False)
             for menu in self._menus.values():
                 self.removeAction(menu.menuAction())
             self._actions.clear()
             self._menus.clear()
-            for name, node_types in node_names.items():
-                if len(node_types) == 1:
-                    self._node_dict[name] = node_types[0]
-                    continue
-                for node_id in node_types:
-                    self._node_dict[f"{name} ({node_id})"] = node_id
-            self._build_menu()
+            self._category_menus.clear()
+
+            self._build_menu(graph)
             self._rebuild = False
 
         self._show()
@@ -166,16 +186,95 @@ class NodesTabSearchWidget(QMenu):
 
         for action in self._searched_actions:
             self.removeAction(action)
-            # action.triggered.connect(self._on_search_submitted)
         del self._searched_actions[:]
 
-    def _build_menu(self):
+    def _add_registered_nodes(self, graph: NodeGraph, search_filter: str = ""):
         """
-        Internal function that builds the search menu.
+        Internal function that adds registered nodes to the search widget.
+
+        :param graph: node graph.
+        :param search_filter: search filter.
         """
 
-        node_names = list(self._node_dict.keys())
-        node_types = list(self._node_dict.values())
+        for node_id, node_class in graph.factory.node_classes.items():
+            if node_class.CATEGORY == consts.INTERNAL_CATEGORY:
+                continue
+            node_label = node_class.PALETTE_LABEL or node_class.NODE_NAME
+            filter_matched = search_filter and (
+                re.search(search_filter, node_label, re.IGNORECASE) is not None
+                or re.search(search_filter, node_class.CATEGORY, re.IGNORECASE)
+                is not None
+            )
+            if search_filter and not filter_matched:
+                continue
+            self._add_node_action(
+                node_id,
+                node_label,
+                category=node_class.CATEGORY,
+                icon_path=node_class.ICON_PATH,
+            )
+
+    def _add_registered_functions(self, graph: NodeGraph, search_filter: str = ""):
+        """
+        Internal function that adds registered functions to the search widget.
+
+        :param graph: node graph.
+        :param search_filter: search filter.
+        """
+
+        keys = list(graph.factory.function_data_types)
+        keys.sort()
+
+        for data_type_name in keys:
+            # If data type filter is set, skip if data type does not match filter type class.
+            if data_type_name != "UNBOUND" and self._data_type_filter:
+                if not issubclass(
+                    self._data_type_filter.type_class,
+                    graph.factory.data_type_by_name(data_type_name).type_class,
+                ):
+                    continue
+
+            function_signatures = graph.factory.function_signatures_by_type_name(
+                data_type_name
+            )
+            for function_signature in function_signatures:
+                function = graph.factory.function_by_type_name_and_signature(
+                    data_type_name, function_signature
+                )
+                if not function:
+                    continue
+                icon_path = function.icon
+                nice_name = function.nice_name
+                sub_category_name = function.category or "General"
+                function_name = nice_name or function_signature
+
+                # If search filter is set, skip if search filter does not match palette name or sub category name.
+                filter_matched = bool(search_filter) and (
+                    re.search(search_filter, function_name, re.IGNORECASE) is not None
+                    or re.search(
+                        search_filter, sub_category_name, re.IGNORECASE is not None
+                    )
+                )
+                if search_filter and not filter_matched:
+                    continue
+
+                self._add_node_action(
+                    "tp.nodegraph.nodes.FunctionNode",
+                    function_name,
+                    func_signature=function_signature,
+                    category=f"Functions/{sub_category_name}",
+                    icon_path=icon_path,
+                )
+
+    def _build_menu(self, graph: NodeGraph):
+        """
+        Internal function that builds the search menu.
+
+        :param graph: node graph.
+        """
+
+        node_types = list(graph.factory.node_classes.keys())
+        node_types.sort()
 
         menu_tree: dict[int, dict[str, QMenu]] = {}
         max_depth: int = 0
@@ -197,9 +296,8 @@ class NodesTabSearchWidget(QMenu):
                 if depth > 0 and new_menu:
                     new_menu.setProperty("parent_path", "::".join(trees[:depth]))
                 max_depth = max(max_depth, depth)
-
         for i in range(max_depth + 1):
-            menus = menu_tree[i]
+            menus = menu_tree.get(i, {})
             for menu_path, menu in menus.items():
                 self._menus[menu_path] = menu
                 if i == 0:
@@ -208,17 +306,96 @@ class NodesTabSearchWidget(QMenu):
                     parent_menu = self._menus[menu.property("parent_path")]
                     parent_menu.addMenu(menu)
 
-        for name in node_names:
-            action = QAction(name, self)
-            action.setText(name)
-            action.triggered.connect(self._on_search_submitted)
-            self._actions[name] = action
-            menu_name = self._node_dict[name]
-            menu_path = ".".join(menu_name.split(".")[:-1])
-            if menu_path in self._menus.keys():
-                self._menus[menu_path].addAction(action)
-            else:
-                self.addAction(action)
+        self._add_registered_nodes(graph)
+        self._add_registered_functions(graph)
+
+    def add_category_menu(
+        self, name: str, parent_menu_path: str, parent: QMenu | None = None
+    ) -> QMenu:
+        """
+        Adds a category menu.
+
+        :param name: name of the category.
+        :param parent_menu_path: parent menu path.
+        :param parent: parent menu.
+        :return: category menu.
+        """
+
+        parent = parent or self
+        new_menu = QMenu(name)
+        new_menu.keyPressEvent = self.keyPressEvent
+        new_menu.setStyleSheet(self._menu_stylesheet)
+        self._category_menus.setdefault(parent_menu_path, {})[name] = new_menu
+        if parent:
+            parent.addMenu(new_menu)
+
+        return new_menu
+
+    def get_or_create_category_menu(
+        self, name: str, parent_menu_path: str, parent: QMenu | None = None
+    ) -> QMenu:
+        """
+        Returns the category menu with the given name. If the category menu does not exist, it is created.
+
+
+        :param name: name of the category.
+        :param parent_menu_path: parent menu path.
+        :param parent:  parent menu.
+        :return: category menu.
+        """
+
+        found_category = self._category_menus.get(parent_menu_path, {}).get(name, None)
+        return found_category or self.add_category_menu(
+            name, parent_menu_path=parent_menu_path, parent=parent
+        )
+
+    def _add_node_action(
+        self,
+        node_id: str,
+        label_text: str,
+        func_signature: str = "",
+        category: str = "",
+        icon_path: str | None = None,
+    ) -> QAction:
+        """
+        Internal function that adds a node action.
+
+        :param node_id: node id.
+        :param label_text: label text.
+        :param func_signature: function signature.
+        :param category: category of the node.
+        :param icon_path: icon path.
+        :return: newly created node action.
+        """
+
+        menu_path = ".".join(node_id.split(".")[:-1])
+
+        parent_menu = self._menus[menu_path]
+        if category:
+            category_path = category.split("/")
+            for category_name in category_path:
+                parent_menu = self.get_or_create_category_menu(
+                    category_name, menu_path, parent=parent_menu
+                )
+
+        pixmap = QPixmap(icon_path) if icon_path else QPixmap()
+        action = QAction(self)
+        action.setText(label_text)
+        action.setIcon(QIcon(pixmap))
+        action.triggered.connect(self._on_search_submitted)
+        self._actions[label_text] = action
+        if parent_menu:
+            parent_menu.addAction(action)
+        else:
+            self.addAction(action)
+        json_data = {
+            "title": action.text(),
+            "func_signature": func_signature,
+            "node_id": node_id,
+        }
+        action.setData(json_data)
+
+        return action
 
     @staticmethod
     def _fuzzy_finder(key: str, collection: list[str]) -> list[str]:
@@ -274,6 +451,8 @@ class NodesTabSearchWidget(QMenu):
     def _on_search_submitted(self):
         """
         Internal callback function that is called when search is submitted.
+
+        :param node_type: node type.
         """
 
         if self._block_submit:
@@ -288,10 +467,13 @@ class NodesTabSearchWidget(QMenu):
                 self._close()
                 return
 
+        node_data = action.data()
+        node_id = node_data.get("node_id")
+        func_signature = node_data.get("func_signature")
+        func_name = node_data.get("title", "")
         text = action.text()
-        node_type = self._node_dict.get(text)
-        if node_type:
-            self.searchSubmitted.emit(node_type)
+        if node_id:
+            self.searchSubmitted.emit(node_id, func_signature, func_name)
 
         self._close()
 

@@ -131,6 +131,31 @@ class FunctionNode(Node):
                     )
                     raise
 
+    def serialize(self) -> dict:
+        """
+        Serializes the node to a dictionary.
+
+        :return: dict
+        """
+
+        data = super().serialize()
+        data["function_signature"] = self.function_signature
+        return data
+
+    def pre_deserialize(self, data: dict):
+        """
+        Function that is called before deserializing the node.
+
+        :param data: dict
+        """
+        super().pre_deserialize(data)
+
+        func_signature = data.get("function_signature", "")
+        if "__builtin__" in func_signature:
+            self._function_signature = func_signature.replace("__builtin__", "builtins")
+        else:
+            self._function_signature = func_signature
+
 
 def register_plugin(factory: NodeFactory):
     """

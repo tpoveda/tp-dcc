@@ -350,7 +350,7 @@ class NodesTreeWidget(QTreeWidget):
             parent_item = self.get_or_create_category_item(
                 category_name, expanded=expanded, parent=parent_item
             )
-        pixmap = QPixmap(icon_path)
+        pixmap = QPixmap(icon_path) if icon_path else QPixmap()
         item = QTreeWidgetItem()
         parent_item.addChild(item)
         item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsDragEnabled)

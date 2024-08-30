@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import typing
 import logging
 from typing import Type, Iterable
 
@@ -55,6 +56,10 @@ from ..core import consts, events
 from ..nodes.node_backdrop import BackdropNodeView
 from ...math import scalar
 
+if typing.TYPE_CHECKING:
+    from ..core.graph import NodeGraph
+    from ..core.datatypes import DataType
+
 logger = logging.getLogger(__name__)
 
 
@@ -75,7 +80,7 @@ class NodeGraphView(QGraphicsView):
     connectionsChanged = Signal(list, list)
     nodeBackdropUpdated = Signal(str, str, object)
     contextMenuPrompted = Signal(str, object)
-    searchTriggered = Signal(str, tuple)
+    searchTriggered = Signal(str, str, str, tuple)
 
     def __init__(
         self, undo_stack: QUndoStack | None = None, parent: QWidget | None = None
@@ -894,7 +899,6 @@ class NodeGraphView(QGraphicsView):
                 f"Dropped Item:\n> NODE_ID: {node_id}\n> Data: {json_data}\n> Mouse Pos:"
                 f" {mouse_pos}\n> Scene Pos: {scene_pos}"
             )
-
             self.nodeDropped.emit(
                 events.DropNodeEvent(node_id, json_data, (scene_pos.x(), scene_pos.y()))
             )
@@ -1266,14 +1270,26 @@ class NodeGraphView(QGraphicsView):
         if not start_port_view.node_view.visible or not end_port_view.node_view.visible:
             connector.hide()
 
-    def tab_search_set_nodes(self, node_names: dict[str, list[str]]):
+    def tab_search_set_nodes(self, graph: NodeGraph):
         """
         Sets the nodes for the tab search widget.
 
-        :param node_names: dictionary of node names.
+        :param graph: node graph.
         """
 
-        self._search_widget.set_nodes(node_names)
+        data_type_filter: DataType | None = None
+        if self._live_connector.isVisible():
+            data_type_filter = (
+                self._live_connector.output_port.data_type
+                if self._live_connector.output_port
+                else self._live_connector.input_port.data_type
+                if self._live_connector.input_port
+                else None
+            )
+
+        self._search_widget.populate(
+            graph, data_type_filter=data_type_filter, functions_first=True
+        )
 
     def tab_search_toggle(self):
         """
@@ -1730,15 +1746,19 @@ class NodeGraphView(QGraphicsView):
         self._shift_state = False
         self._alt_state = False
 
-    def _on_search_submitted(self, node_type: str):
+    def _on_search_submitted(self, node_type: str, func_signature: str, func_type: str):
         """
         Internal callback function that is called when a node search is submitted.
 
         :param node_type: node type to search.
+        :param func_signature: function signature.
+        :param func_type: function type.
         """
 
         pos = self.mapToScene(self._previous_mouse_pos)
-        self.searchTriggered.emit(node_type, (pos.x(), pos.y()))
+        self.searchTriggered.emit(
+            node_type, func_signature, func_type, (pos.x(), pos.y())
+        )
 
 
 class NodeGraphViewTitleLabel(QGraphicsTextItem):

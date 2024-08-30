@@ -64,7 +64,7 @@ class ConstantNode(Node):
         Updates the title of the node.
         """
 
-        self.set_property("name", f"{self.DEFAULT_TITLE}: {self.out_value.value}")
+        self.set_property("name", f"{self.DEFAULT_TITLE}: {self.out_value.value()}")
 
 
 class ConstantFloatNode(ConstantNode):

@@ -48,6 +48,7 @@ class NodeFactory:
         self._node_aliases: dict[str, str] = {}
         self._data_types: dict[str, DataType] = {}
         self._functions: dict[str, dict[str, Function]] = {}
+        self._function_names: list[str] = []
 
         self._load()
 
@@ -90,6 +91,16 @@ class NodeFactory:
         """
 
         return self._node_aliases
+
+    @property
+    def function_names(self) -> list[str]:
+        """
+        Getter method that returns the function names.
+
+        :return: function names.
+        """
+
+        return self._function_names
 
     @property
     def function_data_types(self) -> list[str]:
@@ -154,6 +165,7 @@ class NodeFactory:
         :return: runtime data types.
         """
 
+        # noinspection PyTypeChecker
         result: list[str, Type[DataType] | DataType] = []
         for data_type in self._data_types.values():
             if not data_type.is_runtime:
@@ -273,6 +285,7 @@ class NodeFactory:
         if not node_class:
             raise exceptions.NodeNotFoundError(node_id)
 
+        # noinspection PyArgumentList
         return node_class()
 
     def clear_registered_nodes(self):
@@ -347,6 +360,7 @@ class NodeFactory:
             self._functions[data_type_name] = {}
 
         self._functions[data_type_name][signature] = new_function
+        self._function_names.append(nice_name or signature)
 
     def function_from_signature(self, signature: str) -> Function | None:
         """
@@ -391,6 +405,7 @@ class NodeFactory:
         """
 
         self._functions.clear()
+        self._function_names.clear()
 
     def clear(self):
         """
