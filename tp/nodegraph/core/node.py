@@ -3,9 +3,9 @@ from __future__ import annotations
 import typing
 import logging
 from collections import deque
-from typing import Type, Callable, Any
+from typing import Type, Callable, Iterable, Any
 
-from tp.python import decorators
+from tp.python import decorators, paths
 
 from .port import NodePort
 from .consts import PortType
@@ -36,16 +36,16 @@ class BaseNode:
     __identifier__ = "tp.nodegraph.nodes"
 
     # Initial base node name.
-    NODE_NAME: str | None = None
+    NODE_NAME: str | None = "Node"
 
     # Node category. Used to group nodes in the nodes palette.
-    CATEGORY: str = ""
+    CATEGORY: str = "General"
 
     # Node palette label. Used to display the node in the nodes palette.
     PALETTE_LABEL: str = ""
 
-    # Node icon name. Used to display the node icon in the nodes palette.
-    ICON_NAME: str = ""
+    # Node icon path. Used to display the node icon in the nodes palette.
+    ICON_PATH: str = paths.canonical_path("../resources/icons/node_base.png")
 
     def __init__(self, view_class: Type[AbstractNodeView | NodeView]):
         super().__init__()
@@ -54,10 +54,12 @@ class BaseNode:
         self._model = NodeModel()
         self._model.type = self.type
         self._model.name = self.NODE_NAME
+        self.model.icon_path = self.ICON_PATH
 
         self._view = view_class()
         self._view.node_type = self.type
         self._view.name = self.name
+        self._view.icon = self.icon
         self._view.id = self.id
         self._view.layout_direction = self.layout_direction
 
@@ -192,6 +194,26 @@ class BaseNode:
         """
 
         self.set_property("name", value)
+
+    @property
+    def icon(self) -> str:
+        """
+        Getter method that returns the icon of the node.
+
+        :return: node icon.
+        """
+
+        return self.model.icon_path
+
+    @icon.setter
+    def icon(self, value: str):
+        """
+        Setter method that sets the icon of the node.
+
+        :param value: icon to set.
+        """
+
+        self.set_property("icon_path", value)
 
     @property
     def enabled(self):
@@ -508,6 +530,50 @@ class BaseNode:
 
         return self.model.to_dict()
 
+    def pre_deserialize(self, data: dict):
+        """
+        Called before deserializing the node.
+
+        :param data: data to deserialize.
+        """
+
+    def post_deserialize(self, data: dict):
+        """
+        Called after deserializing the node.
+
+        :param data: data to deserialize.
+        """
+
+        pass
+
+    def deserialize(self, data: dict):
+        """
+        Deserializes the node from a dictionary.
+
+        :param data: data to deserialize.
+        """
+
+        self.pre_deserialize(data)
+
+        # Set node properties and custom properties
+        for property_name, property_value in self.model.properties.items():
+            if property_name in data:
+                self.model.set_property(property_name, property_value)
+        for property_name, property_value in data.get("custom", {}).items():
+            self.model.set_property(property_name, property_value)
+            if isinstance(self, BaseNode):
+                self.view.widgets[property_name].set_value(property_value)
+
+        if data.get("port_deletion_allowed", False):
+            self.set_ports(
+                {
+                    "input_ports": data["input_ports"],
+                    "output_ports": data["output_ports"],
+                }
+            )
+
+        self.post_deserialize(data)
+
 
 class Node(BaseNode):
     """Class that defines a node in the node graph."""
@@ -531,6 +597,7 @@ class Node(BaseNode):
         self._is_invalid: bool = False
 
         self._setup_ports()
+        self.setup_signals()
         self.setup_widgets()
 
     @property
@@ -775,11 +842,14 @@ class Node(BaseNode):
         self._inputs.append(port)
         self.model.inputs[port.name] = port.model
 
-    def delete_input_port(self, port: NodePort | str | int) -> bool:
+    def delete_input_port(
+        self, port: NodePort | str | int, force: bool = False
+    ) -> bool:
         """
         Deletes given input port from the node.
 
         :param port: input port to delete.
+        :param force: whether to force the deletion of the port.
         :return: whether the port was removed.
         """
 
@@ -787,9 +857,9 @@ class Node(BaseNode):
             port = self.input(port)
             if port is None:
                 return False
-        if not self.port_deletion_allowed:
+        if not self.port_deletion_allowed and not force:
             raise exceptions.NodePortNotRemovableError(port.name, self.type)
-        if port.locked:
+        if port.locked and not force:
             raise exceptions.NodePortLockedError(port.name, self.type)
 
         self._inputs.remove(port)
@@ -849,15 +919,16 @@ class Node(BaseNode):
         port.model.display_name = display_name
         port.model.multi_connection = multi_port
         port.model.locked = locked
+        port.model.value = value
         self.add_input_port(port)
 
         return port
 
-    def input(self, index: int) -> NodePort | None:
+    def input(self, index: int | str) -> NodePort | None:
         """
-        Returns the input port at given index.
+        Returns the input port at given index or with given name.
 
-        :param index: index of the input port to return.
+        :param index: index or name of the input port to return.
         :return: input port.
         """
 
@@ -879,6 +950,41 @@ class Node(BaseNode):
 
         source_port = self.input(index)
         source_port.connect_to(port)
+
+    def mark_input_as_required(self, port: NodePort | str | int) -> bool:
+        """
+        Marks given input port as required.
+
+        :param port: input port to mark as required.
+        :return: whether the input port was marked as required
+        """
+
+        input_port = self.input(port) if isinstance(port, (str, int)) else port
+        if not input_port:
+            logger.error(
+                f"Cannot mark input {port} as required. Failed to find socket."
+            )
+            return False
+
+        if not input_port.type == PortType.Input.value:
+            logger.error(
+                "Cannot mark output port as required. Use `mark_output_as_required()` instead."
+            )
+            return False
+
+        self._required_inputs.append(input_port)
+
+        return True
+
+    def mark_inputs_as_required(self, ports: Iterable[NodePort]):
+        """
+        Marks given input ports as required.
+
+        :param ports: input ports to mark as required.
+        """
+
+        for port in ports:
+            self.mark_input_as_required(port)
 
     def add_output_port(self, port: NodePort):
         """
@@ -942,15 +1048,19 @@ class Node(BaseNode):
         port.model.display_name = display_name
         port.model.multi_connection = multi_port
         port.model.locked = locked
+        port.model.value = value
         self.add_output_port(port)
 
         return port
 
-    def delete_output_port(self, port: NodePort | str | int) -> bool:
+    def delete_output_port(
+        self, port: NodePort | str | int, force: bool = False
+    ) -> bool:
         """
         Deletes given output port from the node.
 
         :param port: output port to delete.
+        :param force: whether to force the deletion of the port.
         :return: whether the port was removed.
         """
 
@@ -958,9 +1068,9 @@ class Node(BaseNode):
             port = self.output(port)
             if port is None:
                 return False
-        if not self.port_deletion_allowed:
+        if not self.port_deletion_allowed and not force:
             raise exceptions.NodePortNotRemovableError(port.name, self.type)
-        if port.locked:
+        if port.locked and not force:
             raise exceptions.NodePortLockedError(port.name, self.type)
 
         self._outputs.remove(port)
@@ -1100,9 +1210,9 @@ class Node(BaseNode):
             return False
 
         for port in self.inputs.copy():
-            self.delete_input_port(port)
+            self.delete_input_port(port, force=force)
         for port in self.outputs.copy():
-            self.delete_output_port(port)
+            self.delete_output_port(port, force=force)
 
         return True
 
@@ -1214,6 +1324,16 @@ class Node(BaseNode):
             reject_port_type=port_type_data["port_type"],
             reject_node_type=port_type_data["node_type"],
         )
+
+    def setup_signals(self):
+        """
+        Function that sets up the default signals for the node.
+
+        Note:
+            This function should be overridden by subclasses.
+        """
+
+        pass
 
     def setup_widgets(self):
         """

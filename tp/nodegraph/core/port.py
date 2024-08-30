@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import typing
 
+from Qt.QtCore import QObject, Signal
+
 from . import exceptions, datatypes
 from .consts import PortType
 from .commands import (
@@ -26,11 +28,18 @@ if typing.TYPE_CHECKING:
 class NodePort:
     """Class that defines a port in a node which is used for connecting one node to another."""
 
+    class Signals(QObject):
+        """Signals class that defines the signals for the node port."""
+
+        valueChanged = Signal()
+
     def __init__(self, node: Node, view: PortView):
         super().__init__()
 
         self._model = PortModel(node=node)
         self._view = view
+        self._signals = NodePort.Signals()
+        self._affected_ports: list[NodePort] = []
 
     def __repr__(self) -> str:
         """
@@ -62,6 +71,16 @@ class NodePort:
         return self._view
 
     @property
+    def signals(self) -> NodePort.Signals:
+        """
+        Getter method that returns the port signals.
+
+        :return: port signals.
+        """
+
+        return self._signals
+
+    @property
     def type(self) -> str:
         """
         Getter method that returns the type of the port.
@@ -80,6 +99,17 @@ class NodePort:
         """
 
         return self.model.data_type
+
+    @data_type.setter
+    def data_type(self, data_type: DataType):
+        """
+        Setter method that sets the data type of the port.
+
+        :param data_type: data type to set.
+        """
+
+        self.model.data_type = data_type
+        self.view.data_type = data_type
 
     @property
     def name(self) -> str:
@@ -171,20 +201,23 @@ class NodePort:
 
         self.view.border_color = color
 
-    @property
     def value(self) -> typing.Any:
         """
-        Getter method that returns the value of the port.
+        Returns the value of the port.
 
         :return: value of the port.
         """
 
+        if self.type == PortType.Input.value:
+            if self.connected_ports():
+                output_socket = self.connected_ports()[0]
+                return output_socket.value()
+
         return self.model.value
 
-    @value.setter
-    def value(self, value: typing.Any):
+    def set_value(self, value: typing.Any):
         """
-        Setter method that sets the value of the port.
+        Sets the value of the port.
 
         :param value: value to set.
         """
@@ -195,6 +228,7 @@ class NodePort:
             return
 
         self._model.value = value
+        self.signals.valueChanged.emit()
 
     def set_visible(self, flag, push_undo: bool = True):
         """
@@ -284,7 +318,6 @@ class NodePort:
             return
 
         graph = self.node.graph
-        viewer = graph.viewer
 
         undo_stack = None
         if push_undo:
@@ -434,10 +467,21 @@ class NodePort:
             },
         )
 
+    def affects(self, port: NodePort):
+        """
+        Adds given port to the list of affected ports, so that when the value of this port changes,
+         the affected ports are updated.
+        """
+
+        self._affected_ports.append(port)
+
     def update_affected(self):
         """
         Updates the affected nodes of the port.
         """
 
-        for port in self.connected_ports():
-            port.value = self.value
+        for port in self._affected_ports:
+            port.set_value(self.value())
+
+        # for port in self.connected_ports():
+        #     port.value = self.value

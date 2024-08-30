@@ -3,20 +3,38 @@ from __future__ import annotations
 import os
 import logging
 import pathlib
+import numbers
 from types import ModuleType
 from typing import Type, Any
+from dataclasses import dataclass
 
 from Qt.QtGui import QColor
 
 from . import consts, exceptions
 from .node import BaseNode, Node
-from .datatypes import DataType, Exec, String, Numeric, Boolean, List, Dict
+from .datatypes import DataType
 from ..nodes.node_logger import LoggerNode
 from ..nodes.node_branch import BranchNode
 from ..nodes.node_backdrop import BackdropNode
 from ...python import modules
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class Function:
+    """
+    Class that defines all functions.
+    """
+
+    reference: callable
+    inputs: dict
+    outputs: dict
+    doc: str
+    icon: str
+    nice_name: str
+    category: str
+    default_values: list[Any]
 
 
 class NodeFactory:
@@ -29,6 +47,7 @@ class NodeFactory:
         self._node_names: dict[str, list[str]] = {}
         self._node_aliases: dict[str, str] = {}
         self._data_types: dict[str, DataType] = {}
+        self._functions: dict[str, dict[str, Function]] = {}
 
         self._load()
 
@@ -72,6 +91,16 @@ class NodeFactory:
 
         return self._node_aliases
 
+    @property
+    def function_data_types(self) -> list[str]:
+        """
+        Getter method that returns the function data types.
+
+        :return: function data types.
+        """
+
+        return list(self._functions.keys())
+
     def is_data_type_registered(self, name: str) -> bool:
         """
         Returns whether data type is registered.
@@ -84,10 +113,10 @@ class NodeFactory:
 
     def register_data_type(
         self,
-        type_name: str,
-        type_class: Type,
-        color: tuple[int, int, int, int] | QColor,
-        label: str = "custom_data",
+        type_name: str | DataType,
+        type_class: Type | None = None,
+        color: tuple[int, int, int, int] | QColor | None = None,
+        label: str | None = "custom_data",
         default_value: Any = None,
     ):
         """
@@ -100,14 +129,79 @@ class NodeFactory:
         :param default_value: Default value of the data type to register.
         """
 
-        if type_name in self._data_types:
-            logger.error(f'Data type "{type_name}" is already registered.')
-            raise exceptions.DataTypeAlreadyRegisteredError(type_name)
+        if isinstance(type_name, DataType):
+            if type_name.name in self._data_types:
+                logger.error(f'Data type "{type_name.name}" is already registered.')
+                raise exceptions.DataTypeAlreadyRegisteredError(type_name.name)
+            self._data_types[type_name.name.upper()] = type_name
+        else:
+            if type_name in self._data_types:
+                logger.error(f'Data type "{type_name}" is already registered.')
+                raise exceptions.DataTypeAlreadyRegisteredError(type_name)
 
-        color = color if isinstance(color, QColor) else QColor(*color)
-        self._data_types[type_name.upper()] = DataType(
-            type_name, type_class, color, label, default_value
-        )
+            color = color if isinstance(color, QColor) else QColor(*color)
+            data_type = DataType(type_name, type_class, color, label, default_value)
+            self._data_types[type_name.upper()] = data_type
+
+    def runtime_data_types(
+        self, names: bool = False, classes: bool = False
+    ) -> list[str, Type[DataType] | DataType]:
+        """
+        Returns all runtime data types.
+
+        :param names: whether to include names of the data types.
+        :param classes: whether to include classes of the data types.
+        :return: runtime data types.
+        """
+
+        result: list[str, Type[DataType] | DataType] = []
+        for data_type in self._data_types.values():
+            if not data_type.is_runtime:
+                continue
+            if names:
+                result.append(data_type.name)
+            elif classes:
+                result.append(data_type.type_class)
+            else:
+                result.append(data_type)
+
+        return result
+
+    def data_type_name(self, data_type: DataType) -> str:
+        """
+        Returns the name of the data type.
+
+        :param data_type: Data type to get name of.
+        :return: str
+        :raises IndexError: If data type is not found.
+        """
+
+        try:
+            type_name = [
+                data_type_name
+                for data_type_name, _data_type in self._data_types.items()
+                if _data_type == data_type
+            ][0]
+        except IndexError:
+            logger.error(f"Failed to find data type for class {data_type.type_class}")
+            raise IndexError
+
+        return type_name
+
+    def data_type_by_name(self, type_name: str) -> DataType:
+        """
+        Returns the data type by its name.
+
+        :param type_name: Name of the data type to get.
+        :return: data type.
+        :raises KeyError: If data type is not found.
+        """
+
+        try:
+            return self._data_types[type_name.upper()]
+        except KeyError:
+            logger.exception(f"Unregistered data type: {type_name}")
+            raise
 
     def clear_registered_data_types(self):
         """
@@ -190,6 +284,114 @@ class NodeFactory:
         self._node_names.clear()
         self._node_aliases.clear()
 
+    def register_function(
+        self,
+        func: callable,
+        source_data_type: DataType,
+        inputs_dict: dict | None = None,
+        outputs_dict: dict | None = None,
+        default_values: list[Any] | None = None,
+        nice_name: str | None = None,
+        subtype: str | None = None,
+        category: str = "General",
+        docstring: str = "",
+        icon_path: str | None = None,
+    ):
+        """
+        Register a new function in the registry.
+
+        :param func: function to register.
+        :param source_data_type: data type of the function to register.
+        :param inputs_dict: inputs of the function to register.
+        :param outputs_dict: outputs of the function to register.
+        :param default_values: default values of the function to register.
+        :param nice_name: nice name of the function to register.
+        :param subtype: subtype of the function to register.
+        :param category: category of the function to register.
+        :param docstring: docstring of the function to register.
+        :param icon_path: icon path of the function to register.
+        """
+
+        inputs_dict = inputs_dict or {}
+        outputs_dict = outputs_dict or {}
+        default_values = default_values or []
+
+        if source_data_type:
+            data_type_name = self.data_type_name(source_data_type)
+            source_class: Type = source_data_type.type_class
+            if source_class:
+                signature = (
+                    f"{source_class.__module__}.{source_class.__name__}.{func.__name__}"
+                )
+            else:
+                signature = f"{func.__module__}.{func.__name__}"
+        else:
+            data_type_name = "UNBOUND"
+            signature = f"{func.__module__}({func.__name__})"
+
+        if subtype:
+            signature = f"{signature}({subtype})"
+
+        new_function = Function(
+            reference=func,
+            inputs=inputs_dict,
+            outputs=outputs_dict,
+            doc=docstring,
+            icon=icon_path or "",
+            nice_name=nice_name,
+            category=category,
+            default_values=default_values,
+        )
+
+        if data_type_name not in self._functions:
+            self._functions[data_type_name] = {}
+
+        self._functions[data_type_name][signature] = new_function
+
+    def function_from_signature(self, signature: str) -> Function | None:
+        """
+        Returns the function by its signature.
+
+        :param signature: function signature.
+        :return: function that matches given signature.
+        """
+
+        for functions in self._functions.values():
+            if signature in functions:
+                return functions[signature]
+
+        return None
+
+    def function_signatures_by_type_name(self, type_name: str) -> list[str]:
+        """
+        Returns all function signatures.
+
+        :param type_name: Name of the data type to get function signatures of.
+        :return: function signatures.
+        """
+
+        return list(self._functions.get(type_name, {}).keys())
+
+    def function_by_type_name_and_signature(
+        self, type_name: str, signature: str
+    ) -> Function | None:
+        """
+        Returns the function by its type name and signature.
+
+        :param type_name: data type name.
+        :param signature: function signature.
+        :return: function that matches give ntype name and signature.
+        """
+
+        return self._functions.get(type_name, {}).get(signature, None)
+
+    def clear_registered_functions(self):
+        """
+        Clear all registered functions.
+        """
+
+        self._functions.clear()
+
     def clear(self):
         """
         Resets the factory to its initial state.
@@ -197,6 +399,7 @@ class NodeFactory:
 
         self.clear_registered_nodes()
         self.clear_registered_data_types()
+        self.clear_registered_functions()
 
     def _register_basic_nodes(self):
         """
@@ -212,8 +415,17 @@ class NodeFactory:
         Internal function that register basic data types.
         """
 
-        for data_type in [Exec, String, Numeric, Boolean, List, Dict]:
-            self._data_types[data_type.name] = data_type
+        basic_data_types = [
+            DataType("Exec", type(None), QColor("#FFFFFF"), "", None),
+            DataType("String", str, QColor("#A203F2"), "Name", ""),
+            DataType("Numeric", numbers.Complex, QColor("#DEC017"), "Number", 0.0),
+            DataType("Boolean", bool, QColor("#C40000"), "Condition", False),
+            DataType("List", list, QColor("#0BC8F1"), "List", [], is_runtime=True),
+            DataType("Dict", dict, QColor("#0BC8F1"), "Dict", {}),
+        ]
+
+        for data_type in basic_data_types:
+            self.register_data_type(data_type)
 
     def _load(self):
         """
@@ -229,6 +441,24 @@ class NodeFactory:
         success_count: int = 0
         plugin_files: dict[str, str] = {}
         nodes_paths = os.environ.get(consts.NODE_PATHS_ENV_VAR, "").split(os.pathsep)
+
+        # First pass: Add files starting with "node_core"
+        for nodes_path in nodes_paths:
+            if not nodes_path:
+                continue
+            if not os.path.isdir(nodes_path):
+                logger.warning(f'Nodes path "{nodes_path}" does not exist.')
+                continue
+            for file_name_with_ext in os.listdir(nodes_path):
+                if file_name_with_ext.endswith(".py") and file_name_with_ext.startswith(
+                    "node_core_"
+                ):
+                    file_name = os.path.splitext(file_name_with_ext)[0]
+                    plugin_files[file_name] = pathlib.Path(
+                        nodes_path, file_name_with_ext
+                    ).as_posix()
+
+        # Second pass: Add other files starting with "node_" but not "node_core"
         for nodes_path in nodes_paths:
             if not nodes_path:
                 continue
@@ -243,6 +473,7 @@ class NodeFactory:
                     plugin_files[file_name] = pathlib.Path(
                         nodes_path, file_name_with_ext
                     ).as_posix()
+
         for file_name, file_path in plugin_files.items():
             module: ModuleType | None = None
             # noinspection PyBroadException
@@ -260,10 +491,11 @@ class NodeFactory:
                 continue
             # noinspection PyBroadException
             try:
-                module.register_plugin(self)
-                success_count += 1
-            except AttributeError:
-                continue
+                if hasattr(module, "register_plugin") and callable(
+                    module.register_plugin
+                ):
+                    module.register_plugin(self)
+                    success_count += 1
             except Exception:
                 logger.exception(f"Failed to register plugin: {file_path}")
 

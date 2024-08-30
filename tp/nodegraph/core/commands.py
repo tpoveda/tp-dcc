@@ -93,6 +93,53 @@ class RemoveNodesCommand(QUndoCommand):
             self._graph.nodesDeleted.emit(node_ids)
 
 
+class VariableDataTypeChangedCommand(QUndoCommand):
+    def __init__(self, graph: NodeGraph, variable: consts.Variable, data_type: str):
+        super().__init__()
+
+        self._graph = graph
+        self._variable = variable
+        self._old_data_type = variable.data_type
+        self._new_data_type = data_type
+
+        self.setText(
+            f'Changed data type of variable from "{variable.data_type.name}" to "{data_type}".'
+        )
+
+    def undo(self):
+        """
+        Undo the command.
+        """
+
+        if self._old_data_type == self._new_data_type:
+            return
+
+        self._set_variable_data_type(self._old_data_type)
+
+    def redo(self):
+        """
+        Redo the command.
+        """
+
+        if self._old_data_type == self._new_data_type:
+            return
+
+        self._set_variable_data_type(self._new_data_type)
+
+    def _set_variable_data_type(self, data_type_name: str):
+        """
+        Internal function that sets the data type of the variable.
+
+        :param data_type_name: name of the data type to set.
+        """
+
+        data_type = self._graph.factory.data_type_by_name(data_type_name)
+        self._variable.value = data_type.default
+        self._variable.data_type = data_type
+
+        self._graph.variableDataTypeChanged.emit(self._variable.name)
+
+
 class PropertyChangedCommand(QUndoCommand):
     def __init__(self, node: BaseNode, name: str, value: Any):
         super().__init__()
@@ -574,3 +621,132 @@ class PortVisibleCommand(QUndoCommand):
         for port_view in node_view.inputs + node_view.outputs:
             for connector_view in port_view.connected_connectors:
                 connector_view.update()
+
+
+class AddVariableCommand(QUndoCommand):
+    """Command to add a variable to the graph"""
+
+    def __init__(
+        self, graph: NodeGraph, variable: consts.Variable, emit_signal: bool = True
+    ):
+        super().__init__()
+
+        self._graph = graph
+        self._variable = variable
+        self._emit_signal = emit_signal
+
+        self.setText("Added Variable")
+
+    def undo(self):
+        """
+        Undo the command.
+        """
+
+        variable_name = self._variable.name
+        self._graph.remove_variable(self._variable)
+
+        if self._emit_signal:
+            self._graph.variablesDeleted.emit([variable_name])
+
+    def redo(self):
+        """
+        Redo the command.
+        """
+
+        self._graph.add_variable(self._variable)
+
+        if self._emit_signal:
+            self._graph.variableCreated.emit(self._variable)
+
+
+class RenameVariableCommand(QUndoCommand):
+    """Command to rename a variable in the graph."""
+
+    def __init__(
+        self,
+        graph: NodeGraph,
+        variable: consts.Variable,
+        new_name: str,
+        emit_signal: bool = True,
+    ):
+        super().__init__()
+
+        self._graph = graph
+        self._variable = variable
+        self._new_name = new_name
+        self._old_name = variable.name
+        self._emit_signal = emit_signal
+
+        self.setText(f'Renamed Variable "{self._old_name}" to "{self._new_name}"')
+
+    def undo(self):
+        """
+        Undo the command.
+        """
+
+        self._variable.name = self._old_name
+
+        for node in self._graph.getter_nodes(self._new_name) + self._graph.setter_nodes(
+            self._new_name
+        ):
+            node.set_variable_name(self._old_name)
+
+        if self._emit_signal:
+            self._graph.variableRenamed.emit(self._variable)
+
+    def redo(self):
+        """
+        Redo the command.
+        """
+
+        self._new_name = self._graph.unique_variable_name(self._new_name)
+        self._variable.name = self._new_name
+
+        for node in self._graph.getter_nodes(self._old_name) + self._graph.setter_nodes(
+            self._old_name
+        ):
+            node.set_variable_name(self._new_name)
+
+        if self._emit_signal:
+            self._graph.variableRenamed.emit(self._variable)
+
+
+class RemoveVariablesCommand(QUndoCommand):
+    """Command to remove variables from the graph."""
+
+    def __init__(
+        self,
+        graph: NodeGraph,
+        variables: list[consts.Variable],
+        emit_signal: bool = True,
+    ):
+        super().__init__()
+
+        self._graph = graph
+        self._variables = variables
+        self._emit_signal = emit_signal
+
+        self.setText("Removed Variable" if len(variables) == 1 else "Removed Variables")
+
+    def undo(self):
+        """
+        Undo the command.
+        """
+
+        for variable in self._variables:
+            self._graph.add_variable(variable)
+            if self._emit_signal:
+                self._graph.variableCreated.emit(variable)
+
+    def redo(self):
+        """
+        Redo the command.
+        """
+
+        variable_names: list[str] = []
+        for variable in self._variables:
+            variable_names.append(variable.name)
+            self._graph.remove_variable(variable)
+
+        if self._emit_signal:
+            self._graph.variablesDeleted.emit(variable_names)

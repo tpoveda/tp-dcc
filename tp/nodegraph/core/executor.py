@@ -71,6 +71,10 @@ class NodeGraphExecutor:
             return False
 
         self._execution_chain = input_node.exec_queue()
+        result = self.verify_graph()
+        if not result:
+            logger.warning("Invalid graph, cannot execute.")
+            return False
 
         return True
 
@@ -116,7 +120,7 @@ class NodeGraphExecutor:
 
         self.reset_stepped_execution()
         if not self.ready_to_execute():
-            logger.warning(f'Graph "{self.graph}" is not read to execute.')
+            logger.warning(f'Graph "{self.graph}" is not ready to execute.')
             return
 
         logger.info("Initializing new build...")
@@ -136,3 +140,27 @@ class NodeGraphExecutor:
             f"Build finished in {timeit.default_timer() - start_time:.2f} seconds"
         )
         self.graph.is_executing = False
+
+    def execute_step(self):
+        """
+        Executes the next step of the graph.
+        """
+
+        if self._step == len(self._execution_chain):
+            self.reset_stepped_execution()
+
+        if not self._execution_chain and not self.ready_to_execute():
+            return
+
+        # noinspection PyBroadException
+        try:
+            self.graph.is_executing = True
+            node = self._execution_chain[self._step]
+            # noinspection PyProtectedMember
+            node._execute()
+            self._step += 1
+        except Exception:
+            # noinspection PyUnboundLocalVariable
+            logger.exception(f'Failed to execute node "{node.name}"', exc_info=True)
+            self.graph.is_executing = False
+            return

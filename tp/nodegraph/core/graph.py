@@ -8,7 +8,7 @@ import typing
 import logging
 import pathlib
 import importlib.util
-from typing import Type, Any
+from typing import Type, Iterable, Any
 
 from Qt.QtCore import QObject, Signal
 from Qt.QtWidgets import QApplication, QUndoStack, QUndoView, QTabBar
@@ -22,8 +22,12 @@ from .commands import (
     NodeMovedCommand,
     RemoveNodesCommand,
     PortConnectedCommand,
+    AddVariableCommand,
+    RenameVariableCommand,
+    RemoveVariablesCommand,
+    VariableDataTypeChangedCommand,
 )
-from ..core import consts
+from . import consts, datatypes
 from ..views import uiconsts
 from ..core.port import NodePort
 from ..core.node import BaseNode, Node
@@ -33,10 +37,12 @@ from ..views.graph import NodeGraphView
 from ..widgets.graph import NodeGraphWidget
 from ..core.settings import NodeGraphSettings
 from ..nodes.node_backdrop import BackdropNode
+from ..nodes.node_getset import GetNode, SetNode
+from ...python import jsonio
 
 if typing.TYPE_CHECKING:
     from .subgraph import SubGraph
-    from .events import DropNodeEvent
+    from .events import DropNodeEvent, DropVariableEvent
     from ..views.port import PortView
     from ..views.scene import NodeGraphScene
     from ..views.node import AbstractNodeView
@@ -52,6 +58,11 @@ class NodeGraph(QObject):
     nodeSelectionChanged = Signal(list, list)
     nodeDoubleClicked = Signal(BaseNode)
     nodesDeleted = Signal(object)
+    variableCreated = Signal(consts.Variable)
+    variableRenamed = Signal(consts.Variable)
+    variableValueChanged = Signal(str)
+    variableDataTypeChanged = Signal(str)
+    variablesDeleted = Signal(object)
     propertyChanged = Signal(BaseNode, str, object)
     portConnected = Signal(NodePort, NodePort)
     portDisconnected = Signal(NodePort, NodePort)
@@ -211,8 +222,8 @@ class NodeGraph(QObject):
             if 0 <= value <= connector_styles
             else consts.ConnectorStyle.Curved.value
         )
-        self._model.connector_style = value
-        self._viewer.connector_style = value
+        self._model.connector_style = style
+        self._viewer.connector_style = style
 
     @property
     def grid_mode(self) -> int:
@@ -468,13 +479,17 @@ class NodeGraph(QObject):
         node.view.delete()
 
     def delete_node(
-        self, node: BaseNode, push_undo: bool = True, emit_signal: bool = True
+        self,
+        node: BaseNode | GroupNode,
+        push_undo: bool = True,
+        emit_signal: bool = True,
     ):
         """
         Deletes a node from the graph.
 
         :param node: node to delete.
         :param push_undo: whether to push the command to the undo stack.
+        :param emit_signal: whether to emit the signal or not.
         """
 
         if push_undo:
@@ -609,6 +624,7 @@ class NodeGraph(QObject):
         color: tuple[int, int, int, int] | str | None = None,
         text_color: tuple[int, int, int, int] | str | None = None,
         position: tuple[int | float, int | float] | None = None,
+        func_signature: str | None = None,
         push_undo: bool = True,
     ) -> BaseNode:
         """
@@ -620,6 +636,7 @@ class NodeGraph(QObject):
         :param color: node color.
         :param text_color: node text color.
         :param position: initial X, Y node position. Defaults to (0.0, 0.0).
+        :param func_signature: function signature.
         :param push_undo: whether to push the command to the undo stack.
         :return: created node.
         :raises NodeCreationError: If the node could not be created.
@@ -703,6 +720,10 @@ class NodeGraph(QObject):
             node.model.text_color = _format_color(text_color)
         if position is not None:
             node.model.xy_pos = [float(position[0]), float(position[1])]
+
+        if node.type == "tp.nodegraph.nodes.FunctionNode":
+            node.function_signature = func_signature
+
         node.update_view()
 
         # noinspection PyTypeChecker
@@ -945,7 +966,7 @@ class NodeGraph(QObject):
         :return: serialized session of the current node layout.
         """
 
-        return self._serialize(self.nodes())
+        return self._serialize(self.nodes(), self.variables())
 
     def deserialize_session(
         self,
@@ -987,13 +1008,25 @@ class NodeGraph(QObject):
             return obj
 
         with open(file_path, "w") as f:
-            json.dump(
-                serialized_data,
-                f,
-                indent=2,
-                separators=(",", ":"),
-                default=_convert_sets_to_lists,
-            )
+            if not jsonio.validate_json(serialized_data):
+                logger.error(
+                    f"Invalid JSON data:\n{serialized_data}\nCannot write data to file:\n{file_path}"
+                )
+                return False
+            try:
+                json.dump(
+                    serialized_data,
+                    f,
+                    indent=2,
+                    separators=(",", ":"),
+                    default=_convert_sets_to_lists,
+                )
+            except Exception:
+                logger.exception(
+                    f"Cannot write data to file:\n{file_path}", exc_info=True
+                )
+                logger.info(serialized_data)
+                return False
 
         self._model.session = file_path
 
@@ -1075,7 +1108,7 @@ class NodeGraph(QObject):
             return False
 
         clipboard = QApplication.clipboard()
-        serialized_data = self._serialize(nodes)
+        serialized_data = self._serialize(nodes, [])
         serialized_str = json.dumps(serialized_data)
         if not serialized_str:
             return False
@@ -1160,7 +1193,7 @@ class NodeGraph(QObject):
 
         self._undo_stack.beginMacro("Duplicate Nodes")
         self.clear_selected_nodes()
-        serialized_data = self._serialize(nodes)
+        serialized_data = self._serialize(nodes, [])
         duplicated_nodes = self._deserialize(serialized_data)
         offset: int = 50
         for node in duplicated_nodes:
@@ -1213,6 +1246,241 @@ class NodeGraph(QObject):
             node.disabled = not node.disabled
 
         self._undo_stack.endMacro()
+
+    def variables(self) -> list[consts.Variable]:
+        """
+        Returns all variables in the graph.
+
+        :return: list of variables.
+        """
+
+        return self.model.variables
+
+    def unique_variable_name(self, name: str) -> str:
+        """
+        Returns a unique variable name to avoid having variables with the same name.
+
+        :param name: variable name.
+        :return: unique variable name.
+        """
+
+        variable_names: list[str] = [v.name for v in self.model.variables]
+        if name not in variable_names:
+            return name
+
+        index: int = 1
+        while f"{name}{index}" in variable_names:
+            index += 1
+            name = f"{name}{index}"
+
+        return name
+
+    def getter_nodes(self, name: str) -> list[GetNode]:
+        """
+        Returns all getter nodes in the graph for the given variable.
+
+        :param name: variable name.
+        :return: list of getter nodes.
+        """
+
+        # noinspection PyUnresolvedReferences,PyTypeChecker
+        return [
+            node
+            for node in self.nodes()
+            if isinstance(node, GetNode) and node.variable_name == name
+        ]
+
+    def setter_nodes(self, name: str) -> list[SetNode]:
+        """
+        Returns all setter nodes in the graph for the given variable.
+
+        :param name: variable name.
+        :return: list of setter nodes.
+        """
+
+        # noinspection PyUnresolvedReferences,PyTypeChecker
+        return [
+            node
+            for node in self.nodes()
+            if isinstance(node, SetNode) and node.variable_name == name
+        ]
+
+    def create_variable(
+        self,
+        name: str,
+        value: Any = None,
+        data_type: consts.DataType | None = None,
+        push_undo: bool = True,
+    ) -> consts.Variable:
+        """
+        Creates a new variable.
+
+        :param name: variable name.
+        :param value: variable value.
+        :param data_type: variable data type.
+        :param push_undo: whether to push the command to the undo stack.
+        :return created variable.
+        """
+
+        name = self.unique_variable_name(name)
+        data_type = data_type if data_type is not None else datatypes.Numeric
+        value = value if value is not None else data_type.default
+        variable = consts.Variable(
+            name=name, value=value, data_type=data_type, graph=self
+        )
+
+        command = AddVariableCommand(self, variable, emit_signal=True)
+        if push_undo:
+            self._undo_stack.beginMacro(f'Create Variable: "{variable.name}"')
+            self._undo_stack.push(command)
+            self._undo_stack.endMacro()
+        else:
+            command.redo()
+
+        return variable
+
+    def add_variable(self, variable: consts.Variable):
+        """
+        Adds a variable to the graph.
+
+        :param variable: variable to add.
+        """
+
+        self.model.variables.append(variable)
+
+    def variable(self, name: str) -> consts.Variable | None:
+        """
+        Returns a variable by its name.
+
+        :param name: variable name.
+        :return: variable.
+        """
+
+        found_variable: consts.Variable | None = None
+        for variable in self.model.variables:
+            if variable.name == name:
+                found_variable = variable
+                break
+
+        return found_variable
+
+    def variable_data_type(
+        self, name: str, as_data_type: bool = False
+    ) -> str | datatypes.DataType:
+        """
+        Returns the data type of the variable by its name.
+
+        :param name: variable name.
+        :param as_data_type: whether to return the data type as a DataType object.
+        :return: variable data type.
+        """
+
+        variable = self.variable(name)
+        return variable.data_type if as_data_type else variable.data_type.name
+
+    def set_variable_data_type(
+        self, name: str, data_type_name: str, push_undo: bool = True
+    ):
+        """
+        Sets the data type of the variable by its name.
+
+        :param name: variable name.
+        :param data_type_name: data type name.
+        :param push_undo: whether to push the command to the undo stack.
+        """
+
+        variable = self.variable(name)
+        if not variable:
+            logger.error(f"Cannot set data type for non existing variable: {name}")
+            return
+
+        command = VariableDataTypeChangedCommand(self, variable, data_type_name)
+        if push_undo:
+            self._undo_stack.push(command)
+        else:
+            command.redo()
+
+    def variable_value(self, name: str) -> Any:
+        """
+        Returns the value of the variable by its name.
+
+        :param name: variable name.
+        :return: variable value.
+        """
+
+        return self.variable(name).value
+
+    def set_variable_value(self, name: str, value: Any):
+        """
+        Sets the value of the variable by its name.
+
+        :param name: variable name.
+        :param value: variable value.
+        """
+
+        variable = self.variable(name)
+        variable.value = value
+        self.variableValueChanged.emit(name)
+
+    def rename_variable(self, old_name: str, new_name: str, push_undo: bool = True):
+        """
+        Renames a variable in the graph.
+
+        :param old_name: old variable to rename.
+        :param new_name: new variable name.
+        :param push_undo: whether to push the command to the undo stack.
+        """
+
+        variable = self.variable(old_name)
+        if not variable:
+            logger.error(f"Cannot rename non existing variable: {old_name}")
+            return
+
+        command = RenameVariableCommand(self, variable, new_name)
+        if push_undo:
+            self._undo_stack.push(command)
+        else:
+            command.redo()
+
+    def remove_variable(self, variable: consts.Variable):
+        """
+        Removes a variable from the graph.
+
+        :param variable: variable to remove.
+        """
+
+        if variable not in self.model.variables:
+            logger.error(f"Cannot delete non existing variable: {variable.name}")
+            return
+
+        self.model.variables.pop(self.model.variables.index(variable))
+
+    def delete_variable(
+        self,
+        variable: consts.Variable,
+        push_undo: bool = True,
+        emit_signal: bool = True,
+    ):
+        """
+        Deletes a variable from the graph.
+
+        :param variable: variable to delete.
+        :param push_undo:  whether to push the command to the undo stack.
+        :param emit_signal: whether to emit the variableDeleted signal.
+        """
+
+        if push_undo:
+            self._undo_stack.beginMacro(f'Delete Variable: "{variable.name}"')
+
+        for node in self.getter_nodes(variable.name) + self.setter_nodes(variable.name):
+            node.is_invalid = True
+
+        command = RemoveVariablesCommand(self, [variable], emit_signal=emit_signal)
+        if push_undo:
+            self._undo_stack.push(command)
+            self._undo_stack.endMacro()
+        else:
+            command.redo()
 
     def widget(self) -> NodeGraphWidget:
         """
@@ -1473,6 +1741,7 @@ class NodeGraph(QObject):
         Internal function that sets up signals.
         """
 
+        self.variableDataTypeChanged.connect(self._on_variable_data_type_changed)
         self._viewer.nodeSelected.connect(self._on_node_selected)
         self._viewer.nodeSelectionChanged.connect(self._on_node_selection_changed)
         self._viewer.nodeDoubleClicked.connect(self._on_node_double_clicked)
@@ -1481,20 +1750,25 @@ class NodeGraph(QObject):
         self._viewer.connectionSliced.connect(self._on_connections_sliced)
         self._viewer.connectionsChanged.connect(self._on_connections_changed)
         self._viewer.nodeDropped.connect(self._on_node_dropped)
+        self._viewer.variableDropped.connect(self._on_variable_dropped)
         self._viewer.nodeBackdropUpdated.connect(self._on_node_backdrop_updated)
         self._viewer.contextMenuPrompted.connect(self._on_context_menu_prompted)
         self._viewer.searchTriggered.connect(self._on_search_triggered)
 
-    def _serialize(self, nodes: list[BaseNode]) -> dict:
+    def _serialize(
+        self, nodes: list[BaseNode], variables: list[consts.Variable]
+    ) -> dict:
         """
         Internal function that serializes node graph to a dictionary.
 
         :param nodes: list of nodes instances to serialize.
+        :param variables: list of variables instances to serialize.
         :return: serialized node graph.
         """
 
-        serialized_data = {"graph": {}, "nodes": {}, "connections": []}
+        serialized_data = {"graph": {}, "nodes": {}, "connections": [], "variables": {}}
         nodes_data: dict[str, dict] = {}
+        variables_data: list[dict] = []
 
         serialized_data["graph"]["layout_direction"] = self.layout_direction
         serialized_data["graph"]["connector_style"] = self.connector_style
@@ -1510,12 +1784,11 @@ class NodeGraph(QObject):
 
         for node in nodes:
             node.update_model()
-            node_data = node.model.to_dict()
-            nodes_data.update(node_data)
+            serialized_node = node.serialize()
+            nodes_data.update(serialized_node)
 
         for node_id, node_data in nodes_data.items():
             serialized_data["nodes"][node_id] = node_data
-
             inputs = node_data.pop("inputs") if node_data.get("inputs") else {}
             outputs = node_data.pop("outputs") if node_data.get("outputs") else {}
             for port_name, connection_data in inputs.items():
@@ -1543,6 +1816,14 @@ class NodeGraph(QObject):
                         if connector not in serialized_data["connections"]:
                             serialized_data["connections"].append(connector)
 
+        for variable in variables:
+            variable_data = variable.to_dict()
+            variables_data.append(variable_data)
+
+        for variable_data in variables_data:
+            variable_name = variable_data.pop("name")
+            serialized_data["variables"][variable_name] = variable_data
+
         if not serialized_data["connections"]:
             serialized_data.pop("connections")
 
@@ -1552,7 +1833,7 @@ class NodeGraph(QObject):
         self,
         session_data: dict,
         relative_pos: bool = False,
-        position: tuple | list | None = None,
+        position: Iterable[int, int] | None = None,
     ) -> list[BaseNode]:
         """
         Internal function that deserializes node graph from a dictionary.
@@ -1580,6 +1861,20 @@ class NodeGraph(QObject):
             elif attr_name == "reject_connection_types":
                 self.model.reject_connection_types = attr_value
 
+        # Deserialize variables (before nodes).
+        for variable_name, variable_data in session_data.get("variables", {}).items():
+            data_type_name = variable_data.get("data_type", "")
+            data_type = (
+                self.factory.data_type_by_name(data_type_name)
+                if data_type_name
+                else None
+            )
+            self.create_variable(
+                variable_name,
+                value=variable_data.get("value", None),
+                data_type=data_type,
+            )
+
         # Deserialize nodes.
         nodes: dict[str, BaseNode | Node] = {}
         for node_id, node_data in session_data.get("nodes", {}).items():
@@ -1590,26 +1885,8 @@ class NodeGraph(QObject):
             if not node:
                 continue
             node.NODE_NAME = name or node.NODE_NAME
-            # Set node properties and custom properties
-            for property_name, property_value in node.model.properties.items():
-                if property_name in node_data:
-                    node.model.set_property(property_name, property_value)
-            for property_name, property_value in node_data.get("custom", {}).items():
-                node.model.set_property(property_name, property_value)
-                if isinstance(node, BaseNode):
-                    node.view.widgets[property_name].set_value(property_value)
-
-            # Add node into scene
+            node.deserialize(node_data)
             nodes[node_id] = node
-            # self.add_node(node, node_data.get("xy_pos"))
-
-            if node_data.get("port_deletion_allowed", False):
-                node.set_ports(
-                    {
-                        "input_ports": node_data["input_ports"],
-                        "output_ports": node_data["output_ports"],
-                    }
-                )
 
         # Deserialize connections.
         for connection in session_data.get("connections", []):
@@ -1716,6 +1993,27 @@ class NodeGraph(QObject):
         elif isinstance(menu_data, list):
             for item_data in menu_data:
                 self._deserialize_context_menu(menu, item_data, anchor_path)
+
+    def _on_variable_data_type_changed(self, variable_name: str):
+        """
+        Internal callback function that is called each time a variable data type is changed.
+
+        :param variable_name: name of the variable whose data type was changed.
+        """
+
+        # noinspection PyBroadException
+        try:
+            for getter_node in self.getter_nodes(variable_name):
+                getter_node.update()
+        except Exception:
+            logger.exception("Failed to update getters", exc_info=True)
+
+        # noinspection PyBroadException
+        try:
+            for setter_node in self.setter_nodes(variable_name):
+                setter_node.update()
+        except Exception:
+            logger.exception("Failed to update setters", exc_info=True)
 
     def _on_node_selected(self, node_id: str):
         """
@@ -1844,7 +2142,25 @@ class NodeGraph(QObject):
         :param event: drop node event.
         """
 
-        self.create_node(event.node_id, position=event.position)
+        func_signature = event.json_data.get("func_signature", None)
+        self.create_node(
+            event.node_id, position=event.position, func_signature=func_signature
+        )
+
+    def _on_variable_dropped(self, event: DropVariableEvent):
+        """
+        Internal callback function that is called each time a variable is dropped within graph view.
+
+        :param event: drop variable event.
+        """
+
+        node_id = (
+            "tp.nodegraph.nodes.SetNode"
+            if event.setter
+            else "tp.nodegraph.nodes.GetNode"
+        )
+        node = self.create_node(node_id, position=event.position)
+        node.set_variable_name(event.variable_name, init_ports=True)
 
     def _on_node_backdrop_updated(
         self, node_id: str, updated_property: str, updated_geometry: dict[str, Any]
