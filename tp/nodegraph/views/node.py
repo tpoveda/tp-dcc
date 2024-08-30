@@ -724,7 +724,7 @@ class NodeView(AbstractNodeView):
         :return: icon path of the node view.
         """
 
-        return self._properties["icon"]
+        return self._properties["icon_path"]
 
     @icon.setter
     def icon(self, value: str):
@@ -734,7 +734,7 @@ class NodeView(AbstractNodeView):
         :param value: icon path of the node view.
         """
 
-        self._properties["icon"] = value
+        self._properties["icon_path"] = value
         value = value or self._default_icon_path
         pixmap = QPixmap(value)
         if pixmap.size().height() > uiconsts.NODE_ICON_SIZE:
@@ -1225,8 +1225,11 @@ class NodeView(AbstractNodeView):
         port_view.setParentItem(None)
         # noinspection PyTypeChecker
         text.setParentItem(None)
-        self.scene().removeItem(port_view)
-        self.scene().removeItem(text)
+
+        scene = self.scene()
+        if scene:
+            scene.removeItem(port_view)
+            scene.removeItem(text)
         del port_view
         del text
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Type
+from typing import Type, Iterable
 
 from Qt.QtCore import (
     Qt,
@@ -24,6 +24,7 @@ from Qt.QtWidgets import (
     QGraphicsSceneMouseEvent,
     QUndoStack,
     QAction,
+    QMenu,
     QMenuBar,
     QRubberBand,
 )
@@ -69,6 +70,7 @@ class NodeGraphView(QGraphicsView):
     nodesMoved = Signal(object)
     nodeNameChanged = Signal(str, str)
     nodeInserted = Signal(object, str, object)
+    variableDropped = Signal(events.DropVariableEvent)
     connectionSliced = Signal(list)
     connectionsChanged = Signal(list, list)
     nodeBackdropUpdated = Signal(str, str, object)
@@ -171,6 +173,9 @@ class NodeGraphView(QGraphicsView):
         self._update_scene()
 
         self._last_size: QSize = self.size()
+
+        self.setFocusPolicy(Qt.StrongFocus)
+        self.setStyleSheet("QGraphicsView { border: none; }")
 
     def __repr__(self) -> str:
         """
@@ -317,6 +322,10 @@ class NodeGraphView(QGraphicsView):
 
         # Clear menubar so QAction shortcuts do not conflict with parent app.
         self._context_menu_bar.clear()
+
+        # Make sure cursor text is hidden.
+        self._cursor_text.setVisible(False)
+
         super().focusOutEvent(event)
 
     def keyPressEvent(self, event: QKeyEvent):
@@ -597,6 +606,9 @@ class NodeGraphView(QGraphicsView):
         """
 
         scene_pos = self.mapToScene(event.pos())
+        self._alt_state = bool(event.modifiers() & Qt.AltModifier)
+        self._ctrl_state = bool(event.modifiers() & Qt.ControlModifier)
+        self._shift_state = bool(event.modifiers() & Qt.ShiftModifier)
 
         # Update slicer.
         if self._connector_mode in (
@@ -889,7 +901,33 @@ class NodeGraphView(QGraphicsView):
             event.setDropAction(Qt.MoveAction)
             event.accept()
         elif event.mimeData().hasFormat(consts.VARS_ITEM_MIME_DATA_FORMAT):
-            raise NotImplementedError
+            event_data = event.mimeData().data(consts.VARS_ITEM_MIME_DATA_FORMAT)
+            data_stream = QDataStream(event_data, QIODevice.ReadOnly)
+            json_data = json.loads(data_stream.readQString())
+            mouse_pos = event.pos()
+            scene_pos = self.mapToScene(mouse_pos)
+            logger.debug(
+                f"Dropped Variable:\n> Data: {json_data}\n> Mouse Pos:"
+                f" {mouse_pos}\n> Scene Pos: {scene_pos}"
+            )
+            variable_name = json_data["variable_name"]
+            get_set_menu = QMenu(parent=self)
+            getter_action = QAction("Get", get_set_menu)
+            setter_action = QAction("Set", get_set_menu)
+            get_set_menu.addAction(getter_action)
+            get_set_menu.addAction(setter_action)
+            result_action = get_set_menu.exec_(self.mapToGlobal(event.pos()))
+            if result_action is None:
+                return
+            self.variableDropped.emit(
+                events.DropVariableEvent(
+                    variable_name,
+                    result_action == setter_action,
+                    (scene_pos.x(), scene_pos.y()),
+                )
+            )
+            event.setDropAction(Qt.MoveAction)
+            event.accept()
         else:
             logger.warning(f"Unsupported item format: {event.mimeData().formats()}")
             event.ignore()
@@ -1152,9 +1190,9 @@ class NodeGraphView(QGraphicsView):
 
     def move_nodes(
         self,
-        nodes: list[AbstractNodeView],
-        position: tuple[int, int] | None = None,
-        offset: tuple[int, int] | None = None,
+        nodes: Iterable[AbstractNodeView],
+        position: Iterable[int, int] | None = None,
+        offset: Iterable[int, int] | None = None,
     ):
         """
         Moves the given nodes to the given position.
@@ -1402,7 +1440,6 @@ class NodeGraphView(QGraphicsView):
         self.setCacheMode(QGraphicsView.CacheBackground)
         self.setOptimizationFlag(QGraphicsView.DontAdjustForAntialiasing)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-        self.setDragMode(QGraphicsView.RubberBandDrag)
         self.setAttribute(Qt.WA_AlwaysShowToolTips)
         self.setAcceptDrops(True)
 
@@ -1538,6 +1575,7 @@ class NodeGraphView(QGraphicsView):
             self._live_connector.input_port = self._start_port
         elif self._start_port.port_type == consts.PortType.Output.value:
             self._live_connector.output_port = self._start_port
+        self._live_connector.color = self._start_port.color
         self._live_connector.setVisible(True)
         self._live_connector.draw_index_pointer(
             selected_port, self.mapToScene(self._origin_mouse_pos)

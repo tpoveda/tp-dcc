@@ -40,9 +40,6 @@ class PortView(QGraphicsItem):
         self._color: tuple[int, int, int, int] = uiconsts.PORT_COLOR
         self._border_color: tuple[int, int, int, int] = uiconsts.PORT_BORDER_COLOR
         self._active_color: tuple[int, int, int, int] = uiconsts.PORT_ACTIVE_COLOR
-        self._active_border_color: tuple[int, int, int, int] = (
-            uiconsts.PORT_ACTIVE_BORDER_COLOR
-        )
         self._hover_color: tuple[int, int, int, int] = uiconsts.PORT_HOVER_COLOR
         self._hover_border_color: tuple[int, int, int, int] = (
             uiconsts.PORT_HOVER_BORDER_COLOR
@@ -106,6 +103,7 @@ class PortView(QGraphicsItem):
         """
 
         self._data_type = value
+        self._update_colors()
 
     @property
     def name(self) -> str:
@@ -249,27 +247,6 @@ class PortView(QGraphicsItem):
         """
 
         self._active_color = value
-        self.update()
-
-    @property
-    def active_border_color(self) -> tuple[int, int, int, int]:
-        """
-        Getter method that returns the active border color of the port view.
-
-        :return: active border color of the port view.
-        """
-
-        return self._active_border_color
-
-    @active_border_color.setter
-    def active_border_color(self, value: tuple[int, int, int, int]):
-        """
-        Setter method that sets the active border color of the port view.
-
-        :param value: active border color of the port view.
-        """
-
-        self._active_border_color = value
         self.update()
 
     @property
@@ -501,7 +478,7 @@ class PortView(QGraphicsItem):
                     border_color = QColor(*self.hover_border_color)
                 elif self.connected_connectors:
                     color = QColor(*self.active_color)
-                    border_color = QColor(*self.active_border_color)
+                    border_color = QColor(*self.active_color)
                 else:
                     color = QColor(*self.color)
                     border_color = QColor(*self.border_color)
@@ -647,6 +624,22 @@ class PortView(QGraphicsItem):
                 connector_view.draw_path(self, connector_view.output_port)
             elif self.port_type == consts.PortType.Output.value:
                 connector_view.draw_path(connector_view.input_port, self)
+
+    def _update_colors(self):
+        """
+        Internal function that updates the colors of the port view.
+        """
+
+        if not self.data_type:
+            return
+
+        self._color = self._data_type.color.getRgb()
+        self._border_color = self._data_type.color.lighter(150).getRgb()
+        h, s, v, a = self._data_type.color.getHsv()
+        hover_color = QColor.fromHsv(h, s, min(v + 50, 255), a)
+        self._hover_color = hover_color.getRgb()
+        self._hover_border_color = hover_color.lighter(150).getRgb()
+        self._active_color = self._data_type.color.getRgb()
 
 
 class CustomPortView(PortView):

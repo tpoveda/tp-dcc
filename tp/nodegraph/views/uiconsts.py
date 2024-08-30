@@ -34,10 +34,10 @@ NODE_GRAPH_MINIMUM_ZOOM = -0.8
 NODE_GRAPH_MAXIMUM_ZOOM = 2.0
 
 # Node default width.
-NODE_WIDTH: float = 100.0
+NODE_WIDTH: int = 100
 
 # Node default height.
-NODE_HEIGHT: float = 80.0
+NODE_HEIGHT: int = 80
 
 # Node icon default size.
 NODE_ICON_SIZE: int = 18
@@ -59,9 +59,6 @@ PORT_BORDER_COLOR: tuple[int, int, int, int] = (29, 202, 151, 255)
 
 # Default port active color.
 PORT_ACTIVE_COLOR: tuple[int, int, int, int] = (14, 45, 59, 255)
-
-# Default port active border color.
-PORT_ACTIVE_BORDER_COLOR: tuple[int, int, int, int] = (107, 166, 193, 255)
 
 # Default port hover color.
 PORT_HOVER_COLOR: tuple[int, int, int, int] = (17, 43, 82, 255)

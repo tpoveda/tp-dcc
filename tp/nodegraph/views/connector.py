@@ -143,6 +143,7 @@ class ConnectorView(QGraphicsPathItem):
         """
 
         self._color = color
+        self.update()
 
     @property
     def active(self) -> bool:
@@ -206,6 +207,7 @@ class ConnectorView(QGraphicsPathItem):
         """
 
         self._input_port_view = port if isinstance(port, PortView) or not port else None
+        self._set_connector_style(self.color, width=2, style=self.style)
 
     @property
     def output_port(self) -> PortView | None:
@@ -228,6 +230,7 @@ class ConnectorView(QGraphicsPathItem):
         self._output_port_view = (
             port if isinstance(port, PortView) or not port else None
         )
+        self._set_connector_style(self.color, width=2, style=self.style)
 
     def itemChange(self, change: QGraphicsItem.GraphicsItemChange, value: Any) -> Any:
         """
@@ -581,20 +584,27 @@ class ConnectorView(QGraphicsPathItem):
         pen.setCapStyle(Qt.RoundCap)
         self.setPen(pen)
         self.setBrush(QBrush(Qt.NoBrush))
+
+        input_color = self.input_port.color if self.input_port else color
+        output_color = self.output_port.color if self.output_port else color
+        r = int(input_color[0] * 0.5 + output_color[0] * 0.5)
+        g = int(input_color[1] * 0.5 + output_color[1] * 0.5)
+        b = int(input_color[2] * 0.5 + output_color[2] * 0.5)
         pen = self._dir_pointer.pen()
         pen.setJoinStyle(Qt.MiterJoin)
         pen.setCapStyle(Qt.RoundCap)
         pen.setWidth(width)
-        pen.setColor(QColor(*color))
+        pen.setColor(QColor(r, g, b))
         self._dir_pointer.setPen(pen)
-        self._dir_pointer.setBrush(QColor(*color).darker(200))
+        self._dir_pointer.setBrush(QColor(r, g, b).darker(200))
+        self._dir_pointer.update()
 
     def _draw_direction_pointer(self):
         """
         Internal function that draws the direction pointer.
         """
 
-        if not self._input_port_view or not self._output_port_view:
+        if not self.input_port or not self.output_port:
             self._dir_pointer.setVisible(False)
             return
 
@@ -792,7 +802,8 @@ class LiveConnectorView(ConnectorView):
 
         self._shift_selected: bool = False
 
-        self.color = uiconsts.CONNECTOR_ACTIVE_COLOR
+        # self.color = uiconsts.CONNECTOR_ACTIVE_COLOR
+        # self.color = [255, 0, 0]
         self.style = uiconsts.CONNECTOR_DASHED_DRAW_TYPE
         self._set_connector_style(self.color, width=3, style=self.style)
 
@@ -808,7 +819,7 @@ class LiveConnectorView(ConnectorView):
         color = self.pen().color()
         color.setAlpha(80)
         self._index_text = QGraphicsTextItem(self)
-        self._index_text.setDefaultTextColor(color)
+        self._index_text.setDefaultTextColor(QColor(255, 255, 255))
         font = self._index_text.font()
         font.setPointSize(7)
         self._index_text.setFont(font)
@@ -902,9 +913,7 @@ class LiveConnectorView(ConnectorView):
 
         self._index_pointer.setPolygon(transform.map(self._poly))
 
-        pen_color = QColor(*uiconsts.CONNECTOR_HIGHLIGHTED_COLOR)
-        if isinstance(color, (list, tuple)):
-            pen_color = QColor(*color)
+        pen_color = QColor(*self.color)
 
         pen = self._index_pointer.pen()
         pen.setColor(pen_color)
