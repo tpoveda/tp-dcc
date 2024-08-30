@@ -20,11 +20,11 @@ from Qt.QtWidgets import (
     QTreeWidget,
     QTreeWidgetItem,
 )
-from Qt.QtGui import QPixmap, QDrag
+from Qt.QtGui import QIcon, QPixmap, QDrag
 
 from ...qt import factory
 from ...qt.widgets import search
-from ..core import consts
+from ..core import consts, datatypes
 
 if typing.TYPE_CHECKING:
     from ..core.graph import NodeGraph
@@ -37,10 +37,18 @@ class NodesPalette(QWidget):
     Class that defines the nodes palette widget.
     """
 
-    def __init__(self, icon_size: int = 32, parent: QWidget | None = None):
+    def __init__(
+        self,
+        icon_size: int = 32,
+        data_type_filter: datatypes.DataType | None = None,
+        functions_first: bool = False,
+        parent: QWidget | None = None,
+    ):
         super().__init__(parent=parent)
 
         self._icon_size = QSize(icon_size, icon_size)
+        self._data_type_filter = data_type_filter
+        self._functions_first = functions_first
         self._search_line: search.SearchLineEdit | None = None
         self._nodes_tree: NodesTreeWidget | None = None
 
@@ -59,6 +67,26 @@ class NodesPalette(QWidget):
         """
 
         return self._icon_size
+
+    @property
+    def data_type_filter(self) -> datatypes.DataType | None:
+        """
+        Getter method that returns the data type filter.
+
+        :return: data type filter.
+        """
+
+        return self._data_type_filter
+
+    @property
+    def functions_first(self) -> bool:
+        """
+        Getter method that returns whether functions should be displayed first.
+
+        :return: whether functions should be displayed first.
+        """
+
+        return self._functions_first
 
     @property
     def nodes_tree(self) -> NodesTreeWidget:
@@ -168,6 +196,7 @@ class NodesTreeWidget(QTreeWidget):
             return
 
         self._add_registered_nodes(graph)
+        self._add_registered_functions(graph)
 
     def add_category(
         self, name: str, expanded: bool = True, parent: QTreeWidgetItem | None = None
@@ -215,6 +244,7 @@ class NodesTreeWidget(QTreeWidget):
         Internal function that adds registered nodes to the tree.
 
         :param graph: node graph to get nodes from.
+        :param search_filter: search filter.
         """
 
         keys = list(graph.factory.node_classes)
@@ -235,8 +265,62 @@ class NodesTreeWidget(QTreeWidget):
                 node_id,
                 palette_label,
                 category=node_class.CATEGORY,
-                icon_name=node_class.ICON_NAME,
+                icon_path=node_class.ICON_PATH,
             )
+
+    def _add_registered_functions(self, graph: NodeGraph, search_filter: str = ""):
+        """
+        Internal function that adds registered functions to the tree.
+
+        :param graph: node graph to get nodes from.
+        :param search_filter: search filter.
+        """
+
+        keys = list(graph.factory.function_data_types)
+        keys.sort()
+
+        for data_type_name in keys:
+            # If data type filter is set, skip if data type does not match filter type class.
+            if data_type_name != "UNBOUND" and self._nodes_palette.data_type_filter:
+                if not issubclass(
+                    self._nodes_palette.data_type_filter.type_class,
+                    graph.factory.data_type_by_name(data_type_name).type_class,
+                ):
+                    continue
+
+            function_signatures = graph.factory.function_signatures_by_type_name(
+                data_type_name
+            )
+            for function_signature in function_signatures:
+                expanded = self._nodes_palette.functions_first or bool(search_filter)
+                function = graph.factory.function_by_type_name_and_signature(
+                    data_type_name, function_signature
+                )
+                if not function:
+                    continue
+                icon_path = function.icon
+                nice_name = function.nice_name
+                sub_category_name = function.category or "General"
+                palette_name = nice_name or function_signature
+
+                # If search filter is set, skip if search filter does not match palette name or sub category name.
+                filter_matched = bool(search_filter) and (
+                    re.search(search_filter, palette_name, re.IGNORECASE) is not None
+                    or re.search(
+                        search_filter, sub_category_name, re.IGNORECASE is not None
+                    )
+                )
+                if search_filter and not filter_matched:
+                    continue
+
+                self._add_node_item(
+                    "tp.nodegraph.nodes.FunctionNode",
+                    palette_name,
+                    func_signature=function_signature,
+                    category=f"Functions/{sub_category_name}",
+                    icon_path=icon_path,
+                    expanded=expanded,
+                )
 
     def _add_node_item(
         self,
@@ -244,7 +328,7 @@ class NodesTreeWidget(QTreeWidget):
         label_text: str,
         func_signature: str = "",
         category: str = "",
-        icon_name: str | None = None,
+        icon_path: str | None = None,
         expanded: bool = True,
     ) -> QTreeWidgetItem:
         """
@@ -254,7 +338,7 @@ class NodesTreeWidget(QTreeWidget):
         :param label_text: node item text.
         :param func_signature: optional function signature for the node item.
         :param category: optional node category.
-        :param icon_name: optional node icon name.
+        :param icon_path: optional node icon path.
         :param expanded: whether node item is expanded.
         :return: added node item.
         """
@@ -266,13 +350,14 @@ class NodesTreeWidget(QTreeWidget):
             parent_item = self.get_or_create_category_item(
                 category_name, expanded=expanded, parent=parent_item
             )
-
+        pixmap = QPixmap(icon_path)
         item = QTreeWidgetItem()
         parent_item.addChild(item)
         item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsDragEnabled)
         item.setText(0, label_text)
+        item.setIcon(0, QIcon(pixmap))
         item.setSizeHint(0, self._nodes_palette.icon_size)
-        item.setData(0, NodesTreeWidget.PIXMAP_ROLE, QPixmap())
+        item.setData(0, NodesTreeWidget.PIXMAP_ROLE, pixmap)
         item.setData(0, NodesTreeWidget.NODE_ID_ROLE, node_id)
         json_data = {"title": item.text(0), "func_signature": func_signature}
         item.setData(0, NodesTreeWidget.JSON_DATA_ROLE, json_data)

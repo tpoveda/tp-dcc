@@ -23,6 +23,7 @@ class NodeGraphModel:
         self.accept_connection_types: dict[str, set[str]] = {}
         self.reject_connection_types: dict[str, set[str]] = {}
         self.session: str = ""
+        self.variables: list[consts.Variable] = []
 
         self._common_node_properties: dict[str, dict[str, dict[str, typing.Any]]] = {}
 

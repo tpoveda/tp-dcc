@@ -28,9 +28,9 @@ class LoggerNode(Node):
         self.in_error = self.add_input(dt.Boolean, "As Error", value=False)
 
     def execute(self):
-        if self.in_info.value:
-            logger.info(self.in_message.value)
-        if self.in_warning.value:
-            logger.warning(self.in_warning.value)
-        if self.in_error.value:
-            logger.error(self.in_error.value)
+        if self.in_info.value():
+            logger.info(self.in_message.value())
+        if self.in_warning.value():
+            logger.warning(self.in_warning.value())
+        if self.in_error.value():
+            logger.error(self.in_error.value())
