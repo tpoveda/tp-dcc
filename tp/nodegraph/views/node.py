@@ -1337,17 +1337,20 @@ class NodeView(AbstractNodeView):
 
         pass
 
-    def _update_ports_text_visibility(self):
+    def update_ports_text_visibility(self):
         """
         Internal function that updates the visibility of the ports text.
         """
 
+        viewer = self.viewer()
+        show_details = viewer.show_details if viewer else True
+
         for port_view, text_view in self._input_port_views.items():
             if port_view.isVisible():
-                text_view.setVisible(port_view.display_name)
+                text_view.setVisible(port_view.display_name and show_details)
         for port_view, text_view in self._output_port_views.items():
             if port_view.isVisible():
-                text_view.setVisible(port_view.display_name)
+                text_view.setVisible(port_view.display_name and show_details)
 
     # noinspection PyUnusedLocal
     def _update_size(self, add_width: float = 0.0, add_height: float = 0.0):
@@ -1615,7 +1618,7 @@ class NodeView(AbstractNodeView):
         Internal function that draws the node view in horizontal layout.
         """
 
-        self._update_ports_text_visibility()
+        self.update_ports_text_visibility()
 
         height = self._title_item.height + 4.0
         self._update_size(add_height=height)

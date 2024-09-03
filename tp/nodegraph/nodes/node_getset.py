@@ -241,13 +241,10 @@ class SetNode(VariableNode):
             self._variable_name, as_data_type=True
         )
         if self.out_value.data_type != variable_type:
-            self.view.input_text_item(self.in_value.view).setPlainText(
-                variable_type.label
-            )
+            self.in_value.name = variable_type.label
+            self.out_value.name = variable_type.label
             self.in_value.data_type = variable_type
             self.out_value.data_type = variable_type
-            self.in_value.view.update()
-            self.out_value.view.update()
             self.view.draw()
 
     def set_variable_name(self, name: str, init_ports: bool = False):

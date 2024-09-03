@@ -43,7 +43,7 @@ class NodeModel:
         self.title_text_color: tuple[int, int, int, int] = (255, 255, 255, 180)
         self.inputs: dict[str, PortModel] = {}
         self.outputs: dict[str, PortModel] = {}
-        self.port_deletion_allowed: bool = False
+        self.port_deletion_allowed: bool = True
         self.subgraph_session: dict = {}
 
         self._graph_model: NodeGraphModel | None = None
@@ -362,32 +362,23 @@ class NodeModel:
 
         node_dict = self.__dict__.copy()
         node_id = node_dict.pop("id")
-
         inputs: dict = {}
         outputs: dict = {}
         input_ports: list = []
         output_ports: list = []
         for name, model in node_dict.pop("inputs").items():
             if self.port_deletion_allowed:
-                input_ports.append(
-                    {
-                        "name": name,
-                        "multi_connection": model.multi_connection,
-                        "display_name": model.display_name,
-                    }
-                )
+                port_data = model.to_dict()
+                port_data.pop("connected_ports")
+                input_ports.append(port_data)
             connected_ports = model.to_dict()["connected_ports"]
             if connected_ports:
                 inputs[name] = connected_ports
         for name, model in node_dict.pop("outputs").items():
             if self.port_deletion_allowed:
-                output_ports.append(
-                    {
-                        "name": name,
-                        "multi_connection": model.multi_connection,
-                        "display_name": model.display_name,
-                    }
-                )
+                port_data = model.to_dict()
+                port_data.pop("connected_ports")
+                output_ports.append(port_data)
             connected_ports = model.to_dict()["connected_ports"]
             if connected_ports:
                 outputs[name] = connected_ports

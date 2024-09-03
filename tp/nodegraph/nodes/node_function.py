@@ -139,7 +139,7 @@ class FunctionNode(Node):
         """
 
         data = super().serialize()
-        data["function_signature"] = self.function_signature
+        data[self.id]["function_signature"] = self.function_signature
         return data
 
     def pre_deserialize(self, data: dict):
@@ -152,9 +152,9 @@ class FunctionNode(Node):
 
         func_signature = data.get("function_signature", "")
         if "__builtin__" in func_signature:
-            self._function_signature = func_signature.replace("__builtin__", "builtins")
+            self.function_signature = func_signature.replace("__builtin__", "builtins")
         else:
-            self._function_signature = func_signature
+            self.function_signature = func_signature
 
 
 def register_plugin(factory: NodeFactory):

@@ -25,6 +25,7 @@ class ConstantNode(Node):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self._initialized: bool = False
         self.update_title()
 
     @property
@@ -39,7 +40,12 @@ class ConstantNode(Node):
     def graph(self, value: NodeGraph):
         Node.graph.fset(self, value)
         if value:
-            self.out_value.data_type = self.data_type
+            data_type = self.data_type
+            if data_type != self.out_value.data_type:
+                self.out_value.data_type = data_type
+            if not self._initialized:
+                self.out_value.set_value(data_type.default)
+                self._initialized = True
 
     def setup_ports(self):
         """
@@ -64,7 +70,9 @@ class ConstantNode(Node):
         Updates the title of the node.
         """
 
-        self.set_property("name", f"{self.DEFAULT_TITLE}: {self.out_value.value()}")
+        self.set_property(
+            "name", f"{self.DEFAULT_TITLE}: {self.out_value.value()}", push_undo=False
+        )
 
 
 class ConstantFloatNode(ConstantNode):
