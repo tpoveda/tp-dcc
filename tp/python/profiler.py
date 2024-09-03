@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import timeit
 import logging
+from functools import wraps
 from typing import Callable
 
 logger = logging.getLogger(__name__)
 
 
 def fn_timer(fn: Callable):
+    @wraps(fn)
     def function_timer(*args, **kwargs):
         t0 = timeit.default_timer()
         result = fn(*args, **kwargs)
