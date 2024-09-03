@@ -244,6 +244,8 @@ class NodePainter(AbstractNodePainter):
         else:
             border_path.addRect(label_rect)
 
+        self._view.update_ports_text_visibility()
+
         painter.setBrush(title_color)
         painter.fillPath(border_path, painter.brush())
 
