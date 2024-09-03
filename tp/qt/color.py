@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+
 from Qt.QtGui import QColor
 from Qt.QtCore import QRegularExpression
 
@@ -81,3 +83,21 @@ def from_string(text_color: str) -> QColor:
                 r, g, b = text_color.replace("rgb(", "").replace(")", "").split(",")
 
     return QColor(int(r), int(g), int(b), int(a))
+
+
+def color_by_name(name: str) -> QColor:
+    """
+    Returns a `QColor` from the given string.
+
+    :param name: string to generate color from.
+    :return: color instance.
+    """
+
+    hash_object = hashlib.sha256(name.encode("utf-8"))
+    hex_dig = hash_object.hexdigest()
+
+    r = int(hex_dig[0:2], 16)
+    g = int(hex_dig[2:4], 16)
+    b = int(hex_dig[4:6], 16)
+
+    return QColor(r, g, b)
