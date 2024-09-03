@@ -775,7 +775,11 @@ class Node(BaseNode):
                 continue
             self.model.set_property(name, value)
 
-        for name, widget in self.view.widgets.items():
+        try:
+            widgets = self.view.widgets
+        except AttributeError:
+            widgets = {}
+        for name, widget in widgets:
             self.model.set_property(name, widget.value())
 
     def set_property(self, name: str, value: Any, push_undo: bool = True):
@@ -1028,8 +1032,6 @@ class Node(BaseNode):
         if name in self.output_ports():
             raise exceptions.NodeOutputPortAlreadyExistsError(name, self.type)
 
-        display_name = display_name if data_type != datatypes.Exec else False
-
         view = self.view.add_output(
             data_type=data_type,
             name=name,
@@ -1108,9 +1110,59 @@ class Node(BaseNode):
         source_port = self.output(index)
         source_port.connect_to(port)
 
+    def clear_and_set_ports(self, port_data: dict):
+        """
+        Clears all existing ports and sets new ports to the node.
+
+        :param port_data: dictionary of port data.
+        """
+
+        if not self.port_deletion_allowed:
+            raise RuntimeError(
+                "Ports can only be set if port_deletion_allowed is set to True"
+            )
+
+        # TODO: This function does not requires into account some stuff such as required inputs, etc.
+
+        for port in self._inputs:
+            self._view.delete_input(port.view)
+            port.model.node = None
+        for port in self._outputs:
+            self._view.delete_output(port.view)
+            port.model.node = None
+        self._inputs.clear()
+        self._outputs.clear()
+        self._model.outputs.clear()
+        self._model.inputs.clear()
+
+        [
+            self.add_input(
+                self.graph.factory.data_type_by_name(port["data_type"]),
+                name=port["name"],
+                multi_port=port["multi_connection"],
+                display_name=port["display_name"],
+                locked=port.get("locked") or False,
+                value=port.get("value", None),
+            )
+            for port in port_data["input_ports"]
+        ]
+        [
+            self.add_output(
+                self.graph.factory.data_type_by_name(port["data_type"]),
+                name=port["name"],
+                multi_port=port["multi_connection"],
+                display_name=port["display_name"],
+                locked=port.get("locked") or False,
+                value=port.get("value", None),
+            )
+            for port in port_data["output_ports"]
+        ]
+
+        self._view.draw()
+
     def set_ports(self, port_data: dict):
         """
-        Creates node input and output ports from serialized port data.
+        Updates node input and output ports from serialized port data.
 
         :param port_data: dictionary of port data.
         .notes:: this function only can be used if `port_deletion_allowed` is set to True.
@@ -1133,41 +1185,35 @@ class Node(BaseNode):
         }
         """
 
-        if not self.port_deletion_allowed:
-            raise RuntimeError(
-                "Ports can only be set if port_deletion_allowed is set to True"
-            )
+        for data in port_data["input_ports"]:
+            input_port = self.input(data["name"])
+            if input_port is None:
+                logger.warning(
+                    f'Input port "{data["name"]}" not found in node "{self.name}"'
+                )
+                continue
 
-        for port in self._inputs:
-            self._view.delete_input(port.view)
-            port.model.node = None
-        for port in self._outputs:
-            self._view.delete_output(port.view)
-            port.model.node = None
-        self._inputs = []
-        self._outputs = []
-        self._model.outputs = {}
-        self._model.inputs = {}
+            input_port.data_type = self.graph.factory.data_type_by_name(
+                data["data_type"]
+            )
+            input_port.set_visible(data["visible"], push_undo=False)
+            input_port.set_locked(data["locked"], push_undo=False)
+            input_port.view.display_name = data["display_name"]
+            input_port.multi_connection = data["multi_connection"]
+            input_port.max_connections = data["max_connections"]
+            input_port.set_value(data.get("value", None))
 
-        [
-            self.add_input(
-                name=port["name"],
-                multi_port=port["multi_connection"],
-                display_name=port["display_name"],
-                locked=port.get("locked") or False,
+        for data in port_data["output_ports"]:
+            output_port = self.output(data["name"])
+            output_port.data_type = self.graph.factory.data_type_by_name(
+                data["data_type"]
             )
-            for port in port_data["input_ports"]
-        ]
-        [
-            self.add_output(
-                name=port["name"],
-                multi_port=port["multi_connection"],
-                display_name=port["display_name"],
-                locked=port.get("locked") or False,
-            )
-            for port in port_data["output_ports"]
-        ]
-        self._view.draw()
+            output_port.set_visible(data["visible"], push_undo=False)
+            output_port.set_locked(data["locked"], push_undo=False)
+            output_port.view.display_name = data["display_name"]
+            output_port.multi_connection = data["multi_connection"]
+            output_port.max_connections = data["max_connections"]
+            output_port.set_value(data.get("value", None))
 
     def connected_input_nodes(self) -> dict[NodePort, list[BaseNode]]:
         """
@@ -1585,8 +1631,13 @@ class Node(BaseNode):
 
         invalid_inputs: deque[NodePort] = deque()
         for port in self._required_inputs:
-            pass
+            if not port.connected_ports() and not port.value():
+                invalid_inputs.append(port)
         if invalid_inputs:
+            tool_tip: str = ""
+            for invalid_input in invalid_inputs:
+                tool_tip += f"Invalid input: {invalid_input.name}\n"
+            self.view.setToolTip(f"{self.view.toolTip()} + {tool_tip}")
             return False
 
         return True
@@ -1666,8 +1717,10 @@ class Node(BaseNode):
             self.remove_existing_ports()
 
         if self.__class__.IS_EXEC and self.__class__.AUTO_INIT_EXECS:
-            self._exec_in_socket = self.add_input(datatypes.Exec)
-            self._exec_out_socket = self.add_output(datatypes.Exec, max_connections=1)
+            self._exec_in_socket = self.add_input(datatypes.Exec, display_name=False)
+            self._exec_out_socket = self.add_output(
+                datatypes.Exec, max_connections=1, display_name=False
+            )
 
         self.setup_ports()
 
@@ -1680,6 +1733,10 @@ class Node(BaseNode):
         """
 
         logger.debug(f"Executing {self}...")
+        if not self.enabled:
+            logger.debug(f'Skipping execution of disabled node "{self}"')
+            return 0
+
         try:
             self.execute()
             self.update_affected_outputs()

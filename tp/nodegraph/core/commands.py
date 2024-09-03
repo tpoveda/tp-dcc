@@ -440,6 +440,8 @@ class PortConnectedCommand(QUndoCommand):
             graph.portConnected.emit(
                 ports[consts.PortType.Input.value], ports[consts.PortType.Output.value]
             )
+            self._source_port.signals.connectionChanged.emit()
+            self._target_port.signals.connectionChanged.emit()
 
 
 class PortDisconnectedCommand(QUndoCommand):
@@ -508,6 +510,8 @@ class PortDisconnectedCommand(QUndoCommand):
             graph.portDisconnected.emit(
                 ports[consts.PortType.Input.value], ports[consts.PortType.Output.value]
             )
+            self._source_port.signals.connectionChanged.emit()
+            self._target_port.signals.connectionChanged.emit()
 
 
 class PortLockedCommand(QUndoCommand):

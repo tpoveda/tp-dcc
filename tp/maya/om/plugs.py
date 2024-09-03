@@ -1511,6 +1511,7 @@ def next_available_element_plug(array_plug: OpenMaya.MPlug) -> OpenMaya.MPlug | 
     # we want to iterate further then the max index so we add two due to arrays starting a zero and 1 for the extra
     # available index maya creates
     count += 2
+
     for i in range(count):
         available_plug = array_plug.elementByLogicalIndex(i)
         if array_plug.isCompound:
@@ -1574,7 +1575,7 @@ def next_available_dest_element_plug(array_plug):
     indices = array_plug.getExistingArrayAttributeIndices() or [0]
     count = max(indices)
 
-    # we want to iterate further then the max index so we add two due to arrays starting a zero and 1 for the extra
+    # we want to iterate further then the max index, so we add two due to arrays starting a zero and 1 for the extra
     # available index maya creates
     count += 2
     for i in range(count):

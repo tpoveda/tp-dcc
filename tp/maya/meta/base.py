@@ -783,7 +783,7 @@ def iterate_scene_meta_nodes() -> Iterator[MetaBase]:
         mobj = it.thisNode()
         dep = OpenMaya.MFnDependencyNode(mobj)
         if dep.hasAttribute(META_CLASS_ATTR_NAME):
-            yield MetaBase(node=mobj)
+            yield MetaBase(node=mobj, init_defaults=False)
         it.next()
 
 

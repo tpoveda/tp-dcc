@@ -1886,10 +1886,11 @@ class NodeGraph(QObject):
             # Create node
             identifier = node_data["type"]
             name = node_data.get("name")
-            node = self.create_node(identifier, position=node_data.get("xy_pos"))
+            node = self.create_node(
+                identifier, name=name, position=node_data.get("xy_pos")
+            )
             if not node:
                 continue
-            node.NODE_NAME = name or node.NODE_NAME
             node.deserialize(node_data)
             nodes[node_id] = node
 

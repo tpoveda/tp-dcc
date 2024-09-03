@@ -1236,7 +1236,7 @@ def add_compound_attribute(
     for attr_data in attr_map:
         if not attr_data:
             continue
-        if not exists and attr_data["type"] == attributetypes.kMFnCompoundAttribute:
+        if attr_data["type"] == attributetypes.kMFnCompoundAttribute:
             # when create child compounds maya only wants the root attribute to be created. All children will be
             # created because we execute the addChild()
             child = add_compound_attribute(

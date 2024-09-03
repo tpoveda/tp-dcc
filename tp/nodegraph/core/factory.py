@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import logging
 import pathlib
-import numbers
 from types import ModuleType
 from typing import Type, Any
 from dataclasses import dataclass
@@ -12,7 +11,16 @@ from Qt.QtGui import QColor
 
 from . import consts, exceptions
 from .node import BaseNode, Node
-from .datatypes import DataType
+from .datatypes import (
+    DataType,
+    Exec,
+    String,
+    Numeric,
+    Boolean,
+    List,
+    Dict,
+    Any as Any_DataType,
+)
 from ..nodes.node_logger import LoggerNode
 from ..nodes.node_branch import BranchNode
 from ..nodes.node_backdrop import BackdropNode
@@ -329,18 +337,23 @@ class NodeFactory:
         outputs_dict = outputs_dict or {}
         default_values = default_values or []
 
+        wrapped_func: str | None = None
+        if getattr(func, "__wrapped__", None):
+            wrapped_func = getattr(func, "__wrapped__", None).__name__
+        func_name = wrapped_func or func.__name__
+
         if source_data_type:
             data_type_name = self.data_type_name(source_data_type)
             source_class: Type = source_data_type.type_class
             if source_class:
                 signature = (
-                    f"{source_class.__module__}.{source_class.__name__}.{func.__name__}"
+                    f"{source_class.__module__}.{source_class.__name__}.{func_name}"
                 )
             else:
-                signature = f"{func.__module__}.{func.__name__}"
+                signature = f"{func.__module__}.{func_name}"
         else:
             data_type_name = "UNBOUND"
-            signature = f"{func.__module__}({func.__name__})"
+            signature = f"{func.__module__}({func_name})"
 
         if subtype:
             signature = f"{signature}({subtype})"
@@ -430,16 +443,7 @@ class NodeFactory:
         Internal function that register basic data types.
         """
 
-        basic_data_types = [
-            DataType("Exec", type(None), QColor("#FFFFFF"), "", None),
-            DataType("String", str, QColor("#A203F2"), "Name", ""),
-            DataType("Numeric", numbers.Complex, QColor("#DEC017"), "Number", 0.0),
-            DataType("Boolean", bool, QColor("#C40000"), "Condition", False),
-            DataType("List", list, QColor("#0BC8F1"), "List", [], is_runtime=True),
-            DataType("Dict", dict, QColor("#0BC8F1"), "Dict", {}),
-        ]
-
-        for data_type in basic_data_types:
+        for data_type in [Exec, Any_DataType, String, Numeric, Boolean, List, Dict]:
             self.register_data_type(data_type)
 
     def _load(self):

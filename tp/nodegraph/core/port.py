@@ -32,6 +32,7 @@ class NodePort:
         """Signals class that defines the signals for the node port."""
 
         valueChanged = Signal()
+        connectionChanged = Signal()
 
     def __init__(self, node: Node, view: PortView):
         super().__init__()
@@ -110,6 +111,7 @@ class NodePort:
 
         self.model.data_type = data_type
         self.view.data_type = data_type
+        self.view.update()
 
     @property
     def name(self) -> str:
@@ -120,6 +122,20 @@ class NodePort:
         """
 
         return self.model.name
+
+    @name.setter
+    def name(self, value: str):
+        """
+        Setter method that sets the name of the port.
+
+        :param value: name to set.
+        """
+
+        self.model.name = value
+        if self.type == PortType.Input.value:
+            self.node.view.input_text_item(self.view).setPlainText(value)
+        elif self.type == PortType.Output.value:
+            self.node.view.output_text_item(self.view).setPlainText(value)
 
     @property
     def node(self) -> Node:
@@ -160,6 +176,36 @@ class NodePort:
         """
 
         return self.model.multi_connection
+
+    @multi_connection.setter
+    def multi_connection(self, flag: bool):
+        """
+        Setter method that sets whether the port allows multiple connections.
+
+        :param flag: whether the port allows multiple connections.
+        """
+
+        self.model.multi_connection = flag
+
+    @property
+    def max_connections(self) -> int:
+        """
+        Getter method that returns the maximum number of connections allowed.
+
+        :return: maximum number of connections allowed.
+        """
+
+        return self.model.max_connections
+
+    @max_connections.setter
+    def max_connections(self, value: int):
+        """
+        Setter method that sets the maximum number of connections allowed.
+
+        :param value: maximum number of connections allowed.
+        """
+
+        self.model.max_connections = value
 
     @property
     def color(self) -> tuple[int, int, int, int]:
