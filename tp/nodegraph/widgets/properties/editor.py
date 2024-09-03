@@ -23,6 +23,7 @@ from Qt.QtWidgets import (
 from Qt.QtGui import QPen, QBrush, QPainter, QWheelEvent
 
 from .node import NodePropertyEditorWidget
+from .node2 import NodePropertyEditorWidget
 from .variable import VariablePropertyEditor
 from ...core.node import BaseNode
 from ...core.consts import Variable
@@ -187,18 +188,18 @@ class PropertyEditor(QWidget):
         node_property_widget.propertyChanged.connect(
             self._on_node_property_widget_property_changed
         )
-        port_connection_widget = node_property_widget.connection_widget
-        if port_connection_widget:
-            port_connection_widget.input_group.clicked.connect(
-                lambda v: self._on_port_tree_visible_changed(
-                    node_property_widget.node_id, v, port_connection_widget.input_tree
-                )
-            )
-            port_connection_widget.output_group.clicked.connect(
-                lambda v: self._on_port_tree_visible_changed(
-                    node_property_widget.node_id, v, port_connection_widget.output_tree
-                )
-            )
+        # port_connection_widget = node_property_widget.connection_widget
+        # if port_connection_widget:
+        #     port_connection_widget.input_group.clicked.connect(
+        #         lambda v: self._on_port_tree_visible_changed(
+        #             node_property_widget.node_id, v, port_connection_widget.input_tree
+        #         )
+        #     )
+        #     port_connection_widget.output_group.clicked.connect(
+        #         lambda v: self._on_port_tree_visible_changed(
+        #             node_property_widget.node_id, v, port_connection_widget.output_tree
+        #         )
+        #     )
 
         self._properties_list.setCellWidget(0, 0, node_property_widget)
 
@@ -332,6 +333,8 @@ class PropertyEditor(QWidget):
         """
 
         return NodePropertyEditorWidget(node=node, parent=self)
+
+        # return NodePropertyEditorWidget(node=node, parent=self)
 
     def _create_variable_property_editor_widget(self, variable: Variable):
         """
