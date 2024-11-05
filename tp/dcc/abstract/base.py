@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import inspect
 import logging
+import inspect
 from abc import ABC
 import collections.abc
 from collections import deque
@@ -11,12 +11,6 @@ from . import ArrayIndexType
 from ...python import generators, decorators
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
 
 
 class AFnBase(ABC):
@@ -24,7 +18,7 @@ class AFnBase(ABC):
     Abstract class for all DCC context classes.
     """
 
-    __slots__ = ('_object', '_queue')
+    __slots__ = ("_object", "_queue")
     __array_index_type__ = ArrayIndexType.ZeroBased
 
     def __init__(self, *args, **kwargs):
@@ -50,18 +44,20 @@ class AFnBase(ABC):
 
     def __getattribute__(self, name: str) -> Any:
         # Get class definition to check whether if this is an instance method
-        cls = super().__getattribute__('__class__')
+        cls = super().__getattribute__("__class__")
         obj = getattr(cls, name)
         if not inspect.isfunction(obj) or hasattr(AFnBase, name):
             return super().__getattribute__(name)
 
         # Check whether function set is valid.
-        func = super().__getattribute__('is_valid')
+        func = super().__getattribute__("is_valid")
         is_valid = func()
         if is_valid:
             return super().__getattribute__(name)
         else:
-            raise TypeError(f'__getattribute__() function set object does not exist for {func.__name__}!')
+            raise TypeError(
+                f"__getattribute__() function set object does not exist for {func.__name__}!"
+            )
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, AFnBase):
@@ -172,7 +168,9 @@ class AFnBase(ABC):
         :return: True if given object can be used as a queue; False otherwise.
         """
 
-        return isinstance(queue, (collections.abc.Sequence, collections.abc.Iterator)) and not isinstance(queue, str)
+        return isinstance(
+            queue, (collections.abc.Sequence, collections.abc.Iterator)
+        ) and not isinstance(queue, str)
 
     def queue(self) -> deque:
         """
@@ -192,7 +190,9 @@ class AFnBase(ABC):
         """
 
         if not self.accepts_queue(queue):
-            raise TypeError(f'set_queue() expects a sequence ({type(queue).__name__} given)')
+            raise TypeError(
+                f"set_queue() expects a sequence ({type(queue).__name__} given)"
+            )
 
         self._queue = deque(generators.flatten(queue))
         self.next()

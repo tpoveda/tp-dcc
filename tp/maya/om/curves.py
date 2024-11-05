@@ -324,7 +324,7 @@ def create_curve_shape(
 # noinspection PyTypeChecker
 def create_curve_from_points(
     name: str,
-    points: list[list[float, float, float], ...],
+    points: list[list[float] | OpenMaya.MVector],
     shape_dict: dict | None = None,
     parent: OpenMaya.MObject | None = None,
 ) -> tuple[OpenMaya.MObject, tuple[OpenMaya.MObject]]:
@@ -339,15 +339,14 @@ def create_curve_from_points(
 
     shape_dict = shape_dict or copy.deepcopy(SHAPE_INFO)
 
-    if not name.lower().endswith("shape"):
-        name = name + "Shape"
-
+    name = f"{name}Shape" if not name.lower().endswith("shape") else name
     degree = shape_dict.get("degree", 3)
 
     deg = shape_dict["degree"]
     shape_dict["cvs"] = points
     knots = shape_dict.get("knots")
     if not knots:
+        # linear curve
         if degree == 1:
             shape_dict["knots"] = tuple(range(len(points)))
         elif deg == 3:

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from . import current_dcc, Maya, Standalone
+from . import current_dcc, Maya, Unreal, Standalone
 
 if current_dcc() == Maya:
     from .maya.ui import FnUi  # noqa: F401
+elif current_dcc() == Unreal:
+    from .unreal.ui import FnUi
 elif current_dcc() == Standalone:
     from .standalone.ui import FnUi  # noqa: F401
 else:

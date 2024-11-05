@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import logging
-from functools import wraps
 from typing import Callable, Any
+from functools import wraps, partial
 
 from maya import cmds
 
@@ -30,6 +30,24 @@ def restore_selection(fn: Callable):
     return wrapped
 
 
+def undo(fn: Callable):
+    """
+    Decorator that wraps the function in an undo chunk.
+
+    :param fn: function to decorate.
+    """
+
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        try:
+            cmds.undoInfo(openChunk=True, chunkName=fn.__name__)
+            return fn(*args, **kwargs)
+        finally:
+            cmds.undoInfo(closeChunk=True)
+
+    return wrapped
+
+
 class Undo(decorators.AbstractDecorator):
     """
     Overload of AbstractDecorator that defines Maya undo chunks.
@@ -37,6 +55,22 @@ class Undo(decorators.AbstractDecorator):
 
     __slots__ = ("_state", "_name")
     __chunk__: str | None = None
+
+    @staticmethod
+    def get(*args, **kwargs):
+        """
+        Returns an undo wrapper the given function.
+
+        :raises TypeError: if more than one argument is given.
+        """
+
+        num_args = len(args)
+        if num_args == 0:
+            return partial(Undo.get, **kwargs)
+        elif num_args == 1:
+            return Undo(*args, **kwargs)
+        else:
+            raise TypeError(f"undo() expects at most 1 argument ({num_args} given)!")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

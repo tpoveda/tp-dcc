@@ -36,7 +36,7 @@ class MetaRegistry(metaclass=Singleton):
         try:
             self.reload()
         except ValueError:
-            logger.error("Failed to registry meta classe", exc_info=True)
+            logger.error("Failed to registry meta classes", exc_info=True)
 
     @staticmethod
     def registry_name_for_class(class_type: Type[MetaBase]) -> str:
@@ -208,6 +208,9 @@ class MetaFactory(type):
 
         # if the given class is not registered, we register it
         registry_name = MetaRegistry.registry_name_for_class(cls)
+
+        print("blblblb", cls, registry_name)
+
         if not register.is_in_registry(registry_name):
             register.register_meta_class(cls)
 
@@ -365,7 +368,6 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         Returns the list of default meta attributes that should be added into the meta node during creation.
 
         :return: list of attributes data within a dictionary.
-        :rtype: List[Dict]
         """
 
         class_name = MetaRegistry.registry_name_for_class(self.__class__)

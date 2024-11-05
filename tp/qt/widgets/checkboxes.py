@@ -20,6 +20,7 @@ class BaseCheckBoxWidget(QWidget):
     leftClicked = Signal()
     middleClicked = Signal()
     rightClicked = Signal()
+    toggled = Signal(bool)
     stateChanged = Signal(object)
 
     def __init__(
@@ -110,7 +111,7 @@ class BaseCheckBoxWidget(QWidget):
         Internal function that setup widgets.
         """
 
-        self._main_layout = layouts.HorizontalLayout(parent=self)
+        self._main_layout = layouts.HorizontalLayout()
         self.setLayout(self._main_layout)
 
         if self._right:
@@ -124,3 +125,4 @@ class BaseCheckBoxWidget(QWidget):
         """
 
         self._checkbox.stateChanged.connect(self.stateChanged.emit)
+        self._checkbox.toggled.connect(self.toggled.emit)

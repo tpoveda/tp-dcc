@@ -368,10 +368,10 @@ class ParentConstraint(Constraint):
         :return: list of created nodes.
         """
 
-        space_node = drivers.get("spaceNode")
-        # attr_name = drivers.get("attributeName", "parent")
+        space_node: DagNode | None = drivers.get("spaceNode")
+        attr_name = drivers.get("attributeName", "parent")
         target_info = drivers["targets"]
-        # default_driver_label = drivers.get("label", "")
+        default_driver_label = drivers.get("label", "")
 
         # check whether the constraint needs to be rebuilt if the request node is the same as the current target
         new_target_structure = dict(self.iterate_drivers())
@@ -385,9 +385,9 @@ class ParentConstraint(Constraint):
         if not requires_update:
             return []
 
-        # indexing: list[int] = [
-        #     index for index, (_, request_node) in enumerate(target_info) if request_node
-        # ]
+        indexing: list[int] = [
+            index for index, (_, request_node) in enumerate(target_info) if request_node
+        ]
 
         if self._track:
             self.delete()
@@ -426,7 +426,70 @@ class ParentConstraint(Constraint):
                 )
             return [constraint]
 
-        raise NotImplementedError("Space Switch Setup not implemented yet!")
+        space_attr = space_node.attribute(attr_name)
+        try:
+            default_index = list(new_target_structure.keys()).index(
+                default_driver_label
+            )
+        except ValueError:
+            default_index = 0
+
+        if space_attr is not None:
+            space_attr.setFields(list(new_target_structure.keys()))
+        else:
+            space_attr = space_node.addAttribute(
+                attr_name,
+                type=attributetypes.kMFnkEnumAttribute,
+                keyable=True,
+                channelBox=False,
+                locked=False,
+                enums=list(new_target_structure.keys()),
+                default=default_index,
+                value=default_index,
+            )
+
+        target_array = constraint.target
+        source_short_name = constraint.fullPathName(
+            partial_name=True, include_namespace=False
+        )
+
+        conditions: list[DGNode] = []
+        constraint_target_weight_index = self.CONSTRAINT_TARGET_INDEX
+        for i, target_element in enumerate(target_array):
+            target_element_weight = target_element.child(constraint_target_weight_index)
+            target_weight_source = target_element_weight.source()
+            if target_weight_source is None:
+                target_weight_source = target_element_weight
+
+            target_node = target_element.child(0).source().node()
+            target_short_name = target_node.fullPathName(
+                partial_name=True, include_namespace=False
+            )
+
+            condition = factory.create_condition_vector(
+                first_term=space_attr,
+                second_term=float(indexing[i]),
+                color_if_true=(1.0, 0.0, 0.0),
+                color_if_false=(0.0, 0.0, 0.0),
+                operation=0,
+                name="_".join([target_short_name, source_short_name, self.ID, "space"]),
+            )
+            condition.outColorR.connect(target_weight_source)
+            conditions.append(condition)
+
+        if self._track:
+            add_constraint_map(
+                target_info,
+                driven,
+                space_node,
+                attr_name,
+                conditions + [constraint],
+                self.ID,
+                meta_element_plug=self._plug_element,
+                kwargs_map=constraint_kwargs,
+            )
+
+        return conditions + [constraint]
 
     def pre_construct_constraint(
         self,

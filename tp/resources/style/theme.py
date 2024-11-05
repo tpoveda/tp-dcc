@@ -13,13 +13,6 @@ from ...python import helpers
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-handler.setLevel(logging.INFO)
-# noinspection SpellCheckingInspection
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
 
 
 def instance() -> Theme:
@@ -98,8 +91,8 @@ class Theme:
 
         qss_style = style_file_path()
         if not qss_style:
-            logger.warning(f'TNM QSS file path does not exist: "{qss_style}"')
-            raise RuntimeError("No TNM QSS file found")
+            logger.warning(f'QSS file path does not exist: "{qss_style}"')
+            raise RuntimeError("No QSS file found")
 
         setup()
         with open(qss_style, "r") as f:

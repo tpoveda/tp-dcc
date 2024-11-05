@@ -42,6 +42,7 @@ class RadioButtonGroup(QWidget):
         :param margins: optional margins used for buttons layout.
         :param spacing: optional spacing used for buttons layout.
         :param alignment: optional align for buttons layout.
+        :param parent: optional parent widget.
         """
 
         super().__init__(parent=parent)

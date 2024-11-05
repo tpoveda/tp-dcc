@@ -13,11 +13,11 @@ from Qt.QtWidgets import (
     QToolButton,
     QAction,
     QMenu,
+    QHBoxLayout,
     QGridLayout,
 )
 from Qt.QtGui import (
     QFontMetrics,
-    QCursor,
     QColor,
     QPixmap,
     QIcon,
@@ -28,7 +28,7 @@ from Qt.QtGui import (
     QKeyEvent,
 )
 
-from . import menus
+from . import menus, labels
 from ...resources.style import theme
 from .. import dpi, icon, color, utils as qtutils
 
@@ -98,7 +98,7 @@ class AbstractButton(dpi.DPIScaling):
         button_icon: QIcon,
         size: int | None = None,
         color_offset: float | None = None,
-        scaling: list[float, float] = None,
+        scaling: list[int | float] = None,
         **kwargs,
     ):
         """
@@ -228,8 +228,9 @@ class BaseButton(QPushButton, AbstractButton):
         # noinspection PyUnusedLocal
         def keyPressEvent(self, arg__1: QKeyEvent):
             if arg__1.key() == self._key:
-                pos = self.mapFromGlobal(QCursor.pos())
-                action = self.actionAt(pos)
+                pass
+                # pos = self.mapFromGlobal(QCursor.pos())
+                # action = self.actionAt(pos)
                 # if tooltip.has_custom_tooltips(action):
                 #     self._popup_tooltip = tooltip.CustomTooltipPopup(
                 #         action, icon_size=dpi.dpi_scale(40), popup_release=self._key)
@@ -1528,6 +1529,60 @@ class ShadowedButton(BaseButton):
 
         self._image_widget.setFixedSize(QSize(new_height, new_height))
         self._spacing_widget.setFixedWidth(int(dpi.dpi_scale(new_height) * 0.5))
+
+
+class LabelSmallButton(QWidget):
+    clicked = Signal()
+
+    def __init__(
+        self,
+        text: str = "",
+        button_icon: QIcon | None = None,
+        tooltip: str = "",
+        text_caps: bool = False,
+        parent: QWidget | None = None,
+    ):
+        super().__init__(parent=parent)
+
+        self._text = text
+        if text:
+            self._label = labels.BaseLabel(text=text, tooltip=tooltip, upper=text_caps)
+
+        self._button = BaseButton(text="", button_icon=button_icon, parent=self)
+
+        button_layout = QHBoxLayout()
+        self.setLayout(button_layout)
+
+        if text:
+            button_layout.addWidget(self._label, 5)
+        button_layout.addWidget(self._button)
+
+        self._setup_signals()
+
+    def setDisabled(self, flag: bool):
+        """
+        Overrides base setDisabled function.
+
+        :param flag: whether to disable the button.
+        """
+
+        self._button.setDisabled(flag)
+        if self._text:
+            self._label.setDisabled(flag)
+
+    def _setup_signals(self):
+        """
+        Internal function that sets up signals.
+        """
+
+        self._button.clicked.connect(self._on_button_clicked)
+
+    def _on_button_clicked(self):
+        """
+        Internal callback function that is called when button is clicked.
+        """
+
+        self.clicked.emit()
 
 
 class LeftAlignedButton(QPushButton):

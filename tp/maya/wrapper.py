@@ -12,6 +12,8 @@ from maya.api import OpenMaya, OpenMayaAnim
 
 from . import consts
 from .om import factory, nodes, plugs, attributetypes, mathlib
+from .om.constants import *  # noqa: F403
+from .om.apitypes import *  # noqa: F403
 
 logger = logging.getLogger(__name__)
 
@@ -1735,7 +1737,7 @@ class DagNode(DGNode):
         ):
             self.setScale((1.0, 1.0, 1.0))
 
-    def reset_transform_to_offset_parent(self):
+    def resetTransformToOffsetParent(self):
         """
         Resets the local translate, rotate and scale attributes to the offset parent matrix.
         """
@@ -1832,7 +1834,7 @@ class Plug:
         """
 
         return (
-            "<{self.__class__.__name__}> {self._mplug.name()}" if self.exists() else ""
+            f"<{self.__class__.__name__}> {self._mplug.name()}" if self.exists() else ""
         )
 
     def __str__(self) -> str:
@@ -2204,6 +2206,62 @@ class Plug:
 
         return value
 
+    def enumFields(self) -> list[str]:
+        """
+        Returns the list of field names for this enum plug.
+
+        :return: list of field names.
+        :raises InvalidPlugPathError: if the plug is not an enum type.
+        """
+
+        plug_type = self.apiType()
+        if plug_type != attributetypes.kMFnkEnumAttribute:
+            raise InvalidPlugPathError(
+                f"Required type 'Enum', current type: {attributetypes.internal_type_to_string(plug_type)} for {self}"
+            )
+
+        return plugs.enum_names(self.plug())
+
+    @lock_node_plug_context
+    def addEnumFields(self, fields: list[str]):
+        """
+        Adds a list of field names to the plug.
+        If a name already exists it will be skipped. New fields will always be added to the end.
+
+        :param fields: list of field names to add.
+        :return:
+        """
+
+        if self.node().isReferenced() and self.isLocked:
+            raise ReferenceObjectError(f"Plug {self.name()} is a reference and locked")
+
+        existing_field_names = self.enumFields()
+        attr = OpenMaya.MFnEnumAttribute(self.attribute())
+        index: int = 0
+        for field in fields:
+            if field in existing_field_names:
+                continue
+            attr.addField(field, len(existing_field_names) + index)
+            index += 1
+
+    def setFields(self, fields: list[str]):
+        """
+        Sets the list of fields for this plug.
+
+        :param fields: list of fields to set for this plug.
+        """
+
+        default_value = self.default()
+        try:
+            cmds.addAttr(self.name(), edit=True, enumName=":".join(fields))
+        except RuntimeError:
+            raise InvalidPlugPathError(
+                f"Required type 'Enum', current type: "
+                f"{attributetypes.internal_type_to_string(self.apiType())} for {self}"
+            )
+        if default_value is not None and default_value < len(self.enumFields()):
+            self.setDefault(default_value)
+
     def array(self) -> Plug:
         """
         Returns the plug array for this array element.
@@ -2291,17 +2349,19 @@ class Plug:
         assert self._mplug.isArray, f"Plug {self.name()} is not an array"
         return Plug(self._node, plugs.next_available_element_plug(self._mplug))
 
-    def nextAvailableDestElementPlug(self):
+    def nextAvailableDestElementPlug(self, force: bool = False):
         """
         Returns the next available input plug for this array.
 
+        :param force: whether to force the next available plug.
         :return:  next available input plug.
-        :rtype: Plug
         .info: availability is based on connections of elements plug and their children.
         """
 
         assert self._mplug.isArray, f"Plug {self.name()} is not an array"
-        return Plug(self._node, plugs.next_available_dest_element_plug(self._mplug))
+        return Plug(
+            self._node, plugs.next_available_dest_element_plug(self._mplug, force=force)
+        )
 
     @lock_node_plug_context
     def set(
@@ -2323,6 +2383,16 @@ class Plug:
             )
 
         return plugs.set_plug_value(self._mplug, value, mod=mod, apply=apply)
+
+    @lock_node_plug_context
+    def setFromDict(self, **plug_info):
+        """
+        Sets the plug value from a dictionary.
+
+        :param plug_info: plug value dictionary.
+        """
+
+        return plugs.set_plug_info_from_dict(self._mplug, **plug_info)
 
     @lock_node_plug_context
     def connect(
@@ -2576,6 +2646,7 @@ class Plug:
 
         return modifier
 
+    # noinspection PyUnusedLocal
     def serializeFromScene(self, *args, **kwargs) -> dict:
         """
         Serializes current PLUG instance and returns a JSON compatible dictionary with the container data.
@@ -3047,7 +3118,7 @@ class ContainerAsset(DGNode):
 
     def publishedNodes(self):
         """
-        Returns list of published node in this contdainer.
+        Returns list of published node in this container.
 
         :return: list of published nodes.
         :rtype: list(DGNode)
@@ -3110,8 +3181,104 @@ class ContainerAsset(DGNode):
                 break
 
 
+# noinspection PyPep8Naming
 class AnimCurve(DGNode):
-    pass
+    """
+    Wrapper class for Maya animCurve nodes.
+    """
+
+    MFN_TYPE = OpenMayaAnim.MFnAnimCurve
+
+    def setPrePostInfinity(
+        self, pre: int, post: int, change: OpenMayaAnim.MAnimCurveChange | None = None
+    ):
+        """
+        Sets the behaviour of the curve for the range occurring before the first key and after the last key.
+
+        :param pre: sets the behaviour of the curve for the range occurring before the first key.
+        :param post: sets the behaviour of the curve for the range occurring after the last key.
+        :param change: undo change object.
+
+        Example:
+            undo_change = OpenMayaAnim.MAnimCurveChange()
+            curve = DGNode("myCurve", "animCurveTU")
+            curve.setPrePostInfinity(
+                OpenMayaAnim.MFnAnimCurve.kConstant,
+                OpenMayaAnim.MFnAnimCurve.kConstant,
+                undo_change
+            )
+        """
+
+        # noinspection PyTypeChecker
+        mfn: OpenMayaAnim.MFnAnimCurve = self.mfn()
+        if change:
+            mfn.setPreInfinityType(pre, change)
+            mfn.setPostInfinityType(post, change)
+        else:
+            mfn.setPreInfinityType(pre)
+            mfn.setPostInfinityType(post)
+
+    def addKeysWithTangents(
+        self,
+        times: OpenMaya.MTimeArray | Iterable,
+        values: Iterable[float],
+        tangent_in_type: int = OpenMayaAnim.MFnAnimCurve.kTangentGlobal,
+        tangent_out_type: int = OpenMayaAnim.MFnAnimCurve.kTangentGlobal,
+        tangent_in_type_array: list[int] | None = None,
+        tangent_out_type_array: list[int] | None = None,
+        tangent_in_x_array: list[int] | None = None,
+        tangent_in_y_array: list[int] | None = None,
+        tangent_out_x_array: list[int] | None = None,
+        tangent_out_y_array: list[int] | None = None,
+        tangents_locked_aray: list[int] | None = None,
+        weights_locked_array: list[int] | None = None,
+        convert_units: bool = True,
+        keep_existing_keys: bool = False,
+        change: OpenMayaAnim.MAnimCurveChange | None = None,
+    ):
+        """
+        Adds a set of new keys with the given corresponding values and tangent types at the given times.
+
+        :param times: times at which keys are to be added.
+        :param values: values to which the keys is to be set.
+        :param tangent_in_type: in tangent type for al the added keys.
+        :param tangent_out_type: out tangent type for all the added keys.
+        :param tangent_in_type_array: in tangent types for individual added keys.
+        :param tangent_out_type_array: out tangent types for individual added keys.
+        :param tangent_in_x_array: Absolute x values of the slope for individual added in tangent keys.
+        :param tangent_in_y_array: Absolute y values of the slope for individual added in tangent keys.
+        :param tangent_out_x_array: Absolute x values of the slope for individual added out tangent keys.
+        :param tangent_out_y_array: Absolute y values of the slope for individual added out tangent keys.
+        :param tangents_locked_aray: lock status for individual added keys.
+        :param weights_locked_array: weight lock status for individual added keys.
+        :param convert_units: whether to convert the values to internal UI units.
+        :param keep_existing_keys: whether new keys should be merged with existing keys or if they should be cut prior
+            to adding the new keys.
+        :param change cache to store undo/redo information.
+        """
+
+        arguments = [
+            times,
+            values,
+            tangent_in_type,
+            tangent_out_type,
+            tangent_in_type_array or [],
+            tangent_out_type_array or [],
+            tangent_in_x_array or [],
+            tangent_in_y_array or [],
+            tangent_out_x_array or [],
+            tangent_out_y_array or [],
+            tangents_locked_aray or [],
+            weights_locked_array or [],
+            convert_units,
+            keep_existing_keys,
+        ]
+        if change is not None:
+            arguments.append(change)
+
+        # noinspection PyTypeChecker
+        mfn: OpenMayaAnim.MFnAnimCurve = self.mfn()
+        mfn.addKeysWithTangents(*arguments)
 
 
 class SkinCluster(DGNode):
@@ -3249,8 +3416,31 @@ class BlendShape(DGNode):
     pass
 
 
+# noinspection PyPep8Naming
 class DisplayLayer(DGNode):
-    pass
+    """
+    Wrapper class for Maya display layers.
+    """
+
+    def addNodes(self, display_nodes: list[DagNode]):
+        """
+        Adds the given nodes to the display layer.
+
+        :param display_nodes: nodes to add to the display layer.
+        """
+
+        draw_info_plug = self.drawInfo
+        for display_node in display_nodes:
+            draw_info_plug.connect(display_node.drawOverride)
+
+    def addNode(self, node: DagNode):
+        """
+        Adds the given node to the display layer.
+
+        :param node: node to add to the display layer.
+        """
+
+        self.drawInfo.connect(node.drawOverride)
 
 
 class AnimLayer(DGNode):
@@ -3276,6 +3466,14 @@ class ReferenceObjectError(Exception):
 class InvalidPlugPathError(Exception):
     """
     Custom exception raised when a plug path is not valid.
+    """
+
+    pass
+
+
+class InvalidTypeForPlugError(Exception):
+    """
+    Custom exception raised when the given type is not valid for a plug.
     """
 
     pass
@@ -3438,6 +3636,81 @@ def nodes_by_type_names(node_type_names: str | Iterable[str]) -> list[DGNode | D
     found_node_names = cmds.ls(type=node_type_names, long=True)
     for found_node_name in found_node_names:
         yield node_by_name(found_node_name)
+
+
+def selected(filter_types: Iterable[int] | None = None) -> Iterable[DGNode | DagNode]:
+    """
+    Returns selected nodes in the scene.
+
+    :param filter_types: node types to filter by.
+    :return: selected nodes.
+    """
+
+    return map(node_by_object, nodes.iterate_selected_nodes(filter_types))
+
+
+def select(
+    nodes_to_select: Iterable[DGNode | DagNode],
+    mod: OpenMaya.MDGModifier | OpenMaya.MDagModifier | None = None,
+    apply: bool = True,
+) -> OpenMaya.MDGModifier | OpenMaya.MDagModifier:
+    """
+    Select given nodes within current scene.
+
+    :param nodes_to_select: nodes to select.
+    :param mod: optional modifier to run the command in.
+    :param apply: whether to apply the modifier immediately.
+    :return: Maya modifier used for the operation.
+    """
+
+    mod = mod or OpenMaya.MDGModifier()
+    mod.pythonCommandToExecute(
+        f"from maya import cmds; cmds.select({[node.fullPathName() for node in nodes_to_select]})"
+    )
+    if apply:
+        mod.doIt()
+
+    return mod
+
+
+def select_by_names(
+    names: list[str],
+    mod: OpenMaya.MDGModifier | OpenMaya.MDagModifier | None = None,
+    apply: bool = True,
+) -> OpenMaya.MDGModifier | OpenMaya.MDagModifier:
+    """
+    Select given node names within current scene.
+
+    :param names: node names to select.
+    :param mod: optional modifier to run the command in.
+    :param apply: whether to apply the modifier immediately.
+    :return: Maya modifier used for the operation.
+    """
+
+    mod = mod or OpenMaya.MDGModifier()
+    mod.pythonCommandToExecute(f"from maya import cmds; cmds.select({names})")
+    if apply:
+        mod.doIt()
+
+    return mod
+
+
+def clear_selection(
+    mod: OpenMaya.MDGModifier | OpenMaya.MDagModifier | None = None, apply: bool = True
+) -> OpenMaya.MDGModifier | OpenMaya.MDagModifier:
+    """
+    Clears current selection.
+
+    :param mod: modifier to run the command in.
+    :param apply: whether to apply the modifier immediately.
+    """
+
+    mod = mod or OpenMaya.MDGModifier()
+    mod.pythonCommandToExecute("from maya import cmds; cmds.select(clear=True)")
+    if apply:
+        mod.doIt()
+
+    return mod
 
 
 def plug_by_name(plug_path: str) -> Plug:

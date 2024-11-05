@@ -14,9 +14,9 @@ from Qt.QtWidgets import (
     QSpacerItem,
     QCheckBox,
 )
-from .Qt.QtGui import QFont, QIcon, QMouseEvent
+from Qt.QtGui import QFont, QIcon, QMouseEvent
 
-from . import dividers
+from .dividers import LabelDivider
 from .. import uiconsts, dpi, utils as qtutils
 from ...python import paths
 
@@ -44,6 +44,7 @@ class CollapsibleFrame(QWidget):
     def __init__(
         self,
         title: str,
+        tooltip: str | None = None,
         collapsed: bool = False,
         collapsable: bool = True,
         checkable: bool = False,
@@ -56,6 +57,7 @@ class CollapsibleFrame(QWidget):
         Initializes CollapsibleFrame
 
         :param title: The title of the frame.
+        :param tooltip: The tooltip of the frame.
         :param collapsed: Whether the frame is initially collapsed.
         :param collapsable: Whether the frame is collapsible.
         :param checkable: Whether the frame is checkable.
@@ -68,6 +70,7 @@ class CollapsibleFrame(QWidget):
         super().__init__(parent=parent)
 
         self._title = title
+        self._tooltip = tooltip
         self._collapsed = collapsed if collapsable else False
         self._collapsable = collapsable
         self._checkable = checkable
@@ -86,11 +89,11 @@ class CollapsibleFrame(QWidget):
 
         if CollapsibleFrame._COLLAPSED_ICON is None:
             CollapsibleFrame._COLLAPSED_ICON = QIcon(
-                paths.canonical_path("../../resources/icons/arrow_forward.svg")
+                paths.canonical_path("../../resources/icons/arrow_forward.png")
             )
         if CollapsibleFrame._EXPAND_ICON is None:
             CollapsibleFrame._EXPAND_ICON = QIcon(
-                paths.canonical_path("../../resources/icons/arrow_expand.svg")
+                paths.canonical_path("../../resources/icons/arrow_expand.png")
             )
 
         self._main_layout = QVBoxLayout()
@@ -205,6 +208,8 @@ class CollapsibleFrame(QWidget):
         font.setBold(True)
         self._title_label.setFont(font)
         self._title_label.setContentsMargins(0, 0, 0, 0)
+        if self._tooltip:
+            self._title_label.setToolTip(self._tooltip)
         self._spacer_item = QSpacerItem(
             10, 0, QSizePolicy.Expanding, QSizePolicy.Minimum
         )
@@ -272,7 +277,7 @@ class CollapsibleFrameThin(CollapsibleFrame):
     def _build_title_frame(self):
         super()._build_title_frame()
 
-        title_divider = dividers.Divider(parent=self)
+        title_divider = LabelDivider(parent=self)
         self._spacer_item.changeSize(dpi.dpi_scale(3), 0)
         title_divider.setToolTip(self.toolTip())
         self._horizontal_layout.addWidget(title_divider, 1)

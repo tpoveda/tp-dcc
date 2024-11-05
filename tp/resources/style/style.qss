@@ -67,6 +67,9 @@ QLabel {
   color: #c0c0c0;
   background-color: transparent; }
 
+QLabel:disabled {
+  color: #737373; }
+
 QLineEdit,
 QComboBox,
 QSpinBox,
@@ -77,6 +80,14 @@ QDoubleSpinBox {
   padding-left: 6px;
   border-radius: 3px;
   border: 1px solid #353535; }
+
+QLineEdit:disabled,
+QTextEdit:disabled,
+QPlainTextEdit:disabled,
+QTextBrowser:disabled,
+QRadioButton:disabled {
+  color: #737373;
+  background-color: #151515; }
 
 QLineEdit:hover,
 QComboBox:hover {
@@ -429,9 +440,20 @@ QToolBox::tab {
 QToolBox::tab:selected {
   image: url(:/icons/triangle-down.svg); }
 
+/* tp/qt/widgets/frameless.py */
 FramelessTitleBar {
-  border-top-right-radius: 2px;
-  border-top-left-radius: 2px;
-  border-bottom-right-radius: 0px;
-  border-bottom-left-radius: 0px;
+  border-radius: 2px 2px 0 0;
   background-color: #1e1e1e; }
+
+/* tp/qt/widgets/dividers.py */
+LabelDivider {
+  background-color: #3e3e3e;
+  padding: 0;
+  margin: 0;
+  border-bottom: 1px solid #666;
+  border-top: 1px solid #2a2a2a; }
+
+HorizontalLine {
+  background-color: #3a3a3a;
+  margin-left: 3px;
+  margin-right: 3px; }

@@ -1,76 +1,88 @@
 from __future__ import annotations
 
-import os
 import sys
 import platform
-import importlib.util
+from pathlib import Path
+from functools import lru_cache
+from importlib.util import find_spec
 
-# Cached current DCC name.
-CURRENT_DCC = None
-
-Standalone = 'standalone'
-Maya = 'maya'
+Standalone = "standalone"
+Maya = "maya"
 # noinspection SpellCheckingInspection
-Max = '3dsmax'
+Max = "3dsmax"
 # noinspection SpellCheckingInspection
-MotionBuilder = 'mobu'
-Houdini = 'houdini'
-Nuke = 'nuke'
-Unreal = 'unreal'
-Blender = 'blender'
-SubstancePainter = 'painter'
-SubstanceDesigner = 'designer'
-Fusion = 'fusion'
+MotionBuilder = "mobu"
+Houdini = "houdini"
+Nuke = "nuke"
+Unreal = "unreal"
+Blender = "blender"
+SubstancePainter = "painter"
+SubstanceDesigner = "designer"
+Fusion = "fusion"
 
 ALL = [
-    Maya, Max, MotionBuilder, Houdini, Nuke, Unreal, Blender, SubstancePainter, SubstanceDesigner, Fusion
+    Maya,
+    Max,
+    MotionBuilder,
+    Houdini,
+    Nuke,
+    Unreal,
+    Blender,
+    SubstancePainter,
+    SubstanceDesigner,
+    Fusion,
 ]
 
-NiceNames = dict([
-    (Maya, 'Maya'),
-    (Max, '3ds Max'),
-    (MotionBuilder, 'MotionBuilder'),
-    (Houdini, 'Houdini'),
-    (Nuke, 'Nuke'),
-    (Unreal, 'Unreal'),
-    (Blender, 'Blender'),
-    (SubstancePainter, 'SubstancePainter'),
-    (SubstanceDesigner, 'SubstanceDesigner'),
-    (Fusion, 'Fusion')
-])
+NiceNames = dict(
+    [
+        (Maya, "Maya"),
+        (Max, "3ds Max"),
+        (MotionBuilder, "MotionBuilder"),
+        (Houdini, "Houdini"),
+        (Nuke, "Nuke"),
+        (Unreal, "Unreal"),
+        (Blender, "Blender"),
+        (SubstancePainter, "SubstancePainter"),
+        (SubstanceDesigner, "SubstanceDesigner"),
+        (Fusion, "Fusion"),
+    ]
+)
 
 # noinspection SpellCheckingInspection
-Packages = dict([
-    ('maya', Maya),
-    ('pymxs', Max),
-    ('MaxPlus', Max),
-    ('pyfbsdk', MotionBuilder),
-    ('hou', Houdini),
-    ('nuke', Nuke),
-    ('unreal', Unreal),
-    ('bpy', Blender),
-    ('substance_painter', SubstancePainter),
-    ('sd', SubstanceDesigner),
-    ('fusionscript', Fusion),
-    ('PeyeonScript', Fusion)
-])
+Packages = dict(
+    [
+        ("maya", Maya),
+        ("pymxs", Max),
+        ("MaxPlus", Max),
+        ("pyfbsdk", MotionBuilder),
+        ("hou", Houdini),
+        ("nuke", Nuke),
+        ("unreal", Unreal),
+        ("bpy", Blender),
+        ("substance_painter", SubstancePainter),
+        ("sd", SubstanceDesigner),
+        ("fusionscript", Fusion),
+        ("PeyeonScript", Fusion),
+    ]
+)
 
 # TODO: Add support for both MacOS and Linux
 # noinspection SpellCheckingInspection
 Executables = {
-    Maya: {'windows': 'maya.exe'},
-    Max: {'windows': '3dsmax.exe'},
-    MotionBuilder: {'windows': 'motionbuilder.exe'},
-    Houdini: {'windows': 'houdini'},
-    Nuke: {'windows': 'Nuke'},
-    Unreal: {'windows': 'UnrealEditor.exe'},
-    Blender: {'windows': 'blender.exe'},
-    SubstancePainter: {'windows': 'painter.exe'},
-    SubstanceDesigner: {'windows': 'designer.exe'},
-    Fusion: {'windows': 'Fusion.exe'}
+    Maya: {"windows": ["maya.exe", "mayabatch.exe"]},
+    Max: {"windows": ["3dsmax.exe"]},
+    MotionBuilder: {"windows": ["motionbuilder.exe"]},
+    Houdini: {"windows": ["houdini"]},
+    Nuke: {"windows": ["Nuke"]},
+    Unreal: {"windows": ["UnrealEditor.exe"]},
+    Blender: {"windows": ["blender.exe"]},
+    SubstancePainter: {"windows": ["painter.exe"]},
+    SubstanceDesigner: {"windows": ["designer.exe"]},
+    Fusion: {"windows": ["Fusion.exe"]},
 }
 
 
+@lru_cache()
 def current_dcc() -> str:
     """
     Returns name of the current DCC being used.
@@ -79,34 +91,49 @@ def current_dcc() -> str:
     :rtype: str
     """
 
-    global CURRENT_DCC
-    if CURRENT_DCC:
-        return CURRENT_DCC
+    found_dcc: str | None = None
 
-    for dcc_package, dcc_name in Packages.items():
-        try:
-            is_importable = bool(importlib.util.find_spec(dcc_package))
-        except TypeError:
-            is_importable = False
-        if is_importable and Executables[dcc_name][platform.system().lower()] in sys.executable:
-            CURRENT_DCC = dcc_name
+    found_exec = False
+    platform_name = platform.system().lower()
+    for dcc_name, dcc_package in Packages.items():
+        if found_exec:
             break
-    if not CURRENT_DCC:
         try:
-            import unreal
-            CURRENT_DCC = Unreal
-        except ImportError:
-            try:
-                # noinspection SpellCheckingInspection
-                if os.path.splitext(os.path.basename(sys.executable))[0].lower() == 'motionbuilder':
-                    import pyfbsdk
-                    CURRENT_DCC = MotionBuilder
+            is_importable = bool(find_spec(dcc_package))
+            if is_importable:
+                # sys.executable resolves to "standalone" for blender
+                if dcc_name == Blender:
+                    found_dcc = Blender
+                    break
                 else:
-                    CURRENT_DCC = Standalone
-            except ImportError:
-                CURRENT_DCC = Standalone
+                    for exec_name in Executables.get(dcc_name, {}).get(
+                        platform_name, []
+                    ):
+                        if exec_name in sys.executable:
+                            found_exec = True
+                            found_dcc = dcc_name
+                            break
+        except (TypeError, ValueError):
+            # For some reason, find_spec in Unreal raises a ValueError (unreal.__spec__ is None)
+            if dcc_name == Unreal:
+                for exec_name in Executables.get(dcc_name, {}).get(platform_name, []):
+                    if (
+                        exec_name in sys.executable
+                        or exec_name.split(".")[0] in sys.executable
+                    ):
+                        found_dcc = dcc_name
+                        break
+    if not found_dcc:
+        try:
+            current_exe = Path(sys.executable).stem
+            if current_exe == "motionbuilder":
+                found_dcc = MotionBuilder
+            else:
+                found_dcc = Standalone
+        except ImportError:
+            found_dcc = Standalone
 
-    return CURRENT_DCC
+    return found_dcc
 
 
 def is_standalone() -> bool:
@@ -137,7 +164,7 @@ def is_mayapy() -> bool:
     :rtype: bool
     """
 
-    return is_maya() and 'mayapy' in sys.executable
+    return is_maya() and "mayapy" in sys.executable
 
 
 def is_max() -> bool:

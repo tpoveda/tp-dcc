@@ -53,7 +53,7 @@ from ...dcc import ui
 from ...python import paths
 from ...resources.style import theme
 from ...qt import dpi, utils, icon, uiconsts, factory
-from ...qt.widgets import layouts, labels, buttons, overlay
+from ...qt.widgets import labels, buttons, overlay
 
 if dcc.is_maya():
     from maya.app.general import mayaMixin
@@ -66,13 +66,6 @@ else:
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-handler.setLevel(logging.INFO)
-# noinspection SpellCheckingInspection
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
 
 
 class ContainerType(enum.Enum):
@@ -613,7 +606,7 @@ class FramelessWindow(QWidget):
             self.set_maximize_button_visible(False)
 
         self.setup_widgets()
-        self.setup_layouts()
+        self.setup_layouts(self.main_layout())
         self.setup_signals()
 
         self.set_title_style(FramelessTitleBar.TitleStyle.DEFAULT)
@@ -762,9 +755,11 @@ class FramelessWindow(QWidget):
 
         pass
 
-    def setup_layouts(self):
+    def setup_layouts(self, main_layout: QVBoxLayout | QHBoxLayout | QGridLayout):
         """
         Function that can be overridden to add custom layouts.
+
+        :param main_layout: main layout to add custom layouts to.
         """
 
         pass
@@ -783,9 +778,8 @@ class FramelessWindow(QWidget):
         param move: if given, move window to specific location.
         """
 
-        if self._parent_container:
-            self._parent_container.show()
         result = super().show()
+        self.show_window()
         if move is not None:
             self.move(move)
         else:
@@ -893,9 +887,7 @@ class FramelessWindow(QWidget):
         """
 
         if self._main_contents.layout() is None:
-            main_layout = layouts.VerticalLayout()
-            main_layout.setSpacing(0)
-            main_layout.setContentsMargins(0, 0, 0, 0)
+            main_layout = self._main_layout()
             self._main_contents.setLayout(main_layout)
 
         return self._main_contents.layout()
@@ -1171,6 +1163,17 @@ class FramelessWindow(QWidget):
 
         if self._parent_container:
             self._parent_container.show()
+
+    # noinspection PyMethodMayBeStatic
+    def _main_layout(self) -> QVBoxLayout | QHBoxLayout | QGridLayout | QLayout:
+        """
+        Internal function that that returns window main content layouts instance.
+        It can be overridden to return a custom main layout.
+
+        :return: contents main layout.
+        """
+
+        return factory.vertical_main_layout()
 
     def _setup_ui(self):
         """
@@ -1492,7 +1495,7 @@ class FramelessTitleBar(QFrame):
             QIcon(paths.canonical_path("../../resources/icons/window_maximize.png"))
         )
         self._help_button.set_icon(
-            QIcon(paths.canonical_path("../../resources/icons/question.svg"))
+            QIcon(paths.canonical_path("../../resources/icons/question.png"))
         )
 
         # Button Setup
@@ -1567,7 +1570,12 @@ class FramelessTitleBar(QFrame):
         """
 
         if event.buttons() & Qt.LeftButton:
-            self._mouse_press_pos = event.globalPos()
+            try:
+                # noinspection PyUnresolvedReferences
+                global_pos = event.globalPosition().toPoint()
+            except AttributeError:
+                global_pos = event.globalPos()
+            self._mouse_press_pos = global_pos
             self.start_move()
 
         event.ignore()
@@ -1593,10 +1601,14 @@ class FramelessTitleBar(QFrame):
             return
 
         if self._mouse_press_pos is not None:
-            moved = event.globalPos() - self._mouse_press_pos
+            try:
+                # noinspection PyUnresolvedReferences
+                global_pos = event.globalPosition().toPoint()
+            except AttributeError:
+                global_pos = event.globalPos()
+            moved = global_pos - self._mouse_press_pos
             if moved.manhattanLength() < self._move_threshold:
                 return
-
             pos = QCursor.pos()
             new_pos = pos
             new_pos.setX(pos.x() - self._widget_mouse_pos.x())
@@ -1613,7 +1625,12 @@ class FramelessTitleBar(QFrame):
         """
 
         if self._mouse_press_pos is not None:
-            moved = event.globalPos() - self._mouse_press_pos
+            try:
+                # noinspection PyUnresolvedReferences
+                global_pos = event.globalPosition().toPoint()
+            except AttributeError:
+                global_pos = event.globalPos()
+            moved = global_pos - self._mouse_press_pos
             if moved.manhattanLength() > self._move_threshold:
                 event.ignore()
             self._mouse_press_pos = None

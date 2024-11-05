@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import abc
 from typing import Iterator, Sequence, Any
 
-from . import weakref
+from ...python.collections import WeakRefList
 
 
 class CallbackList(abc.MutableSequence):
@@ -11,17 +11,17 @@ class CallbackList(abc.MutableSequence):
     Overloads of MutableSequence used to provide callback mechanism for any list changes.
     """
 
-    __slots__ = ('__items__', '__callbacks__')
+    __slots__ = ("__items__", "__callbacks__")
 
     def __init__(self, *args, **kwargs):
         super().__init__()
 
-        cls = kwargs.get('cls', list)
+        cls = kwargs.get("cls", list)
         if not callable(cls):
-            raise TypeError('__init__() expects a callable class!')
+            raise TypeError("__init__() expects a callable class!")
 
         self.__items__: list = cls()
-        self.__callbacks__ = {'itemAdded': weakref.WeakRefList(), 'itemRemoved': weakref.WeakRefList()}
+        self.__callbacks__ = {"itemAdded": WeakRefList(), "itemRemoved": WeakRefList()}
 
         num_args = len(args)
         if num_args == 1:
@@ -139,7 +139,10 @@ class CallbackList(abc.MutableSequence):
         """
 
         current_index = self.__items__.index(value)
-        self.__items__[current_index], self.__items__[index] = self.__items__[index], self.__items__[current_index]
+        self.__items__[current_index], self.__items__[index] = (
+            self.__items__[index],
+            self.__items__[current_index],
+        )
 
     # noinspection PyMethodOverriding
     def index(self, value: Any) -> int:
@@ -182,7 +185,9 @@ class CallbackList(abc.MutableSequence):
             step = 1 if index.step is None else index.step
             return [self.pop(i) for i in range(start, stop, step)]
         else:
-            raise TypeError(f'pop() expects either an int or slice ({type(index).__name__} given)!')
+            raise TypeError(
+                f"pop() expects either an int or slice ({type(index).__name__} given)!"
+            )
 
     def clear(self):
         """
@@ -234,7 +239,7 @@ class CallbackList(abc.MutableSequence):
         :param Any item: added item.
         """
 
-        for func in self.__callbacks__['itemAdded']:
+        for func in self.__callbacks__["itemAdded"]:
             func(index, item)
 
     # noinspection PyPep8Naming
@@ -245,5 +250,5 @@ class CallbackList(abc.MutableSequence):
         :param Any item: removed item.
         """
 
-        for func in self.__callbacks__['itemRemoved']:
+        for func in self.__callbacks__["itemRemoved"]:
             func(item)

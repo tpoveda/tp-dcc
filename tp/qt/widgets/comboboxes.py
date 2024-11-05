@@ -1,13 +1,24 @@
 from __future__ import annotations
 
+import logging
+
 from typing import Sequence, Iterator, Any
 
-from Qt.QtCore import Qt, Signal
-from Qt.QtWidgets import QSizePolicy, QWidget, QLabel, QComboBox, QHBoxLayout
-from Qt.QtGui import QIcon, QKeyEvent, QWheelEvent
+from Qt.QtCore import Qt, Signal, QModelIndex, QSortFilterProxyModel
+from Qt.QtWidgets import (
+    QSizePolicy,
+    QWidget,
+    QLabel,
+    QComboBox,
+    QHBoxLayout,
+    QCompleter,
+)
+from Qt.QtGui import QIcon, QStandardItem, QKeyEvent, QWheelEvent
 
 from .. import uiconsts, dpi
 from . import layouts, labels
+
+logger = logging.getLogger(__name__)
 
 
 class BaseComboBox(QComboBox):
@@ -32,16 +43,57 @@ class BaseComboBox(QComboBox):
 
         super().__init__(parent)
 
+        self._is_checkable = False
+
+        # Setup completer to filter items.
+        self._filter_model = QSortFilterProxyModel(parent=self)
+        self._filter_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self._completer = QCompleter(parent=self)
+        self._completer.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
+        self._completer.setModel(self._filter_model)
+        self.setCompleter(self._completer)
+        if not isinstance(self.model(), QStandardItem):
+            self._filter_model.setSourceModel(self.model())
+        else:
+            logger.warning(
+                "Cannot set QCompleter model for QStandardItemModel. "
+                "Filter model will not work."
+            )
+
         if items:
             self.addItems(items)
 
-        self._is_checkable = False
-
         self.setEditable(True)
+
+        self.lineEdit().textEdited.connect(self._filter_model.setFilterFixedString)
+        self._completer.activated.connect(self._on_completer_activated)
+        self.view().pressed.connect(self._on_view_pressed)
+
+    def setModel(self, model):
+        """
+        Overrides `setModel` method to set the model for the ComboBox.
+
+        :param model: model to set.
+        """
+
+        super().setModel(model)
+        self._filter_model.setSourceModel(model)
+        self._completer.setModel(self._filter_model)
+
+    def setModelColumn(self, visible_column: int):
+        """
+        Overrides `setModelColumn` method to set the column of the model to be displayed.
+
+        :param visible_column: column to display.
+        """
+
+        self._completer.setCompletionColumn(visible_column)
+        self._filter_model.setFilterKeyColumn(visible_column)
+        super().setModelColumn(visible_column)
 
     def keyPressEvent(self, event: QKeyEvent):
         """
-        Handles key press events.
+        Overrides `keyPressEvent` function to handle key press events.
 
         This method handles key press events.
 
@@ -65,7 +117,7 @@ class BaseComboBox(QComboBox):
         is_checkable: bool = False,
     ):
         """
-        Adds an item to the ComboBox.
+        Overrides `addItem` function to adds an item to the ComboBox.
 
         This method adds an item to the ComboBox.
 
@@ -90,6 +142,72 @@ class BaseComboBox(QComboBox):
             self._is_checkable = is_checkable
             item.setCheckState(Qt.Checked)
 
+    def items(self) -> list[QStandardItem]:
+        """
+        Returns a list of checked items in the ComboBox.
+
+        :return: list of checked items.
+        """
+
+        model = self.model()
+        items = []
+        for index in range(model.rowCount()):
+            # noinspection PyUnresolvedReferences
+            item = model.itemFromIndex(index)
+            if not item.isValid():
+                continue
+            items.append(item)
+
+        return items
+
+    def checked_items(self) -> list[QStandardItem]:
+        """
+        Returns a list of checked items in the ComboBox.
+
+        :return: list of checked items.
+        """
+
+        model = self.model()
+        items = []
+        for index in range(model.rowCount()):
+            # noinspection PyUnresolvedReferences
+            item = model.itemFromIndex(index)
+            if not item.isValid() or item.checkState() != Qt.Checked:
+                continue
+            items.append(item)
+
+        return items
+
+    def _on_completer_activated(self, text: str):
+        """
+        Internal callback function that is called when an item is activated in the completer.
+
+        :param text: The text of the activated item.
+        """
+
+        if not text:
+            return
+
+        index = self.findText(text)
+        self.setCurrentIndex(index)
+        self.activated.emit(str(self.itemText(index)))
+
+    def _on_view_pressed(self, index: QModelIndex):
+        """
+        Internal callback function that is called when an item is pressed in the view.
+
+        :param index: The model index of the pressed item.
+        """
+
+        if not self._is_checkable:
+            return
+
+        # noinspection PyUnresolvedReferences
+        item = self.model().itemFromIndex(index)
+        state = Qt.Unchecked if item.checkState() == Qt.Checked else Qt.Checked
+        item.setCheckState(state)
+        self.checkStateChanged.emit(item.row(), state)
+
 
 class NoWheelComboBox(QComboBox):
     """
@@ -101,8 +219,14 @@ class NoWheelComboBox(QComboBox):
 
         self.setFocusPolicy(Qt.StrongFocus)
 
-    def wheelEvent(self, e: QWheelEvent) -> None:
-        e.ignore()
+    def wheelEvent(self, event: QWheelEvent):
+        """
+        Overrides the wheelEvent function to ignore wheel events.
+
+        :param event: Qt wheel event.
+        """
+
+        event.ignore()
 
 
 class ComboBoxAbstractWidget(QWidget):
@@ -199,7 +323,7 @@ class ComboBoxAbstractWidget(QWidget):
 
     itemChanged = Signal(ComboItemChangedEvent)
 
-    PREV_INDEX = None
+    _PREV_INDEX: int | None = None
 
     def __init__(self, parent: QWidget | None = None):
         """
@@ -225,9 +349,29 @@ class ComboBoxAbstractWidget(QWidget):
         if hasattr(self._box, item):
             return getattr(self._box, item)
 
+    @property
+    def activated(self) -> Signal:
+        """
+        Returns the activated signal of the combo box.
+
+        :return: activated signal.
+        """
+
+        return self._box.activated
+
+    @property
+    def current_index_changed(self) -> Signal:
+        """
+        Returns the current index changed signal of the combo box.
+
+        :return: current index changed signal.
+        """
+
+        return self._box.currentIndexChanged
+
     def blockSignals(self, flag: bool):
         """
-        Blocks or unblocks signals for the combo box and label.
+        Overrides `blockSignals` function to block or unblock signals for the combo box and label.
 
         This method blocks or unblocks signals for the combo box and label based on the flag provided.
 
@@ -334,6 +478,15 @@ class ComboBoxAbstractWidget(QWidget):
 
         for i in range(self._box.count()):
             yield self.item_text(i)
+
+    def item_texts(self) -> list[str]:
+        """
+        Returns all item texts in the combobox.
+
+        :return: list of item texts.
+        """
+
+        return list(self.iterate_item_texts())
 
     def set_item_text(self, index: int, text: str):
         """
@@ -448,18 +601,18 @@ class ComboBoxAbstractWidget(QWidget):
 
         self._box.setFixedWidth(dpi.dpi_scale(width))
 
-    def on_item_changed(self):
+    def _on_item_changed(self):
         """
         Callback function that is called by internal combo box when current its index changes.
         """
 
         event = ComboBoxAbstractWidget.ComboItemChangedEvent(
-            int(self.PREV_INDEX if self.PREV_INDEX is not None else -1),
+            int(self._PREV_INDEX if self._PREV_INDEX is not None else -1),
             int(self._box.currentIndex()),
             parent=self,
         )
         self.itemChanged.emit(event)
-        self.PREV_INDEX = self._box.currentIndex()
+        self._PREV_INDEX = self._box.currentIndex()
 
 
 class ComboBoxRegularWidget(ComboBoxAbstractWidget):
@@ -539,7 +692,7 @@ class ComboBoxRegularWidget(ComboBoxAbstractWidget):
         )
         if box_min_width:
             self._box.setMinimumWidth(dpi.dpi_scale(box_min_width))
-        self._box.currentIndexChanged.connect(self.on_item_changed)
+        self._box.currentIndexChanged.connect(self._on_item_changed)
 
     @property
     def label(self) -> labels.BaseLabel:
@@ -552,7 +705,7 @@ class ComboBoxRegularWidget(ComboBoxAbstractWidget):
         return self._label
 
 
-class ComboBoxSearchable(ComboBoxAbstractWidget):
+class ComboBoxSearchableWidget(ComboBoxAbstractWidget):
     # noinspection SpellCheckingInspection
     def __init__(
         self,
@@ -604,4 +757,4 @@ class ComboBoxSearchable(ComboBoxAbstractWidget):
         else:
             main_layout.addWidget(self._box)
 
-        self._box.currentIndexChanged.connect(self.on_item_changed)
+        self._box.currentIndexChanged.connect(self._on_item_changed)

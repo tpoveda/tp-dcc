@@ -16,6 +16,7 @@ class BaseLabel(QLabel, dpi.DPIScaling):
     """
 
     clicked = Signal()
+    textChanged = Signal(str)
 
     class Levels(enum.Enum):
         """
@@ -274,16 +275,17 @@ class BaseLabel(QLabel, dpi.DPIScaling):
 
         return self._actual_text
 
-    def setText(self, arg__1: str):
+    def setText(self, text: str):
         """
         Overrides base QLabel setText function.
 
-        :param arg__1: label text tos set.
+        :param text: label text tos set.
         """
 
-        self._actual_text = arg__1
+        self._actual_text = text
         self._update_elided_text()
-        self.setToolTip(arg__1)
+        self.setToolTip(text)
+        self.textChanged.emit(text)
 
     def h1(self) -> BaseLabel:
         """

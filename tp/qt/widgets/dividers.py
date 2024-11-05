@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from Qt.QtCore import Qt, Signal
-from Qt.QtWidgets import QWidget, QFrame, QHBoxLayout
+from Qt.QtWidgets import QWidget, QLabel, QFrame, QHBoxLayout
 
 from .. import dpi
 from . import labels
@@ -149,3 +149,38 @@ class Divider(QWidget, dpi.DPIScaling):
             self._second_line.setVisible(bool(text))
 
         self.textChanged.emit(self._text)
+
+
+class LabelDivider(QLabel):
+    """
+    Basic label horizontal line divider with 2px height.
+    """
+
+    def __init__(self, text: str = "", parent: QWidget | None = None):
+        super().__init__(text, parent=parent)
+
+        self.setFixedHeight(dpi.dpi_scale(2))
+
+
+class HorizontalLine(QFrame):
+    """
+    Horizontal line divider with 3px height.
+    """
+
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent=parent)
+
+        self.setFrameShape(QFrame.HLine)
+        self.setFrameShadow(QFrame.Sunken)
+
+
+class VerticalLine(QFrame):
+    """
+    Vertical line divider.
+    """
+
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent=parent)
+
+        self.setFrameShape(QFrame.VLine)
+        self.setFrameShadow(QFrame.Sunken)

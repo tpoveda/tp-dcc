@@ -15,10 +15,16 @@ from Qt.QtWidgets import (
 from Qt.QtGui import QIcon
 
 from . import uiconsts, dpi, icon
+from .uiconsts import ButtonStyles  # noqa: F401
 from .widgets.layouts import VerticalLayout, HorizontalLayout, GridLayout
 from .widgets.labels import BaseLabel, ClippedLabel, IconLabel
-from .widgets.comboboxes import BaseComboBox, NoWheelComboBox
-from .widgets.lineedits import BaseLineEdit
+from .widgets.comboboxes import (
+    BaseComboBox,
+    NoWheelComboBox,
+    ComboBoxRegularWidget,
+    ComboBoxSearchableWidget,
+)
+from .widgets.lineedits import BaseLineEdit, IntLineEdit
 from .widgets.search import SearchFindWidget
 from .widgets.buttons import (
     BaseButton,
@@ -27,17 +33,15 @@ from .widgets.buttons import (
     RoundButton,
     ShadowedButton,
     LeftAlignedButton,
+    LabelSmallButton,
 )
 from .widgets.checkboxes import BaseCheckBoxWidget
+from .widgets.stringedit import StringEdit, IntEdit, FloatEdit
+from .widgets.frames import CollapsibleFrame, CollapsibleFrameThin
+from .widgets.dividers import Divider, LabelDivider, HorizontalLine, VerticalLine
+from .widgets.groups import RadioButtonGroup
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-handler.setLevel(logging.INFO)
-# noinspection SpellCheckingInspection
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
 
 
 def vertical_layout(
@@ -65,6 +69,25 @@ def vertical_layout(
     return new_layout
 
 
+def vertical_main_layout() -> VerticalLayout:
+    """
+    Returns a new main vertical layout that automatically handles DPI stuff.
+    This layout is usually used for the main widget layout of the parent widget.
+
+    :return: new vertical layout instance.
+    """
+
+    return vertical_layout(
+        margins=(
+            uiconsts.WINDOW_SIDE_PADDING,
+            uiconsts.WINDOW_BOTTOM_PADDING,
+            uiconsts.WINDOW_SIDE_PADDING,
+            uiconsts.WINDOW_BOTTOM_PADDING,
+        ),
+        spacing=uiconsts.SPACING,
+    )
+
+
 def horizontal_layout(
     spacing: int = uiconsts.DEFAULT_SPACING,
     margins: tuple[int, int, int, int] = (0, 0, 0, 0),
@@ -88,6 +111,26 @@ def horizontal_layout(
         new_layout.setAlignment(alignment)
 
     return new_layout
+
+
+def horizontal_main_layout(parent: QWidget | None = None) -> HorizontalLayout:
+    """
+    Returns a new main horizontal layout that automatically handles DPI stuff.
+    This layout is usually used for the main widget layout of the parent widget.
+
+    :param parent: optional layout parent.
+    :return: new vertical layout instance.
+    """
+
+    return horizontal_layout(
+        margins=(
+            uiconsts.WINDOW_SIDE_PADDING,
+            uiconsts.WINDOW_BOTTOM_PADDING,
+            uiconsts.WINDOW_SIDE_PADDING,
+            uiconsts.WINDOW_BOTTOM_PADDING,
+        ),
+        spacing=uiconsts.SPACING,
+    )
 
 
 def grid_layout(
@@ -438,6 +481,7 @@ def icon_label(
 def combobox(
     items: Sequence[str] | None = None,
     item_data: Sequence[Any] | None = None,
+    sort_items: bool = False,
     placeholder_text: str = "",
     tooltip: str = "",
     set_index: int = 0,
@@ -450,6 +494,7 @@ def combobox(
 
     :param items: An optional sequence of items to populate the ComboBox with. Defaults to None.
     :param item_data: An optional sequence of item data corresponding to the items. Defaults to None.
+    :param sort_items: Whether to sort items. Defaults to False.
     :param placeholder_text: The placeholder text to display in the ComboBox when no item is selected.
         Defaults to an empty string.
     :param tooltip: The tooltip text to display for the ComboBox. Defaults to an empty string.
@@ -462,15 +507,16 @@ def combobox(
     """
 
     if not support_middle_mouse_scroll:
-        combo_box = NoWheelComboBox(parent)
+        combo_box = NoWheelComboBox(parent=parent)
     else:
-        combo_box = BaseComboBox(parent)
+        combo_box = BaseComboBox(parent=parent)
 
     if sort_alphabetically:
         combo_box.setInsertPolicy(QComboBox.InsertAlphabetically)
         if items:
             items = [str(x) for x in list(items)]
-            items.sort(key=lambda x: x.lower())
+            if sort_items:
+                items.sort(key=lambda x: x.lower())
     if item_data:
         for i, item in enumerate(items):
             combo_box.addItem(item, item_data[i])
@@ -485,30 +531,161 @@ def combobox(
     return combo_box
 
 
+def combobox_widget(
+    label_text: str = "",
+    items: Sequence[str] | None = None,
+    label_ratio: int | None = None,
+    box_ratio: int | None = None,
+    tooltip: str = "",
+    set_index: int = 0,
+    sort_alphabetically: bool = False,
+    margins: tuple[int, int, int, int] = (0, 0, 0, 0),
+    spacing: int = uiconsts.SMALL_SPACING,
+    box_min_width: int | None = None,
+    item_data: Sequence[Any] | None = None,
+    support_middle_mouse_scroll: bool = True,
+    searchable: bool = False,
+    parent: QWidget | None = None,
+) -> ComboBoxRegularWidget | ComboBoxSearchableWidget:
+    """
+    Creates a ComboBox widget with the specified parameters.
+
+    :param label_text: The text for the label. Defaults to an empty string.
+    :param items: An optional sequence of items to populate the ComboBox with. Defaults to None.
+    :param label_ratio: The ratio of the label width. Defaults to None.
+    :param box_ratio: The ratio of the box width. Defaults to None.
+    :param tooltip: The tooltip text for the combo box. Defaults to an empty string.
+    :param set_index: The index to be set as selected. Defaults to 0.
+    :param sort_alphabetically: Whether to sort items alphabetically. Defaults to True.
+    :param margins: The margins around the widget. Defaults to (0, 0, 0, 0).
+    :param spacing: The spacing between the label and the combo box. Defaults to uiconsts.SMALL_SPACING.
+    :param box_min_width: The minimum width for the combo box. Defaults to None.
+    :param item_data: Additional data associated with the combo box items. Defaults to None.
+    :param support_middle_mouse_scroll: If True, supports scrolling with the middle mouse button. Defaults to True.
+    :param searchable: Whether to enable search functionality. Defaults to False.
+    :param parent: The parent widget. Defaults to None.
+
+    :return: The created ComboBox widget.
+    """
+
+    if not searchable:
+        combo_box = ComboBoxRegularWidget(
+            label=label_text,
+            items=items,
+            label_ratio=label_ratio,
+            box_ratio=box_ratio,
+            tooltip=tooltip,
+            set_index=set_index,
+            sort_alphabetically=sort_alphabetically,
+            margins=margins,
+            spacing=spacing,
+            box_min_width=box_min_width,
+            item_data=item_data,
+            support_middle_mouse_scroll=support_middle_mouse_scroll,
+            parent=parent,
+        )
+    else:
+        combo_box = ComboBoxSearchableWidget(
+            label=label_text,
+            items=items,
+            label_ratio=label_ratio,
+            box_ratio=box_ratio,
+            tooltip=tooltip,
+            set_index=set_index,
+            sort_alphabetically=sort_alphabetically,
+            parent=parent,
+        )
+
+    return combo_box
+
+
 def line_edit(
     text: str = "",
     read_only: bool = False,
     placeholder_text: str = "",
     tooltip: str = "",
+    edit_width: int | None = None,
+    fixed_width: int | None = None,
+    enable_menu: bool = False,
     parent: QWidget | None = None,
 ) -> BaseLineEdit:
     """
     Creates a basic line edit widget.
 
-    :param str text: default line edit text.
-    :param bool read_only: whether line edit is read only.
-    :param str placeholder_text: line edit placeholder text.
-    :param str tooltip: line edit tooltip text.
-    :param QWidget parent: parent widget.
+    :param text: default line edit text.
+    :param read_only: whether line edit is read only.
+    :param placeholder_text: line edit placeholder text.
+    :param tooltip: line edit tooltip text.
+    :param edit_width: The width of the LineEdit for editing. Defaults to None.
+    :param fixed_width: The fixed width of the LineEdit. Defaults to None.
+    :param enable_menu: Whether to enable the context menu. Defaults to False.
+    :param parent: parent widget.
     :return: newly created combo box.
-    :rtype: BaseLineEdit
     """
 
-    new_line_edit = BaseLineEdit(text=text, parent=parent)
+    new_line_edit = BaseLineEdit(
+        text=text,
+        placeholder=placeholder_text,
+        tooltip=tooltip,
+        edit_width=edit_width,
+        fixed_width=fixed_width,
+        enable_menu=enable_menu,
+        parent=parent,
+    )
     new_line_edit.setReadOnly(read_only)
-    new_line_edit.setPlaceholderText(str(placeholder_text))
-    if tooltip:
-        new_line_edit.setToolTip(tooltip)
+
+    return new_line_edit
+
+
+def int_line_edit(
+    text: str = "",
+    read_only: bool = False,
+    placeholder_text: str = "",
+    tooltip: str = "",
+    parent: QWidget | None = None,
+    edit_width: int | None = None,
+    fixed_width: int | None = None,
+    enable_menu: bool = False,
+    slide_distance: float = 0.01,
+    small_slide_distance: float = 0.001,
+    large_slide_distance: float = 0.1,
+    scroll_distance: float = 1.0,
+    update_on_slide_tick: bool = True,
+) -> IntLineEdit:
+    """
+    Creates an integer line edit widget.
+
+    :param text: default line edit text.
+    :param read_only: whether line edit is read only.
+    :param placeholder_text: line edit placeholder text.
+    :param tooltip: line edit tooltip text.
+    :param edit_width: The width of the LineEdit for editing. Defaults to None.
+    :param fixed_width: The fixed width of the LineEdit. Defaults to None.
+    :param enable_menu: Whether to enable the context menu. Defaults to False.
+    :param slide_distance: The distance to slide on normal drag. Defaults to 1.0.
+    :param small_slide_distance: The distance to slide on small drag. Defaults to 0.1.
+    :param large_slide_distance: The distance to slide on large drag. Defaults to 5.0.
+    :param scroll_distance: The distance to scroll. Defaults to 1.0.
+    :param update_on_slide_tick: If True, updates on tick events. Defaults to False.
+    :param parent: parent widget.
+    :return: newly created combo box.
+    """
+
+    new_line_edit = IntLineEdit(
+        text=text,
+        placeholder=placeholder_text,
+        tooltip=tooltip,
+        edit_width=edit_width,
+        fixed_width=fixed_width,
+        enable_menu=enable_menu,
+        slide_distance=slide_distance,
+        small_slide_distance=small_slide_distance,
+        large_slide_distance=large_slide_distance,
+        scroll_distance=scroll_distance,
+        update_on_slide_tick=update_on_slide_tick,
+        parent=parent,
+    )
+    new_line_edit.setReadOnly(read_only)
 
     return new_line_edit
 
@@ -517,9 +694,8 @@ def text_browser(parent=None):
     """
     Creates a text browser widget.
 
-    :param QWidget parent: parent widget.
+    :param parent: parent widget.
     :return: newly created text browser.
-    :rtype: QTextBrowser
     """
 
     new_text_browser = QTextBrowser(parent=parent)
@@ -535,11 +711,10 @@ def search_widget(
     """
     Returns widget that allows to do searches within widgets.
 
-    :param str placeholder_text: search placeholder text.
-    :param QLineEdit search_line: custom line edit widget to use.
-    :param QWidget parent: parent widget.
+    :param placeholder_text: search placeholder text.
+    :param search_line: custom line edit widget to use.
+    :param parent: parent widget.
     :return: search find widget instance.
-    :rtype: SearchFindWidget
     """
 
     new_widget = SearchFindWidget(search_line=search_line, parent=parent)
@@ -719,7 +894,6 @@ def rounded_button(
     :param bool checked: whether (if checkable is True) button is checked by default.
     :param QWidget parent: parent widget.
     :return: newly created button.
-    :rtype: RoundButton
     """
 
     button_icon = button_icon or QIcon()
@@ -930,7 +1104,7 @@ def styled_button(
     :param button_height: optional button height.
     :param parent: parent widget.
     :return: newly created button.
-    ..note:: button icons are always squared.
+    .note:: button icons are always squared.
     """
 
     min_width = min_width if width is None else width
@@ -1003,6 +1177,10 @@ def styled_button(
             checked=checked,
             parent=parent,
         )
+    elif style == uiconsts.ButtonStyles.SmallLabel:
+        new_button = LabelSmallButton(
+            text=text, button_icon=button_icon, tooltip=tooltip, parent=parent
+        )
     else:
         logger.warning(
             f'Button style "{style}" is not supported. Default button will be created'
@@ -1045,8 +1223,7 @@ def checkbox(
     :param bool checked: true to check by default; False otherwise.
     :param str tooltip: checkbox tooltip.
     :param QWidget parent: parent widget.
-    :return: newly created combo box.
-    :rtype: QCheckBox
+    :return: newly x
     """
 
     new_checkbox = QCheckBox(text=text, parent=parent)
@@ -1079,7 +1256,6 @@ def checkbox_widget(
     :param int box_ratio: combobox layout ratio.
     :param QWidget parent: parent widget.
     :return: newly created combo box.
-    :rtype: BaseCheckBoxWidget
     """
 
     return BaseCheckBoxWidget(
@@ -1090,5 +1266,337 @@ def checkbox_widget(
         label_ratio=label_ratio,
         box_ratio=box_ratio,
         right=right,
+        parent=parent,
+    )
+
+
+def string_edit(
+    label_text: str = "",
+    edit_text: str = "",
+    edit_placeholder: str = "",
+    button_text: str | None = None,
+    edit_width: int | None = None,
+    label_ratio: int = 1,
+    button_ratio: int = 1,
+    edit_ratio: int = 5,
+    tooltip: str = "",
+    orientation: Qt.Orientation = Qt.Horizontal,
+    enable_menu: bool = False,
+    parent: QWidget | None = None,
+) -> StringEdit:
+    """
+    Creates a new string edit widget.
+
+    :param label_text: The text for the label. Defaults to an empty string.
+    :param edit_text: The initial text for the text box. Defaults to an empty string.
+    :param edit_placeholder: The placeholder text for the text box. Defaults to an empty string.
+    :param button_text: The text for the optional button. Defaults to None.
+    :param edit_width: The width of the text box. Defaults to None.
+    :param label_ratio: The ratio of the label width. Defaults to 1.
+    :param button_ratio: The ratio of the button width. Defaults to 1.
+    :param edit_ratio: The ratio of the text box width. Defaults to 5.
+    :param tooltip: The tooltip text for the widget. Defaults to an empty string.
+    :param orientation: The orientation of the widget (horizontal or vertical). Defaults to Qt.Horizontal.
+    :param enable_menu: If True, enables a context menu for the text box. Defaults to False.
+    :param parent: The parent widget. Defaults to None.
+    :return: new string edit widget instance.
+    """
+
+    return StringEdit(
+        label=label_text,
+        edit_text=edit_text,
+        edit_placeholder=edit_placeholder,
+        button_text=button_text,
+        edit_width=edit_width,
+        label_ratio=label_ratio,
+        button_ratio=button_ratio,
+        edit_ratio=edit_ratio,
+        tooltip=tooltip,
+        orientation=orientation,
+        enable_menu=enable_menu,
+        parent=parent,
+    )
+
+
+def int_edit(
+    label_text: str = "",
+    edit_text: str = "",
+    edit_placeholder: str = "",
+    button_text: str | None = None,
+    edit_width: int | None = None,
+    label_ratio: int = 1,
+    button_ratio: int = 1,
+    edit_ratio: int = 5,
+    tooltip: str = "",
+    orientation: Qt.Orientation = Qt.Horizontal,
+    enable_menu: bool = False,
+    slide_distance: float = 0.05,
+    small_slide_distance: float = 0.01,
+    large_slide_distance: float = 1.0,
+    scroll_distance: float = 1.0,
+    update_on_slide_tick: bool = True,
+    parent: QWidget | None = None,
+) -> IntEdit:
+    """
+    Creates a new integer edit widget.
+
+    :param label_text: The text for the label. Defaults to an empty string.
+    :param edit_text: The initial text for the text box. Defaults to an empty string.
+    :param edit_placeholder: The placeholder text for the text box. Defaults to an empty string.
+    :param button_text: The text for the optional button. Defaults to None.
+    :param edit_width: The width of the text box. Defaults to None.
+    :param label_ratio: The ratio of the label width. Defaults to 1.
+    :param button_ratio: The ratio of the button width. Defaults to 1.
+    :param edit_ratio: The ratio of the text box width. Defaults to 5.
+    :param tooltip: The tooltip text for the widget. Defaults to an empty string.
+    :param orientation: The orientation of the widget (horizontal or vertical). Defaults to Qt.Horizontal.
+    :param enable_menu: If True, enables a context menu for the text box. Defaults to False.
+    :param slide_distance: The distance to slide when using the arrow keys. Defaults to 0.05.
+    :param small_slide_distance: The distance to slide when using the arrow keys with the Shift key. Defaults to 0.01.
+    :param large_slide_distance: The distance to slide when using the arrow keys with the Ctrl key. Defaults to 1.0.
+    :param scroll_distance: The distance to slide when using the mouse wheel. Defaults to 1.0.
+    :param update_on_slide_tick: If True, updates the value on each slide tick. Defaults to True.
+    :param parent: The parent widget. Defaults to None.
+    :return: new string edit widget instance.
+    """
+
+    return IntEdit(
+        label=label_text,
+        edit_text=edit_text,
+        edit_placeholder=edit_placeholder,
+        button_text=button_text,
+        edit_width=edit_width,
+        label_ratio=label_ratio,
+        button_ratio=button_ratio,
+        edit_ratio=edit_ratio,
+        tooltip=tooltip,
+        orientation=orientation,
+        enable_menu=enable_menu,
+        slide_distance=slide_distance,
+        small_slide_distance=small_slide_distance,
+        large_slide_distance=large_slide_distance,
+        scroll_distance=scroll_distance,
+        update_on_slide_tick=update_on_slide_tick,
+        parent=parent,
+    )
+
+
+def float_edit(
+    label_text: str = "",
+    edit_text: str = "",
+    edit_placeholder: str = "",
+    button_text: str | None = None,
+    edit_width: int | None = None,
+    label_ratio: int = 1,
+    button_ratio: int = 1,
+    edit_ratio: int = 5,
+    tooltip: str = "",
+    orientation: Qt.Orientation = Qt.Horizontal,
+    enable_menu: bool = False,
+    rounding: int = 3,
+    slide_distance: float = 0.05,
+    small_slide_distance: float = 0.01,
+    large_slide_distance: float = 1.0,
+    scroll_distance: float = 1.0,
+    update_on_slide_tick: bool = True,
+    parent: QWidget | None = None,
+) -> FloatEdit:
+    """
+    Creates a new integer edit widget.
+
+    :param label_text: The text for the label. Defaults to an empty string.
+    :param edit_text: The initial text for the text box. Defaults to an empty string.
+    :param edit_placeholder: The placeholder text for the text box. Defaults to an empty string.
+    :param button_text: The text for the optional button. Defaults to None.
+    :param edit_width: The width of the text box. Defaults to None.
+    :param label_ratio: The ratio of the label width. Defaults to 1.
+    :param button_ratio: The ratio of the button width. Defaults to 1.
+    :param edit_ratio: The ratio of the text box width. Defaults to 5.
+    :param tooltip: The tooltip text for the widget. Defaults to an empty string.
+    :param orientation: The orientation of the widget (horizontal or vertical). Defaults to Qt.Horizontal.
+    :param enable_menu: If True, enables a context menu for the text box. Defaults to False.
+    :param rounding: The number of decimal places to round to. Defaults to 3.
+    :param slide_distance: The distance to slide when using the arrow keys. Defaults to 0.05.
+    :param small_slide_distance: The distance to slide when using the arrow keys with the Shift key. Defaults to 0.01.
+    :param large_slide_distance: The distance to slide when using the arrow keys with the Ctrl key. Defaults to 1.0.
+    :param scroll_distance: The distance to slide when using the mouse wheel. Defaults to 1.0.
+    :param update_on_slide_tick: If True, updates the value on each slide tick. Defaults to True.
+    :param parent: The parent widget. Defaults to None.
+    :return: new string edit widget instance.
+    """
+
+    return FloatEdit(
+        label=label_text,
+        edit_text=edit_text,
+        edit_placeholder=edit_placeholder,
+        button_text=button_text,
+        edit_width=edit_width,
+        label_ratio=label_ratio,
+        button_ratio=button_ratio,
+        edit_ratio=edit_ratio,
+        tooltip=tooltip,
+        orientation=orientation,
+        enable_menu=enable_menu,
+        rounding=rounding,
+        slide_distance=slide_distance,
+        small_slide_distance=small_slide_distance,
+        large_slide_distance=large_slide_distance,
+        scroll_distance=scroll_distance,
+        update_on_slide_tick=update_on_slide_tick,
+        parent=parent,
+    )
+
+
+def collapsible_frame(
+    title: str,
+    thin: bool = False,
+    tooltip: str | None = None,
+    collapsed: bool = False,
+    collapsable: bool = True,
+    checkable: bool = False,
+    checked: bool = True,
+    content_margins: tuple[int, int, int, int] = uiconsts.MARGINS,
+    content_spacing: int = uiconsts.SPACING,
+    parent: QWidget | None = None,
+) -> CollapsibleFrame | CollapsibleFrameThin:
+    """
+    Creates a collapsible frame widget.
+
+    :param title: The title of the frame.
+    :param thin: Whether to use a thin frame.
+    :param tooltip: The tooltip of the frame.
+    :param collapsed: Whether the frame is initially collapsed.
+    :param collapsable: Whether the frame is collapsible.
+    :param checkable: Whether the frame is checkable.
+    :param checked: Whether the frame is checked.
+    :param content_margins: The content margins.
+    :param content_spacing: The content spacing.
+    :param parent: The parent widget.
+    :return: new collapsible frame widget instance.
+    """
+
+    if not thin:
+        return CollapsibleFrame(
+            title=title,
+            tooltip=tooltip,
+            collapsed=collapsed,
+            collapsable=collapsable,
+            checkable=checkable,
+            checked=checked,
+            content_margins=content_margins,
+            content_spacing=content_spacing,
+            parent=parent,
+        )
+    else:
+        return CollapsibleFrameThin(
+            title=title,
+            tooltip=tooltip,
+            collapsed=collapsed,
+            collapsable=collapsable,
+            checkable=checkable,
+            checked=checked,
+            content_margins=content_margins,
+            content_spacing=content_spacing,
+            parent=parent,
+        )
+
+
+def divider(
+    text: str | None = None,
+    shadow: bool = True,
+    orientation: Qt.Orientation = Qt.Horizontal,
+    alignment: Qt.AlignmentFlag = Qt.AlignLeft,
+    parent: QWidget | None = None,
+) -> Divider:
+    """
+    Creates a new divider widget.
+
+    :param text: The text to display on the divider. Defaults to None.
+    :param shadow: Whether to display a shadow. Defaults to True.
+    :param orientation: The orientation of the divider. Defaults to Qt.Horizontal.
+    :param alignment: The alignment of the text. Defaults to Qt.AlignLeft.
+    :param parent: The parent widget. Defaults to None.
+    :return: new divider widget instance.
+    """
+
+    return Divider(
+        text=text,
+        shadow=shadow,
+        orientation=orientation,
+        alignment=alignment,
+        parent=parent,
+    )
+
+
+def label_divider(text: str = "", parent: QWidget | None = None) -> LabelDivider:
+    """
+    Creates a new label divider widget.
+
+    :param text: The text to display on the divider. Defaults to an empty string.
+    :param parent: The parent widget. Defaults to None.
+    :return: new label divider widget instance.
+    """
+
+    return LabelDivider(text=text, parent=parent)
+
+
+def horizontal_line(parent: QWidget | None = None) -> HorizontalLine:
+    """
+    Creates a new horizontal line widget.
+
+    :param parent: The parent widget. Defaults to None.
+    :return: new horizontal line widget instance.
+    """
+
+    return HorizontalLine(parent=parent)
+
+
+def vertical_line(parent: QWidget | None = None) -> VerticalLine:
+    """
+    Creates a new vertical line widget.
+
+    :param parent: The parent widget. Defaults to None.
+    :return: new vertical line widget instance.
+    """
+
+    return VerticalLine(parent=parent)
+
+
+def radio_button_group(
+    radio_names: Sequence[str] | None = None,
+    tooltips: Sequence[str] | None = None,
+    default: int | None = 0,
+    vertical: bool = False,
+    margins: tuple[int, int, int, int] = (
+        uiconsts.REGULAR_PADDING,
+        uiconsts.REGULAR_PADDING,
+        uiconsts.REGULAR_PADDING,
+        0,
+    ),
+    spacing: int = uiconsts.SMALL_SPACING,
+    alignment: Qt.AlignmentFlag | None = None,
+    parent: QWidget | None = None,
+) -> RadioButtonGroup:
+    """
+    Creates a radio button group.
+
+    :param radio_names: optional list of radio button names.
+    :param tooltips: optional list of tooltips for each one of the radio buttons.
+    :param default: optional default button to be checked.
+    :param vertical: whether to create buttons horizontally or vertically.
+    :param margins: optional margins used for buttons layout.
+    :param spacing: optional spacing used for buttons layout.
+    :param alignment: optional align for buttons layout.
+    :param parent: parent widget.
+    """
+
+    return RadioButtonGroup(
+        radio_names=radio_names,
+        tooltips=tooltips,
+        default=default,
+        vertical=vertical,
+        margins=margins,
+        spacing=spacing,
+        alignment=alignment,
         parent=parent,
     )

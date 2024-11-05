@@ -51,6 +51,8 @@ QMenu {
 QLabel {
   color: #c0c0c0;
   background-color: transparent; }
+  QLabel:disabled {
+    color: #737373; }
 
 QLineEdit,
 QComboBox,
@@ -62,6 +64,14 @@ QDoubleSpinBox {
   padding-left: 6px;
   border-radius: 3px;
   border: 1px solid #353535; }
+
+QLineEdit:disabled,
+QTextEdit:disabled,
+QPlainTextEdit:disabled,
+QTextBrowser:disabled,
+QRadioButton:disabled {
+  color: #737373;
+  background-color: #151515; }
 
 QLineEdit:hover,
 QComboBox:hover {

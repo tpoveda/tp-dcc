@@ -2,14 +2,16 @@ from __future__ import annotations
 
 from Qt.QtCore import Qt, Signal
 from Qt.QtWidgets import QWidget, QPushButton
+from Qt.QtGui import QIntValidator, QDoubleValidator
 
-from . import layouts, labels, lineedits
+from .. import uiconsts
+from .labels import BaseLabel
+from .lineedits import BaseLineEdit, IntLineEdit, FloatLineEdit
+from .layouts import HorizontalLayout, VerticalLayout
 
 
 class StringEdit(QWidget):
-    """
-    Custom widget that creates a label, textbox (QLineEdit) and an optional button
-    """
+    """Custom widget that creates a label, textbox (QLineEdit) and an optional button"""
 
     buttonClicked = Signal()
 
@@ -47,36 +49,37 @@ class StringEdit(QWidget):
 
         super().__init__(parent)
 
-        self._label = label
-        self._button_text = button_text
         self._enable_menu = enable_menu
         self._button: QPushButton | None = None
 
         self._layout = (
-            layouts.HorizontalLayout
-            if orientation == Qt.Horizontal
-            else layouts.VerticalLayout
-        )(parent=self)
+            HorizontalLayout if orientation == Qt.Horizontal else VerticalLayout
+        )()
+        self._layout.setSpacing(uiconsts.DEFAULT_SPACING)
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self._layout)
 
         self._edit = self._setup_edit_line(
             edit_text=edit_text,
             placeholder=edit_placeholder,
             tooltip=tooltip,
             edit_width=edit_width,
+            enable_menu=enable_menu,
         )
+
         if label:
-            self._label = labels.BaseLabel(text=label, tooltip=tooltip, parent=self)
+            self._label = BaseLabel(text=label, tooltip=tooltip, parent=self)
             self._layout.addWidget(self._label, label_ratio)
         self._layout.addWidget(self._edit, edit_ratio)
 
-        if self._button_text:
+        if button_text:
             self._button = QPushButton(button_text, parent)
             self._layout.addWidget(self._button, button_ratio)
 
         self._setup_signals()
 
     @property
-    def label(self) -> labels.BaseLabel:
+    def label(self) -> BaseLabel:
         """
         Gets the label associated with the widget.
 
@@ -89,7 +92,7 @@ class StringEdit(QWidget):
 
     # noinspection SpellCheckingInspection
     @property
-    def edit(self) -> lineedits.BaseLineEdit:
+    def edit(self) -> BaseLineEdit:
         """
         Gets the text box (QLineEdit) associated with the widget.
 
@@ -228,8 +231,13 @@ class StringEdit(QWidget):
 
     # noinspection SpellCheckingInspection
     def _setup_edit_line(
-        self, edit_text: str, placeholder: str, tooltip: str, edit_width: int
-    ) -> lineedits.BaseLineEdit:
+        self,
+        edit_text: str,
+        placeholder: str,
+        tooltip: str,
+        edit_width: int,
+        enable_menu: bool,
+    ) -> BaseLineEdit:
         """
         Sets up the text box (QLineEdit) for the widget.
 
@@ -239,15 +247,16 @@ class StringEdit(QWidget):
         :param placeholder: The placeholder text for the text box.
         :param tooltip: The tooltip text for the text box.
         :param edit_width: The width of the text box.
+        :param enable_menu: If True, enables a context menu for the text box.
         :return: The configured text box (QLineEdit).
-        :rtype: lineedits.BaseLineEdit
         """
 
-        return lineedits.BaseLineEdit(
+        return BaseLineEdit(
             text=edit_text,
             placeholder=placeholder,
             tooltip=tooltip,
             edit_width=edit_width,
+            enable_menu=enable_menu,
             parent=self,
         )
 
@@ -261,6 +270,8 @@ class StringEdit(QWidget):
 
 
 class IntEdit(StringEdit):
+    """Custom widget that creates a label, textbox (QLineEdit) and an optional button"""
+
     def __init__(
         self,
         label: str = "",
@@ -282,7 +293,7 @@ class IntEdit(StringEdit):
         parent: QWidget | None = None,
     ):
         """
-        Initializes the StringEdit widget.
+        Initializes the IntEdit widget.
 
         :param label: The text for the label. Defaults to an empty string.
         :param edit_text: The initial text for the text box. Defaults to an empty string.
@@ -295,6 +306,11 @@ class IntEdit(StringEdit):
         :param tooltip: The tooltip text for the widget. Defaults to an empty string.
         :param orientation: The orientation of the widget (horizontal or vertical). Defaults to Qt.Horizontal.
         :param enable_menu: If True, enables a context menu for the text box. Defaults to False.
+        :param slide_distance: The distance to slide when using the arrow keys. Defaults to 0.05.
+        :param small_slide_distance: The distance to slide when using the arrow keys with the Shift key. Defaults to 0.01.
+        :param large_slide_distance: The distance to slide when using the arrow keys with the Ctrl key. Defaults to 1.0.
+        :param scroll_distance: The distance to slide when using the mouse wheel. Defaults to 1.0.
+        :param update_on_slide_tick: If True, updates the value on each slide tick. Defaults to True.
         :param parent: The parent widget. Defaults to None.
         """
 
@@ -314,12 +330,69 @@ class IntEdit(StringEdit):
         )
 
         # noinspection PyTypeChecker
-        line_edit: lineedits.IntLineEdit = self._edit
+        line_edit: IntLineEdit = self._edit
+
+        mouse_slider = line_edit.mouse_slider
+        mouse_slider.slide_distance = slide_distance
+        mouse_slider.small_slide_distance = small_slide_distance
+        mouse_slider.large_slide_distance = large_slide_distance
+        mouse_slider.scroll_distance = scroll_distance
+        mouse_slider.update_on_tick = update_on_slide_tick
+
+    @property
+    def sliderStarted(self) -> Signal:
+        """
+        Gets the sliderStarted signal of the text box.
+
+        This property returns the sliderStarted signal of the text box associated with the IntEdit widget.
+
+        :return: The sliderStarted signal of the text box.
+        """
+
+        # noinspection PyTypeChecker
+        line_edit: IntLineEdit = self._edit
+
+        return line_edit.mouse_slider.sliderStarted
+
+    @property
+    def sliderChanged(self) -> Signal:
+        """
+        Gets the sliderChanged signal of the text box.
+
+        This property returns the sliderChanged signal of the text box associated with the IntEdit widget.
+
+        :return: The sliderChanged signal of the text box.
+        """
+
+        # noinspection PyTypeChecker
+        line_edit: IntLineEdit = self._edit
+
+        return line_edit.mouse_slider.sliderChanged
+
+    @property
+    def sliderFinished(self) -> Signal:
+        """
+        Gets the sliderFinished signal of the text box.
+
+        This property returns the sliderFinished signal of the text box associated with the IntEdit widget.
+
+        :return: The sliderFinished signal of the text box.
+        """
+
+        # noinspection PyTypeChecker
+        line_edit: IntLineEdit = self._edit
+
+        return line_edit.mouse_slider.sliderFinished
 
     # noinspection SpellCheckingInspection
     def _setup_edit_line(
-        self, edit_text: str, placeholder: str, tooltip: str, edit_width: int
-    ) -> lineedits.IntLineEdit:
+        self,
+        edit_text: str,
+        placeholder: str,
+        tooltip: str,
+        edit_width: int,
+        enable_menu: bool,
+    ) -> IntLineEdit:
         """
         Sets up the text box (QLineEdit) for the widget.
 
@@ -329,14 +402,211 @@ class IntEdit(StringEdit):
         :param placeholder: The placeholder text for the text box.
         :param tooltip: The tooltip text for the text box.
         :param edit_width: The width of the text box.
+
         :return: The configured text box (QLineEdit).
-        :rtype: lineedits.IntLineEdit
         """
 
-        return lineedits.IntLineEdit(
+        return IntLineEdit(
             text=edit_text,
             placeholder=placeholder,
             tooltip=tooltip,
             edit_width=edit_width,
+            enable_menu=enable_menu,
             parent=self,
         )
+
+    def set_minimum_value(self, value: int):
+        """
+        Sets the minimum value for the IntEdit widget.
+
+        :param value: The minimum value to set.
+        """
+
+        # noinspection PyTypeChecker
+        validator: QDoubleValidator = self._edit.validator()
+        validator.setBottom(value)
+
+    def set_maximum_value(self, value: int):
+        """
+        Sets the maximum value for the IntEdit widget.
+
+        :param value: The maximum value to set.
+        """
+
+        # noinspection PyTypeChecker
+        validator: QDoubleValidator = self._edit.validator()
+        validator.setTop(value)
+
+
+class FloatEdit(StringEdit):
+    """Custom widget that creates a label, textbox (QLineEdit) and an optional button"""
+
+    def __init__(
+        self,
+        label: str = "",
+        edit_text: str = "",
+        edit_placeholder: str = "",
+        button_text: str | None = None,
+        edit_width: int | None = None,
+        label_ratio: int = 1,
+        button_ratio: int = 1,
+        edit_ratio: int = 1,
+        tooltip: str = "",
+        orientation: Qt.Orientation = Qt.Horizontal,
+        enable_menu: bool = True,
+        rounding: int = 3,
+        slide_distance: float = 0.01,
+        small_slide_distance: float = 0.001,
+        large_slide_distance: float = 0.1,
+        scroll_distance: float = 1.0,
+        update_on_slide_tick: bool = True,
+        parent: QWidget | None = None,
+    ):
+        """
+        Initializes the FloatEdit widget.
+
+        :param label: The text for the label. Defaults to an empty string.
+        :param edit_text: The initial text for the text box. Defaults to an empty string.
+        :param edit_placeholder: The placeholder text for the text box. Defaults to an empty string.
+        :param button_text: The text for the optional button. Defaults to None.
+        :param edit_width: The width of the text box. Defaults to None.
+        :param label_ratio: The ratio of the label width. Defaults to 1.
+        :param button_ratio: The ratio of the button width. Defaults to 1.
+        :param edit_ratio: The ratio of the text box width. Defaults to 5.
+        :param tooltip: The tooltip text for the widget. Defaults to an empty string.
+        :param orientation: The orientation of the widget (horizontal or vertical). Defaults to Qt.Horizontal.
+        :param enable_menu: If True, enables a context menu for the text box. Defaults to False.
+        :param rounding: The number of decimal places to round the float value. Defaults to 3.
+        :param slide_distance: The distance to slide when using the arrow keys. Defaults to 0.01.
+        :param small_slide_distance: The distance to slide when using the arrow keys with the Shift key. Defaults to 0.001.
+        :param large_slide_distance: The distance to slide when using the arrow keys with the Ctrl key. Defaults to 0.1.
+        :param scroll_distance: The distance to slide when using the mouse wheel. Defaults to 1.0.
+        :param update_on_slide_tick: If True, updates the value on each slide tick. Defaults to True.
+        :param parent: The parent widget. Defaults to None.
+        """
+
+        self._rounding = rounding
+
+        super().__init__(
+            label=label,
+            edit_text=edit_text,
+            edit_placeholder=edit_placeholder,
+            button_text=button_text,
+            edit_width=edit_width,
+            label_ratio=label_ratio,
+            button_ratio=button_ratio,
+            edit_ratio=edit_ratio,
+            tooltip=tooltip,
+            orientation=orientation,
+            enable_menu=enable_menu,
+            parent=parent,
+        )
+
+        # noinspection PyTypeChecker
+        line_edit: IntLineEdit = self._edit
+
+        mouse_slider = line_edit.mouse_slider
+        mouse_slider.slide_distance = slide_distance
+        mouse_slider.small_slide_distance = small_slide_distance
+        mouse_slider.large_slide_distance = large_slide_distance
+        mouse_slider.scroll_distance = scroll_distance
+        mouse_slider.update_on_tick = update_on_slide_tick
+
+    @property
+    def sliderStarted(self) -> Signal:
+        """
+        Gets the sliderStarted signal of the text box.
+
+        This property returns the sliderStarted signal of the text box associated with the IntEdit widget.
+
+        :return: The sliderStarted signal of the text box.
+        """
+
+        # noinspection PyTypeChecker
+        line_edit: IntLineEdit = self._edit
+
+        return line_edit.mouse_slider.sliderStarted
+
+    @property
+    def sliderChanged(self) -> Signal:
+        """
+        Gets the sliderChanged signal of the text box.
+
+        This property returns the sliderChanged signal of the text box associated with the IntEdit widget.
+
+        :return: The sliderChanged signal of the text box.
+        """
+
+        # noinspection PyTypeChecker
+        line_edit: IntLineEdit = self._edit
+
+        return line_edit.mouse_slider.sliderChanged
+
+    @property
+    def sliderFinished(self) -> Signal:
+        """
+        Gets the sliderFinished signal of the text box.
+
+        This property returns the sliderFinished signal of the text box associated with the IntEdit widget.
+
+        :return: The sliderFinished signal of the text box.
+        """
+
+        # noinspection PyTypeChecker
+        line_edit: IntLineEdit = self._edit
+
+        return line_edit.mouse_slider.sliderFinished
+
+    # noinspection SpellCheckingInspection
+    def _setup_edit_line(
+        self,
+        edit_text: str,
+        placeholder: str,
+        tooltip: str,
+        edit_width: int,
+        enable_menu: bool,
+    ) -> FloatLineEdit:
+        """
+        Sets up the text box (QLineEdit) for the widget.
+
+        This method initializes and configures the text box (QLineEdit) with the specified parameters.
+
+        :param edit_text: The initial text for the text box.
+        :param placeholder: The placeholder text for the text box.
+        :param tooltip: The tooltip text for the text box.
+        :param edit_width: The width of the text box.
+        :param enable_menu: If True, enables a context menu for the text box.
+        :return: The configured text box (QLineEdit).
+        """
+
+        return FloatLineEdit(
+            text=edit_text,
+            placeholder=placeholder,
+            tooltip=tooltip,
+            edit_width=edit_width,
+            enable_menu=enable_menu,
+            rounding=self._rounding,
+            parent=self,
+        )
+
+    def set_minimum_value(self, value: int):
+        """
+        Sets the minimum value for the IntEdit widget.
+
+        :param value: The minimum value to set.
+        """
+
+        # noinspection PyTypeChecker
+        validator: QIntValidator = self._edit.validator()
+        validator.setBottom(value)
+
+    def set_maximum_value(self, value: int):
+        """
+        Sets the maximum value for the IntEdit widget.
+
+        :param value: The maximum value to set.
+        """
+
+        # noinspection PyTypeChecker
+        validator: QIntValidator = self._edit.validator()
+        validator.setTop(value)

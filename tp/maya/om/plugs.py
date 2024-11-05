@@ -37,20 +37,20 @@ def as_mplug(attr_name: str) -> OpenMaya.MPlug:
     :return: plug with given name.
     """
 
-    sel = OpenMaya.MSelectionList()
-    sel.add(attr_name)
-    return sel.getPlug(0)
+    # sel = OpenMaya.MSelectionList()
+    # sel.add(attr_name)
+    # return sel.getPlug(0)
 
-    # try:
-    #     names = attr_name.split(".")
-    #     sel = OpenMaya.MSelectionList()
-    #     sel.add(names[0])
-    #     node = OpenMaya.MFnDependencyNode(sel.getDependNode(0))
-    #     return node.findPlug(".".join(names[1:]), False)
-    # except RuntimeError:
-    #     sel = OpenMaya.MSelectionList()
-    #     sel.add(attr_name)
-    #     return sel.getPlug(0)
+    try:
+        names = attr_name.split(".")
+        sel = OpenMaya.MSelectionList()
+        sel.add(names[0])
+        node = OpenMaya.MFnDependencyNode(sel.getDependNode(0))
+        return node.findPlug(".".join(names[1:]), False)
+    except RuntimeError:
+        sel = OpenMaya.MSelectionList()
+        sel.add(attr_name)
+        return sel.getPlug(0)
 
 
 def plug_type(plug: OpenMaya.MPlug) -> int | None:
@@ -1564,34 +1564,39 @@ def next_available_connection(
     return indices[-1] + 1 if num_indices > 0 else 0
 
 
-def next_available_dest_element_plug(array_plug):
+def next_available_dest_element_plug(array_plug: OpenMaya.MPlug, force: bool = False):
     """
     Returns the next available input plug from the plug array.
 
     :param array_plug: plug array to search.
+    :param force: whether to force the connection even if the plug is not connected.
     :return: next input plug.
     """
 
-    indices = array_plug.getExistingArrayAttributeIndices() or [0]
-    count = max(indices)
+    if force:
+        next_index = array_plug.evaluateNumElements()
+        return array_plug.elementByLogicalIndex(next_index)
+    else:
+        indices = array_plug.getExistingArrayAttributeIndices() or [0]
+        count = max(indices)
 
-    # we want to iterate further then the max index, so we add two due to arrays starting a zero and 1 for the extra
-    # available index maya creates
-    count += 2
-    for i in range(count):
-        available_plug = array_plug.elementByLogicalIndex(i)
-        if available_plug.isCompound:
-            connected = False
-            for child_index in range(available_plug.numChildren()):
-                if available_plug.child(child_index).isDestination:
-                    connected = True
-                    break
-            if connected:
+        # we want to iterate further then the max index, so we add two due to arrays starting a zero and 1 for the extra
+        # available index maya creates
+        count += 2
+        for i in range(count):
+            available_plug = array_plug.elementByLogicalIndex(i)
+            if available_plug.isCompound:
+                connected = False
+                for child_index in range(available_plug.numChildren()):
+                    if available_plug.child(child_index).isDestination:
+                        connected = True
+                        break
+                if connected:
+                    continue
+            if available_plug.isDestination:
                 continue
-        if available_plug.isDestination:
-            continue
 
-        return available_plug
+            return available_plug
 
     return None
 

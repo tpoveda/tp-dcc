@@ -10,16 +10,14 @@ from maya.api import OpenMaya as OpenMaya
 
 __version__ = "0.2.2"
 
-# Public API
-__all__ = [
-    "commit",
-    "install",
-    "uninstall",
-]
-
 
 # noinspection PyPep8Naming
 def maya_useNewAPI():
+    """
+    The presence of this function tells Maya that the plugin produces, and
+    expects to be passed, objects created using the Maya Python API 2.0.
+    """
+
     pass
 
 
@@ -99,6 +97,8 @@ def reinstall():
 
     ..note:: FOR DEVELOPERS: Call this when changes have been made to this module.
     """
+
+    print(__name__)
 
     uninstall()
     sys.modules.pop(__name__)

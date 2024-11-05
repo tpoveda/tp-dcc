@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Callable
 
 from ..plugins import apiundo
-from ..cmds import undo as cmds_undo
+from ..cmds import decorators
 
 
 def undo(*args, **kwargs):
@@ -13,7 +13,7 @@ def undo(*args, **kwargs):
     :raises TypeError: if more than one argument is given.
     """
 
-    return cmds_undo.undo(*args, **kwargs)
+    return decorators.Undo.get(*args, **kwargs)
 
 
 def commit(do_it: Callable, undo_it: Callable):

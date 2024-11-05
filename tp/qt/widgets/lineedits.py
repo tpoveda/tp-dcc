@@ -76,6 +76,7 @@ class BaseLineEdit(QLineEdit):
         :param tooltip: The tooltip.
         :param edit_width: The width of the LineEdit for editing. Defaults to None.
         :param fixed_width: The fixed width of the LineEdit. Defaults to None.
+        :param enable_menu: Whether to enable the context menu. Defaults to False.
         :param parent: The parent widget.
         """
 
@@ -270,6 +271,7 @@ class IntLineEdit(BaseLineEdit):
         tooltip: str = "",
         edit_width: int | None = None,
         fixed_width: int | None = None,
+        enable_menu: bool = False,
         slide_distance: float = 0.01,
         small_slide_distance: float = 0.001,
         large_slide_distance: float = 0.1,
@@ -285,6 +287,7 @@ class IntLineEdit(BaseLineEdit):
         :param tooltip: The tooltip.
         :param edit_width: The width of the LineEdit for editing. Defaults to None.
         :param fixed_width: The fixed width of the LineEdit. Defaults to None.
+        :param enable_menu: Whether to enable the context menu. Defaults to False.
         :param slide_distance: The distance to slide on normal drag. Defaults to 1.0.
         :param small_slide_distance: The distance to slide on small drag. Defaults to 0.1.
         :param large_slide_distance: The distance to slide on large drag. Defaults to 5.0.
@@ -299,6 +302,7 @@ class IntLineEdit(BaseLineEdit):
             tooltip=tooltip,
             edit_width=edit_width,
             fixed_width=fixed_width,
+            enable_menu=enable_menu,
             parent=parent,
         )
 
@@ -333,12 +337,32 @@ class IntLineEdit(BaseLineEdit):
 
     @property
     def mouse_slider(self) -> MouseSlider:
+        """
+        Getter method that returns the mouse slider.
+
+        :return: mouse slider.
+        """
+
         return self._mouse_slider
 
     def value(self) -> int:
+        """
+        Overrides `value` function to return the integer value of the line edit.
+
+        :return: integer value of the line edit.
+        """
+
         return super().value() or 0
 
     def set_value(self, value: int, update_text: bool = True):
+        """
+        Overrides `set_value` function to set the value of the line edit.
+
+        :param value: value to set.
+        :param update_text: whether to update the text. Default is True.
+        """
+
+
         self._value = self.convert_value(value)
         if update_text:
             self.blockSignals(True)
@@ -346,10 +370,19 @@ class IntLineEdit(BaseLineEdit):
             self.blockSignals(False)
 
     def _setup_validator(self):
+        """
+        Overrides `_setup_validator` function to set the line edit validator to an integer validator.
+        """
+
         self.setValidator(QIntValidator())
 
-    def _on_text_modified(self, value: float):
-        value = self.convert_value(value)
+    # noinspection PyMethodOverriding
+    def _on_text_modified(self):
+        """
+        Overrides `_on_text_modified` function to update the text to the integer value.
+        """
+
+        value = self.convert_value(self.value())
         self.blockSignals(True)
         self.setText(str(int(float(value))))
         self.clearFocus()
@@ -370,6 +403,7 @@ class FloatLineEdit(BaseLineEdit):
         tooltip: str = "",
         edit_width: int | None = None,
         fixed_width: int | None = None,
+        enable_menu: bool = False,
         rounding: int = 3,
         slide_distance: float = 0.01,
         small_slide_distance: float = 0.001,
@@ -386,6 +420,8 @@ class FloatLineEdit(BaseLineEdit):
         :param tooltip: The tooltip.
         :param edit_width: The width of the LineEdit for editing. Defaults to None.
         :param fixed_width: The fixed width of the LineEdit. Defaults to None.
+        :param enable_menu: Whether to enable the context menu. Defaults to False.
+        :param rounding: The number of decimal places to round to. Defaults to 3.
         :param slide_distance: The distance to slide on normal drag. Defaults to 1.0.
         :param small_slide_distance: The distance to slide on small drag. Defaults to 0.1.
         :param large_slide_distance: The distance to slide on large drag. Defaults to 5.0.
@@ -402,6 +438,7 @@ class FloatLineEdit(BaseLineEdit):
             tooltip=tooltip,
             edit_width=edit_width,
             fixed_width=fixed_width,
+            enable_menu=enable_menu,
             parent=parent,
         )
 
@@ -422,7 +459,8 @@ class FloatLineEdit(BaseLineEdit):
 
     @classmethod
     def convert_value(cls, value: Any) -> float:
-        """Converts given value to a compatible float line edit value.
+        """
+        Converts given value to a compatible float line edit value.
 
         :param Any value: value to convert.
         :return: float line edit compatible value.
@@ -442,17 +480,41 @@ class FloatLineEdit(BaseLineEdit):
 
     @property
     def mouse_slider(self) -> MouseSlider:
+        """
+        Getter method that returns the mouse slider.
+
+        :return: mouse slider.
+        """
+
         return self._mouse_slider
 
     @property
     def rounding(self) -> int:
+        """
+        Getter method that returns the rounding value.
+
+        :return: rounding value.
+        """
+
         return self._rounding
 
     @rounding.setter
     def rounding(self, value: int):
+        """
+        Setter method that sets the rounding value.
+
+        :param value: rounding value.
+        """
+
         self._rounding = value
 
     def focusInEvent(self, event: QFocusEvent):
+        """
+        Overrides `focusInEvent` function to select all text when the line edit is focused.
+
+        :param event: Qt focus event.
+        """
+
         if self._mode == dcc.Blender:
             self.blockSignals(True)
             self.setText(str(self.value()))
@@ -461,18 +523,39 @@ class FloatLineEdit(BaseLineEdit):
             self.blockSignals(False)
         super().focusInEvent(event)
 
-    def focusOutEvent(self, event: QFocusEvent) -> None:
-        self._on_text_modified(self.value())
+    def focusOutEvent(self, event: QFocusEvent):
+        """
+        Overrides `focusOutEvent` function to update the text to the float value when the line edit loses focus.
+
+        :param event: Qt focus event.
+        """
+
+        self._on_text_modified()
         super().focusOutEvent(event)
 
-    def clearFocus(self) -> None:
+    def clearFocus(self):
+        """
+        Overrides `clearFocus` function to update the text to the float value when the line edit loses focus.
+        """
+
         super().clearFocus()
         self.setText(str(round(self.value(), self._rounding)))
 
     def value(self) -> float:
+        """
+        Overrides `value` function to return the float value of the line edit.
+        """
+
         return super().value() or 0.0
 
     def set_value(self, value: float, update_text: bool = True):
+        """
+        Overrides `set_value` function to set the value of the line edit.
+
+        :param value: value to set.
+        :param update_text: whether to update the text. Default is True.
+        """
+
         self._value = self.convert_value(value)
         if update_text:
             self.blockSignals(True)
@@ -480,16 +563,31 @@ class FloatLineEdit(BaseLineEdit):
             self.blockSignals(False)
 
     def _setup_validator(self):
+        """
+        Overrides `_setup_validator` function to set the line edit validator to a float validator.
+        """
+
         self.setValidator(QDoubleValidator())
 
-    def _on_text_modified(self, value: float):
-        value = self.convert_value(value)
+    # noinspection PyMethodOverriding
+    def _on_text_modified(self):
+        """
+        Internal callback function that is called each time text is modified by the user (on return or switching out of
+        """
+
+        value = self.convert_value(self.value())
         self.blockSignals(True)
         self.setText(str(round(value, self._rounding)))
         self.clearFocus()
         self.blockSignals(False)
 
     def _before_after_state(self) -> tuple[Any, Any]:
+        """
+        Overrides `_before_after_state` function to return the before and after state of the line edit.
+
+        :return: before and after state.
+        """
+
         before_finished, value = super()._before_after_state()
         return float(before_finished), float(value)
 
@@ -504,20 +602,38 @@ class FolderLineEdit(BaseLineEdit):
 
         self.setDragEnabled(True)
 
-    def dragEnterEvent(self, arg__1: QDragEnterEvent) -> None:
-        data = arg__1.mimeData()
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        """
+        Overrides base QLineEdit dragEnterEvent function.
+
+        :param event: Qt drag enter event.
+        """
+
+        data = event.mimeData()
         urls = data.urls()
         if urls and urls[0].scheme() == "file":
-            arg__1.acceptProposedAction()
+            event.acceptProposedAction()
 
-    def dragMoveEvent(self, e: QDragMoveEvent) -> None:
-        data = e.mimeData()
+    def dragMoveEvent(self, event: QDragMoveEvent):
+        """
+        Overrides base QLineEdit dragMoveEvent function.
+
+        :param event: Qt drag move event.
+        """
+
+        data = event.mimeData()
         urls = data.urls()
         if urls and urls[0].scheme() == "file":
-            e.acceptProposedAction()
+            event.acceptProposedAction()
 
-    def dropEvent(self, arg__1: QDropEvent) -> None:
-        data = arg__1.mimeData()
+    def dropEvent(self, event: QDropEvent):
+        """
+        Overrides base QLineEdit dropEvent function.
+
+        :param event: Qt drop event.
+        """
+
+        data = event.mimeData()
         urls = data.urls()
         if urls and urls[0].scheme() == "file":
             self.setText(urls[0].toLocalFile())
@@ -592,7 +708,7 @@ class FileSystemPathLineEdit(QLineEdit):
         )
         self._clear_action = QAction()
         self._clear_action.setIcon(
-            QIcon(paths.canonical_path("../../resources/icons/close.svg"))
+            QIcon(paths.canonical_path("../../resources/icons/close.png"))
         )
         self.addAction(self._clear_action, QLineEdit.TrailingPosition)
         self.addAction(self._browse_action, QLineEdit.TrailingPosition)
@@ -1307,6 +1423,106 @@ class MouseSlider(QObject):
         self._enabled = True
 
         self._setup_signals()
+
+    @property
+    def update_on_tick(self) -> bool:
+        """
+        Getter method that returns whether to update on tick events.
+
+        :return: True if updates on tick events; False otherwise.
+        """
+
+        return self._update_on_tick
+
+    @update_on_tick.setter
+    def update_on_tick(self, flag: bool):
+        """
+        Setter method that sets whether to update on tick events.
+
+        :param flag: True to update on tick events; False otherwise.
+        """
+
+        self._update_on_tick = flag
+
+    @property
+    def slide_distance(self) -> float:
+        """
+        Getter method that returns the distance to slide on normal drag.
+
+        :return: distance to slide on normal drag.
+        """
+
+        return self._slide_distance
+
+    @slide_distance.setter
+    def slide_distance(self, value: float):
+        """
+        Setter method that sets the distance to slide on normal drag.
+
+        :param value: distance to slide on normal drag.
+        """
+
+        self._slide_distance = value
+
+    @property
+    def small_slide_distance(self) -> float:
+        """
+        Getter method that returns the distance to slide on small drag.
+
+        :return: distance to slide on small drag.
+        """
+
+        return self._small_slide_distance
+
+    @small_slide_distance.setter
+    def small_slide_distance(self, value: float):
+        """
+        Setter method that sets the distance to slide on small drag.
+
+        :param value: distance to slide on small drag.
+        """
+
+        self._small_slide_distance = value
+
+    @property
+    def large_slide_distance(self) -> float:
+        """
+        Getter method that returns the distance to slide on large drag.
+
+        :return: distance to slide on large drag.
+        """
+
+        return self._large_slide_distance
+
+    @large_slide_distance.setter
+    def large_slide_distance(self, value: float):
+        """
+        Setter method that sets the distance to slide on large drag.
+
+        :param value: distance to slide on large drag.
+        """
+
+        self._large_slide_distance = value
+
+    @property
+    def scroll_distance(self) -> float:
+        """
+        Getter method that returns the distance to scroll.
+
+        :return: distance to scroll.
+        """
+
+        return self._scroll_distance
+
+    @scroll_distance.setter
+    def scroll_distance(self, value: float):
+        """
+        Setter method that sets the distance to scroll.
+
+        :param value: distance to scroll.
+        """
+
+        self._scroll_distance = value
 
     def set_enabled(self, flag: bool):
         """

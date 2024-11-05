@@ -266,7 +266,7 @@ def create_ik_handle(
 
 def create_nurbs_curve_from_points(
     name: str,
-    points: list[list[float, float, float], ...],
+    points: list[list[float] | OpenMaya.MVector],
     shape_data: dict | None = None,
     parent: DagNode | None = None,
 ) -> tuple[DagNode, list[DGNode]]:
@@ -333,3 +333,68 @@ def create_poly_sphere(name, **kwargs) -> list[DagNode]:
 
     poly_plane = cmds.polySphere(name=name, **kwargs)
     return list(map(node_by_name, poly_plane))
+
+
+def create_condition_vector(
+    first_term: Plug | float,
+    second_term: Plug | float,
+    color_if_true: Iterable[float | Plug] | Plug | OpenMaya.MVector,
+    color_if_false: Iterable[float | Plug] | Plug | OpenMaya.MVector,
+    operation: int | Plug,
+    name: str,
+) -> DGNode:
+    """
+    Creates a condition node that compares two vectors and returns a color based on the result.
+
+    :param first_term: first term to compare.
+    :param second_term: second term to compare.
+    :param color_if_true: color to return if the condition is true.
+    :param color_if_false: color to return if the condition is false.
+    :param operation: operation to apply.
+    :param name: name of the condition node.
+    :return: created condition node.
+    """
+
+    condition_node = create_dg_node(name, "condition")
+    if isinstance(operation, Plug):
+        operation.connect(condition_node.operation)
+    else:
+        condition_node.operation.set(operation)
+    if isinstance(first_term, float):
+        condition_node.firstTerm.set(first_term)
+    else:
+        first_term.connect(condition_node.firstTerm)
+    if isinstance(second_term, float):
+        condition_node.secondTerm.set(second_term)
+    else:
+        second_term.connect(condition_node.secondTerm)
+    if isinstance(color_if_true, Plug):
+        color_if_true.connect(condition_node.colorIfTrue)
+    elif isinstance(color_if_true, OpenMaya.MVector):
+        condition_node.colorIfTrue.set(color_if_true)
+    else:
+        color = condition_node.colorIfTrue
+        for i, plug in enumerate(color_if_true):
+            if plug is None:
+                continue
+            child = color.child(i)
+            if isinstance(plug, Plug):
+                plug.connect(child)
+                continue
+            child.set(plug)
+    if isinstance(color_if_false, Plug):
+        color_if_false.connect(condition_node.colorIfFalse)
+    elif isinstance(color_if_false, OpenMaya.MVector):
+        condition_node.colorIfFalse.set(color_if_false)
+    else:
+        color = condition_node.colorIfFalse
+        for i, plug in enumerate(color_if_false):
+            if plug is None:
+                continue
+            child = color.child(i)
+            if isinstance(plug, Plug):
+                plug.connect(child)
+                continue
+            child.set(plug)
+
+    return condition_node

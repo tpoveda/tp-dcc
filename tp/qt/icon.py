@@ -47,7 +47,7 @@ def colorize_icon(
 def colorize_layered_icon(
     icons: list[QIcon],
     colors: Iterable[QColor] | None = None,
-    scaling: list[float, float] | None = None,
+    scaling: list[float] | None = None,
 ):
     """
     Layers multiple icons with various colors into one icon.

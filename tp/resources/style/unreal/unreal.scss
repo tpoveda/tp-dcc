@@ -95,6 +95,11 @@ QLabel
 {
   color: $silver-color;
   background-color: transparent;
+
+  &:disabled
+    {
+        color: $disable-color;
+    }
 }
 
 QLineEdit,
@@ -112,16 +117,26 @@ QDoubleSpinBox
   border: 1px solid $jet-color;
 }
 
-  QLineEdit:hover,
-  QComboBox:hover
-  {
-    border-color: $black-oak-color;
-  }
+QLineEdit:disabled,
+QTextEdit:disabled,
+QPlainTextEdit:disabled,
+QTextBrowser:disabled,
+QRadioButton:disabled
+{
+  color: $disable-color;
+  background-color: $matte-black-color;
+}
 
-  QLineEdit:focus
-  {
-    border-color: $blue-diamond-color;
-  }
+QLineEdit:hover,
+QComboBox:hover
+{
+  border-color: $black-oak-color;
+}
+
+QLineEdit:focus
+{
+  border-color: $blue-diamond-color;
+}
 
 QComboBox::drop-down
 {
@@ -631,5 +646,3 @@ QToolBox::tab
     image: url(:/icons/triangle-down.svg);
   }
 }
-
-

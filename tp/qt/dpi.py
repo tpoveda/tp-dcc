@@ -102,7 +102,7 @@ def dpi_scale_divide(value: int) -> float:
 
 
 def margins_dpi_scale(
-    left: int | Iterable[int, int, int, int],
+    left: int | Iterable[int],
     top: int | None = None,
     right: int | None = None,
     bottom: int | None = None,
@@ -156,6 +156,10 @@ class DPIScaling:
     """
     Mixin class that can be used in any QWidget to add DPI scaling functionality to it
     """
+
+    # Necessary to avoid multiple inheritance issues.
+    def __init__(self, *args, **kwargs):
+        pass
 
     def setFixedSize(self, size):
         return super(DPIScaling, self).setFixedSize(dpi_scale(size))
