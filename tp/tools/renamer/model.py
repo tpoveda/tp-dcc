@@ -5,6 +5,7 @@ import logging
 from Qt.QtCore import Signal
 
 from tp.qt.mvc import Model, UiProperty
+from tp.naming.consts import EditIndexMode
 
 from .events import (
     UpdateNodeTypesEvent,
@@ -15,6 +16,16 @@ from .events import (
     AddSuffixEvent,
     RemovePrefixEvent,
     RemoveSuffixEvent,
+    EditIndexEvent,
+    ShuffleIndexEvent,
+    ChangePaddingEvent,
+    RenumberEvent,
+    RemoveNumbersEvent,
+    AssignNamespaceEvent,
+    DeleteSelectedNamespaceEvent,
+    DeleteUnusedNamespacesEvent,
+    OpenNamespaceEditorEvent,
+    OpenReferenceEditorEvent,
 )
 
 logger = logging.getLogger(__name__)
@@ -31,6 +42,16 @@ class RenamerModel(Model):
     addSuffix = Signal(AddSuffixEvent)
     removePrefix = Signal(RemovePrefixEvent)
     removeSuffix = Signal(RemoveSuffixEvent)
+    editIndex = Signal(EditIndexEvent)
+    shuffleIndex = Signal(ShuffleIndexEvent)
+    changePadding = Signal(ChangePaddingEvent)
+    doRenumber = Signal(RenumberEvent)
+    removeNumbers = Signal(RemoveNumbersEvent)
+    assignNamespace = Signal(AssignNamespaceEvent)
+    deleteSelectedNamespace = Signal(DeleteSelectedNamespaceEvent)
+    deleteUnusedNamespaces = Signal(DeleteUnusedNamespacesEvent)
+    openNamespaceEditor = Signal(OpenNamespaceEditorEvent)
+    openReferenceEditor = Signal(OpenReferenceEditorEvent)
 
     def initialize_properties(self) -> list[UiProperty]:
         """
@@ -234,7 +255,6 @@ class RenamerModel(Model):
     def remove_suffix(self):
         """
         Removes a suffix from the node names.
-        :return:
         """
 
         search_hierarchy, selection_only = self._get_filter_options()
@@ -254,6 +274,234 @@ class RenamerModel(Model):
         self.removeSuffix.emit(event)
         if not event.success:
             logger.error("Failed to remove suffix from node names.")
+
+    def edit_index(self):
+        """
+        Edits the index of the node names.
+
+        :raises ValueError: If the edit mode is invalid.
+        """
+
+        search_hierarchy, selection_only = self._get_filter_options()
+        nice_name_type = self.properties.node_types.value[
+            self.properties.active_node_type_index.value
+        ]
+        edit_mode = self.properties.index_combo.value
+        text = self.properties.at_index.value
+        index = int(self.properties.index.value)
+
+        if not search_hierarchy and not selection_only:
+            logger.warning("The `All` filter cannot be used with edit index.")
+            return
+
+        if edit_mode == 0:
+            mode = EditIndexMode.Insert
+        elif edit_mode == 1:
+            mode = EditIndexMode.Replace
+        elif edit_mode == 2:
+            mode = EditIndexMode.Remove
+        else:
+            raise ValueError(f"Invalid edit mode: {edit_mode}")
+        if index > 0:
+            index -= 1
+
+        event = EditIndexEvent(
+            text=text,
+            nice_name_type=nice_name_type,
+            rename_shape=self.properties.auto_shapes.value,
+            hierarchy=search_hierarchy,
+            selection_only=selection_only,
+            index=index,
+            mode=mode,
+        )
+        self.editIndex.emit(event)
+        if not event.success:
+            logger.error("Failed to edit index of node names.")
+
+    def shuffle_index(self, offset: int):
+        """
+        Shuffles the index of the node names.
+
+        :param offset: The offset to shuffle the index.
+        """
+
+        search_hierarchy, selection_only = self._get_filter_options()
+        nice_name_type = self.properties.node_types.value[
+            self.properties.active_node_type_index.value
+        ]
+        shuffle_index = int(self.properties.index_shuffle.value)
+        if not search_hierarchy and not selection_only:
+            logger.warning("The `All` filter cannot be used with shuffle index.")
+            return
+
+        if shuffle_index > 0:
+            shuffle_index -= 1
+
+        event = ShuffleIndexEvent(
+            nice_name_type=nice_name_type,
+            rename_shape=self.properties.auto_shapes.value,
+            hierarchy=search_hierarchy,
+            selection_only=selection_only,
+            index=shuffle_index,
+            offset=offset,
+        )
+        self.shuffleIndex.emit(event)
+        if not event.success:
+            logger.error("Failed to shuffle index of node names.")
+            return
+
+        old_value = int(self.properties.index_shuffle.value)
+        new_value = old_value + offset
+        if new_value == 0:
+            new_value = 1 if old_value > 1 else -1
+        self.update_property("index_shuffle", str(new_value))
+
+    def change_padding(self):
+        """
+        Changes the padding of the node names.
+        """
+
+        search_hierarchy, selection_only = self._get_filter_options()
+        nice_name_type = self.properties.node_types.value[
+            self.properties.active_node_type_index.value
+        ]
+        padding = int(self.properties.renumber_padding.value)
+        if not search_hierarchy and not selection_only:
+            logger.warning("The `All` filter cannot be used with change padding.")
+            return
+
+        event = ChangePaddingEvent(
+            padding=padding,
+            nice_name_type=nice_name_type,
+            rename_shape=self.properties.auto_shapes.value,
+            hierarchy=search_hierarchy,
+            selection_only=selection_only,
+        )
+        self.changePadding.emit(event)
+        if not event.success:
+            logger.error("Failed to change padding of node names.")
+
+    def renumber(self, trailing_only: bool = False):
+        """
+        Renumber the node names.
+
+        :param trailing_only: Whether to renumber only the trailing numbers.
+        """
+
+        search_hierarchy, selection_only = self._get_filter_options()
+        nice_name_type = self.properties.node_types.value[
+            self.properties.active_node_type_index.value
+        ]
+        padding = int(self.properties.renumber_padding.value)
+        if not search_hierarchy and not selection_only:
+            logger.warning("The `All` filter cannot be used with renumber.")
+            return
+
+        event = RenumberEvent(
+            nice_name_type=nice_name_type,
+            remove_trailing_numbers=trailing_only,
+            padding=padding,
+            rename_shape=self.properties.auto_shapes.value,
+            hierarchy=search_hierarchy,
+            selection_only=selection_only,
+        )
+        self.doRenumber.emit(event)
+        if not event.success:
+            logger.error("Failed to renumber node names.")
+
+    def remove_numbers(self, trailing_only: bool = False):
+        """
+        Removes the numbers from the node names.
+
+        :param trailing_only: Whether to remove only the trailing numbers.
+        """
+
+        search_hierarchy, selection_only = self._get_filter_options()
+        nice_name_type = self.properties.node_types.value[
+            self.properties.active_node_type_index.value
+        ]
+        event = RemoveNumbersEvent(
+            nice_name_type=nice_name_type,
+            trailing_only=trailing_only,
+            rename_shape=self.properties.auto_shapes.value,
+            hierarchy=search_hierarchy,
+            selection_only=selection_only,
+        )
+        self.removeNumbers.emit(event)
+        if not event.success:
+            logger.error("Failed to remove numbers from node names.")
+
+    def assign_namespace(self):
+        """
+        Assigns a namespace to the node names.
+        """
+
+        search_hierarchy, selection_only = self._get_filter_options()
+        nice_name_type = self.properties.node_types.value[
+            self.properties.active_node_type_index.value
+        ]
+        namespace = self.properties.namespace.value
+        remove_namespace = (
+            True if self.properties.namespace_option_index.value == 1 else False
+        )
+
+        event = AssignNamespaceEvent(
+            namespace=namespace,
+            nice_name_type=nice_name_type,
+            remove_namespace=remove_namespace,
+            rename_shape=self.properties.auto_shapes.value,
+            hierarchy=search_hierarchy,
+            selection_only=selection_only,
+        )
+        self.assignNamespace.emit(event)
+        if not event.success:
+            logger.error("Failed to assign namespace to node names.")
+
+    def delete_selected_namespace(self):
+        """
+        Deletes selected namespaces.
+        """
+
+        event = DeleteSelectedNamespaceEvent(rename_shape=self.properties.auto_shapes.value)
+        self.deleteSelectedNamespace.emit(event)
+        if not event.success:
+            logger.error('Failed to delete selected namespace.')
+
+    def delete_unused_namespaces(self):
+        """
+        Deletes unused namespaces.
+        """
+
+        event = DeleteUnusedNamespacesEvent()
+        self.deleteUnusedNamespaces.emit(event)
+        if not event.success:
+            logger.error('Failed to delete unused namespaces.')
+
+    def open_namespace_editor(self):
+        """
+        Opens namespace editor.
+        """
+
+        event = OpenNamespaceEditorEvent()
+        self.openNamespaceEditor.emit(event)
+
+    def open_reference_editor(self):
+        """
+        Opens reference editor.
+        """
+
+        event = OpenReferenceEditorEvent()
+        self.openReferenceEditor.emit(event)
+
+    def auto_suffix(self):
+        """
+        Auto suffixes nodes based on its node type.
+        """
+
+    def make_unique_name(self):
+        """
+        Make a unique name for the node.
+        """
 
     def _get_filter_options(self) -> tuple[bool, bool]:
         """

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import typing
 from dataclasses import dataclass, field
+
+if typing.TYPE_CHECKING:
+    from tp.naming.consts import EditIndexMode
 
 
 @dataclass
@@ -101,4 +105,148 @@ class RemoveSuffixEvent:
     rename_shape: bool
     hierarchy: bool
     selection_only: bool
+    success: bool = False
+
+
+@dataclass
+class EditIndexEvent:
+    """
+    Event for editing the index.
+    """
+
+    text: str
+    nice_name_type: str
+    rename_shape: bool
+    hierarchy: bool
+    selection_only: bool
+    index: int
+    mode: EditIndexMode
+    success: bool = False
+
+
+@dataclass
+class ShuffleIndexEvent:
+    """
+    Event for shuffling the index.
+    """
+
+    nice_name_type: str
+    rename_shape: bool
+    hierarchy: bool
+    selection_only: bool
+    index: int
+    offset: int
+    success: bool = False
+
+
+@dataclass
+class ChangePaddingEvent:
+    """
+    Event for changing the padding.
+    """
+
+    padding: int
+    nice_name_type: str
+    rename_shape: bool
+    hierarchy: bool
+    selection_only: bool
+    success: bool = False
+
+
+@dataclass
+class RenumberEvent:
+    """
+    Event for renumbering the nodes.
+    """
+
+    nice_name_type: str
+    remove_trailing_numbers: bool
+    padding: int
+    rename_shape: bool
+    hierarchy: bool
+    selection_only: bool
+    success: bool = False
+
+
+@dataclass
+class RemoveNumbersEvent:
+    """
+    Event for removing numbers from the nodes.
+    """
+
+    nice_name_type: str
+    trailing_only: bool
+    rename_shape: bool
+    hierarchy: bool
+    selection_only: bool
+    success: bool = False
+
+
+@dataclass
+class AssignNamespaceEvent:
+    """
+    Event for assigning a namespace to the nodes.
+    """
+
+    namespace: str
+    nice_name_type: str
+    remove_namespace: bool
+    rename_shape: bool
+    hierarchy: bool
+    selection_only: bool
+    success: bool = False
+
+
+@dataclass
+class DeleteSelectedNamespaceEvent:
+    """
+    Event for deleting selected namespaces.
+    """
+
+    rename_shape: bool
+    success: bool = False
+
+
+@dataclass
+class DeleteUnusedNamespacesEvent:
+    """
+    Event for deleting unused namespaces.
+    """
+
+    success: bool = False
+
+
+@dataclass
+class OpenNamespaceEditorEvent:
+    """
+    Event for opening the namespace editor.
+    """
+
+    success: bool = False
+
+
+@dataclass
+class OpenReferenceEditorEvent:
+    """
+    Event for opening the reference editor.
+    """
+
+    success: bool = False
+
+
+@dataclass
+class AutoSuffixEvent:
+    """
+    Event for auto suffix nodes based on their types.
+    """
+
+    success: bool = False
+
+
+@dataclass
+class MakeUniqueNameEvent:
+    """
+    Event for making unique names.
+    """
+
     success: bool = False

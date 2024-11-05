@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import enum
+import re
 import logging
 
 from maya import cmds
@@ -8,26 +8,35 @@ from maya import cmds
 from tp.maya.cmds import filtertypes
 from tp.maya.cmds.nodeutils import naming
 
+from ..consts import PrefixSuffixType, EditIndexMode
+
 logger = logging.getLogger(__name__)
 
 
-class PrefixSuffixType(enum.Enum):
+def trailing_number(name: str) -> tuple[str, int | None, int]:
     """
-    Enum that defines the type of prefix or suffix to apply to the given object.
+    Returns the trailing number of a string, the name with the number removed, and the padding of the number.
+
+    Examples:
+        - 'shaderName' returns ('shaderName', None, 0).
+        - 'shaderName2' returns ('shaderName', 2, 1).
+        - 'shader1_Name04' returns ('shader1_Name', 4, 2).
+        - 'shaderName_99' returns ('shaderName_', 99, 2).
+        - shaderName_0009' returns ('shaderName_', 9, 4).
+
+    :param name: string to get the trailing number from.
+    :return: name without the trailing number, the trailing number, and the padding of the number.
     """
 
-    Prefix = "prefix"
-    Suffix = "suffix"
+    result = re.search(r"\d+$", name)
+    if not result:
+        return name, None, 0
 
+    number_as_string = result.group()
+    name_numberless = name[: -len(number_as_string)]
+    padding = len(number_as_string)
 
-class EditIndexMode(enum.Enum):
-    """
-    Enum that defines the mode to edit the index item.
-    """
-
-    Insert = "insert"
-    Replace = "replace"
-    Remove = "remove"
+    return name_numberless, int(number_as_string), padding
 
 
 def rename_shape_nodes(
@@ -644,7 +653,7 @@ def edit_index_item_filtered_type(
     selection_only: bool = True,
     dag: bool = False,
     remove_maya_defaults: bool = True,
-    transform_only: bool = True,
+    transforms_only: bool = True,
 ) -> list[str]:
     """
     Split node names by the given separator and edit the position by given index number.
@@ -672,7 +681,7 @@ def edit_index_item_filtered_type(
     :param selection_only: whether to search only the selected nodes.
     :param dag: whether to search only the DAG nodes.
     :param remove_maya_defaults: whether to remove Maya default names.
-    :param transform_only: whether to search only transform nodes.
+    :param transforms_only: whether to search only transform nodes.
     :return: list of new node names.
     """
 
@@ -682,7 +691,7 @@ def edit_index_item_filtered_type(
         selection_only=selection_only,
         dag=dag,
         remove_maya_defaults=remove_maya_defaults,
-        transforms_only=transform_only,
+        transforms_only=transforms_only,
         include_constraints=True,
     )
     if not selected_nodes:
@@ -694,5 +703,682 @@ def edit_index_item_filtered_type(
         text=text,
         mode=mode,
         separator=separator,
+        rename_shape=rename_shape,
+    )
+
+
+def shuffle_item_by_index(
+    object_to_rename: str,
+    index: int,
+    offset: int = 1,
+    uuid: str | None = None,
+    rename_shape: bool = True,
+    separator: str = "_",
+) -> str:
+    """
+    Shuffle the position of an item by the given index number.
+
+    Index is the text to move/shuffle, can be negative number.
+
+    Examples:
+        'pCube_01_geo' (index 0 = 'pCube', index 1 = '01', index 2 = 'geo')
+
+    :param object_to_rename: name of the object to rename.
+    :param index: the index to edit.
+    :param offset: the offset to shuffle the index (1 if forward and -1 is backwards).
+    :param uuid: optional UUID for the renaming. If given, it will be used for the renaming instead of the object name.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :param separator: the separator to use for the index item.
+    :return: new node name.
+    """
+
+    object_to_rename = cmds.ls(uuid, long=True)[0] if uuid else object_to_rename
+    long_prefix, namespace, base_name = naming.name_part_types(object_to_rename)
+    base_name_parts = base_name.split(separator)
+
+    # If no parts to shuffle, we return the object name.
+    if len(base_name_parts) == 1 or offset == 0:
+        return object_to_rename
+
+    found_index = check_index_in_name_parts(base_name_parts, index)
+    if not found_index:
+        return object_to_rename
+
+    # Cannot offset from 0 into a negative number.
+    if index == 0 and offset < 0:
+        return object_to_rename
+
+    # Cannot offset from -1 into a positive number.
+    if index == -1 and offset > 0:
+        return object_to_rename
+
+    index_part = base_name_parts[index]
+    base_name_parts[index] = base_name_parts[index + offset]
+    base_name_parts[index + offset] = index_part
+    new_name = naming.join_name_parts(long_prefix, namespace, "_".join(base_name_parts))
+
+    return safe_rename(object_to_rename, new_name, uuid=uuid, rename_shape=rename_shape)
+
+
+def shuffle_item_by_index_objects(
+    objects_to_rename: list[str],
+    index: int,
+    offset: int = 1,
+    separator: str = "_",
+    rename_shape: bool = True,
+) -> list[str]:
+    """
+    Shuffle the position of an item by the given index number.
+
+    :param objects_to_rename: list of node names to rename.
+    :param index: the index to edit.
+    :param offset: the offset to shuffle the index.
+    :param separator: the separator to use for the index item.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :return: list of new node names.
+    """
+
+    uuids = cmds.ls(objects_to_rename, uuid=True)
+    for i, object_to_rename in enumerate(objects_to_rename):
+        shuffle_item_by_index(
+            object_to_rename,
+            index,
+            offset=offset,
+            uuid=uuids[i],
+            separator=separator,
+            rename_shape=rename_shape,
+        )
+
+    return cmds.ls(uuids, long=True)
+
+
+def shuffle_item_by_index_filtered_type(
+    index: int,
+    nice_name_type: str,
+    offset: int = 1,
+    separator: str = "_",
+    rename_shape: bool = True,
+    search_hierarchy: bool = False,
+    selection_only: bool = True,
+    dag: bool = False,
+    remove_maya_defaults: bool = True,
+    transforms_only: bool = True,
+) -> list[str]:
+    """
+    Shuffle the position of an item by the given index number.
+
+    :param index: the index to edit.
+    :param nice_name_type: the type of the object to rename.
+    :param offset: the offset to shuffle the index.
+    :param separator: the separator to use for the index item.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :param search_hierarchy: whether to search the hierarchy of the selected nodes.
+    :param selection_only: whether to search only the selected nodes.
+    :param dag: whether to search only the DAG nodes.
+    :param remove_maya_defaults: whether to remove Maya default names.
+    :param transforms_only: whether to search only transform nodes.
+    :return: list of new node names.
+    """
+
+    selected_nodes = filtertypes.filter_by_type(
+        nice_name_type,
+        search_hierarchy=search_hierarchy,
+        selection_only=selection_only,
+        dag=dag,
+        remove_maya_defaults=remove_maya_defaults,
+        transforms_only=transforms_only,
+        include_constraints=True,
+    )
+    if not selected_nodes:
+        return []
+
+    return shuffle_item_by_index_objects(
+        selected_nodes,
+        index,
+        offset=offset,
+        separator=separator,
+        rename_shape=rename_shape,
+    )
+
+
+def change_suffix_padding(
+    object_to_rename: str,
+    uuid: str | None = None,
+    padding: int = 2,
+    add_underscore: bool = True,
+    rename_shape: bool = True,
+) -> [str]:
+    """
+    Change the padding of the suffix of the given object.
+
+    :param object_to_rename: node name to rename.
+    :param uuid: optional UUID for the renaming. If given, it will be used for the renaming instead of the object name.
+    :param padding: the number of padding to use for the numbering (1=1, 2=01, 3=001, ...).
+    :param add_underscore: whether to add an underscore between the prefix/suffix and the object name.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :return: new node name.
+    """
+
+    name_without_number, number, _ = trailing_number(object_to_rename)
+    if not number:
+        return object_to_rename
+
+    print(name_without_number, number)
+
+    new_padding = str(number).zfill(padding)
+    name_without_number = (
+        name_without_number[:-1]
+        if name_without_number[-1] == "_"
+        else name_without_number
+    )
+    new_name = (
+        "_".join([name_without_number, new_padding])
+        if add_underscore
+        else "".join([name_without_number, new_padding])
+    )
+    safe_rename(object_to_rename, new_name, uuid=uuid, rename_shape=rename_shape)
+
+
+def change_suffix_padding_objects(
+    objects_to_rename: list[str],
+    padding: int = 2,
+    add_underscore: bool = True,
+    rename_shape: bool = True,
+) -> list[str]:
+    """
+    Change the padding of the suffix of the given objects.
+
+    :param objects_to_rename: list of node names to rename.
+    :param padding: the number of padding to use for the numbering (1=1, 2=01, 3=001, ...).
+    :param add_underscore: whether to add an underscore between the prefix/suffix and the object name.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :return: list of new node names.
+    """
+
+    uuids = cmds.ls(objects_to_rename, uuid=True)
+    for i, object_to_rename in enumerate(objects_to_rename):
+        change_suffix_padding(
+            object_to_rename,
+            uuid=uuids[i],
+            padding=padding,
+            add_underscore=add_underscore,
+            rename_shape=rename_shape,
+        )
+
+    return cmds.ls(uuids, long=True)
+
+
+def change_suffix_padding_filter(
+    nice_name_type: str,
+    padding: int = 2,
+    add_underscore: bool = True,
+    rename_shape: bool = True,
+    search_hierarchy: bool = False,
+    selection_only: bool = True,
+    dag: bool = False,
+    remove_maya_defaults: bool = True,
+    transforms_only: bool = True,
+) -> list[str]:
+    """
+    Change the padding of the suffix of the selected objects of the given type.
+
+    :param nice_name_type: the type of the object to rename.
+    :param padding: the number of padding to use for the numbering (1=1, 2=01, 3=001, ...).
+    :param add_underscore: whether to add an underscore between the prefix/suffix and the object name.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :param search_hierarchy: whether to search the hierarchy of the selected nodes.
+    :param selection_only: whether to search only the selected nodes.
+    :param dag: whether to search only the DAG nodes.
+    :param remove_maya_defaults: whether to remove Maya default names.
+    :param transforms_only: whether to search only transform nodes.
+    :return: list of new node names.
+    """
+
+    selected_nodes = filtertypes.filter_by_type(
+        nice_name_type,
+        search_hierarchy=search_hierarchy,
+        selection_only=selection_only,
+        dag=dag,
+        remove_maya_defaults=remove_maya_defaults,
+        transforms_only=transforms_only,
+        include_constraints=True,
+    )
+    if not selected_nodes:
+        return []
+
+    return change_suffix_padding_objects(
+        selected_nodes,
+        padding=padding,
+        add_underscore=add_underscore,
+        rename_shape=rename_shape,
+    )
+
+
+def remove_numbers_from_object(
+    object_to_rename: str,
+    uuid: str | None = None,
+    trailing_only: bool = False,
+    rename_shape: bool = True,
+    remove_underscores: bool = True,
+):
+    """
+    Removes the numbers from the given object name.
+
+    :param object_to_rename: node name to rename.
+    :param uuid: optional UUID for the renaming. If given, it will be used for the renaming instead of the object name.
+    :param trailing_only: whether to remove only the trailing numbers.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :param remove_underscores: whether to remove underscores from the object name.
+    :return: new node name.
+    """
+
+    new_name = object_to_rename.split("|")[-1]
+    if not trailing_only:
+        new_name = "".join([i for i in new_name if not i.isdigit()])
+        if remove_underscores:
+            new_name = new_name.replace("__", "_")
+    else:
+        new_name = object_to_rename.rstrip("0123456789")
+    if new_name[-1] == "_" and remove_underscores:
+        new_name = new_name[:-1]
+
+    return safe_rename(object_to_rename, new_name, uuid=uuid, rename_shape=rename_shape)
+
+
+def remove_numbers_from_objects(
+    objects_to_rename: list[str],
+    trailing_only: bool = False,
+    rename_shape: bool = True,
+    remove_underscores: bool = True,
+):
+    """
+    Removes the numbers from the given object names.
+
+    :param objects_to_rename: list of node names to rename.
+    :param trailing_only: whether to remove only the trailing numbers.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :param remove_underscores: whether to remove underscores from the object name.
+    :return: list of new node names.
+    """
+
+    uuids = cmds.ls(objects_to_rename, uuid=True)
+    for i, object_to_rename in enumerate(objects_to_rename):
+        remove_numbers_from_object(
+            object_to_rename,
+            uuid=uuids[i],
+            trailing_only=trailing_only,
+            rename_shape=rename_shape,
+            remove_underscores=remove_underscores,
+        )
+
+    return cmds.ls(uuids, long=True)
+
+
+def remove_numbers_filtered_type(
+    nice_name_type: str,
+    trailing_only: bool = False,
+    remove_underscores: bool = True,
+    rename_shape: bool = True,
+    search_hierarchy: bool = False,
+    selection_only: bool = True,
+    dag: bool = False,
+    remove_maya_defaults: bool = True,
+    transforms_only: bool = True,
+) -> list[str]:
+    """
+    Removes the numbers from the selected objects of the given type.
+
+    :param nice_name_type: the type of the object to rename.
+    :param trailing_only: whether to remove only the trailing numbers.
+    :param remove_underscores: whether to remove underscores from the object name.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :param search_hierarchy: whether to search the hierarchy of the selected nodes.
+    :param selection_only: whether to search only the selected nodes.
+    :param dag: whether to search only the DAG nodes.
+    :param remove_maya_defaults: whether to remove Maya default names.
+    :param transforms_only: whether to search only transform nodes.
+    :return: list of new node names.
+    """
+
+    selected_nodes = filtertypes.filter_by_type(
+        nice_name_type,
+        search_hierarchy=search_hierarchy,
+        selection_only=selection_only,
+        dag=dag,
+        remove_maya_defaults=remove_maya_defaults,
+        transforms_only=transforms_only,
+        include_constraints=True,
+    )
+    if not selected_nodes:
+        return []
+
+    return remove_numbers_from_objects(
+        selected_nodes,
+        trailing_only=trailing_only,
+        rename_shape=rename_shape,
+        remove_underscores=remove_underscores,
+    )
+
+
+def renumber_objects(
+    objects_to_rename: list[str],
+    remove_trailing_numbers: bool = True,
+    padding: int = 2,
+    add_underscore: bool = True,
+    rename_shape: bool = True,
+) -> list[str]:
+    """
+    Renames the objects in the list to be:
+        - 'baseName_01'
+        - 'baseName_02'
+        - 'baseName_03'
+        - ...
+
+    :param objects_to_rename: list of node names to rename.
+    :param remove_trailing_numbers: whether to remove the trailing numbers.
+    :param padding: the number of padding to use for the numbering (1=1, 2=01, 3=001, ...).
+    :param add_underscore: whether to add an underscore between the prefix/suffix and the object name.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :return: list of new node names.
+    """
+
+    uuids = cmds.ls(objects_to_rename, uuid=True)
+    for i, object_to_rename in enumerate(objects_to_rename):
+        if remove_trailing_numbers:
+            object_to_rename = remove_numbers_from_object(
+                object_to_rename, uuid=uuids[i], trailing_only=True
+            )
+        number_suffix = str(i + 1).zfill(padding)
+        if add_underscore:
+            number_suffix = f"_{number_suffix}"
+        new_name = "".join([object_to_rename, number_suffix])
+        safe_rename(
+            object_to_rename, new_name, uuid=uuids[i], rename_shape=rename_shape
+        )
+
+    return cmds.ls(uuids, long=True)
+
+
+def renumber_filtered_type(
+    nice_name_type: str,
+    remove_trailing_numbers: bool = True,
+    padding: int = 2,
+    add_underscore: bool = True,
+    rename_shape: bool = True,
+    search_hierarchy: bool = False,
+    selection_only: bool = True,
+    dag: bool = False,
+    remove_maya_defaults: bool = True,
+    transforms_only: bool = True,
+) -> list[str]:
+    """
+    Renames the selected nodes in the selection order to be:
+        - 'baseName_01'
+        - 'baseName_02'
+        - 'baseName_03'
+        - ...
+
+    :param nice_name_type: the type of the object to rename.
+    :param remove_trailing_numbers: whether to remove the trailing numbers.
+    :param padding: the number of padding to use for the numbering (1=1, 2=01, 3=001, ...).
+    :param add_underscore: whether to add an underscore between the prefix/suffix and the object name.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :param search_hierarchy: whether to search the hierarchy of the selected nodes.
+    :param selection_only: whether to search only the selected nodes.
+    :param dag: whether to search only the DAG nodes.
+    :param remove_maya_defaults: whether to remove Maya default names.
+    :param transforms_only: whether to search only transform nodes.
+    :return: list of new node names.
+    """
+
+    selected_nodes = filtertypes.filter_by_type(
+        nice_name_type,
+        search_hierarchy=search_hierarchy,
+        selection_only=selection_only,
+        dag=dag,
+        remove_maya_defaults=remove_maya_defaults,
+        transforms_only=transforms_only,
+        include_constraints=True,
+    )
+    if not selected_nodes:
+        return []
+
+    return renumber_objects(
+        selected_nodes,
+        remove_trailing_numbers=remove_trailing_numbers,
+        padding=padding,
+        add_underscore=add_underscore,
+        rename_shape=rename_shape,
+    )
+
+
+def assign_namespace(
+    object_to_rename: str,
+    namespace: str,
+    remove_namespace: bool = False,
+    uuid: str | None = None,
+    rename_shape: bool = True,
+) -> str:
+    """
+    Assigns or removes a namespace to the given object.
+
+    :param object_to_rename: node name to rename.
+    :param namespace: namespace to add or remove.
+    :param remove_namespace: whether to remove namespace.
+    :param uuid: optional UUID for the renaming. If given, it will be used for the renaming instead of the object name.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :return: new node name.
+    """
+
+    long_prefix, found_namespace, base_name = naming.name_part_types(object_to_rename)
+    if namespace == found_namespace and not remove_namespace:
+        return object_to_rename
+
+    new_name = naming.join_name_parts(
+        long_prefix, namespace if not remove_namespace else "", base_name
+    )
+
+    return safe_rename(object_to_rename, new_name, uuid=uuid, rename_shape=rename_shape)
+
+
+def remove_empty_namespaces() -> list[str]:
+    """
+    Recursive function that removes all empty namespaces in the scene.
+
+    :return: list of removed namespaces.
+    """
+
+    deleted_namespaces: list[str] = []
+
+    def _num_children(_ns):
+        return _ns.count(":")
+
+    found_namespaces: list[str] = cmds.namespaceInfo(
+        listOnlyNamespaces=True, recurse=True
+    )
+    found_namespaces.sort(key=_num_children, reverse=True)
+    for namespace in found_namespaces:
+        try:
+            cmds.namespace(removeNamespace=namespace)
+            deleted_namespaces.append(namespace)
+        except RuntimeError:
+            # Namespace is not empty.
+            pass
+    if deleted_namespaces:
+        logger.debug(f"Namespaces removed: {deleted_namespaces}")
+
+    return deleted_namespaces
+
+
+def remove_namespace_from_object(
+    object_to_rename: str, uuid: str | None = None, rename_shape: bool = True
+) -> str:
+    """
+    Removes the namespace from given object by renaming it.
+    Namespace will not be removed.
+
+    :param object_to_rename: name of the object we want to remove namespace from.
+    :param uuid: optional UUID for the renaming. If given, it will be used for the renaming instead of the object name.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :return: new object name.
+    """
+
+    long_prefix, _, base_name = naming.name_part_types(object_to_rename)
+    new_name = naming.join_name_parts(long_prefix, "", base_name)
+    return safe_rename(object_to_rename, new_name, uuid=uuid, rename_shape=rename_shape)
+
+
+def empty_and_delete_namespace(namespace: str, rename_shape: bool = True) -> bool:
+    """
+    Returns given namespace from scene and renames all associated objects.
+
+    :param namespace: namespace to remove.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :return: True if namespace was deleted successfully; False otherwise.
+    """
+
+    namespace_objects = cmds.namespaceInfo(
+        namespace, listNamespace=True, fullName=True, dagPath=True
+    )
+    uuids = cmds.ls(namespace_objects, uuid=True)
+    if namespace_objects:
+        for i, namespace_object in enumerate(namespace_objects):
+            remove_namespace_from_object(
+                namespace_object, uuid=uuids[i], rename_shape=rename_shape
+            )
+
+    try:
+        cmds.namespace(removeNamespace=namespace)
+        return True
+    except RuntimeError:
+        logger.warning(
+            f"The current namespace {namespace} is either not empty or not found."
+        )
+
+    return False
+
+
+def delete_namespaces(objects_to_rename: list[str], rename_shape: bool = True) -> bool:
+    """
+    Removes the namespace from the scene from the first selected object.
+
+    :param objects_to_rename: list of objects to rename.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :return: True if namespace was deleted successfully; False otherwise.
+    """
+
+    if not objects_to_rename:
+        return False
+
+    object_to_rename = objects_to_rename[0]
+    namespace = naming.name_part_types(object_to_rename)[1]
+    if not namespace:
+        logger.warning(
+            f"Namespace not found on first selected object: {object_to_rename}"
+        )
+        return False
+
+    success = empty_and_delete_namespace(namespace, rename_shape=rename_shape)
+
+    return success
+
+
+def delete_selected_namespace(rename_shape: bool = True) -> bool:
+    """
+    Removes the namespace from the scene from the first selected object.
+    Note that this operation will affect all associated objects.
+
+    :param rename_shape: whether to rename the shape nodes as well.
+    :return: True if namespace was deleted successfully; False otherwise.
+    """
+
+    selected_objects = cmds.ls(selection=True, long=True)
+    if not selected_objects:
+        logger.warning("No objects selected, please select an object with a namespace.")
+        return False
+
+    return delete_namespaces(selected_objects, rename_shape=rename_shape)
+
+
+def create_assign_namespace_objects(
+    objects_to_rename: list[str],
+    namespace: str,
+    remove_namespace: bool = False,
+    rename_shape: bool = True,
+) -> list[str]:
+    """
+    Creates/Removes a namespace from filtered objects.
+
+    :param objects_to_rename: list of node names to rename.
+    :param namespace: namespace to add or remove.
+    :param remove_namespace: whether to remove namespace.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :return: list of new node names.
+    """
+
+    # Create namespace if necessary.
+    if not cmds.namespace(exists=namespace):
+        cmds.namespace(set=":")
+        cmds.namespace(add=namespace)
+
+    uuids = cmds.ls(objects_to_rename, uuid=True)
+    for i, object_to_rename in enumerate(objects_to_rename):
+        assign_namespace(
+            object_to_rename,
+            namespace,
+            remove_namespace=remove_namespace,
+            uuid=uuids[i],
+            rename_shape=rename_shape,
+        )
+
+    # Delete unused namespaces.
+    cmds.namespace(set=":")
+    remove_empty_namespaces()
+
+    return cmds.ls(uuids, long=True)
+
+
+def create_assign_namespace_filtered_type(
+    namespace: str,
+    nice_name_type: str,
+    remove_namespace: bool = False,
+    rename_shape: bool = True,
+    search_hierarchy: bool = False,
+    selection_only: bool = True,
+    dag: bool = False,
+    remove_maya_defaults: bool = True,
+    transforms_only: bool = True,
+) -> list[str]:
+    """
+    Creates/Removes a namespace from filtered objects.
+
+    :param namespace: namespace to add or remove.
+    :param nice_name_type: the type of the object to rename.
+    :param remove_namespace: whether to remove namespace.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :param search_hierarchy: whether to search the hierarchy of the selected nodes.
+    :param selection_only: whether to search only the selected nodes.
+    :param dag: whether to search only the DAG nodes.
+    :param remove_maya_defaults: whether to remove Maya default names.
+    :param transforms_only: whether to search only transform nodes.
+    :return: list of new node names.
+    """
+
+    selected_nodes = filtertypes.filter_by_type(
+        nice_name_type,
+        search_hierarchy=search_hierarchy,
+        selection_only=selection_only,
+        dag=dag,
+        remove_maya_defaults=remove_maya_defaults,
+        transforms_only=transforms_only,
+        include_constraints=True,
+    )
+    if not selected_nodes:
+        return []
+
+    return create_assign_namespace_objects(
+        selected_nodes,
+        namespace=namespace,
+        remove_namespace=remove_namespace,
         rename_shape=rename_shape,
     )

@@ -155,7 +155,7 @@ class RenamerView(QWidget):
             tooltip=tooltips.ADD_AT_INDEX_TOOLTIP,
             parent=self,
         )
-        self._index_combo = factory.combobox(
+        self._index_combo = factory.combobox_widget(
             items=("Insert", "Replace", "Remove"),
             tooltip=tooltips.INSERT_INDEX_COMBO_BOX_TOOLTIP,
             parent=self,
@@ -498,8 +498,34 @@ class RenamerView(QWidget):
         )
         self._prefix_button.clicked.connect(self._on_prefix_button_clicked)
         self._suffix_button.clicked.connect(self._on_suffix_button_clicked)
-        self._remove_prefix_button.clicked.connect(self._on_remove_prefix_button_clicked)
-        self._remove_suffix_button.clicked.connect(self._on_remove_suffix_button_clicked)
+        self._remove_prefix_button.clicked.connect(
+            self._on_remove_prefix_button_clicked
+        )
+        self._remove_suffix_button.clicked.connect(
+            self._on_remove_suffix_button_clicked
+        )
+        self._index_combo.itemChanged.connect(self._on_index_combo_item_changed)
+        self._at_index_button.clicked.connect(self._on_at_index_button_clicked)
+        self._index_shuffle_negate_button.clicked.connect(
+            self._on_index_shuffle_negate_button_clicked
+        )
+        self._index_shuffle_positive_button.clicked.connect(
+            self._on_index_shuffle_positive_button_clicked
+        )
+        self._renumber_button.clicked.connect(self._on_renumber_button_clicked)
+        self._remove_numbers_button.clicked.connect(
+            self._on_remove_numbers_button_clicked
+        )
+        self._remove_tail_numbers_button.clicked.connect(
+            self._on_remove_tail_numbers_button_clicked
+        )
+        self._namespace_button.clicked.connect(self._on_namespace_button_clicked)
+        self._delete_selected_namespace_button.clicked.connect(self._on_delete_selected_namespace_button_clicked)
+        self._delete_unused_namespaces_button.clicked.connect(self._on_delete_unused_namespaces_button_clicked)
+        self._open_namespace_editor_button.clicked.connect(self._on_open_namespace_editor_button_clicked)
+        self._open_reference_editor_button.clicked.connect(self._on_open_reference_editor_button_clicked)
+        self._auto_suffix_button.clicked.connect(self._on_auto_suffix_button_clicked)
+        self._make_unique_button.clicked.connect(self._on_make_unique_name_button_clicked)
 
     def _on_node_types_changed(self, node_types: list[str]):
         """
@@ -605,3 +631,117 @@ class RenamerView(QWidget):
         """
 
         self._model.remove_suffix()
+
+    def _on_index_combo_item_changed(
+        self, event: factory.ComboBoxRegularWidget.ComboItemChangedEvent
+    ):
+        """
+        Internal callback function that is called when the index combo item is changed.
+
+        :param event: index combo item changed event.
+        """
+
+        self._at_index_string_edit.setDisabled(True if event.index == 2 else False)
+
+    def _on_at_index_button_clicked(self):
+        """
+        Internal callback function that is called when the at index button is clicked.
+        """
+
+        self._model.edit_index()
+
+    def _on_index_shuffle_negate_button_clicked(self):
+        """
+        Internal callback function that is called when the index shuffle negate button is clicked.
+        """
+
+        self._model.shuffle_index(-1)
+
+    def _on_index_shuffle_positive_button_clicked(self):
+        """
+        Internal callback function that is called when the index shuffle positive button is clicked.
+        """
+
+        self._model.shuffle_index(1)
+
+    def _on_renumber_button_clicked(self):
+        """
+        Internal callback function that is called when the renumber button is clicked.
+
+        :raises ValueError: If the renumber option is invalid.
+        """
+
+        renumber_option = consts.RENUMBER_OPTIONS[
+            self._model.properties.renumber_option_index.value
+        ]
+        if renumber_option == "Change Padding":
+            self._model.change_padding()
+        elif renumber_option == "Append":
+            self._model.renumber(trailing_only=False)
+        elif renumber_option == "Replace":
+            self._model.renumber(trailing_only=True)
+        else:
+            raise ValueError(f"Invalid renumber option: {renumber_option}")
+
+    def _on_remove_numbers_button_clicked(self):
+        """
+        Internal callback function that is called when the remove numbers button is clicked.
+        """
+
+        self._model.remove_numbers(trailing_only=False)
+
+    def _on_remove_tail_numbers_button_clicked(self):
+        """
+        Internal callback function that is called when the remove tail numbers button is clicked.
+        """
+
+        self._model.remove_numbers(trailing_only=True)
+
+    def _on_namespace_button_clicked(self):
+        """
+        Internal callback function that is called when the namespace button is clicked.
+        """
+
+        self._model.assign_namespace()
+
+    def _on_delete_selected_namespace_button_clicked(self):
+        """
+        Internal callback function that is called when the delete selected namespace button is clicked.
+        """
+
+        self._model.delete_selected_namespace()
+
+    def _on_delete_unused_namespaces_button_clicked(self):
+        """
+        Internal callback function that is called when the delete unused namespaces button is clicked.
+        """
+
+        self._model.delete_unused_namespaces()
+
+    def _on_open_namespace_editor_button_clicked(self):
+        """
+        Internal callback function that is called when the open namespace editor button is clicked.
+        """
+
+        self._model.open_namespace_editor()
+
+    def _on_open_reference_editor_button_clicked(self):
+        """
+        Internal callback function that is called when the open reference editor button is clicked.
+        """
+
+        self._model.open_reference_editor()
+
+    def _on_auto_suffix_button_clicked(self):
+        """
+        Internal callback function that is called each time auto suffix button is clicked.
+        """
+
+        self._model.auto_suffix()
+
+    def _on_make_unique_name_button_clicked(self):
+        """
+        Internal callback function that is called each time make unique button is clicked.
+        """
+
+        self._model.make_unique_name()
