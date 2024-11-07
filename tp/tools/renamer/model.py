@@ -26,6 +26,9 @@ from .events import (
     DeleteUnusedNamespacesEvent,
     OpenNamespaceEditorEvent,
     OpenReferenceEditorEvent,
+    AutoPrefixEvent,
+    AutoSuffixEvent,
+    MakeUniqueNameEvent,
 )
 
 logger = logging.getLogger(__name__)
@@ -52,6 +55,9 @@ class RenamerModel(Model):
     deleteUnusedNamespaces = Signal(DeleteUnusedNamespacesEvent)
     openNamespaceEditor = Signal(OpenNamespaceEditorEvent)
     openReferenceEditor = Signal(OpenReferenceEditorEvent)
+    autoPrefix = Signal(AutoPrefixEvent)
+    autoSuffix = Signal(AutoSuffixEvent)
+    makeUniqueName = Signal(MakeUniqueNameEvent)
 
     def initialize_properties(self) -> list[UiProperty]:
         """
@@ -462,10 +468,12 @@ class RenamerModel(Model):
         Deletes selected namespaces.
         """
 
-        event = DeleteSelectedNamespaceEvent(rename_shape=self.properties.auto_shapes.value)
+        event = DeleteSelectedNamespaceEvent(
+            rename_shape=self.properties.auto_shapes.value
+        )
         self.deleteSelectedNamespace.emit(event)
         if not event.success:
-            logger.error('Failed to delete selected namespace.')
+            logger.error("Failed to delete selected namespace.")
 
     def delete_unused_namespaces(self):
         """
@@ -475,7 +483,7 @@ class RenamerModel(Model):
         event = DeleteUnusedNamespacesEvent()
         self.deleteUnusedNamespaces.emit(event)
         if not event.success:
-            logger.error('Failed to delete unused namespaces.')
+            logger.error("Failed to delete unused namespaces.")
 
     def open_namespace_editor(self):
         """
@@ -493,15 +501,67 @@ class RenamerModel(Model):
         event = OpenReferenceEditorEvent()
         self.openReferenceEditor.emit(event)
 
+    def auto_prefix(self):
+        """
+        Auto prefixes nodes based on its node type.
+        """
+
+        search_hierarchy, selection_only = self._get_filter_options()
+        nice_name_type = self.properties.node_types.value[
+            self.properties.active_node_type_index.value
+        ]
+
+        event = AutoPrefixEvent(
+            nice_name_type=nice_name_type,
+            rename_shape=self.properties.auto_shapes.value,
+            hierarchy=search_hierarchy,
+            selection_only=selection_only,
+        )
+        self.autoPrefix.emit(event)
+        if not event.success:
+            logger.error("Failed to auto prefix node names.")
+
     def auto_suffix(self):
         """
         Auto suffixes nodes based on its node type.
         """
 
+        search_hierarchy, selection_only = self._get_filter_options()
+        nice_name_type = self.properties.node_types.value[
+            self.properties.active_node_type_index.value
+        ]
+
+        event = AutoSuffixEvent(
+            nice_name_type=nice_name_type,
+            rename_shape=self.properties.auto_shapes.value,
+            hierarchy=search_hierarchy,
+            selection_only=selection_only,
+        )
+        self.autoSuffix.emit(event)
+        if not event.success:
+            logger.error("Failed to auto suffix node names.")
+
     def make_unique_name(self):
         """
         Make a unique name for the node.
         """
+
+        search_hierarchy, selection_only = self._get_filter_options()
+        nice_name_type = self.properties.node_types.value[
+            self.properties.active_node_type_index.value
+        ]
+        padding = int(self.properties.renumber_padding.value)
+
+        event = MakeUniqueNameEvent(
+            nice_name_type=nice_name_type,
+            padding=padding,
+            rename_shape=self.properties.auto_shapes.value,
+            hierarchy=search_hierarchy,
+            selection_only=selection_only,
+        )
+        self.makeUniqueName.emit(event)
+        if not event.success:
+            logger.error("Failed to make unique name for node.")
 
     def _get_filter_options(self) -> tuple[bool, bool]:
         """

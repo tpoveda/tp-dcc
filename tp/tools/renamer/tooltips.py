@@ -67,6 +67,9 @@ This will delete the namespace for all objects in the scene."""
 DELETE_UNUSED_NAMESPACES_TOOLTIP = """Delete all/empty namespaces in the scene."""
 OPEN_NAMESPACE_EDITOR_TOOLTIP = """Open the Namespace Editor."""
 OPEN_REFERENCE_EDITOR_TOOLTIP = """Open the Reference Editor."""
+AUTO_PREFIX_TOOLTIP = """Automatically add a prefix to the selected object/node names based on their types.
+- 'pCube1' becomes 'geo_pCube1'.
+- 'locator1' becomes 'loc_locator1'"""
 AUTO_SUFFIX_TOOLTIP = """Automatically add a suffix to the selected object/node names based on their types.
 - 'pCube1' becomes 'pCube1_geo'.
 - 'locator1' becomes 'locator1_loc'"""

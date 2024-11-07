@@ -47,6 +47,35 @@ def get_long_names_from_short_names(short_names: list[str]) -> list[str]:
     return cmds.ls(short_names, long=True)
 
 
+def get_unique_short_name(long_name: str) -> str:
+    """
+    Returns the shortest unique name for the given long name.
+
+    Example:
+        '|obj1|rig|mesh' maybe is not a unique Maya name, so we try to find the shortest unique name from it,
+        for example, |obj1|rig|.
+
+    Note that world names may be valid (names that start with |), for example, |sphere1 can be a valid name although
+    there s another sphere1 node parented under other object.
+
+    :param long_name: long name to get the unique short name from.
+    :return: unique short name.
+    """
+
+    return cmds.ls(long_name, shortNames=True)[0]
+
+
+def get_unique_short_names(long_names: list[str]) -> list[str]:
+    """
+    Returns the shortest unique names for the given long names.
+
+    :param long_names: list of long names to get the unique short names from.
+    :return: list of unique short names.
+    """
+
+    return cmds.ls(long_names, shortNames=True)
+
+
 def name_part_types(name: str) -> tuple[str, str, str]:
     """
     Breaks up given node name with the "long name prefix", "namespace" (if exists)

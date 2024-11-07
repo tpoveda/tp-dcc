@@ -235,11 +235,28 @@ class OpenReferenceEditorEvent:
 
 
 @dataclass
+class AutoPrefixEvent:
+    """
+    Event for auto prefix nodes based on their types.
+    """
+
+    nice_name_type: str
+    rename_shape: bool
+    hierarchy: bool
+    selection_only: bool
+    success: bool = False
+
+
+@dataclass
 class AutoSuffixEvent:
     """
     Event for auto suffix nodes based on their types.
     """
 
+    nice_name_type: str
+    rename_shape: bool
+    hierarchy: bool
+    selection_only: bool
     success: bool = False
 
 
@@ -249,4 +266,9 @@ class MakeUniqueNameEvent:
     Event for making unique names.
     """
 
+    nice_name_type: str
+    padding: int
+    rename_shape: bool
+    hierarchy: bool
+    selection_only: bool
     success: bool = False

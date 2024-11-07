@@ -70,6 +70,9 @@ def show() -> RenamerTool:
     model.deleteUnusedNamespaces.connect(controller.delete_unused_namespaces)
     model.openNamespaceEditor.connect(controller.open_namespace_editor)
     model.openReferenceEditor.connect(controller.open_reference_editor)
+    model.autoPrefix.connect(controller.auto_prefix)
+    model.autoSuffix.connect(controller.auto_suffix)
+    model.makeUniqueName.connect(controller.make_unique_name)
 
     model.update_node_types()
     model.update_prefixes_suffixes()

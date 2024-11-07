@@ -24,6 +24,9 @@ if typing.TYPE_CHECKING:
         DeleteUnusedNamespacesEvent,
         OpenNamespaceEditorEvent,
         OpenReferenceEditorEvent,
+        AutoPrefixEvent,
+        AutoSuffixEvent,
+        MakeUniqueNameEvent,
     )
 
 
@@ -206,6 +209,36 @@ class ARenamerController(Controller):
         Opens reference editor.
 
         :param event: open reference editor event.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def auto_prefix(self, event: AutoPrefixEvent):
+        """
+        Auto prefix nodes.
+
+        :param event: auto prefix event.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def auto_suffix(self, event: AutoSuffixEvent):
+        """
+        Auto suffix nodes.
+
+        :param event: auto suffix event.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def make_unique_name(self, event: MakeUniqueNameEvent):
+        """
+        Make unique name for nodes.
+
+        :param event: make unique name event.
         """
 
         raise NotImplementedError

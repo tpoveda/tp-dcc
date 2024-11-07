@@ -274,6 +274,13 @@ class RenamerView(QWidget):
 
         # Misc
         self._misc_frame = factory.collapsible_frame("Misc", thin=True, parent=self)
+        self._auto_prefix_button = factory.styled_button(
+            text="Auto Prefix",
+            button_icon=QIcon(paths.canonical_path("resources/icons/prefix.png")),
+            tooltip=tooltips.AUTO_PREFIX_TOOLTIP,
+            min_width=uiconsts.BUTTON_WIDTH_ICON_MEDIUM,
+            parent=self,
+        )
         self._auto_suffix_button = factory.styled_button(
             text="Auto Suffix",
             button_icon=QIcon(paths.canonical_path("resources/icons/suffix.png")),
@@ -434,6 +441,7 @@ class RenamerView(QWidget):
             spacing=uiconsts.SPACING,
             margins=(uiconsts.REGULAR_PADDING, 0, uiconsts.REGULAR_PADDING, 0),
         )
+        misc_layout.addWidget(self._auto_prefix_button, 1)
         misc_layout.addWidget(self._auto_suffix_button, 1)
         misc_layout.addWidget(self._make_unique_button, 1)
         self._misc_frame.add_layout(misc_layout)
@@ -447,6 +455,15 @@ class RenamerView(QWidget):
         contents_layout.addWidget(self._namespace_frame)
         contents_layout.addWidget(self._misc_frame)
         contents_layout.addStretch()
+
+        self._all_disabled_widgets: list[QWidget] = [
+            self._at_index_string_edit, self._index_combo, self._index_int_edit, self._at_index_button,
+            self._index_shuffle_label, self._remove_numbers_button, self._remove_tail_numbers_button,
+            self._index_shuffle_positive_button, self._index_shuffle_negate_button, self._index_shuffle_int_edit,
+            self._renumber_button, self._force_rename_button, self._base_name_line, self._renumber_padding_int,
+            self._numeric_padding_int, self._renumber_combo
+        ]
+
 
     def _link_properties(self):
         """
@@ -490,6 +507,7 @@ class RenamerView(QWidget):
         self._renumber_frame.closeRequested.connect(self.closeRequested.emit)
         self._namespace_frame.closeRequested.connect(self.closeRequested.emit)
         self._misc_frame.closeRequested.connect(self.closeRequested.emit)
+        self._options_radio.toggled.connect(self._on_options_radio_toggled)
         self._prefix_combo.itemChanged.connect(self._on_prefix_combo_item_changed)
         self._suffix_combo.itemChanged.connect(self._on_suffix_combo_item_changed)
         self._force_rename_button.clicked.connect(self._on_force_rename_button_clicked)
@@ -524,6 +542,7 @@ class RenamerView(QWidget):
         self._delete_unused_namespaces_button.clicked.connect(self._on_delete_unused_namespaces_button_clicked)
         self._open_namespace_editor_button.clicked.connect(self._on_open_namespace_editor_button_clicked)
         self._open_reference_editor_button.clicked.connect(self._on_open_reference_editor_button_clicked)
+        self._auto_prefix_button.clicked.connect(self._on_auto_prefix_button_clicked)
         self._auto_suffix_button.clicked.connect(self._on_auto_suffix_button_clicked)
         self._make_unique_button.clicked.connect(self._on_make_unique_name_button_clicked)
 
@@ -559,6 +578,23 @@ class RenamerView(QWidget):
         with contexts.block_signals(self._suffix_combo):
             self._suffix_combo.clear()
             self._suffix_combo.add_items(suffixes)
+
+    def _on_options_radio_toggled(self, index: int):
+        """
+        Internal callback function that is called when the options radio is toggled.
+
+        :param index: index of the radio button that was toggled.
+        """
+
+        if index == 2:
+            for widget in self._all_disabled_widgets:
+                widget.setDisabled(True)
+        else:
+            for widget in self._all_disabled_widgets:
+                widget.setDisabled(False)
+            if self._model.properties.index_combo.value == 2:
+                self._at_index_string_edit.setDisabled(True)
+
 
     def _on_prefix_combo_item_changed(self):
         """
@@ -731,6 +767,13 @@ class RenamerView(QWidget):
         """
 
         self._model.open_reference_editor()
+
+    def _on_auto_prefix_button_clicked(self):
+        """
+        Internal callback function that is called each time auto prefix button is clicked.
+        """
+
+        self._model.auto_prefix()
 
     def _on_auto_suffix_button_clicked(self):
         """

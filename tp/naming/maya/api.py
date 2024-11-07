@@ -1382,3 +1382,290 @@ def create_assign_namespace_filtered_type(
         remove_namespace=remove_namespace,
         rename_shape=rename_shape,
     )
+
+
+def auto_prefix_suffix_object(
+    object_name: str,
+    prefix_suffix_type: PrefixSuffixType = PrefixSuffixType.Suffix,
+    uuid: str | None = None,
+    rename_shape: bool = True,
+) -> str:
+    """
+    Automatically prefixes or suffixes the given object name based on its type.
+
+    The auto renaming tries to be smart in some scenarios, for example, a transform node will look for the first shape
+    node to define its type and rename accordingly. For custom types, such as, groups or controls it will use custom
+    types such as there are no node types in Maya for those kind of nodes.
+
+    Check `tp/maya/cmds/filtertypes.py` for more information about the available prefix/suffixes.
+
+    :param object_name: node name to rename.
+    :param prefix_suffix_type: the type of prefix or suffix to apply.
+    :param uuid: optional UUID for the renaming. If given, it will be used for the renaming instead of the object name.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :return: new node name.
+    """
+
+    object_name = cmds.ls(uuid, long=True)[0] if uuid else object_name
+
+    object_type = cmds.objectType(object_name)
+    if object_type == "transform":
+        shape_nodes = cmds.listRelatives(object_name, shapes=True, fullPath=True) or []
+        object_type = cmds.objectType(shape_nodes[0]) if shape_nodes else "transform"
+    elif object_type == "joint":
+        shape_nodes = cmds.listRelatives(object_name, shapes=True, fullPath=True) or []
+        object_type = (
+            "controller"
+            if shape_nodes and cmds.objectType(shape_nodes[0]) == "nurbsCurve"
+            else object_type
+        )
+    if object_type == "nurbsCurve":
+        connections = cmds.listConnections(f"{object_name}.message") or []
+        for node in connections:
+            if cmds.objectType(node) == "controller":
+                object_type = "controller"
+                break
+    if object_type not in filtertypes.AUTO_SUFFIX_DICT:
+        logger.warning(f"Automatic suffix/prefix object type not found: {object_type}")
+        return object_name
+
+    prefix_suffix = filtertypes.AUTO_SUFFIX_DICT[object_type]
+
+    return prefix_suffix_object(
+        object_name,
+        prefix_suffix,
+        prefix_suffix_type=prefix_suffix_type,
+        uuid=uuid,
+        rename_shape=rename_shape,
+        add_underscore=True,
+        check_existing_suffix_prefix=True,
+    )
+
+
+def auto_prefix_suffix_objects(
+    objects_to_rename: list[str],
+    prefix_suffix_type: PrefixSuffixType = PrefixSuffixType.Suffix,
+    rename_shape: bool = True,
+) -> list[str]:
+    """
+    Automatically prefixes or suffixes the given object names based on their types.
+
+    :param objects_to_rename: list of node names to rename.
+    :param prefix_suffix_type: the type of prefix or suffix to apply.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :return: list of new node names.
+    """
+
+    uuids = cmds.ls(objects_to_rename, uuid=True)
+    for i, object_to_rename in enumerate(objects_to_rename):
+        auto_prefix_suffix_object(
+            object_to_rename,
+            prefix_suffix_type=prefix_suffix_type,
+            uuid=uuids[i],
+            rename_shape=rename_shape,
+        )
+
+    return cmds.ls(uuids, long=True)
+
+
+def auto_prefix_suffix_filtered_type(
+    nice_name_type: str,
+    prefix_suffix_type: PrefixSuffixType = PrefixSuffixType.Suffix,
+    rename_shape: bool = True,
+    search_hierarchy: bool = False,
+    selection_only: bool = True,
+    dag: bool = False,
+    remove_maya_defaults: bool = True,
+    transforms_only: bool = True,
+):
+    """
+    Automatically prefixes or suffixes the selected objects based on their types.
+
+    :param nice_name_type: the type of the object to rename.
+    :param prefix_suffix_type: the type of prefix or suffix to apply.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :param search_hierarchy: whether to search the hierarchy of the selected nodes.
+    :param selection_only: whether to search only the selected nodes.
+    :param dag: whether to search only the DAG nodes.
+    :param remove_maya_defaults: whether to remove Maya default names.
+    :param transforms_only: whether to search only transform nodes.
+    :return: list of new node names.
+    """
+
+    selected_nodes = filtertypes.filter_by_type(
+        nice_name_type,
+        search_hierarchy=search_hierarchy,
+        selection_only=selection_only,
+        dag=dag,
+        remove_maya_defaults=remove_maya_defaults,
+        transforms_only=transforms_only,
+        include_constraints=True,
+    )
+    if not selected_nodes:
+        return []
+
+    return auto_prefix_suffix_objects(
+        selected_nodes,
+        prefix_suffix_type=prefix_suffix_type,
+        rename_shape=rename_shape,
+    )
+
+
+def non_unique_name_number(
+    name: str, short_new_name: bool = True, padding_default: int = 2
+) -> str:
+    """
+    If given name is not a unique name, it returns the first numbered unique name.
+
+    Automatically detects padding if the existing name already has a numbered suffix (for example, node_001 is a 3
+    padding).
+
+    Examples:
+        - 'shaderName' becomes 'shaderName_01'
+        - 'shaderName2' becomes 'shaderName3'
+        - 'shader_Name01' becomes 'shader_Name_02'
+        - 'shaderName_99' becomes 'shaderName_100'
+
+    :param name: name to check for uniqueness.
+    :param short_new_name: whether to use short names for the new names.
+    :param padding_default: the number of padding to use for the numbering (1=1, 2=01, 3=001, ...).
+    :return: new node name.
+    """
+
+    long_prefix, namespace, base_name = naming.name_part_types(name)
+    name_numberless, count, padding = trailing_number(base_name)
+    separator = ""
+    if not count:
+        count = 0
+        padding = padding_default
+        if name_numberless[-1] == "_":
+            separator = "_"
+
+    cancel = False
+    new_unique_name = base_name
+    if cmds.objExists(new_unique_name):
+        while not cancel:
+            if not cmds.objExists(new_unique_name):
+                break
+            count += 1
+            new_unique_name = separator.join(
+                (name_numberless, str(count).zfill(padding))
+            )
+
+    return (
+        naming.join_name_parts(long_prefix, namespace, new_unique_name)
+        if not short_new_name
+        else new_unique_name
+    )
+
+
+def force_unique_short_name_object(
+    object_to_rename: str,
+    uuid: str | None = None,
+    padding_default: int = 2,
+    short_new_name: bool = True,
+    rename_shape: bool = True,
+) -> str:
+    """
+    Forces unique short names for the given object.
+
+    :param object_to_rename: node name to rename.
+    :param uuid: optional UUID for the renaming. If given, it will be used for the renaming instead of the object name.
+    :param padding_default: the number of padding to use for the numbering (1=1, 2=01, 3=001, ...).
+    :param short_new_name: whether to use short names for the new names.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :return: new node name.
+    """
+
+    object_to_rename = cmds.ls(uuid, long=True)[0] if uuid else object_to_rename
+    shortened_mixed_name = naming.get_unique_short_name(object_to_rename)
+
+    # If the name is already unique, we return the object name.
+    if "|" not in shortened_mixed_name:
+        return shortened_mixed_name
+
+    new_name = non_unique_name_number(
+        shortened_mixed_name,
+        short_new_name=short_new_name,
+        padding_default=padding_default,
+    )
+    result = safe_rename(
+        object_to_rename, new_name, uuid=uuid, rename_shape=rename_shape
+    )
+
+    return result
+
+
+def force_unique_short_name_objects(
+    objects_to_rename: list[str],
+    padding_default: int = 2,
+    short_new_name: bool = True,
+    rename_shape: bool = True,
+) -> list[str]:
+    """
+    Forces unique short names for the given objects.
+
+    :param objects_to_rename: list of node names to rename.
+    :param padding_default: the number of padding to use for the numbering (1=1, 2=01, 3=001, ...).
+    :param short_new_name: whether to use short names for the new names.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :return: list of new node names.
+    """
+
+    uuids = cmds.ls(objects_to_rename, uuid=True)
+    for i, object_to_rename in enumerate(objects_to_rename):
+        force_unique_short_name_object(
+            object_to_rename,
+            uuid=uuids[i],
+            padding_default=padding_default,
+            short_new_name=short_new_name,
+            rename_shape=rename_shape,
+        )
+
+    return cmds.ls(uuids, long=True)
+
+
+def force_unique_short_name_filtered(
+    nice_name_type: str,
+    padding: int = 2,
+    short_new_name: bool = True,
+    rename_shape: bool = True,
+    search_hierarchy: bool = False,
+    selection_only: bool = True,
+    dag: bool = False,
+    remove_maya_defaults: bool = True,
+    transforms_only: bool = True,
+) -> list[str]:
+    """
+    Forces unique short names for the selected objects of the given type.
+
+    :param nice_name_type: the type of the object to rename.
+    :param padding: the number of padding to use for the numbering (1=1, 2=01, 3=001, ...).
+    :param short_new_name: whether to use short names for the new names.
+    :param rename_shape: whether to rename the shape nodes as well.
+    :param search_hierarchy: whether to search the hierarchy of the selected nodes.
+    :param selection_only: whether to search only the selected nodes.
+    :param dag: whether to search only the DAG nodes.
+    :param remove_maya_defaults: whether to remove Maya default names.
+    :param transforms_only: whether to search only transform nodes.
+    :return: list of new node names.
+    """
+
+    selected_nodes = filtertypes.filter_by_type(
+        nice_name_type,
+        search_hierarchy=search_hierarchy,
+        selection_only=selection_only,
+        dag=dag,
+        remove_maya_defaults=remove_maya_defaults,
+        transforms_only=transforms_only,
+        include_constraints=True,
+    )
+    if not selected_nodes:
+        return []
+
+    return force_unique_short_name_objects(
+        selected_nodes,
+        padding_default=padding,
+        short_new_name=short_new_name,
+        rename_shape=rename_shape,
+    )

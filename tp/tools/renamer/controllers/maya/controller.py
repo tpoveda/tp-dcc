@@ -4,6 +4,7 @@ import typing
 
 from maya import mel
 
+from tp.naming.consts import PrefixSuffixType
 from tp.naming.maya import api as naming
 from tp.maya.cmds import filtertypes, decorators
 
@@ -29,6 +30,9 @@ if typing.TYPE_CHECKING:
         DeleteUnusedNamespacesEvent,
         OpenNamespaceEditorEvent,
         OpenReferenceEditorEvent,
+        AutoPrefixEvent,
+        AutoSuffixEvent,
+        MakeUniqueNameEvent,
     )
 
 
@@ -339,3 +343,64 @@ class MayaRenamerController(ARenamerController):
 
         mel.eval('tearOffRestorePanel "Reference Editor" referenceEditor true')
         event.success = True
+
+    @decorators.undo
+    def auto_prefix(self, event: AutoPrefixEvent):
+        """
+        Auto prefix nodes.
+
+        :param event: auto prefix event.
+        """
+
+        new_names = naming.auto_prefix_suffix_filtered_type(
+            event.nice_name_type,
+            prefix_suffix_type=PrefixSuffixType.Prefix,
+            rename_shape=event.rename_shape,
+            search_hierarchy=event.hierarchy,
+            selection_only=event.selection_only,
+            dag=False,
+            remove_maya_defaults=True,
+            transforms_only=True,
+        )
+        event.success = True if new_names else False
+
+    @decorators.undo
+    def auto_suffix(self, event: AutoSuffixEvent):
+        """
+        Auto suffix nodes.
+
+        :param event: auto suffix event.
+        """
+
+        new_names = naming.auto_prefix_suffix_filtered_type(
+            event.nice_name_type,
+            prefix_suffix_type=PrefixSuffixType.Suffix,
+            rename_shape=event.rename_shape,
+            search_hierarchy=event.hierarchy,
+            selection_only=event.selection_only,
+            dag=False,
+            remove_maya_defaults=True,
+            transforms_only=True,
+        )
+        event.success = True if new_names else False
+
+    @decorators.undo
+    def make_unique_name(self, event: MakeUniqueNameEvent):
+        """
+        Make unique name for nodes.
+
+        :param event: make unique name event.
+        """
+
+        new_names = naming.force_unique_short_name_filtered(
+            event.nice_name_type,
+            padding=event.padding,
+            short_new_name=True,
+            rename_shape=event.rename_shape,
+            search_hierarchy=event.hierarchy,
+            selection_only=event.selection_only,
+            dag=False,
+            remove_maya_defaults=True,
+            transforms_only=True,
+        )
+        event.success = True if new_names else False
