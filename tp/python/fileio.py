@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import os
+import time
+import glob
+import shutil
 import pathlib
 
 from . import paths, osplatform
@@ -47,3 +50,41 @@ def create_file(
     osplatform.get_permission(full_path)
 
     return full_path
+
+
+def backup_file(
+    file_path: str,
+    backup_directory_name: str = "backup",
+    timestamp: bool = True,
+    maximum_backups: int = 10,
+):
+    """
+    Backup a file to a given directory.
+
+    :param file_path: absolute path to the file to back up.
+    :param backup_directory_name: directory where to back up the file.
+    :param timestamp: whether to add a timestamp to the backup file name or not.
+    :param maximum_backups: maximum number of backups to keep.
+    """
+
+    directory = os.path.dirname(file_path)
+    timestamp = time.strftime("_%Y-%m-%d_%H%M%S") if timestamp else ""
+
+    _backup_directory = os.path.join(directory, backup_directory_name)
+    if not os.path.isdir(_backup_directory):
+        os.makedirs(_backup_directory)
+
+    # Copy original file to back up directory if it exists and no backup exists.
+    backup_file = os.path.join(
+        directory, backup_directory_name, f"{file_path}{timestamp}.back"
+    )
+    if os.path.isfile(file_path) and not os.path.isfile(backup_file):
+        shutil.copyfile(file_path, backup_file)
+
+    # Remove old backups if maximum number of backups is reached.
+    files = glob.glob(
+        f"{directory}/{backup_directory_name}/{os.path.splitext(os.path.basename(file_path))[0]}_*.bak"
+    )
+    if len(files) > maximum_backups:
+        for f in files[maximum_backups:]:
+            os.remove(f)

@@ -61,6 +61,18 @@ def camel_case_to_title(text: str) -> str:
     return " ".join(words)
 
 
+def camel_case_to_spaces(text: str) -> str:
+    """
+    Converts camel case string to space separated string.
+
+    :param text: camel case string to convert.
+    :return: space separated string.
+    """
+
+    split_text = re.sub("(?!^)([A-Z][a-z]+)", r" \1", text).split()
+    return " ".join(split_text).replace("_", " ").replace("  ", " ").title()
+
+
 def lower_case_underscore_to_camel_case(text: str) -> str:
     """
     Converts string or unicode from lower case underscore to camel case.
@@ -89,3 +101,42 @@ def snake_to_camel_case(snake_text):
     # We capitalize the first letter of each component except the first one with
     # the 'title' method and join them together.
     return components[0] + "".join(x.title() for x in components[1:])
+
+
+def new_lines(text: str) -> int:
+    """
+    Returns the total count of new lines in given text.
+
+    :param text: text to get new lines count from.
+    :return: total new lines.
+    """
+
+    return text.count("\n")
+
+
+def remove_prefix(prefix: str, remove_string: str) -> str:
+    """
+    Removes the given prefix from the given string.
+
+    :param prefix: prefix to remove.
+    :param remove_string: string to remove prefix from.
+    :return: string without prefix.
+    """
+
+    return (
+        remove_string[len(prefix) :]
+        if remove_string.startswith(prefix)
+        else remove_string
+    )
+
+
+def has_prefix(prefix: str, check_string: str) -> bool:
+    """
+    Returns whether the given string has the given prefix.
+
+    :param prefix: prefix to check.
+    :param check_string: string to check.
+    :return: whether the string has the prefix.
+    """
+
+    return check_string.startswith(prefix)

@@ -57,7 +57,7 @@ def write_to_file(data: dict, filename: str, **kwargs) -> str | None:
     return filename
 
 
-def read_file(filename: str) -> dict | None:
+def read_file(filename: str) -> dict | list | None:
     """
     Returns data from YAML file.
 

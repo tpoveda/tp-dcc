@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+from tp.core.consts import ENV_VAR, EnvironmentMode
+
+import os
 import abc
+import logging
+from functools import wraps
 from typing import Callable, Optional, Type, Any
 
 
@@ -13,6 +18,42 @@ def classproperty(func: Callable) -> ClassProperty:
     """
 
     return ClassProperty(func)
+
+
+def log_arguments(level: int = logging.DEBUG):
+    """
+    Decorator that logs the arguments and return value of a function.
+
+    :param level: logging level to use.
+    """
+
+    is_dev_environment = (
+        os.getenv(ENV_VAR, EnvironmentMode.Production.value).lower()
+        == EnvironmentMode.Development.value
+    )
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if is_dev_environment:
+                logger = logging.getLogger(func.__module__)
+                level_to_use = level if logger.isEnabledFor(level) else logging.DEBUG
+                logger.log(
+                    level_to_use,
+                    f"Calling {func.__name__} with args: {args} and kwargs: {kwargs}",
+                    stacklevel=2,
+                )
+
+            result = func(*args, **kwargs)
+
+            if is_dev_environment:
+                # noinspection PyUnboundLocalVariable
+                logger.log(level, f"{func.__name__} returned {result}", stacklevel=2)
+            return result
+
+        return wrapper
+
+    return decorator
 
 
 # noinspection SpellCheckingInspection
