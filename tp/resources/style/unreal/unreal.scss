@@ -35,17 +35,13 @@ QFrame
 
 QGroupBox
 {
-  background-color: $verified-black-color;
-  border-style: transparent;
-}
-
-QGroupBox
-{
-  padding-top: 10px;
+  padding-top: 20px;
+  background-color: transparent;
+  border: 1px solid $matte-black-color;
 
   &::title
   {
-    padding: 0px;
+    font-weight: bold;
   }
 }
 
@@ -110,7 +106,7 @@ QDoubleSpinBox
   color: $silver-color;
   background-color: black;
 
-  height: 20px;
+  //height: 20px;
   padding-left: 6px;
 
   border-radius: $round-size;

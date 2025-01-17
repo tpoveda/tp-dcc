@@ -29,14 +29,12 @@ QFrame {
   background-color: #242424; }
 
 QGroupBox {
-  background-color: #242424;
-  border-style: transparent; }
-
-QGroupBox {
-  padding-top: 10px; }
+  padding-top: 20px;
+  background-color: transparent;
+  border: 1px solid #151515; }
 
 QGroupBox::title {
-  padding: 0px; }
+  font-weight: bold; }
 
 QMenuBar {
   background-color: #151515;
@@ -76,7 +74,6 @@ QSpinBox,
 QDoubleSpinBox {
   color: #c0c0c0;
   background-color: black;
-  height: 20px;
   padding-left: 6px;
   border-radius: 3px;
   border: 1px solid #353535; }

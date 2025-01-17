@@ -11,7 +11,6 @@ from . import setup, style_file_path
 from ...qt import dpi
 from ...python import helpers
 
-
 logger = logging.getLogger(__name__)
 
 
