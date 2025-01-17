@@ -129,7 +129,7 @@ class Tool(QObject):
         :return: The frameless window resulting from the function execution.
         """
 
-        win = window.Window()
+        win = window.Window(*args, **kwargs)
         win.closed.connect(self.closed.emit)
         win.set_title(self.ui_data.label)
         self._stacked_widget = QStackedWidget(parent=win)
