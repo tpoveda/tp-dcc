@@ -10,7 +10,7 @@ from tp.python import helpers
 from maya import cmds
 from maya.api import OpenMaya, OpenMayaAnim
 
-from . import consts
+from .om import constants
 from .om import factory, nodes, plugs, attributetypes, mathlib
 from .om.constants import *  # noqa: F403
 from .om.apitypes import *  # noqa: F403
@@ -1148,7 +1148,7 @@ class DagNode(DGNode):
         rotation_order = self.rotationOrder()
         world_matrix = self.worldMatrix()
         translation, rotation, scale = nodes.decompose_transform_matrix(
-            world_matrix, consts.kRotateOrders.get(rotation_order, -1)
+            world_matrix, constants.kRotateOrders.get(rotation_order, -1)
         )
 
         try:
@@ -1549,7 +1549,7 @@ class DagNode(DGNode):
         return self.rotateOrder.value()
 
     def setRotationOrder(
-        self, rotate_order: int = consts.kRotateOrder_XYZ, preserve: bool = True
+        self, rotate_order: int = constants.kRotateOrder_XYZ, preserve: bool = True
     ):
         """
         Sets rotation order for this node.
@@ -1561,7 +1561,7 @@ class DagNode(DGNode):
 
         # noinspection PyTypeChecker
         mfn: OpenMaya.MFnDagNode = self._mfn
-        rotate_order = consts.kRotateOrders.get(rotate_order, -1)
+        rotate_order = constants.kRotateOrders.get(rotate_order, -1)
         transform = OpenMaya.MFnTransform(mfn.getPath())
         transform.setRotationOrder(rotate_order, preserve)
 
@@ -1624,7 +1624,7 @@ class DagNode(DGNode):
             self.worldMatrix() if space == OpenMaya.MSpace.kWorld else self.matrix()
         )
         rotate_order = self.rotationOrder() if rotate_order is None else rotate_order
-        rotate_order = consts.kRotateOrders.get(rotate_order, -1)
+        rotate_order = constants.kRotateOrders.get(rotate_order, -1)
         transform.reorderRotation(rotate_order)
 
         return transform
@@ -1697,7 +1697,7 @@ class DagNode(DGNode):
         :return: tuple with the world translation, rotation and scale of this node.
         """
 
-        rotate_order = consts.kRotateOrders.get(self.rotationOrder(), -1)
+        rotate_order = constants.kRotateOrders.get(self.rotationOrder(), -1)
         return nodes.decompose_transform_matrix(
             self.worldMatrix(ctx),
             rotate_order,
@@ -2849,7 +2849,7 @@ class Joint(DagNode):
         world_matrix.setRotation(
             OpenMaya.MQuaternion(kwargs.get("rotate", OpenMaya.MQuaternion()))
         )
-        world_matrix.reorderRotation(consts.kRotateOrders[rotate_order])
+        world_matrix.reorderRotation(constants.kRotateOrders[rotate_order])
         self.setWorldMatrix(world_matrix.asMatrix())
 
         self.setParent(kwargs.get("parent", None), maintain_offset=True)
