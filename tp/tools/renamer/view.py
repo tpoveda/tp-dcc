@@ -16,7 +16,7 @@ if typing.TYPE_CHECKING:
     from .model import RenamerModel
 
 
-class RenamerView(QWidget):
+class RenamerWidget(QWidget):
     closeRequested = Signal()
 
     def __init__(self, model: RenamerModel, parent: QWidget | None = None):
@@ -457,13 +457,23 @@ class RenamerView(QWidget):
         contents_layout.addStretch()
 
         self._all_disabled_widgets: list[QWidget] = [
-            self._at_index_string_edit, self._index_combo, self._index_int_edit, self._at_index_button,
-            self._index_shuffle_label, self._remove_numbers_button, self._remove_tail_numbers_button,
-            self._index_shuffle_positive_button, self._index_shuffle_negate_button, self._index_shuffle_int_edit,
-            self._renumber_button, self._force_rename_button, self._base_name_line, self._renumber_padding_int,
-            self._numeric_padding_int, self._renumber_combo
+            self._at_index_string_edit,
+            self._index_combo,
+            self._index_int_edit,
+            self._at_index_button,
+            self._index_shuffle_label,
+            self._remove_numbers_button,
+            self._remove_tail_numbers_button,
+            self._index_shuffle_positive_button,
+            self._index_shuffle_negate_button,
+            self._index_shuffle_int_edit,
+            self._renumber_button,
+            self._force_rename_button,
+            self._base_name_line,
+            self._renumber_padding_int,
+            self._numeric_padding_int,
+            self._renumber_combo,
         ]
-
 
     def _link_properties(self):
         """
@@ -538,13 +548,23 @@ class RenamerView(QWidget):
             self._on_remove_tail_numbers_button_clicked
         )
         self._namespace_button.clicked.connect(self._on_namespace_button_clicked)
-        self._delete_selected_namespace_button.clicked.connect(self._on_delete_selected_namespace_button_clicked)
-        self._delete_unused_namespaces_button.clicked.connect(self._on_delete_unused_namespaces_button_clicked)
-        self._open_namespace_editor_button.clicked.connect(self._on_open_namespace_editor_button_clicked)
-        self._open_reference_editor_button.clicked.connect(self._on_open_reference_editor_button_clicked)
+        self._delete_selected_namespace_button.clicked.connect(
+            self._on_delete_selected_namespace_button_clicked
+        )
+        self._delete_unused_namespaces_button.clicked.connect(
+            self._on_delete_unused_namespaces_button_clicked
+        )
+        self._open_namespace_editor_button.clicked.connect(
+            self._on_open_namespace_editor_button_clicked
+        )
+        self._open_reference_editor_button.clicked.connect(
+            self._on_open_reference_editor_button_clicked
+        )
         self._auto_prefix_button.clicked.connect(self._on_auto_prefix_button_clicked)
         self._auto_suffix_button.clicked.connect(self._on_auto_suffix_button_clicked)
-        self._make_unique_button.clicked.connect(self._on_make_unique_name_button_clicked)
+        self._make_unique_button.clicked.connect(
+            self._on_make_unique_name_button_clicked
+        )
 
     def _on_node_types_changed(self, node_types: list[str]):
         """
@@ -594,7 +614,6 @@ class RenamerView(QWidget):
                 widget.setDisabled(False)
             if self._model.properties.index_combo.value == 2:
                 self._at_index_string_edit.setDisabled(True)
-
 
     def _on_prefix_combo_item_changed(self):
         """

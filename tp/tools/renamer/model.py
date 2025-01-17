@@ -68,7 +68,7 @@ class RenamerModel(Model):
         :return: A list of initialized UI properties.
         """
 
-        properties = [
+        return [
             UiProperty("node_types", [], type=list[str]),
             UiProperty("active_node_type_index", 0),
             UiProperty("auto_shapes", True),
@@ -92,8 +92,6 @@ class RenamerModel(Model):
             UiProperty("namespace", ""),
             UiProperty("namespace_option_index", 0),
         ]
-
-        return properties
 
     def update_node_types(self):
         """

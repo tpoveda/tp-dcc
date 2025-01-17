@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import typing
 
-from Qt.QtWidgets import QWidget
-
 from tp.core.tool import Tool, UiData
 
 from . import consts
-from .view import RenamerView
 from .model import RenamerModel
+from .view import RenamerWidget
 from .controller import RenamerControllerFactory
 
 if typing.TYPE_CHECKING:
@@ -25,12 +23,17 @@ class RenamerTool(Tool):
     def __init__(self, *args, **kwargs):
         self._model: RenamerModel = kwargs.pop("model")
         self._controller: ARenamerController = kwargs.pop("controller")
-        self._view: RenamerView | None = None
+        self._view: RenamerWidget | None = None
 
         super().__init__(*args, **kwargs)
 
-    def contents(self) -> list[QWidget]:
-        self._view = RenamerView(self._model)
+    def contents(self) -> list[RenamerWidget]:
+        """
+        Overrides `contents` function to return the tool widgets.
+        :return:
+        """
+
+        self._view = RenamerWidget(self._model)
         return [self._view]
 
 
