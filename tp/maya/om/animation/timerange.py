@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from typing import Iterator
 
 from maya.api import OpenMaya, OpenMayaAnim
@@ -154,3 +155,16 @@ def iterate_frames_dg_context(
         frame_time = OpenMaya.MTime(frames[i], current_time.unit)
         context = OpenMaya.MDGContext(frame_time)
         yield context
+
+
+@contextlib.contextmanager
+def maintain_time():
+    """
+    Context manager that allows to preserve (resetting) the time after the context is done.
+    """
+
+    current_time = OpenMayaAnim.MAnimControl.currentTime()
+    try:
+        yield
+    finally:
+        OpenMayaAnim.MAnimControl.setCurrentTime(current_time)

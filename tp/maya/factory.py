@@ -5,7 +5,7 @@ from typing import Iterable, Any
 from maya import cmds
 from maya.api import OpenMaya
 
-from . import consts
+from .om import constants
 from .wrapper import (
     node_by_object,
     node_by_name,
@@ -218,7 +218,7 @@ def create_ik_handle(
     name: str,
     start_joint: Joint,
     end_joint: Joint,
-    solver_type=consts.kIkRPSolveType,
+    solver_type=constants.kIkRPSolveType,
     parent: DagNode | None = None,
     **kwargs,
 ) -> tuple[IkHandle, DagNode]:

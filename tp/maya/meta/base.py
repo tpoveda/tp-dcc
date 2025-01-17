@@ -209,8 +209,6 @@ class MetaFactory(type):
         # if the given class is not registered, we register it
         registry_name = MetaRegistry.registry_name_for_class(cls)
 
-        print("blblblb", cls, registry_name)
-
         if not register.is_in_registry(registry_name):
             register.register_meta_class(cls)
 
