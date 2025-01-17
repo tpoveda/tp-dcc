@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from Qt.QtCore import Qt, QObject, Signal, QSize, QEvent
 from Qt.QtWidgets import QWidget, QLineEdit, QToolButton, QStyle
-from Qt.QtGui import QPixmap, QIcon, QResizeEvent, QKeyEvent, QFocusEvent
+from Qt.QtGui import QPixmap, QIcon, QResizeEvent, QKeyEvent
 
 from .. import dpi
 from ..widgets import layouts, buttons
@@ -16,9 +16,9 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
     Inherits from QWidget and dpi.DPIScaling.
 
     Signals:
-    textChanged (str): Emitted when the text is changed.
-    editingFinished (str): Emitted when editing is finished.
-    returnPressed (): Emitted when the return key is pressed.
+        textChanged (str): Emitted when the text is changed.
+        editingFinished (str): Emitted when editing is finished.
+        returnPressed (): Emitted when the return key is pressed.
     """
 
     textChanged = Signal(str)
@@ -63,8 +63,8 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         self._search_button.setIcon(
             QIcon(paths.canonical_path("../../resources/icons/search.png"))
         )
-        self._search_button.setIconSize(QSize(icon_size, icon_size))
-        self._search_button.setFixedSize(QSize(icon_size, icon_size))
+        self._search_button.setIconSize(QSize(4, 4))
+        self._search_button.setFixedSize(QSize(4, 4))
         self._search_button.setEnabled(True)
         self._search_button.setFocusPolicy(Qt.NoFocus)
 
@@ -328,163 +328,47 @@ class SearchToolButton(QToolButton):
 
 
 class SearchLineEdit(QLineEdit, dpi.DPIScaling):
-    """
-    Custom line edit widget with two icons to search and clear.
-    """
+    """Custom line edit similar to a standard search widget."""
 
-    textCleared = Signal()
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent=parent)
 
-    def __init__(
-        self,
-        search_pixmap: QPixmap | None = None,
-        clear_pixmap: QPixmap | None = None,
-        icons_enabled: bool = True,
-        parent: QWidget | None = None,
-    ):
-        super().__init__(parent)
+        self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
-        self._icons_enabled = icons_enabled
-        # self._theme_pref = core.theme_preference_interface()
-        self._background_color = None
-
-        clear_pixmap = clear_pixmap or QPixmap(
-            paths.canonical_path("../../resources/icons/close.png")
-        )
-        search_pixmap = search_pixmap or QPixmap(
+        clear_pixmap = QPixmap(paths.canonical_path("../../resources/icons/close.png"))
+        search_pixmap = QPixmap(
             paths.canonical_path("../../resources/icons/search.png")
         )
-        # clear_pixmap = clear_pixmap or resources.pixmap('close', size=dpi.dpi_scale(16), color=(128, 128, 128))
-        # search_pixmap = search_pixmap or resources.pixmap('search', size=dpi.dpi_scale(16), color=(128, 128, 128))
-        self._clear_button = ClearToolButton(parent=self)
-        self._clear_button.setIcon(QIcon(clear_pixmap))
-        self._search_button = SearchToolButton(parent=self)
-        self._search_button.setIcon(QIcon(search_pixmap))
 
-        self._setup_ui()
-
-        # self._theme_pref.updated.connect(self._on_theme_updated)
-
-    def resizeEvent(self, event: QResizeEvent) -> None:
-        if not self._icons_enabled:
-            super().resizeEvent(event)
-            return
-
-        size = self._clear_button.sizeHint()
-        frame_width = self.style().pixelMetric(QStyle.PM_DefaultFrameWidth)
-        rect = self.rect()
-        y_pos = int(abs(rect.bottom() - size.height()) * 0.5 + dpi.dpi_scale(1))
-        self._clear_button.move(
-            self.rect().right() - frame_width - size.width(), y_pos - 2
+        self._clear_action = self.addAction(
+            QIcon(clear_pixmap), QLineEdit.TrailingPosition
         )
-        self._search_button.move(self.rect().left() + dpi.dpi_scale(1), y_pos)
-        self._update_stylesheet()
+        self._clear_action.setVisible(False)
+        self._search_action = self.addAction(
+            QIcon(search_pixmap), QLineEdit.LeadingPosition
+        )
 
-    def focusInEvent(self, arg__1: QFocusEvent) -> None:
-        super().focusInEvent(arg__1)
+        self.setStyleSheet("border-radius: 10px;")
 
-        # We do not want search widgets to be the first focus on window activate.
-        if arg__1.reason() == Qt.FocusReason.ActiveWindowFocusReason:
-            self.clearFocus()
-
-    def set_background_color(self, color: tuple[int, int, int]):
-        """
-        Sets the background color.
-
-        :param color: background color.
-        """
-
-        self._background_color = color
-        self.set_icons_enabled(self._icons_enabled)
-
-    def set_icons_enabled(self, flag: bool):
-        """
-        Sets whether icons are enabled.
-
-        :param flag: True to enable icons; False to hide them.
-        """
-
-        if self._icons_enabled:
-            frame_width = self.style().pixelMetric(QStyle.PM_DefaultFrameWidth)
-            self._update_stylesheet()
-            min_size = self.minimumSizeHint()
-            self.setMinimumSize(
-                max(
-                    min_size.width(),
-                    self._search_button.sizeHint().width()
-                    + self._clear_button.sizeHint().width()
-                    + frame_width * 2
-                    + 2,
-                ),
-                max(
-                    min_size.height(),
-                    self._clear_button.sizeHint().height() + frame_width * 2 + 2,
-                ),
-            )
-        else:
-            self._search_button.hide()
-            self._clear_button.hide()
-            self.setStyleSheet("")
-
-        self._icons_enabled = flag
-
-    def _setup_ui(self):
-        """
-        Setup widgets.
-        """
-
-        self._clear_button.setCursor(Qt.ArrowCursor)
-        self._clear_button.setStyleSheet("QToolButton {border: none; padding: 1px;}")
-        self._clear_button.hide()
-        self._clear_button.clicked.connect(self.clear)
+        self._clear_action.triggered.connect(self.clear)
         self.textChanged.connect(self._on_text_changed)
-        self._search_button.setStyleSheet("QToolButton {border: none; padding: 1px;}")
-        self.set_icons_enabled(self._icons_enabled)
-        self.setProperty("clearFocus", True)
 
-    def _update_stylesheet(self):
+    def keyPressEvent(self, arg__1: QKeyEvent) -> None:
         """
-        Internal function that updates widget stylesheet.
-        """
+        Function that overrides base keyPressEvent function to make sure that line is cleared too.
 
-        # if self._background_color is None:
-        #     self._background_color = self._theme_pref.TEXT_BOX_BG_COLOR
-        background_color = (
-            str(self._background_color) if self._background_color is not None else ""
-        )
-
-        background_style = f"background-color: rgba{background_color}"
-        frame_width = self.style().pixelMetric(QStyle.PM_DefaultFrameWidth)
-        top_pad = (
-            0
-            if self.height() < dpi.dpi_scale(25)
-            else -2
-            if dpi.dpi_multiplier() == 1.0
-            else 0
-        )
-        self.setStyleSheet(
-            "QLineEdit {{ padding-left: {}px; padding-right: {}px; {}; padding-top: {}px; }}".format(
-                self._search_button.sizeHint().width() + frame_width + dpi.dpi_scale(1),
-                self._clear_button.sizeHint().width() + frame_width + dpi.dpi_scale(1),
-                background_style,
-                top_pad,
-            )
-        )
-
-    # def _on_theme_updated(self, event: 'ThemeUpdateEvent'):
-    #     """
-    #     Internal callback function that is called each time theme is updated.
-    #
-    #     param ThemeUpdateEvent event: theme update event.
-    #     """
-    #
-    #     self._background_color = event.theme_dict.TEXT_BOX_BG_COLOR
-    #     self._update_stylesheet()
-
-    def _on_text_changed(self, text: str):
-        """
-        Internal callback function that is called each time search text changes.
-
-        :param str text: search text.
+        :param QKeyEvent arg__1: Qt key event.
         """
 
-        self._clear_button.setVisible(True if text and self._icons_enabled else False)
+        if arg__1.key() == Qt.Key_Escape:
+            self.clear()
+            self.setFocus(Qt.OtherFocusReason)
+        super().keyPressEvent(arg__1)
+
+    def _on_text_changed(self, text: str) -> None:
+        """
+        Internal callback function that is called each time the line edit text changes.
+        Shows/Hides clear action.
+        """
+
+        self._clear_action.setVisible(not len(text) == 0)

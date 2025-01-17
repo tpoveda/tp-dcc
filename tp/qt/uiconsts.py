@@ -3,7 +3,7 @@ from __future__ import annotations
 # SPACINGS
 SPACING = 2
 SMALL_SPACING = 4  # small widgets spacing (spacing between each sub-widget)
-DEFAULT_SPACING = 6  # default widgets spacing (spacing between each sub-widget)
+DEFAULT_SPACING = 2  # default widgets spacing (spacing between each sub-widget)
 LARGE_SPACING = 10  # large spacing of each widget (spacing between each sub-widget)
 SUPER_LARGE_SPACING = (
     15  # very large spacing of each widget (spacing between each sub-widget)

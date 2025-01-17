@@ -10,6 +10,7 @@ from Qt import __binding__
 from Qt.QtCore import Qt, QObject, QPoint, QRect
 from Qt.QtWidgets import (
     QApplication,
+    QSizePolicy,
     QMainWindow,
     QWidget,
     QMenu,
@@ -305,3 +306,29 @@ def click_under(
 
     widgets = widget_at(pos)
     QtTest.QTest.mouseClick(widgets[under][0], button, modifier, widgets[under][1])
+
+
+def set_vertical_size_policy(widget: QWidget, policy: QSizePolicy.Policy):
+    """
+    Sets the vertical policy of the given widget.
+
+    :param widget: widget to set vertical policy of.
+    :param policy: new policy to apply to vertical policy.
+    """
+
+    size_policy = widget.sizePolicy()
+    size_policy.setVerticalPolicy(policy)
+    widget.setSizePolicy(size_policy)
+
+
+def set_horizontal_size_policy(widget: QWidget, policy: QSizePolicy.Policy):
+    """
+    Sets the horizontal policy of the given widget.
+
+    :param widget: widget to set horizontal policy of.
+    :param policy: new policy to apply to horizontal policy.
+    """
+    
+    size_policy = widget.sizePolicy()
+    size_policy.setHorizontalPolicy(policy)
+    widget.setSizePolicy(size_policy)

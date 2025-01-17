@@ -28,6 +28,9 @@ class HorizontalLayout(QHBoxLayout):
     def setSpacing(self, spacing: int):
         super().setSpacing(dpi.dpi_scale(spacing))
 
+    def addSpacing(self, size: int):
+        super().addSpacing(dpi.dpi_scale(size))
+
 
 class GridLayout(QGridLayout):
     """

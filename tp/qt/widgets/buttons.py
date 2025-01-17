@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import enum
 from typing import Any
 from functools import partial
 
@@ -212,6 +213,15 @@ class BaseButton(QPushButton, AbstractButton):
     rightMenuChanged = Signal()
     actionTriggered = Signal(object, object)
 
+    class Type(enum.Enum):
+        """Enumerator that defines available push button types"""
+
+        Default = "default"
+        Primary = "primary"
+        Success = "success"
+        Warning = "warning"
+        Danger = "danger"
+
     class BaseMenuButtonMenu(menus.SearchableMenu):
         """
         Custom menu that can be attached to BaseButton
@@ -290,6 +300,9 @@ class BaseButton(QPushButton, AbstractButton):
         self._hover_icon = icon_hover or QIcon()
         self._icon_color_theme = icon_color_theme
         self._text = text
+        self._type = BasePushButton.Type.Default.value
+        self._size = theme.Theme.Sizes.Default.value
+        self._size_value = theme.instance().sizes[self._size]
 
         QPushButton.__init__(self)
         self.setParent(parent)
@@ -790,6 +803,96 @@ class BaseButton(QPushButton, AbstractButton):
         if self._click_menu[mouse_menu] is not None:
             self._click_menu[mouse_menu].clear()
 
+    def primary(self) -> BaseButton:
+        """Sets push button style to primary.
+
+        :return: current push button instance.
+        """
+
+        self._set_type(BaseButton.Type.Primary.value)
+        return self
+
+    def success(self) -> BaseButton:
+        """Sets push button style to success.
+
+        :return: current push button instance.
+        """
+
+        self._set_type(BaseButton.Type.Success.value)
+        return self
+
+    def warning(self) -> BaseButton:
+        """Sets push button style to warning.
+
+        :return: current push button instance.
+        """
+
+        self._set_type(BaseButton.Type.Warning.value)
+        return self
+
+    def danger(self) -> BaseButton:
+        """Sets push button style to danger.
+
+        :return: current push button instance.
+        """
+
+        self._set_type(BaseButton.Type.Danger.value)
+        return self
+
+    def tiny(self) -> BaseButton:
+        """Sets push button size to tiny.
+
+        :return: current push button instance.
+        """
+
+        self._set_size(theme.Theme.Sizes.Tiny.value)
+        return self
+
+    def small(self) -> BaseButton:
+        """Sets push button size to small.
+
+        :return: current push button instance.
+        """
+
+        self._set_size(theme.Theme.Sizes.Small.value)
+        return self
+
+    def medium(self) -> BaseButton:
+        """Sets push button size to medium.
+
+        :return: current push button instance.
+        """
+
+        self._set_size(theme.Theme.Sizes.Medium.value)
+        return self
+
+    def large(self) -> BaseButton:
+        """Sets push button size to large.
+
+        :return: current push button instance.
+        """
+
+        self._set_size(theme.Theme.Sizes.Large.value)
+        return self
+
+    def huge(self) -> BaseButton:
+        """Sets push button size to huge.
+
+        :return: current push button instance.
+        """
+
+        self._set_size(theme.Theme.Sizes.Huge.value)
+        return self
+
+    def set_size(self, value: int):
+        """Sets tool button custom size.
+
+        :param value: button size.
+        """
+
+        self._size_value = value
+        self.setFixedHeight(self._size_value)
+
     def _mouse_single_click_action(self, mouse_button: Qt.MouseButton) -> bool:
         """
         Internal function that is called when a single click is triggered.
@@ -853,6 +956,58 @@ class BaseButton(QPushButton, AbstractButton):
         tags += [tag.lower() for tag in string_to_convert.split(" ")]
 
         return tags
+
+    def _get_type(self) -> str:
+        """Internal function that returns push button type.
+
+        Returns:
+            str: push button type.
+        """
+
+        return self._type
+
+    def _set_type(self, value: str):
+        """Sets push button type.
+
+        Args:
+            value (str): push button type.
+        """
+
+        if value in [
+            BaseButton.Type.Default.value,
+            BaseButton.Type.Primary.value,
+            BaseButton.Type.Success.value,
+            BaseButton.Type.Warning.value,
+            BaseButton.Type.Danger.value,
+        ]:
+            self._type = value
+        else:
+            raise ValueError(
+                'Input argument "value" should be: "default", "primary", "success", "warning" or "danger"'
+            )
+
+    def _get_size(self) -> str:
+        """Internal function that returns push button size.
+
+        Returns:
+            str: push button size.
+        """
+
+        return self._size
+
+    def _set_size(self, value: str):
+        """Internal function that sets push button size.
+
+        Args:
+            value (str): new push button size.
+        """
+
+        self._size = value
+        self._size_value = theme.instance().sizes[self._size]
+        self.setFixedHeight(self._size_value)
+
+    type = Property(str, _get_type, _set_type)
+    size = Property(int, _get_size, _set_size)
 
     def _on_context_menu(self, mouse_button: Qt.MouseButton):
         """

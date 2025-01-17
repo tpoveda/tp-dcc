@@ -25,7 +25,7 @@ from .widgets.comboboxes import (
     ComboBoxSearchableWidget,
 )
 from .widgets.lineedits import BaseLineEdit, IntLineEdit
-from .widgets.search import SearchFindWidget
+from .widgets.search import SearchFindWidget, SearchLineEdit
 from .widgets.buttons import (
     BaseButton,
     BasePushButton,
@@ -40,6 +40,7 @@ from .widgets.stringedit import StringEdit, IntEdit, FloatEdit
 from .widgets.frames import CollapsibleFrame, CollapsibleFrameThin
 from .widgets.dividers import Divider, LabelDivider, HorizontalLine, VerticalLine
 from .widgets.groups import RadioButtonGroup
+from .widgets.popups import MessageBoxBase, CustomDialog
 
 logger = logging.getLogger(__name__)
 
@@ -521,7 +522,8 @@ def combobox(
         for i, item in enumerate(items):
             combo_box.addItem(item, item_data[i])
     else:
-        combo_box.addItems(items)
+        if items:
+            combo_box.addItems(items)
     combo_box.setToolTip(tooltip)
     if placeholder_text:
         combo_box.setPlaceholderText(str(placeholder_text))
@@ -719,6 +721,26 @@ def search_widget(
 
     new_widget = SearchFindWidget(search_line=search_line, parent=parent)
     new_widget.set_placeholder_text(str(placeholder_text))
+
+    return new_widget
+
+
+def search_line_edit(
+    placeholder_text: str | None = None,
+    parent: QWidget | None = None,
+) -> SearchLineEdit:
+    """
+    Creates a new search line edit widget.
+
+    :param placeholder_text: search placeholder text.
+    :param parent: parent widget.
+    :return: new search line edit widget.
+    """
+
+    new_widget = SearchLineEdit(parent=parent)
+
+    if placeholder_text:
+        new_widget.setPlaceholderText(placeholder_text)
 
     return new_widget
 
@@ -1070,7 +1092,7 @@ def styled_button(
     button_width: int | None = None,
     button_height: int | None = None,
     parent: QWidget | None = None,
-) -> QPushButton | BaseButton | ShadowedButton | RoundButton:
+) -> QPushButton | BaseButton | BasePushButton | ShadowedButton | RoundButton:
     """
     Creates a new button with the given options.
 
@@ -1133,6 +1155,11 @@ def styled_button(
             checked=checked,
             parent=parent,
         )
+
+        # TODO: Remove this once we have our custom icon hover color change implemented
+        if style == uiconsts.ButtonStyles.TransparentBackground:
+            new_button.setStyleSheet("background-color: transparent;")
+
     elif style == uiconsts.ButtonStyles.IconShadow:
         new_button = shadowed_button(
             text=text,
@@ -1598,5 +1625,44 @@ def radio_button_group(
         margins=margins,
         spacing=spacing,
         alignment=alignment,
+        parent=parent,
+    )
+
+
+def show_custom_dialog(
+    custom_widget: QWidget,
+    title: str = "Confirm",
+    message: str = "Proceed",
+    dialog_icon: str | QIcon = MessageBoxBase.QUESTION,
+    default: int = 0,
+    button_a: str | None = "OK",
+    button_b: str | None = "Cancel",
+    button_c: str | None = None,
+    parent: QWidget | None = None,
+) -> tuple[str, QWidget]:
+    """
+    Function that shows a dialog with a custom widget.
+
+    :param custom_widget: Custom widget to show in the dialog.
+    :param title: Title of the dialog.
+    :param message: Message to show in the dialog.
+    :param dialog_icon: Icon to show in the dialog.
+    :param default: Default button index.
+    :param button_a: Text of the first button.
+    :param button_b: Text of the second button.
+    :param button_c: Text of the third button.
+    :param parent: Parent widget of the dialog.
+    :return: tuple with the result of the dialog and the custom widget.
+    """
+
+    return CustomDialog.show_dialog(
+        custom_widget=custom_widget,
+        title=title,
+        message=message,
+        icon=dialog_icon,
+        default=default,
+        button_a=button_a,
+        button_b=button_b,
+        button_c=button_c,
         parent=parent,
     )

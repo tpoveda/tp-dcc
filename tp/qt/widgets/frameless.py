@@ -48,12 +48,16 @@ from Qt.QtGui import (
     QPaintEvent,
 )
 
+
 from ... import dcc
 from ...dcc import ui
 from ...python import paths
 from ...resources.style import theme
-from ...qt import dpi, utils, icon, uiconsts, factory
-from ...qt.widgets import labels, buttons, overlay
+from ...qt import dpi, utils, icon, uiconsts
+from .labels import ClippedLabel
+from .overlay import OverlayWidget
+from .buttons import BaseButton, IconMenuButton
+from .layouts import VerticalLayout, HorizontalLayout, GridLayout
 
 if dcc.is_maya():
     from maya.app.general import mayaMixin
@@ -269,6 +273,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
                 pos.x(), pos.y(), width, self._orig_widget_size.height()
             )
             # self._main_widget.title_bar.logo_button.delete_control()
+            # noinspection PyUnresolvedReferences
             self._main_widget.undocked.emit()
             self._workspace_control = None
 
@@ -285,7 +290,8 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         """
 
         size = 24
-        ui_layout = factory.vertical_layout(margins=(0, 0, 0, 0))
+        ui_layout = VerticalLayout()
+        ui_layout.setContentsMargins(0, 0, 0, 0)
         ui_layout.addWidget(self._logo_icon)
         self.setLayout(ui_layout)
         # noinspection SpellCheckingInspection
@@ -540,7 +546,7 @@ class FramelessWindow(QWidget):
 
         super().__init__()
 
-        FramelessWindow.delete_instances()
+        FramelessWindow.delete_instances(name or title)
 
         self.__class__._INSTANCES.append(weakref.proxy(self))
 
@@ -609,7 +615,7 @@ class FramelessWindow(QWidget):
         self.setup_layouts(self.main_layout())
         self.setup_signals()
 
-        self.set_title_style(FramelessTitleBar.TitleStyle.DEFAULT)
+        self.set_title_style(FramelessTitleBar.TitleStyle.THIN)
 
         self.load_settings()
 
@@ -634,12 +640,16 @@ class FramelessWindow(QWidget):
         return None
 
     @classmethod
-    def delete_instances(cls):
+    def delete_instances(cls, name: str | None = None):
         """
         Deletes all frameless window instances.
+
+        :param name: name of the frameless window to delete. If None, all frameless windows will be deleted.
         """
 
         for instance in cls._INSTANCES:
+            if name and instance.name != name:
+                continue
             logger.info(f"Deleting {instance}")
             # noinspection PyBroadException
             try:
@@ -883,7 +893,7 @@ class FramelessWindow(QWidget):
         Returns window main content layouts instance.
 
         :return: contents layout.
-        ..note:: if not layout exists, a new one will be created.
+        :note: if not layout exists, a new one will be created.
         """
 
         if self._main_contents.layout() is None:
@@ -1173,7 +1183,16 @@ class FramelessWindow(QWidget):
         :return: contents main layout.
         """
 
-        return factory.vertical_main_layout()
+        main_layout = VerticalLayout()
+        main_layout.setSpacing(uiconsts.SPACING)
+        main_layout.setContentsMargins(
+            uiconsts.WINDOW_SIDE_PADDING,
+            uiconsts.WINDOW_BOTTOM_PADDING,
+            uiconsts.WINDOW_SIDE_PADDING,
+            uiconsts.WINDOW_BOTTOM_PADDING,
+        )
+
+        return main_layout
 
     def _setup_ui(self):
         """
@@ -1182,7 +1201,7 @@ class FramelessWindow(QWidget):
 
         self.attach_to_frameless_window()
         self._minimized = False
-        self._frameless_layout = factory.grid_layout()
+        self._frameless_layout = GridLayout()
         self._setup_frameless_layout()
         self._window_resizer = WindowResizer(
             install_to_layout=self._frameless_layout, parent=self
@@ -1323,7 +1342,7 @@ class FramelessWindowThin(FramelessWindow):
         self._title_bar.set_title_align(Qt.AlignCenter)
 
 
-class FramelessTitleLabel(labels.ClippedLabel):
+class FramelessTitleLabel(ClippedLabel):
     """
     Custom label implementation with elided functionality used for the title bar title.
     """
@@ -1357,6 +1376,10 @@ class FramelessTitleLabel(labels.ClippedLabel):
 
         self.setAttribute(Qt.WA_TransparentForMouseEvents)
         # self.setAlignment(Qt.AlignRight)
+
+        font = self.font()
+        font.setBold(True)
+        self.setFont(font)
 
 
 class FramelessTitleBar(QFrame):
@@ -1393,32 +1416,38 @@ class FramelessTitleBar(QFrame):
         self._widget_mouse_pos = None
         self._mouse_press_pos = None
         self._toggle = True
-        self._icon_size = 13
         self._move_enabled = True
         self._move_threshold = 5
 
-        self._main_layout = factory.horizontal_layout(parent=self)
+        self._main_layout = HorizontalLayout()
+        self.setLayout(self._main_layout)
         self._left_contents = QFrame(parent=self)
         self._right_contents = QWidget(parent=self)
 
-        self._main_right_layout = factory.horizontal_layout(spacing=0)
-        self._contents_layout = factory.horizontal_layout()
-        self._corner_contents_layout = factory.horizontal_layout()
-        self._title_layout = factory.horizontal_layout()
+        self._main_right_layout = HorizontalLayout()
+        self._main_right_layout.setSpacing(0)
+        self._contents_layout = HorizontalLayout()
+        self._corner_contents_layout = HorizontalLayout()
+        self._title_layout = HorizontalLayout()
         self._title_style = self.TitleStyle.DEFAULT
-        self._window_buttons_layout = factory.horizontal_layout(spacing=0)
-        self._split_layout = factory.horizontal_layout()
+        self._window_buttons_layout = HorizontalLayout()
+        self._window_buttons_layout.setSpacing(0)
+        self._split_layout = HorizontalLayout()
 
         self._logo_button = SpawnerIcon(window=parent, parent=self)
-        self._close_button = buttons.BaseButton(theme_updates=False, parent=self)
-        self._minimize_button = buttons.BaseButton(theme_updates=False, parent=self)
-        self._maximize_button = buttons.BaseButton(theme_updates=False, parent=self)
-        self._help_button = buttons.BaseButton(theme_updates=False, parent=self)
+        self._logo_button.setFlat(True)
+        self._close_button = BaseButton(theme_updates=False, parent=self)
+        self._close_button.setFlat(True)
+        self._minimize_button = BaseButton(theme_updates=False, parent=self)
+        self._minimize_button.setFlat(True)
+        self._maximize_button = BaseButton(theme_updates=False, parent=self)
+        self._maximize_button.setFlat(True)
+        self._help_button = BaseButton(theme_updates=False, parent=self)
+        self._help_button.setFlat(True)
         self._title_label = FramelessTitleLabel(
             always_show_all=always_show_all, parent=self
         )
-        self._spacing_item: QSpacerItem | None = None
-        self._spacing_item_2: QSpacerItem | None = None
+        self._title_spacing_item: QSpacerItem | None = None
 
         if not show_title:
             self._title_label.hide()
@@ -1443,7 +1472,7 @@ class FramelessTitleBar(QFrame):
         return self._title_label
 
     @property
-    def close_button(self) -> buttons.BaseButton:
+    def close_button(self) -> BaseButton:
         return self._close_button
 
     @property
@@ -1526,30 +1555,28 @@ class FramelessTitleBar(QFrame):
         # Split Layout
         self._split_layout.addWidget(self._left_contents)
         self._split_layout.addSpacing(dpi.dpi_scale(5))
-        self._split_layout.addLayout(self._title_layout, 1)
         self._split_layout.addWidget(self._right_contents)
+        # self._split_layout.addLayout(self._title_layout, 1)
 
         # Title Layout
         self._left_contents.setLayout(self._contents_layout)
         self._contents_layout.setSpacing(0)
         self._title_layout.addWidget(self._title_label)
-        self._title_layout.setSpacing(0)
-        self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 2, 2, 6))
-        self._title_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding)
+        # self._title_layout.setSpacing(0)
+        # self._title_layout.setContentsMargins(2, 2, 2, 6)
+        # self._title_label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding)
         self._title_label.setMinimumWidth(1)
 
         # Main Title Layout (Logo and Main Right Layout)
-        self._main_layout.setContentsMargins(*dpi.margins_dpi_scale(4, 0, 4, 0))
+        self._main_layout.setContentsMargins(2, 0, 2, 0)
         self._main_layout.setSpacing(0)
-        self._spacing_item = QSpacerItem(8, 8)
-        self._spacing_item_2 = QSpacerItem(6, 6)
-        self._main_layout.addSpacerItem(self._spacing_item)
+        self._title_spacing_item = QSpacerItem(6, 6)
         self._main_layout.addWidget(self._logo_button)
-        self._main_layout.addSpacerItem(self._spacing_item_2)
-
         self._main_layout.addLayout(self._main_right_layout)
         self._main_right_layout.addLayout(self._split_layout)
         # self._main_right_layout.addLayout(self._window_buttons_layout)
+        self._main_layout.addLayout(self._title_layout)
+        self._main_layout.addSpacerItem(self._title_spacing_item)
         self._main_layout.addLayout(self._window_buttons_layout)
         self._main_right_layout.setAlignment(Qt.AlignVCenter)
         self._window_buttons_layout.setAlignment(Qt.AlignVCenter)
@@ -1557,7 +1584,7 @@ class FramelessTitleBar(QFrame):
 
         QTimer.singleShot(0, self.refresh)
 
-        self.set_title_spacing(False)
+        self.set_title_spacing(True)
 
         if not self._frameless_window.HELP_URL:
             self._help_button.hide()
@@ -1679,11 +1706,9 @@ class FramelessTitleBar(QFrame):
 
         _spacing = uiconsts.Sizes.IndicatorWidth * 2
         if spacing:
-            self._spacing_item.changeSize(_spacing, _spacing)
-            self._spacing_item_2.changeSize(_spacing - 2, _spacing - 2)
+            self._title_spacing_item.changeSize(_spacing - 2, _spacing - 2)
         else:
-            self._spacing_item.changeSize(0, 0)
-            self._spacing_item_2.changeSize(0, 0)
+            self._title_spacing_item.changeSize(0, 0)
             self._split_layout.setSpacing(0)
 
     def set_title_align(self, align: Qt.AlignmentFlag):
@@ -1720,37 +1745,31 @@ class FramelessTitleBar(QFrame):
             utils.set_stylesheet_object_name(self, "")
             utils.set_stylesheet_object_name(self._title_label, "")
             self.setFixedHeight(dpi.dpi_scale(self._title_bar_height))
-            self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 2, 2, 6))
-            # self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 5, 0, 7))
-            self._main_right_layout.setContentsMargins(
-                *dpi.margins_dpi_scale(0, 5, 6, 0)
-            )
-            self._logo_button.setFixedSize(QSize(30, 24))
-            self._logo_button.setIconSize(QSize(16, 16))
-            self._minimize_button.setFixedSize(QSize(28, 24))
-            self._minimize_button.setIconSize(QSize(24, 24))
-            self._maximize_button.setFixedSize(QSize(24, 24))
-            self._maximize_button.setIconSize(QSize(24, 24))
-            self._close_button.setFixedSize(QSize(24, 24))
-            self._close_button.setIconSize(QSize(16, 16))
+            self._title_layout.setContentsMargins(2, 2, 2, 2)
+            self._main_right_layout.setContentsMargins(0, 5, 6, 0)
+            self._logo_button.setFixedSize(dpi.size_by_dpi(QSize(30, 24)))
+            self._logo_button.setIconSize(dpi.size_by_dpi(QSize(16, 16)))
+            self._minimize_button.setFixedSize(dpi.size_by_dpi(QSize(28, 24)))
+            self._minimize_button.setIconSize(dpi.size_by_dpi(QSize(24, 24)))
+            self._maximize_button.setFixedSize(dpi.size_by_dpi(QSize(24, 24)))
+            self._maximize_button.setIconSize(dpi.size_by_dpi(QSize(24, 24)))
+            self._close_button.setFixedSize(dpi.size_by_dpi(QSize(24, 24)))
+            self._close_button.setIconSize(dpi.size_by_dpi(QSize(16, 16)))
             self._window_buttons_layout.setSpacing(6)
             if self._frameless_window.HELP_URL:
                 self._help_button.show()
-            self._window_buttons_layout.setSpacing(dpi.dpi_scale(6))
+            self._window_buttons_layout.setSpacing(6)
         elif style == self.TitleStyle.THIN:
-            self.setFixedHeight(dpi.dpi_scale(int(self._title_bar_height / 2)))
-            # self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(0, 3, 15, 7))
-            self._title_layout.setContentsMargins(*dpi.margins_dpi_scale(2, 0, 0, 6))
-            self._main_right_layout.setContentsMargins(
-                *dpi.margins_dpi_scale(0, 0, 6, 0)
-            )
-            self._logo_button.setIconSize(QSize(12, 12))
-            self._logo_button.setFixedSize(QSize(14, 16))
-            self._minimize_button.setFixedSize(QSize(14, 14))
-            self._maximize_button.setFixedSize(QSize(14, 14))
-            self._close_button.setFixedSize(QSize(14, 14))
+            self.setFixedHeight(dpi.dpi_scale(int(self._title_bar_height - 10)))
+            self._title_layout.setContentsMargins(2, 2, 2, 2)
+            self._main_right_layout.setContentsMargins(0, 0, 6, 0)
+            self._logo_button.setIconSize(dpi.size_by_dpi(QSize(12, 12)))
+            self._logo_button.setFixedSize(dpi.size_by_dpi(QSize(14, 16)))
+            self._minimize_button.setFixedSize(dpi.size_by_dpi(QSize(14, 14)))
+            self._maximize_button.setFixedSize(dpi.size_by_dpi(QSize(14, 14)))
+            self._close_button.setFixedSize(dpi.size_by_dpi(QSize(14, 14)))
             self._title_label.setFixedHeight(dpi.dpi_scale(16))
-            self._window_buttons_layout.setSpacing(dpi.dpi_scale(6))
+            self._window_buttons_layout.setSpacing(6)
             self._help_button.hide()
             utils.set_stylesheet_object_name(self, "Minimized")
             utils.set_stylesheet_object_name(self._title_label, "Minimized")
@@ -1875,7 +1894,7 @@ class FramelessWindowContents(QFrame):
     pass
 
 
-class FramelessOverlay(overlay.OverlayWidget):
+class FramelessOverlay(OverlayWidget):
     MOVED_BUTTON = Qt.MiddleButton
     RESIZE_BUTTON = Qt.RightButton
 
@@ -2588,7 +2607,7 @@ class HorizontalResizer(Resizer, object):
         self.setCursor(Qt.SizeHorCursor)
 
 
-class SpawnerIcon(buttons.IconMenuButton):
+class SpawnerIcon(IconMenuButton):
     """
     Custom button with a menu that can spawn docked widgets.
     """

@@ -671,7 +671,8 @@ class ComboBoxRegularWidget(ComboBoxAbstractWidget):
             for i, item in enumerate(items):
                 self._box.addItem(item, item_data[i])
         else:
-            self._box.addItems(items)
+            if items:
+                self._box.addItems(items)
         self._box.setToolTip(tooltip)
         if set_index:
             self._box.setCurrentIndex(set_index)

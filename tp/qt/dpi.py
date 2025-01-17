@@ -62,6 +62,24 @@ def ui_scale_value(value: int | float | None = None) -> float:
     return value
 
 
+def scale_factor() -> tuple[float, float]:
+    """Returns the DPI scale factor for current QApplication.
+
+    Returns:
+        tuple[float, float]: scale factor.
+    """
+
+    QApplication.instance() or QApplication([])
+    screen = QApplication.primaryScreen()
+    if screen is None:
+        return 1.0, 1.0
+
+    scale_factor_x = screen.logicalDotsPerInchX() / DPI
+    scale_factor_y = screen.logicalDotsPerInchY() / DPI
+
+    return scale_factor_x, scale_factor_y
+
+
 def dpi_multiplier() -> float:
     """
     Returns current application DPI multiplier.

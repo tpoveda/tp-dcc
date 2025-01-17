@@ -81,63 +81,204 @@ class UiPropertyWidgetUpdate:
     skip_children: bool = True
 
 
-# Dictionary of supported widget types and their associated property widget updates.
-SUPPORT_WIDGET_TYPES: dict[Type, UiPropertyWidgetUpdate] = {
-    QCheckBox: UiPropertyWidgetUpdate(
-        "toggled", [UiPropertyGetSet("isChecked", "setChecked")]
-    ),
-    QLineEdit: UiPropertyWidgetUpdate(
-        "textChanged", [UiPropertyGetSet("text", "setText")]
-    ),
-    QComboBox: UiPropertyWidgetUpdate(
-        "itemChanged", [UiPropertyGetSet("currentIndex", "setCurrentIndex")]
-    ),
-    QProgressBar: UiPropertyWidgetUpdate(
-        "valueChanged", [UiPropertyGetSet("value", "setValue")]
-    ),
-    checkboxes.BaseCheckBoxWidget: UiPropertyWidgetUpdate(
-        "stateChanged", [UiPropertyGetSet("isChecked", "setChecked")]
-    ),
-    comboboxes.BaseComboBox: UiPropertyWidgetUpdate(
-        "currentIndexChanged", [UiPropertyGetSet("currentIndex", "setCurrentIndex")]
-    ),
-    comboboxes.ComboBoxRegularWidget: UiPropertyWidgetUpdate(
-        "itemChanged", [UiPropertyGetSet("current_index", "set_index")]
-    ),
-    comboboxes.ComboBoxSearchableWidget: UiPropertyWidgetUpdate(
-        "itemChanged", [UiPropertyGetSet("current_index", "set_index")]
-    ),
-    groups.RadioButtonGroup: UiPropertyWidgetUpdate(
-        "toggled", [UiPropertyGetSet("checked_index", "set_checked")]
-    ),
-    search.SearchLineEdit: UiPropertyWidgetUpdate(
-        "textChanged", [UiPropertyGetSet("text", "setText")]
-    ),
-    lineedits.BaseLineEdit: UiPropertyWidgetUpdate(
-        "textChanged", [UiPropertyGetSet("text", "setText")]
-    ),
-    lineedits.StringLineEditWidget: UiPropertyWidgetUpdate(
-        "textChanged", [UiPropertyGetSet("text", "set_text")]
-    ),
-    lineedits.FloatLineEditWidget: UiPropertyWidgetUpdate(
-        "textChanged", [UiPropertyGetSet("value", "set_value")]
-    ),
-    lineedits.IntLineEditWidget: UiPropertyWidgetUpdate(
-        "textChanged", [UiPropertyGetSet("value", "set_value")]
-    ),
-    stringedit.StringEdit: UiPropertyWidgetUpdate(
-        "textChanged", [UiPropertyGetSet("text", "set_text")]
-    ),
-    stringedit.IntEdit: UiPropertyWidgetUpdate(
-        "textChanged", [UiPropertyGetSet("text", "set_text")]
-    ),
-    stringedit.FloatEdit: UiPropertyWidgetUpdate(
-        "textChanged", [UiPropertyGetSet("text", "set_text")]
-    ),
-    labels.BaseLabel: UiPropertyWidgetUpdate(
-        "textChanged", [UiPropertyGetSet("text", "setText")]
-    ),
-}
+class WidgetRegistrationError(Exception):
+    """Exception raised when a widget type is already registered."""
+
+    pass
+
+
+class WidgetNotRegisteredError(Exception):
+    """Exception raised when a widget type is not registered."""
+
+    pass
+
+
+class WidgetManager:
+    """Class that manages widget types and their associated UiPropertyWidgetUpdate configurations."""
+
+    _INSTANCE: WidgetManager | None = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._INSTANCE is None:
+            cls._INSTANCE = super().__new__(cls, *args, **kwargs)
+            cls._INSTANCE._initialized = False
+            logger.debug("WidgetManager singleton instance created.")
+
+        return cls._INSTANCE
+
+    def __init__(self):
+        # Avoid reinitialization of the singleton instance after the first initialization.
+        if self._initialized:
+            return
+
+        # Dictionary to store widget types and their UiPropertyWidgetUpdate configurations
+        self._widget_updates: dict[Type, UiPropertyWidgetUpdate] = {}
+        self._initialized = True
+
+        self._register_default_widgets()
+
+    def register_widget_update(self, widget_type: Type, update: UiPropertyWidgetUpdate):
+        """
+        Register a new widget type with its associated UiPropertyWidgetUpdate configuration.
+        Avoids duplicate registrations.
+
+        :param widget_type: The widget class/type to register.
+        :param update: The UiPropertyWidgetUpdate configuration for the widget.
+        :raises WidgetRegistrationError: If the widget type is already registered.
+        """
+
+        if widget_type in self._widget_updates:
+            logger.error(
+                f"Attempt to register duplicate widget type: {widget_type.__name__}"
+            )
+            raise WidgetRegistrationError(
+                f"Widget type {widget_type.__name__} is already registered."
+            )
+
+        self._widget_updates[widget_type] = update
+        logger.debug(
+            f"Registered widget type: {widget_type.__name__} with event: {update}"
+        )
+
+    def get_widget_update(self, widget_type: Type) -> UiPropertyWidgetUpdate:
+        """
+        Retrieve the UiPropertyWidgetUpdate configuration for a given widget type.
+
+        :param widget_type: The widget class/type to look up.
+        :return: The UiPropertyWidgetUpdate for the widget type if registered.
+        :raises WidgetNotRegisteredError: If the widget type is not registered.
+        """
+
+        # Direct lookup for registered widget type.
+        if widget_type in self._widget_updates:
+            logger.debug(
+                f"Directly retrieved widget update for: {widget_type.__name__}"
+            )
+            return self._widget_updates[widget_type]
+
+        # Attempt to find a registered superclass.
+        for registered_type, update in self._widget_updates.items():
+            if issubclass(widget_type, registered_type):
+                logger.debug(
+                    f"Retrieved widget update for {widget_type.__name__} via superclass {registered_type.__name__}"
+                )
+                return update
+
+        # If no match is found, raise an error.
+        logger.error(
+            f"Widget type {widget_type.__name__} or any of its superclasses is not registered."
+        )
+        raise WidgetNotRegisteredError(
+            f"Widget type {widget_type.__name__} or its superclasses are not registered."
+        )
+
+    def unregister_widget(self, widget_type: Type):
+        """
+        Unregister a widget type if it is registered.
+
+        :param widget_type: The widget class/type to remove from registration.
+        :raises WidgetNotRegisteredError: If the widget type is not registered.
+        """
+
+        if widget_type not in self._widget_updates:
+            logger.error(
+                f"Attempt to unregister non-existent widget type: {widget_type.__name__}"
+            )
+            raise WidgetNotRegisteredError(
+                f"Widget type {widget_type.__name__} is not registered."
+            )
+
+        del self._widget_updates[widget_type]
+        logger.debug(f"Unregistered widget type: {widget_type.__name__}")
+
+    def iterate_registered_widgets(self) -> Iterator[Type]:
+        """
+        Provides an iterator over all registered widget types.
+
+        :return: An iterator over the registered widget types.
+        """
+
+        return iter(self._widget_updates.keys())
+
+    def registered_widgets(self) -> list[Type]:
+        """
+        Returns a list of all registered widget types.
+
+        :return: A list of all registered widget types.
+        """
+
+        return list(self._widget_updates.keys())
+
+    def _register_default_widgets(self):
+        """
+        Registers a set of default widget types and their associated configurations.
+        """
+
+        default_widgets: dict[Type, UiPropertyWidgetUpdate] = {
+            QCheckBox: UiPropertyWidgetUpdate(
+                "toggled", [UiPropertyGetSet("isChecked", "setChecked")]
+            ),
+            QLineEdit: UiPropertyWidgetUpdate(
+                "textChanged", [UiPropertyGetSet("text", "setText")]
+            ),
+            QComboBox: UiPropertyWidgetUpdate(
+                "itemChanged", [UiPropertyGetSet("currentIndex", "setCurrentIndex")]
+            ),
+            QProgressBar: UiPropertyWidgetUpdate(
+                "valueChanged", [UiPropertyGetSet("value", "setValue")]
+            ),
+            checkboxes.BaseCheckBoxWidget: UiPropertyWidgetUpdate(
+                "stateChanged", [UiPropertyGetSet("isChecked", "setChecked")]
+            ),
+            comboboxes.BaseComboBox: UiPropertyWidgetUpdate(
+                "currentIndexChanged",
+                [UiPropertyGetSet("currentIndex", "setCurrentIndex")],
+            ),
+            comboboxes.ComboBoxRegularWidget: UiPropertyWidgetUpdate(
+                "itemChanged", [UiPropertyGetSet("current_index", "set_index")]
+            ),
+            comboboxes.ComboBoxSearchableWidget: UiPropertyWidgetUpdate(
+                "itemChanged", [UiPropertyGetSet("current_index", "set_index")]
+            ),
+            groups.RadioButtonGroup: UiPropertyWidgetUpdate(
+                "toggled", [UiPropertyGetSet("checked_index", "set_checked")]
+            ),
+            search.SearchLineEdit: UiPropertyWidgetUpdate(
+                "textChanged", [UiPropertyGetSet("text", "setText")]
+            ),
+            lineedits.BaseLineEdit: UiPropertyWidgetUpdate(
+                "textChanged", [UiPropertyGetSet("text", "setText")]
+            ),
+            lineedits.StringLineEditWidget: UiPropertyWidgetUpdate(
+                "textChanged", [UiPropertyGetSet("text", "set_text")]
+            ),
+            lineedits.FloatLineEditWidget: UiPropertyWidgetUpdate(
+                "textChanged", [UiPropertyGetSet("value", "set_value")]
+            ),
+            lineedits.IntLineEditWidget: UiPropertyWidgetUpdate(
+                "textChanged", [UiPropertyGetSet("value", "set_value")]
+            ),
+            stringedit.StringEdit: UiPropertyWidgetUpdate(
+                "textChanged", [UiPropertyGetSet("text", "set_text")]
+            ),
+            stringedit.IntEdit: UiPropertyWidgetUpdate(
+                "textChanged", [UiPropertyGetSet("text", "set_text")]
+            ),
+            stringedit.FloatEdit: UiPropertyWidgetUpdate(
+                "textChanged", [UiPropertyGetSet("text", "set_text")]
+            ),
+            labels.BaseLabel: UiPropertyWidgetUpdate(
+                "textChanged", [UiPropertyGetSet("text", "setText")]
+            ),
+        }
+
+        for widget_type, update in default_widgets.items():
+            try:
+                self.register_widget_update(widget_type, update)
+            except WidgetRegistrationError as e:
+                logger.error(
+                    f"Failed to register widget type {widget_type.__name__}: {e}"
+                )
 
 
 class Model(QObject):
@@ -227,8 +368,7 @@ class Model(QObject):
 
         modified = False
         widget_type = type(widget)
-        widget_name = self.widget_property_name(widget)
-        widget_info: UiPropertyWidgetUpdate | None = SUPPORT_WIDGET_TYPES.get(
+        widget_info: UiPropertyWidgetUpdate | None = WidgetManager().get_widget_update(
             widget_type
         )
         if widget_info:
@@ -260,13 +400,13 @@ class Model(QObject):
         """
 
         for attr in widget.__dict__:
-            if type(getattr(widget, attr)) in SUPPORT_WIDGET_TYPES:
+            if type(getattr(widget, attr)) in WidgetManager().registered_widgets():
                 yield attr, getattr(widget, attr)
 
         children = widget.children()
         for child in children:
             for attr in child.__dict__:
-                if type(getattr(child, attr)) in SUPPORT_WIDGET_TYPES:
+                if type(getattr(child, attr)) in WidgetManager().registered_widgets():
                     yield attr, getattr(child, attr)
             for grandchild in self.iterate_linkable_properties(child):
                 yield grandchild
@@ -327,7 +467,7 @@ class Model(QObject):
         modified = False
         widget_type = type(widget)
         widget_name = self.widget_property_name(widget)
-        widget_info: UiPropertyWidgetUpdate | None = SUPPORT_WIDGET_TYPES.get(
+        widget_info: UiPropertyWidgetUpdate | None = WidgetManager().get_widget_update(
             widget_type
         )
         if widget_info:
@@ -394,7 +534,7 @@ class Model(QObject):
 
         widget_type = type(widget)
         widget_name = self.widget_property_name(widget)
-        widget_info: UiPropertyWidgetUpdate | None = SUPPORT_WIDGET_TYPES.get(
+        widget_info: UiPropertyWidgetUpdate | None = WidgetManager().get_widget_update(
             widget_type
         )
         if widget_info:
