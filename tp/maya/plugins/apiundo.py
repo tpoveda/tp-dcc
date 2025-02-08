@@ -3,12 +3,15 @@ from __future__ import annotations
 import os
 import sys
 import types
+import logging
 from typing import Callable
 
 from maya import cmds
 from maya.api import OpenMaya as OpenMaya
 
-__version__ = "0.2.2"
+logger = logging.getLogger(__name__)
+
+__version__ = "1.0.0"
 
 
 # noinspection PyPep8Naming
@@ -43,8 +46,8 @@ def commit(undo: Callable, redo: Callable = lambda: None):
     """
     Commit `undo` and `redo` to history
 
-    :param Callable undo: Call this function on next undo.
-    :param Callable | None redo: Like `undo`, for for redo
+    :param undo: Call this function on next undo.
+    :param redo: Like `undo`, for redo
     """
 
     if not hasattr(cmds, command):
@@ -52,18 +55,17 @@ def commit(undo: Callable, redo: Callable = lambda: None):
 
     # Precautionary measure.
     # If this doesn't pass, odds are we've got a race condition.
-    # NOTE: This assumes calls to `commit` can only be done
-    # from a single thread, which should already be the case
-    # given that Maya's API is not threadsafe.
+    # NOTE: This assumes calls to `commit` can only be done from a single thread,
+    # which should already be the case given that Maya's API is not threadsafe.
     assert shared.redo is None
     assert shared.undo is None
 
-    # Temporarily store the functions at module-level,
-    # they are later picked up by the command once called.
+    # Temporarily store the functions at module-level, they are later picked up by
+    # the command once called.
     shared.undo = undo
     shared.redo = redo
 
-    # Let Maya know that something is undoable
+    # Let Maya know that something is undoable.
     getattr(cmds, command)()
 
 
@@ -95,10 +97,8 @@ def reinstall():
     """
     Automatically reload both Maya plug-in and Python module
 
-    ..note:: FOR DEVELOPERS: Call this when changes have been made to this module.
+    .note:: FOR DEVELOPERS: Call this when changes have been made to this module.
     """
-
-    print(__name__)
 
     uninstall()
     sys.modules.pop(__name__)
@@ -125,15 +125,36 @@ class _apiUndo(OpenMaya.MPxCommand):
         self.redo()
 
     def isUndoable(self):
-        # Without this, the above undoIt and redoIt will not be called
         return True
 
 
 # noinspection PyPep8Naming
-def initializePlugin(plugin):
-    OpenMaya.MFnPlugin(plugin).registerCommand(command, _apiUndo)
+def initializePlugin(obj: OpenMaya.MObject):
+    """
+    Initialize the plug-in when Maya loads it.
+
+    :param obj: plug-in object to register the command with.
+    """
+
+    plugin = OpenMaya.MFnPlugin(obj, 'Tomi Poveda', '1.0')
+    try:
+        plugin.registerCommand(command, _apiUndo)
+    except Exception as err:
+        logger.exception(f"Failed to register command: {err}", exc_info=True)
+        raise
 
 
 # noinspection PyPep8Naming,SpellCheckingInspection
-def uninitializePlugin(plugin):
-    OpenMaya.MFnPlugin(plugin).deregisterCommand(command)
+def uninitializePlugin(obj: OpenMaya.MObject):
+    """
+    Uninitialize the plug-in when Maya unloads it.
+
+    :param obj: plug-in object to deregister the command with.
+    """
+
+    plugin = OpenMaya.MFnPlugin(obj)
+    try:
+        plugin.deregisterCommand(command)
+    except Exception as err:
+        logger.exception(f"Failed to deregister command: {err}", exc_info=True)
+        raise
