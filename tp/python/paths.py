@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import stat
 import pathlib
 import inspect
 import platform
@@ -81,6 +82,31 @@ def unique_path_name(directory: str, padding: int = 0) -> str:
     unique_path = FindUniquePath(directory)
     unique_path.padding = padding
     return unique_path.get()
+
+
+def is_read_only(file_path: str) -> bool:
+    """
+    Determines if the file is read only.
+
+    :param file_path: path to the file.
+    :return: True if the file is read only.
+    """
+
+    return (
+        not os.access(file_path, os.R_OK | os.W_OK)
+        if os.path.isfile(file_path)
+        else False
+    )
+
+
+def ensure_file_is_writable(file_path: str):
+    """
+    Ensures that the file is writable.
+
+    :param file_path: path to the file.
+    """
+
+    return os.chmod(file_path, stat.S_IWRITE) if is_read_only(file_path) else None
 
 
 class FindUniquePath(FindUniqueString):
