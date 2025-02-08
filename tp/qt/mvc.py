@@ -5,7 +5,16 @@ from dataclasses import dataclass, field
 from typing import Type, Iterator, Any
 
 from Qt.QtCore import QObject
-from Qt.QtWidgets import QWidget, QCheckBox, QLineEdit, QComboBox, QProgressBar
+from Qt.QtWidgets import (
+    QWidget,
+    QCheckBox,
+    QLineEdit,
+    QPlainTextEdit,
+    QComboBox,
+    QSpinBox,
+    QDoubleSpinBox,
+    QProgressBar,
+)
 
 from ..python import helpers, collections
 from .widgets import (
@@ -221,8 +230,17 @@ class WidgetManager:
             QLineEdit: UiPropertyWidgetUpdate(
                 "textChanged", [UiPropertyGetSet("text", "setText")]
             ),
+            QPlainTextEdit: UiPropertyWidgetUpdate(
+                "textChanged", [UiPropertyGetSet("toPlainText", "setPlainText")]
+            ),
             QComboBox: UiPropertyWidgetUpdate(
                 "itemChanged", [UiPropertyGetSet("currentIndex", "setCurrentIndex")]
+            ),
+            QSpinBox: UiPropertyWidgetUpdate(
+                "valueChanged", [UiPropertyGetSet("value", "setValue")]
+            ),
+            QDoubleSpinBox: UiPropertyWidgetUpdate(
+                "valueChanged", [UiPropertyGetSet("value", "setValue")]
             ),
             QProgressBar: UiPropertyWidgetUpdate(
                 "valueChanged", [UiPropertyGetSet("value", "setValue")]
@@ -521,6 +539,10 @@ class Model(QObject):
         finally:
             self._block_save = False
         # self.block_callbacks(False)
+
+        for property_name, listeners in self._listeners.items():
+            for listener in listeners:
+                listener(self.properties[property_name].value)
 
     def widget_values(self, widget: QWidget) -> dict[str, UiProperty]:
         """

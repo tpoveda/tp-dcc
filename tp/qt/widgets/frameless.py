@@ -7,7 +7,6 @@ import logging
 import platform
 import webbrowser
 from typing import Type
-from distutils.util import strtobool
 
 from Qt.QtCore import (
     Qt,
@@ -60,7 +59,9 @@ from .buttons import BaseButton, IconMenuButton
 from .layouts import VerticalLayout, HorizontalLayout, GridLayout
 
 if dcc.is_maya():
+    from maya import cmds, OpenMayaUI
     from maya.app.general import mayaMixin
+    from tp.maya.cmds.ui import docking
 
     DockableMixin = mayaMixin.MayaQWidgetDockableMixin
 else:
@@ -85,6 +86,9 @@ class ContainerWidget:
     """
     Base class used by custom container widgets.
     """
+
+    def __init__(self, *args, **kwargs):
+        pass
 
     def is_docking_container(self) -> bool:
         """
@@ -146,6 +150,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         self,
         parent: QMainWindow | None = None,
         workspace_control_name: str | None = None,
+        show_dock_tabs: bool = True,
         *args,
         **kwargs,
     ):
@@ -156,6 +161,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         self._win: QWidget | None = None
         self._prev_floating = True
         self._detaching = False
+        self._show_dock_tabs = show_dock_tabs
         self._workspace_control = parent
         self._workspace_control_name = workspace_control_name
         self._detach_counter = 0
@@ -168,7 +174,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         """
         Overrides base QWidget enterEvent function.
 
-        :param event: Qt enter event event.
+        :param event: Qt enter event.
         """
 
         if self._detaching:
@@ -195,11 +201,22 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         :param event: Qt show event.
         """
 
-        if not self.isFloating():
+        floating = self.isFloating()
+        if not floating:
             self._logo_icon.hide()
-        if not self._prev_floating and self.isFloating():
+
+        if not self._prev_floating and floating:
             self._detaching = True
-        self._prev_floating = self.isFloating()
+            self.layout().setContentsMargins(0, 0, 0, 0)
+        elif dcc.is_maya():
+            if cmds.workspaceControl(
+                self._workspace_control_name, horizontal=True, query=True
+            ):
+                self.layout().setContentsMargins(8, 0, 0, 0)
+            else:
+                self.layout().setContentsMargins(0, 8, 0, 0)
+
+        self._prev_floating = floating
 
     def moveEvent(self, event: QMoveEvent) -> None:
         """
@@ -211,7 +228,8 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         if not self._detaching:
             return
 
-        # Use detach counter to workaround issue where detaching would prematurely run the undock command.
+        # Use detach counter to workaround issue where detaching would prematurely run
+        # the undock command.
         self._detach_counter += 1
         new_size = QSize(self._container_size.width(), self._orig_widget_size.height())
         self.setFixedSize(new_size)
@@ -262,20 +280,18 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         self._detaching = False
 
         # noinspection PyUnresolvedReferences
-        if self.isFloating():
-            frameless = self._main_widget.attach_to_frameless_window(
-                save_window_pref=False
-            )
-            pos = self.mapToGlobal(QPoint())
-            width = self._container_size.width()
-            frameless.show()
-            frameless.setGeometry(
-                pos.x(), pos.y(), width, self._orig_widget_size.height()
-            )
-            # self._main_widget.title_bar.logo_button.delete_control()
-            # noinspection PyUnresolvedReferences
-            self._main_widget.undocked.emit()
-            self._workspace_control = None
+        if not self.isFloating():
+            return
+
+        frameless = self._main_widget.attach_to_frameless_window(save_window_pref=False)
+        pos = self.mapToGlobal(QPoint())
+        width = self._container_size.width()
+        frameless.show()
+        frameless.setGeometry(pos.x(), pos.y(), width, self._orig_widget_size.height())
+        self._main_widget.title_bar.logo_button.delete_control()
+        # noinspection PyUnresolvedReferences
+        self._main_widget.undocked.emit()
+        self._workspace_control = None
 
     def delete_control(self):
         """
@@ -493,7 +509,6 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
 
 
 class FramelessWindow(QWidget):
-    WINDOW_SETTINGS_PATH = "tp"  # Window settings path (e.g: tp)
     HELP_URL = (
         ""  # Web URL to use when displaying the help documentation for this window
     )
@@ -521,6 +536,7 @@ class FramelessWindow(QWidget):
         minimize_enabled: bool = True,
         minimize_button: bool = False,
         maximize_button: bool = False,
+        settings_path: str = "",
         parent: QWidget | None = None,
     ):
         """
@@ -541,6 +557,7 @@ class FramelessWindow(QWidget):
         :param minimize_enabled: Whether window minimization is enabled. Defaults to True.
         :param minimize_button: Whether the minimize button is displayed. Defaults to False.
         :param maximize_button: Whether the maximize button is displayed. Defaults to False.
+        :param settings_path: The path to the settings file. Defaults to an empty string.
         :param parent: The parent widget. Defaults to None.
         """
 
@@ -557,10 +574,11 @@ class FramelessWindow(QWidget):
         self._title = title
         self._on_top = on_top
         self._minimized = False
+        self._settings_path = settings_path or "tp"
         self._settings = QSettings(
             QSettings.IniFormat,
             QSettings.UserScope,
-            self.WINDOW_SETTINGS_PATH,
+            self._settings_path,
             name or self.__class__.__name__,
         )
         self._save_window_pref = save_window_pref
@@ -827,7 +845,7 @@ class FramelessWindow(QWidget):
         self.beginClosing.emit()
         QApplication.processEvents()
 
-        # self.save_settings()
+        self.save_settings()
 
         result = super().close()
 
@@ -864,11 +882,7 @@ class FramelessWindow(QWidget):
                 self._settings.value("saveState", self._parent_container.saveState())
             )
 
-            if strtobool(
-                self._settings.value(
-                    "maximized", str(self._parent_container.isMaximized())
-                )
-            ):
+            if self._settings.value("maximized", self._parent_container.isMaximized()):
                 self._parent_container.showMaximized()
             else:
                 self._parent_container.resize(
@@ -2615,7 +2629,12 @@ class SpawnerIcon(IconMenuButton):
     docked = Signal(object)
     undocked = Signal()
 
-    def __init__(self, window: FramelessWindow, parent: QWidget | None = None):
+    def __init__(
+        self,
+        window: FramelessWindow,
+        show_dock_tabs: bool = True,
+        parent: QWidget | None = None,
+    ):
         """
         Custom button with a menu that can spawn docked widgets.
 
@@ -2623,14 +2642,16 @@ class SpawnerIcon(IconMenuButton):
         docked widgets. It emits signals when a widget is docked or undocked.
 
         :param window: The FramelessWindow instance associated with the button.
+        :param show_dock_tabs: Whether to show dock tabs. Default is True.
         :param parent: The parent widget, if any. Default is None, indicating no parent.
         """
 
         super().__init__(parent=parent)
 
         self._window = window
+        self._show_dock_tabs = show_dock_tabs
         self._docking_container: DockingContainer | None = None
-        self._start_pos: QPoint | None = None
+        self._pressed_pos: QPoint | None = None
         self._workspace_control: str | None = None
         self._workspace_control_name: str | None = None
         self._docked = False
@@ -2655,7 +2676,7 @@ class SpawnerIcon(IconMenuButton):
 
         if event.button() == Qt.LeftButton and self._spawn_enabled:
             self._init_dock = True
-            self._start_pos = QCursor.pos()
+            self._pressed_pos = QCursor.pos()
 
         # if dcc.is_maya() and self._tooltip_action:
         #     self._tooltip_action.setChecked(tooltips.tooltip_state())
@@ -2673,13 +2694,14 @@ class SpawnerIcon(IconMenuButton):
         if self._window.is_docked():
             return
         square_length = 0
-        if self._start_pos:
-            point = self._start_pos - QCursor.pos()
+
+        if self._pressed_pos:
+            point = self._pressed_pos - QCursor.pos()
             square_length = point.dotProduct(point, point)
         if self._init_dock and square_length > 1:
-            # self._init_dock_container()
+            self._init_dock_container()
             self._init_dock = False
-        if self._workspace_control_name is not None:
+        if self._workspace_control_name:
             self.move_to_mouse()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
@@ -2699,32 +2721,36 @@ class SpawnerIcon(IconMenuButton):
             return
         if event.button() == Qt.RightButton:
             return
-        # if not self.is_workspace_floating():
-        #     self.dockedEvent()
-        # else:
-        #     self.delete_control()
 
-    # # TODO: Move this Maya specific window implementation
-    # def dockedEvent(self, dock_to_main_window=None):
-    #     if not dcc.is_maya():
-    #         return
-    #
-    #     frameless = self._window.parent_container
-    #     self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-    #     width = self._window.width()
-    #     height = self._window.height()
-    #     if dock_to_main_window:
-    #         cmds.workspaceControl(
-    #             self._workspace_control_name, e=True, dtm=dock_to_main_window, initialWidth=width,
-    #             initialHeight=height)
-    #     else:
-    #         cmds.workspaceControl(self._workspace_control_name, e=True, initialWidth=width, initialHeight=height)
-    #     self._docking_container.set_widget(self._window)
-    #     self.docked.emit(self._docking_container)
-    #     self._arrange_splitters(width)
-    #     self._docking_container = None
-    #     self._docked = True
-    #     frameless.close()
+        if not self.is_workspace_floating():
+            self.dockedEvent()
+        else:
+            self.delete_control()
+
+    # TODO: Move this Maya specific window implementation
+    def dockedEvent(self):
+        if not dcc.is_maya():
+            return
+
+        frameless = self._window.parent_container
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+
+        # Set workspace control width and height.
+        width = self._window.width()
+        height = self._window.height()
+        cmds.workspaceControl(
+            self._workspace_control_name,
+            edit=True,
+            initialWidth=width,
+            initialHeight=height,
+        )
+        # Move the window to the docking container.
+        self._docking_container.set_widget(self._window)
+        self.docked.emit(self._docking_container)
+        self._arrange_splitters(width)
+        self._docking_container = None
+        self._docked = True
+        frameless.close()
 
     # def update_theme(self, event):
     #     """
@@ -2741,7 +2767,7 @@ class SpawnerIcon(IconMenuButton):
         Returns frameless window name.
 
         :return: frameless window name.
-        ..note:: this should match frameless window name.
+        :note:: this should match frameless window name.
         """
 
         return (
@@ -2787,42 +2813,60 @@ class SpawnerIcon(IconMenuButton):
 
         self._docking_container.move_to_mouse()
 
-    # @staticmethod
-    # def is_dock_locked() -> bool:
-    #     """
-    #     Returns whether dock functionality is locked.
-    #
-    #     :return: True if dock functionality is locked; False otherwise.
-    #     """
-    #
-    #     return docking.is_dock_locked()
-    #
-    # def is_workspace_floating(self) -> bool:
-    #     """
-    #     Returns whether workspace is floating.
-    #
-    #     :return: True if workspace is floating; False otherwise.
-    #     :rtype: bool
-    #     """
-    #
-    #     if not self._spawn_enabled:
-    #         return False
-    #
-    #     return docking.is_workspace_floating(self._workspace_control_name)
-    #
-    # def delete_control(self):
-    #     """
-    #     Deletes workspace control.
-    #     """
-    #
-    #     if not self._workspace_control_name:
-    #         return
-    #
-    #     cmds.deleteUI(self._workspace_control_name)
-    #     self._workspace_control = None
-    #     self._workspace_control_name = None
-    #     self._docking_container = None
-    #     self._docked = False
+    @staticmethod
+    def is_dock_locked() -> bool:
+        """
+        Returns whether dock functionality is locked.
+
+        :return: True if dock functionality is locked; False otherwise.
+        """
+
+        if not dcc.is_maya():
+            return False
+
+        return docking.is_dock_locked()
+
+    def is_workspace_floating(self) -> bool:
+        """
+        Returns whether workspace is floating.
+
+        :return: True if workspace is floating; False otherwise.
+        """
+
+        if not dcc.is_maya():
+            return False
+
+        return (
+            False
+            if not self._spawn_enabled
+            else docking.is_workspace_floating(self._workspace_control_name)
+        )
+
+    def delete_control(self):
+        """
+        Deletes workspace control.
+        """
+
+        if not dcc.is_maya():
+            return
+
+        if not self._workspace_control_name:
+            return
+
+        cmds.deleteUI(self._workspace_control_name)
+        self._workspace_control = None
+        self._workspace_control_name = None
+        self._docking_container = None
+        self._docked = False
+
+    @staticmethod
+    def _update_layout_direction():
+        """
+        Internal function that is necessary for workspace control actLikeMayaUIElement
+        correctly show drag handles.
+        """
+
+        pass
 
     def _setup_logo_button(self):
         """
@@ -2837,16 +2881,63 @@ class SpawnerIcon(IconMenuButton):
         # self._tooltip_action = self.addAction('Toggle Tooltips', checkable=True, connect=self._on_toggle_tooltips)
         self.menu_align = Qt.AlignLeft
 
-    # def _init_dock_container(self):
-    #     """
-    #     Internal function that initializes dock container for current DCC.
-    #     """
-    #
-    #     self._workspace_control_name, self._workspace_control, self._docking_container = docking.dock_to_container(
-    #         workspace_name=self.name(), workspace_width=self._window.width(), workspace_height=self._window.height(),
-    #         workspace_title=self.name(), size=35)
-    #
-    #     self.move_to_mouse()
+    def _init_dock_container(self):
+        """
+        Internal function that initializes dock container for current DCC.
+        """
+
+        if not dcc.is_maya():
+            return
+
+        size = 35
+
+        locked = self.is_dock_locked()
+        if locked:
+            logger.warning(
+                "Maya docking is locked. You can unlock it on the top right of Maya"
+            )
+
+        locked = docking.is_dock_locked()
+        if locked:
+            logger.warning("DCC docking is locked. Unlock it first.")
+            return None, None, None
+
+        kwargs = {
+            "loadImmediately": True,
+            "label": self.name(),
+            "retain": False,
+            "initialWidth": self._window.width(),
+            "initialHeight": self._window.height(),
+            "vis": True,
+            "actLikeMayaUIElement": False,
+            "layoutDirectionCallback": "_update_layout_direction",
+        }
+        self._workspace_control_name = cmds.workspaceControl(
+            f"{self.name()} [{str(uuid.uuid4())[:4]}]", **kwargs
+        )
+        ptr = OpenMayaUI.MQtUtil.getCurrentParent()
+        self._workspace_control = utils.wrapinstance(ptr, QMainWindow)
+
+        w = self._workspace_control.window()
+        w.setFixedSize(dpi.size_by_dpi(QSize(size, size)))
+        w.layout().setContentsMargins(0, 0, 0, 0)
+        w.setWindowOpacity(0)
+        window_flags = w.windowFlags() | Qt.FramelessWindowHint
+        w.setWindowFlags(window_flags)
+        cmds.workspaceControl(
+            self._workspace_control_name, resizeWidth=size, resizeHeight=size, e=1
+        )
+        w.show()
+        w.setWindowOpacity(1)
+        self._docking_container = DockingContainer(
+            self._workspace_control, self._workspace_control_name, self._show_dock_tabs
+        )
+        # Attach it to the workspaceControl.
+        widget_ptr = OpenMayaUI.MQtUtil.findControl(
+            self._docking_container.objectName()
+        )
+        OpenMayaUI.MQtUtil.addWidgetToMayaLayout(int(widget_ptr), int(ptr))
+        self.move_to_mouse()
 
     @staticmethod
     def _splitter_ancestor(

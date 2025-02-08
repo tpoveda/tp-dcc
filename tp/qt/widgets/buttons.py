@@ -1842,3 +1842,50 @@ class LeftAlignedButton(QPushButton):
 
         menu = self._mouse_buttons[Qt.RightButton]
         menu.exec_(self.mapToGlobal(pos))
+
+
+class OkCancelButtons(QWidget):
+    """
+    Custom widget that contains Ok and Cancel buttons.
+    """
+
+    okPressed = Signal()
+    cancelPressed = Signal()
+
+    def __init__(
+        self,
+        ok_text: str = "Ok",
+        cancel_text: str = "Cancel",
+        parent: QWidget | None = None,
+    ):
+        super().__init__(parent=parent)
+
+        self.main_layout = QHBoxLayout()
+        self.setLayout(self.main_layout)
+        self._ok_button = BasePushButton(ok_text, parent=self)
+        self._cancel_button = BasePushButton(cancel_text, parent=self)
+        self.main_layout.addWidget(self._ok_button)
+        self.main_layout.addWidget(self._cancel_button)
+
+        self._ok_button.clicked.connect(self.okPressed.emit)
+        self._cancel_button.clicked.connect(self.cancelPressed.emit)
+
+    @property
+    def ok_button(self) -> BasePushButton:
+        """
+        Getter method that returns the Ok button.
+
+        :return: Ok button.
+        """
+
+        return self._ok_button
+
+    @property
+    def cancel_button(self) -> BasePushButton:
+        """
+        Getter method that returns the Cancel button.
+
+        :return: Cancel button.
+        """
+
+        return self._cancel_button

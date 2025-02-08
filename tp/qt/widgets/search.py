@@ -37,7 +37,10 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
 
         super().__init__(parent=parent)
 
-        self.setLayout(layouts.horizontal_layout(spacing=2, margins=(2, 2, 2, 2)))
+        main_layout = layouts.HorizontalLayout()
+        main_layout.setSpacing(2)
+        main_layout.setContentsMargins(2, 2, 2, 2)
+        self.setLayout(main_layout)
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
         self._search_line = search_line or QLineEdit(parent=self)
@@ -348,7 +351,7 @@ class SearchLineEdit(QLineEdit, dpi.DPIScaling):
             QIcon(search_pixmap), QLineEdit.LeadingPosition
         )
 
-        self.setStyleSheet("border-radius: 10px;")
+        self.setStyleSheet(f"border-radius: {dpi.dpi_scale(9)}px;")
 
         self._clear_action.triggered.connect(self.clear)
         self.textChanged.connect(self._on_text_changed)

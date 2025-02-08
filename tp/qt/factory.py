@@ -24,7 +24,7 @@ from .widgets.comboboxes import (
     ComboBoxRegularWidget,
     ComboBoxSearchableWidget,
 )
-from .widgets.lineedits import BaseLineEdit, IntLineEdit
+from .widgets.lineedits import BaseLineEdit, IntLineEdit, FileSystemPathLineEdit
 from .widgets.search import SearchFindWidget, SearchLineEdit
 from .widgets.buttons import (
     BaseButton,
@@ -34,6 +34,7 @@ from .widgets.buttons import (
     ShadowedButton,
     LeftAlignedButton,
     LabelSmallButton,
+    OkCancelButtons,
 )
 from .widgets.checkboxes import BaseCheckBoxWidget
 from .widgets.stringedit import StringEdit, IntEdit, FloatEdit
@@ -41,6 +42,10 @@ from .widgets.frames import CollapsibleFrame, CollapsibleFrameThin
 from .widgets.dividers import Divider, LabelDivider, HorizontalLine, VerticalLine
 from .widgets.groups import RadioButtonGroup
 from .widgets.popups import MessageBoxBase, CustomDialog
+from .widgets.tabs import LineTabWidget
+from .widgets.stacks import SlidingOpacityStackedWidget
+from .widgets.accordion import Accordion
+from .widgets.overlay import OverlayLoadingWidget
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +125,7 @@ def horizontal_main_layout(parent: QWidget | None = None) -> HorizontalLayout:
     This layout is usually used for the main widget layout of the parent widget.
 
     :param parent: optional layout parent.
-    :return: new vertical layout instance.
+    :return: new horizontal layout instance.
     """
 
     return horizontal_layout(
@@ -181,6 +186,26 @@ def grid_layout(
         )
 
     return new_layout
+
+
+def grid_main_layout(parent: QWidget | None = None) -> GridLayout:
+    """
+    Returns a new main grid layout that automatically handles DPI stuff.
+    This layout is usually used for the main widget layout of the parent widget.
+
+    :param parent: optional layout parent.
+    :return: new grid layout instance.
+    """
+
+    return grid_layout(
+        margins=(
+            uiconsts.WINDOW_SIDE_PADDING,
+            uiconsts.WINDOW_BOTTOM_PADDING,
+            uiconsts.WINDOW_SIDE_PADDING,
+            uiconsts.WINDOW_BOTTOM_PADDING,
+        ),
+        spacing=uiconsts.SPACING,
+    )
 
 
 def label(
@@ -745,6 +770,62 @@ def search_line_edit(
     return new_widget
 
 
+def open_file_line_edit(
+    path_filter: str = "",
+    validate_path: bool = False,
+    path_description: str | None = None,
+    parent: QWidget | None = None,
+) -> FileSystemPathLineEdit:
+    """
+    Creates a new line edit widget that opens a file dialog when clicked.
+
+    :param path_filter: file path filter.
+    :param validate_path: whether to validate the path.
+    :param path_description: optional path description.
+    :param parent: parent widget.
+    :return: new line edit widget.
+    """
+
+    new_line_edit = FileSystemPathLineEdit(
+        FileSystemPathLineEdit.Type.File,
+        dialog_type=FileSystemPathLineEdit.DialogType.Load,
+        path_filter=path_filter,
+        validate_path=validate_path,
+        path_description=path_description,
+        parent=parent,
+    )
+
+    return new_line_edit
+
+
+def save_file_line_edit(
+    path_filter: str = "",
+    validate_path: bool = False,
+    path_description: str | None = None,
+    parent: QWidget | None = None,
+) -> FileSystemPathLineEdit:
+    """
+    Creates a new line edit widget that opens a save file dialog when clicked.
+
+    :param path_filter: file path filter.
+    :param validate_path: whether to validate the path.
+    :param path_description: optional path description.
+    :param parent: parent widget.
+    :return: new line edit widget.
+    """
+
+    new_line_edit = FileSystemPathLineEdit(
+        FileSystemPathLineEdit.Type.File,
+        dialog_type=FileSystemPathLineEdit.DialogType.Save,
+        path_filter=path_filter,
+        validate_path=validate_path,
+        path_description=path_description,
+        parent=parent,
+    )
+
+    return new_line_edit
+
+
 def base_button(
     text: str = "",
     button_icon: QIcon | None = None,
@@ -1237,6 +1318,21 @@ def styled_button(
     return new_button
 
 
+def ok_cancel_buttons(
+    ok_text: str = "Ok", cancel_text: str = "Cancel", parent: QWidget | None = None
+) -> OkCancelButtons:
+    """
+    Creates a new OkCancelButtons instance.
+
+    :param ok_text: text for the OK button.
+    :param cancel_text: text for the Cancel button.
+    :param parent: parent widget.
+    :return: newly created OkCancelButtons instance.
+    """
+
+    return OkCancelButtons(ok_text=ok_text, cancel_text=cancel_text, parent=parent)
+
+
 def checkbox(
     text: str = "",
     checked: bool = False,
@@ -1666,3 +1762,52 @@ def show_custom_dialog(
         button_c=button_c,
         parent=parent,
     )
+
+
+def line_tab_widget(
+    alignment: Qt.AlignmentFlag | None = Qt.AlignCenter, parent: QWidget | None = None
+) -> LineTabWidget:
+    """
+    Creates a new line tab widget.
+
+    :param alignment: The alignment of the tab widget.
+    :param parent: The parent widget. Defaults to None.
+    :return: new line tab widget instance.
+    """
+
+    return LineTabWidget(alignment=alignment, parent=parent)
+
+
+def sliding_opacity_stacked_widget(
+    parent: QWidget | None = None,
+) -> SlidingOpacityStackedWidget:
+    """
+    Creates a new sliding opacity stack widget.
+
+    :param parent: The parent widget. Defaults to None.
+    :return: new sliding opacity stack widget instance.
+    """
+
+    return SlidingOpacityStackedWidget(parent=parent)
+
+
+def accordion(parent: QWidget | None = None) -> Accordion:
+    """
+    Creates a new accordion widget.
+
+    :param parent: The parent widget. Defaults to None.
+    :return: new accordion widget instance.
+    """
+
+    return Accordion(parent=parent)
+
+
+def overlay_loading_widget(parent: QWidget | None = None):
+    """
+    Creates a new overlay loading widget.
+
+    :param parent: The parent widget. Defaults to None.
+    :return: new overlay loading widget instance.
+    """
+
+    return OverlayLoadingWidget(parent=parent)

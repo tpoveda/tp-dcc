@@ -530,7 +530,6 @@ class ViewSearchWidget(QWidget):
         self._search_header_combo.itemSelected.connect(
             self.columnFilterIndexChanged.emit
         )
-        self._search_widget.textCleared.connect(self.searchTextCleared.emit)
         self._search_widget.textChanged.connect(self.searchTextChanged.emit)
 
     def _on_show_column_visibility_combo_check_state_changed(

@@ -6,7 +6,7 @@ from typing import Type, Iterator
 from . import dpi
 
 # noinspection PyUnresolvedReferences
-from Qt import __binding__
+from Qt import QtCompat, __binding__
 from Qt.QtCore import Qt, QObject, QPoint, QRect
 from Qt.QtWidgets import (
     QApplication,
@@ -75,6 +75,26 @@ def is_pyside6() -> bool:
     """
 
     return __binding__ == "PySide6"
+
+
+def wrapinstance(ptr: int, base: Type[QObject] | None = None) -> QObject | None:
+    """
+    Wraps a pointer pointing to a Maya UI element to a Qt class instance.
+
+    :param ptr: pointer to the Maya UI element.
+    :param base: base class to wrap the pointer to.
+    :return: wrapped Qt class instance.
+    """
+
+    return QtCompat.wrapInstance(int(ptr), base)
+
+
+def unwrapinstance(object):
+    """
+    Unwraps objects with PySide
+    """
+
+    return int(QtCompat.getCppPointer(object)[0])
 
 
 def window_offset(window: QMainWindow | QWidget):
@@ -178,6 +198,16 @@ def set_stylesheet_object_name(widget: QWidget, name: str, update: bool = True):
     widget.setObjectName(name)
     if update:
         update_widget_style(widget)
+
+
+def clear_focus_widgets():
+    """
+    Clears focus if widgets have clearFocus property.
+    """
+
+    focus_widget = QApplication.focusWidget()
+    if focus_widget and focus_widget.property("clearFocus"):
+        focus_widget.clearFocus()
 
 
 def recursively_set_menu_actions_visibility(menu: QMenu, state: bool):
@@ -328,7 +358,7 @@ def set_horizontal_size_policy(widget: QWidget, policy: QSizePolicy.Policy):
     :param widget: widget to set horizontal policy of.
     :param policy: new policy to apply to horizontal policy.
     """
-    
+
     size_policy = widget.sizePolicy()
     size_policy.setHorizontalPolicy(policy)
     widget.setSizePolicy(size_policy)
