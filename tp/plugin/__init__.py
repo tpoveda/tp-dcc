@@ -317,7 +317,11 @@ class PluginFactory:
         :return: total amount of registered plugins.
         """
 
-        paths_to_register = helpers.force_list(paths_to_register)
+        paths_to_register = [
+            pathlib.Path(path).as_posix()
+            for path in helpers.force_list(paths_to_register)
+            if path
+        ]
 
         total_plugins = 0
         visited = set()
