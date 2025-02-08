@@ -16,7 +16,7 @@ class RenamerControllerFactory:
         """
         Returns the proper renamer controller based on the current DCC.
 
-        :return: renamer hook instance.
+        :return: renamer controller instance.
         """
 
         if dcc.is_maya():

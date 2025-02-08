@@ -35,7 +35,9 @@ logger = logging.getLogger(__name__)
 
 
 class RenamerModel(Model):
-    """Model class that stores all the data for the Renamer tool."""
+    """
+    Model class that stores all the data for the Renamer tool.
+    """
 
     updateNodeTypes = Signal(UpdateNodeTypesEvent)
     updatePrefixesSuffixes = Signal(UpdatePrefixesSuffixesEvent)

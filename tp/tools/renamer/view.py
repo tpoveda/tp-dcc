@@ -505,9 +505,9 @@ class RenamerWidget(QWidget):
         Internal function that setup all signals connections.
         """
 
-        self._model.listen("node_types", self._on_node_types_changed)
-        self._model.listen("prefixes", self._on_prefixes_changed)
-        self._model.listen("suffixes", self._on_suffixes_changed)
+        self._model.listen("node_types", self._on_model_node_types_changed)
+        self._model.listen("prefixes", self._on_model_prefixes_changed)
+        self._model.listen("suffixes", self._on_model_suffixes_changed)
 
         self._base_name_frame.closeRequested.connect(self.closeRequested.emit)
         self._filters_frame.closeRequested.connect(self.closeRequested.emit)
@@ -566,7 +566,7 @@ class RenamerWidget(QWidget):
             self._on_make_unique_name_button_clicked
         )
 
-    def _on_node_types_changed(self, node_types: list[str]):
+    def _on_model_node_types_changed(self, node_types: list[str]):
         """
         Internal callback function that is called when node types are changed.
 
@@ -577,7 +577,7 @@ class RenamerWidget(QWidget):
             self._nodes_filter_combo.clear()
             self._nodes_filter_combo.add_items(node_types)
 
-    def _on_prefixes_changed(self, prefixes: list[str]):
+    def _on_model_prefixes_changed(self, prefixes: list[str]):
         """
         Internal callback function that is called when prefixes are changed.
 
@@ -588,7 +588,7 @@ class RenamerWidget(QWidget):
             self._prefix_combo.clear()
             self._prefix_combo.add_items(prefixes)
 
-    def _on_suffixes_changed(self, suffixes: list[str]):
+    def _on_model_suffixes_changed(self, suffixes: list[str]):
         """
         Internal callback function that is called when suffixes are changed.
 

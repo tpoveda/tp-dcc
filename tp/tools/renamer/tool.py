@@ -5,8 +5,8 @@ import typing
 from tp.core.tool import Tool, UiData
 
 from . import consts
-from .model import RenamerModel
 from .view import RenamerWidget
+from .model import RenamerModel
 from .controller import RenamerControllerFactory
 
 if typing.TYPE_CHECKING:
@@ -30,7 +30,8 @@ class RenamerTool(Tool):
     def contents(self) -> list[RenamerWidget]:
         """
         Overrides `contents` function to return the tool widgets.
-        :return:
+
+        :return: List of widgets that are part of the tool.
         """
 
         self._view = RenamerWidget(self._model)
