@@ -32,4 +32,4 @@ class FnUi(AFnUi):
         :param ui_name: name of the UI element to delete.
         """
 
-        cmds.deleteUI(self._workspace_control_name)
+        cmds.deleteUI(ui_name)

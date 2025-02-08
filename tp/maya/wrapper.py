@@ -10,8 +10,8 @@ from tp.python import helpers
 from maya import cmds
 from maya.api import OpenMaya, OpenMayaAnim
 
-from .om import constants
-from .om import factory, nodes, plugs, attributetypes, mathlib
+from .om import constants  # noqa: F401
+from .om import factory, nodes, plugs, attributetypes, mathlib, dagutils, scene
 from .om.constants import *  # noqa: F403
 from .om.apitypes import *  # noqa: F403
 
@@ -1190,7 +1190,7 @@ class DagNode(DGNode):
         mobj = self.object()
         if mobj is None:
             return None
-        parent = nodes.parent(mobj)
+        parent = dagutils.parent(mobj)
         if parent:
             return node_by_object(parent)
 
@@ -1225,7 +1225,7 @@ class DagNode(DGNode):
                 set_locked = True
                 parent.lock(False)
         try:
-            result = nodes.set_parent(
+            result = dagutils.set_parent(
                 self.object(),
                 new_parent,
                 maintain_offset=maintain_offset,
@@ -1263,7 +1263,7 @@ class DagNode(DGNode):
         :return: root node.
         """
 
-        return node_by_object(nodes.root(self.object()))
+        return node_by_object(dagutils.root(self.object()))
 
     def boundingBox(self) -> OpenMaya.MBoundingBox:
         """
@@ -1365,7 +1365,7 @@ class DagNode(DGNode):
         :return: iterated parent nodes.
         """
 
-        for parent in nodes.iterate_parents(self.object()):
+        for parent in dagutils.iterate_parents(self.object()):
             yield node_by_object(parent)
 
     def iterateChildren(
@@ -1757,7 +1757,7 @@ class DagNode(DGNode):
         :return: True if this node is visible; False otherwise.
         """
 
-        return self._mfn.findPlug("visibility", False).asBool()
+        return not self._mfn.findPlug("visibility", False).asBool()
 
     def setVisible(
         self,
@@ -3646,7 +3646,7 @@ def selected(filter_types: Iterable[int] | None = None) -> Iterable[DGNode | Dag
     :return: selected nodes.
     """
 
-    return map(node_by_object, nodes.iterate_selected_nodes(filter_types))
+    return map(node_by_object, scene.iterate_selected_nodes(filter_types))
 
 
 def select(
