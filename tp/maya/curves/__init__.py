@@ -9,7 +9,7 @@ from typing import Iterator
 import maya.api.OpenMaya as OpenMaya
 
 from tp.python import helpers, jsonio, paths
-from tp.maya.om import nodes, curves
+from tp.maya.om import scene, nodes, curves
 
 CURVE_FILE_EXTENSION = "curve"
 CURVES_ENV_VAR = "TP_DCC_CURVES_PATHS"
@@ -256,7 +256,7 @@ def save_to_lib(
     :raises ValueError: if no node to save curves from is given.
     """
 
-    node = node or helpers.first_in_list(nodes.selected_nodes(OpenMaya.MFn.kTransform))
+    node = node or helpers.first_in_list(scene.selected_nodes(OpenMaya.MFn.kTransform))
     if not node:
         raise ValueError("No node to save curves")
     directory = os.environ.get(CURVES_ENV_VAR, "").split(os.pathsep)[0]

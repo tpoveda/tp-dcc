@@ -7,7 +7,7 @@ from typing import Iterable, Iterator
 from maya import cmds
 from maya.api import OpenMaya, OpenMayaAnim
 
-from . import mathlib, plugs, animation, curves, attributetypes, factory
+from . import mathlib, plugs, animation, curves, attributetypes, factory, scene
 from ...python import helpers
 
 logger = logging.getLogger(__name__)
@@ -367,43 +367,6 @@ def shape_at_index(dag_path: OpenMaya.MDagPath, index: int) -> OpenMaya.MDagPath
         return OpenMaya.MDagPath(dag_path).extendToShape(index)
 
     return None
-
-
-def iterate_selected_nodes(
-    filter_to_apply: Iterable[int] | None = None,
-) -> Iterator[OpenMaya.MObject]:
-    """
-    Generator function that iterates over selected nodes.
-
-    :param filter_to_apply: list of node types to filter by.
-    :return: iterated selected nodes.
-    """
-
-    def _type_conditional(_filters: tuple[int] | None, _node_type: int):
-        try:
-            iter(_filters)
-            return _node_type in _filters or not _filters
-        except TypeError:
-            return _node_type == _filters or not _filters
-
-    selection = OpenMaya.MGlobal.getActiveSelectionList()
-    for i in range(selection.length()):
-        node = selection.getDependNode(i)
-        if _type_conditional(filter_to_apply, node.apiType()):
-            yield node
-
-
-def selected_nodes(
-    filter_to_apply: Iterable[int] | None = None,
-) -> list[OpenMaya.MObject]:
-    """
-    Returns current selected nodes.
-
-    :param filter_to_apply: list of node types to filter by.
-    :return: list of selected nodes.
-    """
-
-    return list(iterate_selected_nodes(filter_to_apply))
 
 
 def iterate_nodes_by_uuid(
@@ -1456,7 +1419,7 @@ def serialize_selected_nodes(skip_attributes=None, include_connections=None):
     :rtype: generator(tuple(OpenMaya.MObject, dict))
     """
 
-    nodes = selected_nodes()
+    nodes = scene.selected_nodes()
     if not nodes:
         return
 
