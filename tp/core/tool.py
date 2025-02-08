@@ -126,9 +126,11 @@ class Tool(QObject):
 
         :param args: Positional arguments to pass to the function.
         :param kwargs: Keyword arguments to pass to the function.
-        :return: The frameless window resulting from the function execution.
+        :return: The frameless window resulting from the function execution.:/Users/TomasPoveda/AppData/Roaming/
         """
 
+        kwargs["name"] = self.__class__.__name__
+        kwargs["settings_path"] = self.id.replace(".", "/") if self.id else ""
         win = window.Window(*args, **kwargs)
         win.closed.connect(self.closed.emit)
         win.set_title(self.ui_data.label)
