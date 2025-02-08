@@ -4,13 +4,12 @@ import sys
 import platform
 from pathlib import Path
 from functools import lru_cache
+from dataclasses import dataclass
 from importlib.util import find_spec
 
 Standalone = "standalone"
 Maya = "maya"
-# noinspection SpellCheckingInspection
 Max = "3dsmax"
-# noinspection SpellCheckingInspection
 MotionBuilder = "mobu"
 Houdini = "houdini"
 Nuke = "nuke"
@@ -80,6 +79,77 @@ Executables = {
     SubstanceDesigner: {"windows": ["designer.exe"]},
     Fusion: {"windows": ["Fusion.exe"]},
 }
+
+
+@dataclass
+class DccBase:
+    name: str
+    display_name: str
+    package: str
+    executables: list[str]
+
+    @classmethod
+    def get_default_executable(cls):
+        try:
+            return cls.executables[0]
+        except IndexError:
+            return None
+
+
+class DccBlender(DccBase):
+    name = "blender"
+    display_name = "Blender"
+    package = "bpy"
+    executables = ["blender.exe"]
+
+
+class DccHoudini(DccBase):
+    name = "houdini"
+    display_name = "Houdini"
+    package = "hou"
+    executables = ["houdini"]
+
+
+class DccMaya(DccBase):
+    name = "maya"
+    display_name = "Maya"
+    package = "maya"
+    executables = ["maya.exe", "mayabatch.exe"]
+
+
+class DccMotionBuilder(DccBase):
+    name = "mobu"
+    display_name = "MotionBuilder"
+    package = "pyfbsdk"
+    executables = ["motionbuilder.exe"]
+
+
+class DccSubstanceDesigner(DccBase):
+    name = "designer"
+    display_name = "Substance Designer"
+    package = "sd"
+    executables = ["designer.exe", "Adobe Substance 3D Designer.exe"]
+
+
+class DccSubstancePainter(DccBase):
+    name = "painter"
+    display_name = "Substance Painter"
+    package = "substance_painter"
+    executables = ["painter.exe", "Adobe Substance 3D Painter.exe"]
+
+
+class DccUnreal(DccBase):
+    name = "unreal"
+    display_name = "Unreal"
+    package = "unreal"
+    executables = ["UnrealEditor.exe"]
+
+
+class DccStandalone(DccBase):
+    name = "standalone"
+    display_name = "Standalone"
+    package = "standalone"
+    executables = []
 
 
 @lru_cache()
