@@ -5,6 +5,7 @@ from typing import Iterator
 from maya.api import OpenMaya
 
 from ...maya.om import dagutils
+from ...maya.cmds import scene as sceneutils
 from ..abstract.scene import AFnScene
 
 
@@ -12,6 +13,47 @@ class FnScene(AFnScene):
     """
     Overloads `AFnScene` exposing functions to handle Maya scenes.
     """
+
+    def is_new_scene(self) -> bool:
+        """
+        Returns whether the current scene is new or not.
+
+        :return: Whether the current scene is new or not.
+        """
+
+        return sceneutils.is_new_scene()
+
+    def is_save_required(self) -> bool:
+        """
+        Returns whether the current scene requires saving or not.
+
+        :return: Whether the current scene requires saving or not.
+        """
+
+        return sceneutils.is_save_required()
+
+    def new(self):
+        """
+        Creates a new scene.
+        """
+
+        return sceneutils.new_scene()
+
+    def save(self):
+        """
+        Saves any changes to the current scene file.
+        """
+
+        sceneutils.save_scene()
+
+    def save_as(self, file_path: str):
+        """
+        Saves the current scene to the given file path.
+
+        :param file_path: File path to save the current scene to.
+        """
+
+        sceneutils.save_scene_as(file_path)
 
     def iterate_nodes(self) -> Iterator[OpenMaya.MObject]:
         """

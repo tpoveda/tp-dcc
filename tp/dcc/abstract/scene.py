@@ -5,12 +5,59 @@ from abc import abstractmethod
 from typing import Iterator, Any
 
 from .base import AFnBase
+from ...python import paths
 
 
 class AFnScene(AFnBase):
     """
     Overloads `AFnBase` exposing functions to handle DCC scenes.
     """
+
+    @abstractmethod
+    def is_new_scene(self) -> bool:
+        """
+        Returns whether the current scene is new or not.
+
+        :return: Whether the current scene is new or not.
+        """
+
+        pass
+
+    @abstractmethod
+    def is_save_required(self) -> bool:
+        """
+        Returns whether the current scene requires saving or not.
+
+        :return: Whether the current scene requires saving or not.
+        """
+
+        pass
+
+    @abstractmethod
+    def new(self):
+        """
+        Creates a new scene.
+        """
+
+        pass
+
+    @abstractmethod
+    def save(self):
+        """
+        Saves any changes to the current scene file.
+        """
+
+        pass
+
+    @abstractmethod
+    def save_as(self, file_path: str):
+        """
+        Saves the current scene to the given file path.
+
+        :param file_path: File path to save the current scene to.
+        """
+
+        pass
 
     @abstractmethod
     def iterate_nodes(self) -> Iterator[Any]:
@@ -50,3 +97,16 @@ class AFnScene(AFnBase):
         """
 
         pass
+
+    def is_read_only(self):
+        """
+        Returns whether the current scene is read only or not.
+
+        :return: Whether the current scene is read only or not.
+        """
+
+        return (
+            paths.is_read_only(self.current_file_path())
+            if not self.is_new_scene()
+            else False
+        )
