@@ -1,0 +1,8 @@
+{
+  "package_name": "tp-xyz",
+  "module_name": "xyz",
+  "description": "A new TP DCC package.",
+  "version": "0.1.0",
+  "author": "Tomi Poveda",
+  "author_email": "tpovedatd@gmail.com"
+}

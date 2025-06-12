@@ -1,5 +1,0 @@
-include README.rst
-include LICENSE
-include tp/nodegraph/settings.json
-include tp/nodegraph/examples/menu.json
-recursive-include tp/resources/* *.*

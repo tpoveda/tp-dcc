@@ -1,0 +1,22 @@
+name: "{{ cookiecutter.package_name }}"
+version: "{{ cookiecutter.version }}"
+author: "{{ cookiecutter.author }}"
+authorEmail: "{{ cookiecutter.author_email }}"
+description: "{{ cookiecutter.description }}"
+displayName: "{{ cookiecutter.package_name | replace('_', ' ') | title }}"
+commands:
+  - '{self}/scripts/{{ cookiecutter.package_name|replace("-", "_") }}.py'
+documentation:
+  masterDoc: "README.md"
+  sourceCodeFolder: "{self}/src"
+  sourceFolder: "{self}/docs"
+environment:
+  PYTHONPATH:
+  - "{self}"
+  - "{self}/src"
+  TP_DCC_BASE_PATHS:
+    - "{self}"
+    - "{self}/src"
+dependencies: []
+tests:
+  - "{self}/tests"

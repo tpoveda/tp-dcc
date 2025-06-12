@@ -1,0 +1,22 @@
+name: "tp-utility-tools"
+version: "0.1.0"
+author: "Tomi Poveda"
+authorEmail: "tpovedatd@gmail.com"
+description: "Package that contains a collection of DCC agnostic utility tools"
+displayName: "Tp-Utility-Tools"
+commands:
+  - '{self}/scripts/tp_utility_tools.py'
+documentation:
+  masterDoc: "README.md"
+  sourceCodeFolder: "{self}/src"
+  sourceFolder: "{self}/docs"
+environment:
+  PYTHONPATH:
+  - "{self}"
+  - "{self}/src"
+  TP_DCC_BASE_PATHS:
+    - "{self}"
+    - "{self}/src"
+dependencies: []
+tests:
+  - "{self}/tests"
