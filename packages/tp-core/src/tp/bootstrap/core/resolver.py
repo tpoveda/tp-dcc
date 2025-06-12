@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import os
-import sys
 import typing
 from pathlib import Path
+from importlib import reload
 from collections.abc import Callable
 from typing import cast, TypedDict, Any
 
@@ -75,28 +75,6 @@ class Environment:
         """The callbacks registered in the environment."""
 
         return self._callbacks
-
-    @staticmethod
-    def reload_tp_namespace():
-        """Internal function that reloads the TP DCC namespace.
-
-        This is necessary because the TP DCC namespace may have changed after
-        loading packages. This function forces a reload of the TP DCC namespace
-        to ensure that all packages are loaded correctly.
-        """
-
-        modules_to_reload = ("tp",)
-        for k in sys.modules.copy().keys():
-            found = False
-            for mod in modules_to_reload:
-                if mod == k:
-                    del sys.modules[mod]
-                    found = True
-                    break
-            if found:
-                continue
-            if k.startswith(modules_to_reload):
-                del sys.modules[k]
 
     @staticmethod
     def package_from_path(path: str) -> Package:
@@ -255,7 +233,7 @@ class Environment:
         self._project_package = project_package
         os.environ["TP_DCC_PROJECT_PACKAGE_ROOT"] = str(self._project_package.root)
 
-        self.reload_tp_namespace()
+        self._reload_tp_namespace()
 
         if not apply:
             return resolved
@@ -424,6 +402,18 @@ class Environment:
             except Exception:
                 logger.error(f"Failed to shutdown package: {package}", exc_info=True)
             visited.add(str(package))
+
+    # noinspection PyMethodMayBeStatic
+    def _reload_tp_namespace(self):
+        """Internal function that reloads the TP DCC namespace.
+
+        This is necessary because the TP DCC namespace may have changed after
+        loading packages. This function forces a reload of the TP DCC namespace
+        to ensure that all packages are loaded correctly.
+        """
+
+        import tp
+        reload(tp)
 
     def _resolve_environment_config_path(self) -> Path:
         """Internal function that handles the discovery of the environment

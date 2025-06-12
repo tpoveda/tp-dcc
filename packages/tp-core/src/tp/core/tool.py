@@ -8,24 +8,26 @@ from dataclasses import dataclass
 from Qt.QtCore import Signal, QObject
 from Qt.QtWidgets import QWidget, QStackedWidget
 
+from tp.libs.qt.widgets import window
+
 from ..dcc import callback
-from ..python import decorators, plugin
-from ..qt.widgets import window
+from ..libs.python import decorators, plugin
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class UiData:
-    """
-    A data class for storing UI-related data for a tool.
+    """A data class for storing UI-related data for a tool.
 
-    Attributes
+    Attributes:
     ----------
     label : str
-        The label to be displayed for the UI element. Defaults to an empty string.
+        The label to be displayed for the UI element.
+            Defaults to an empty string.
     icon : str
-        The path to the icon to be used for the UI element. Defaults to an empty string.
+        The path to the icon to be used for the UI element.
+            Defaults to an empty string.
     tooltip : str
         The tooltip text for the UI element. Defaults to an empty string.
     """
@@ -36,8 +38,8 @@ class UiData:
 
 
 class Tool(QObject):
-    """
-    Base class used by tp-dcc-tools framework to implement DCC tools that have access to tp-dcc-tools functionality.
+    """Base class used by tp-dcc-tools framework to implement DCC tools that
+    have access to tp-dcc-tools functionality.
     """
 
     ID: str = ""
@@ -57,8 +59,7 @@ class Tool(QObject):
     # noinspection PyMethodParameters
     @decorators.classproperty
     def id(cls) -> str:
-        """
-        Gets the identifier associated with the class.
+        """Gets the identifier associated with the class.
 
         This class property returns the identifier associated with the class.
         """
@@ -68,8 +69,7 @@ class Tool(QObject):
     # noinspection PyMethodParameters
     @decorators.classproperty
     def creator(cls) -> str:
-        """
-        Gets the creator associated with the class.
+        """Gets the creator associated with the class.
 
         This class property returns the creator associated with the class.
         """
@@ -78,8 +78,7 @@ class Tool(QObject):
 
     @decorators.classproperty
     def ui_data(cls) -> UiData:
-        """
-        Gets the UI data associated with the class.
+        """Gets the UI data associated with the class.
 
         This class property returns the UI data associated with the class.
         """
@@ -89,8 +88,7 @@ class Tool(QObject):
     # noinspection PyMethodParameters
     @decorators.classproperty
     def tags(cls) -> list[str]:
-        """
-        Gets the tags associated with the class.
+        """Gets the tags associated with the class.
 
         This class property returns the tags associated with the class.
         """
@@ -99,8 +97,7 @@ class Tool(QObject):
 
     @property
     def stats(self) -> plugin.PluginStats:
-        """
-        Gets the statistics associated with the instance.
+        """Gets the statistics associated with the instance.
 
         This property returns the statistics associated with the instance.
         """
@@ -109,8 +106,7 @@ class Tool(QObject):
 
     @property
     def callbacks(self) -> callback.FnCallback:
-        """
-        Gets the callbacks associated with the instance.
+        """Gets the callbacks associated with the instance.
 
         This property returns the callbacks associated with the instance.
         """
@@ -119,8 +115,7 @@ class Tool(QObject):
 
     # noinspection PyUnusedLocal
     def execute(self, *args, **kwargs) -> window.Window:
-        """
-        Executes the tool with the specified arguments and keyword arguments.
+        """Executes the tool with the specified arguments and keyword arguments.
 
         This method executes the function with the provided arguments and keyword arguments.
 
@@ -151,8 +146,7 @@ class Tool(QObject):
         return win
 
     def widgets(self) -> list[QWidget]:
-        """
-        Returns a list of widgets associated with the instance.
+        """Returns a list of widgets associated with the instance.
 
         This method returns a list of widgets associated with the instance.
 
@@ -162,8 +156,7 @@ class Tool(QObject):
         return self._widgets
 
     def pre_content_setup(self):
-        """
-        Function that is called before tool UI is created.
+        """Function that is called before tool UI is created.
         Can be override in tool subclasses.
         """
 
@@ -171,30 +164,24 @@ class Tool(QObject):
 
     # noinspection PyMethodMayBeStatic
     def contents(self) -> list[QWidget]:
-        """
-        Function that returns tool widgets.
-        """
+        """Function that returns tool widgets."""
 
         return []
 
     def post_content_setup(self):
-        """
-        Function that is called after tool UI is created.
+        """Function that is called after tool UI is created.
         Can be override in tool subclasses.
         """
 
         pass
 
     def teardown(self):
-        """
-        Function that shutdown tool.
-        """
+        """Function that shutdown tool."""
 
         self._callbacks.clear()
 
     def run(self):
-        """
-        Runs the tool.
+        """Runs the tool.
 
         This method runs the tool.
         """
@@ -202,9 +189,7 @@ class Tool(QObject):
         pass
 
     def _execute(self, *args, **kwargs) -> Tool:
-        """
-        Internal function that executes tool in a safe way.
-        """
+        """Internal function that executes tool in a safe way."""
 
         self.stats.start()
         exc_type, exc_value, exc_tb = None, None, None
@@ -222,9 +207,7 @@ class Tool(QObject):
         return self
 
     def _run_teardown(self):
-        """
-        Internal function that tries to tear down the tool in a safe way.
-        """
+        """Internal function that tries to tear down the tool in a safe way."""
 
         if self._closed:
             logger.warning(f'Tool f"{self}" already closed')

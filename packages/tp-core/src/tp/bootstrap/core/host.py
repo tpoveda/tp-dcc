@@ -12,6 +12,22 @@ if typing.TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Global host instance variable.
+_current_host: Host | None = None
+
+
+def current_host() -> Host | None:
+    """Returns the current host instance.
+
+    This function is a convenience method to access the current host instance
+    without needing to call `Host.current()` directly.
+
+    Returns:
+        The current host instance or None if no host is set.
+    """
+
+    return Host.current() if Host._instance else None
+
 
 class Host(ABC):
     """Base class for host implementations.

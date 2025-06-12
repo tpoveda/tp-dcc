@@ -61,7 +61,7 @@ from .layouts import VerticalLayout, HorizontalLayout, GridLayout
 if dcc.is_maya():
     from maya import cmds, OpenMayaUI
     from maya.app.general import mayaMixin
-    from tp.maya.cmds.ui import docking
+    from tp.libs.maya.cmds.ui import docking
 
     DockableMixin = mayaMixin.MayaQWidgetDockableMixin
 else:
@@ -74,25 +74,20 @@ logger = logging.getLogger(__name__)
 
 
 class ContainerType(enum.Enum):
-    """
-    Enumerator that defines the different frameless container types
-    """
+    """Enumerator that defines the different frameless container types"""
 
     Docking = 1
     FramelessWindow = 2
 
 
 class ContainerWidget:
-    """
-    Base class used by custom container widgets.
-    """
+    """Base class used by custom container widgets."""
 
     def __init__(self, *args, **kwargs):
         pass
 
     def is_docking_container(self) -> bool:
-        """
-        Returns whether current instance is a docking container widget.
+        """Returns whether current instance is a docking container widget.
 
         :return: True if current instance is a DockingContainer instance; False otherwise.
         """
@@ -100,8 +95,7 @@ class ContainerWidget:
         return isinstance(self, DockingContainer)
 
     def is_frameless_window(self) -> bool:
-        """
-        Returns whether current instance is a frameless window widget.
+        """Returns whether current instance is a frameless window widget.
 
         :return: True if current instance is a FramelessWindow instance; False otherwise.
         """
@@ -109,8 +103,7 @@ class ContainerWidget:
         return isinstance(self, FramelessWindowContainer)
 
     def container_type(self) -> int:
-        """
-        Returns the type of container.
+        """Returns the type of container.
 
         :return: type container.
         """
@@ -122,8 +115,7 @@ class ContainerWidget:
         )
 
     def set_widget(self, widget: QWidget):
-        """
-        Sets container widget.
+        """Sets container widget.
 
         :param widget: container widget.
         """
@@ -132,8 +124,7 @@ class ContainerWidget:
         self.setObjectName(widget.objectName())
 
     def set_on_top(self, flag: bool):
-        """
-        Sets whether container should stay on top.
+        """Sets whether container should stay on top.
 
         :param flag: True to set container on top; False otherwise.
         """
@@ -142,9 +133,7 @@ class ContainerWidget:
 
 
 class DockingContainer(DockableMixin, QWidget, ContainerWidget):
-    """
-    Custom widget container that can be docked withing DCCs
-    """
+    """Custom widget container that can be docked withing DCCs"""
 
     def __init__(
         self,
@@ -171,8 +160,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         self._setup_ui()
 
     def enterEvent(self, event: QEvent) -> None:
-        """
-        Overrides base QWidget enterEvent function.
+        """Overrides base QWidget enterEvent function.
 
         :param event: Qt enter event.
         """
@@ -182,8 +170,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
 
     # noinspection PyUnresolvedReferences
     def resizeEvent(self, event: QResizeEvent) -> None:
-        """
-        Overrides base QWidget resizeEvent function.
+        """Overrides base QWidget resizeEvent function.
 
         :param event: Qt resize event.
         """
@@ -195,8 +182,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
 
     # noinspection PyUnresolvedReferences
     def showEvent(self, event: QShowEvent) -> None:
-        """
-        Overrides base QWidget showEvent function.
+        """Overrides base QWidget showEvent function.
 
         :param event: Qt show event.
         """
@@ -219,8 +205,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         self._prev_floating = floating
 
     def moveEvent(self, event: QMoveEvent) -> None:
-        """
-        Overrides base QWidget moveEvent function.
+        """Overrides base QWidget moveEvent function.
 
         :param event: Qt move event.
         """
@@ -240,8 +225,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
             self.undock()
 
     def set_widget(self, widget: FramelessWindow):
-        """
-        Overrides base FramelessWindow set_widget function.
+        """Overrides base FramelessWindow set_widget function.
 
         :param FramelessWindow widget: frameless window widget.
         """
@@ -254,9 +238,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         self.setMinimumHeight(0)
 
     def move_to_mouse(self):
-        """
-        Moves current dock widget into current mouse cursor position.
-        """
+        """Moves current dock widget into current mouse cursor position."""
 
         pos = QCursor.pos()
         window = self._win
@@ -272,9 +254,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         window.setWindowOpacity(0.8)
 
     def undock(self):
-        """
-        Undocks container widget.
-        """
+        """Undocks container widget."""
 
         self._detach_counter = 0
         self._detaching = False
@@ -294,16 +274,12 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         self._workspace_control = None
 
     def delete_control(self):
-        """
-        Deletes workspace control.
-        """
+        """Deletes workspace control."""
 
         ui.FnUi().delete_ui(self._workspace_control_name)
 
     def _setup_ui(self):
-        """
-        Internal function that initializes docking widget UI.
-        """
+        """Internal function that initializes docking widget UI."""
 
         size = 24
         ui_layout = VerticalLayout()
@@ -323,9 +299,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
 
 
 class FramelessWindowContainer(QMainWindow, ContainerWidget):
-    """
-    Frameless window implementation.
-    """
+    """Frameless window implementation."""
 
     closed = Signal()
 
@@ -337,8 +311,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         on_top: bool = False,
         parent: QWidget | None = None,
     ):
-        """
-        Initialize a new instance of the class.
+        """Initialize a new instance of the class.
 
         :param width: The width of the window. Default is None.
         :param height: The height of the window. Default is None.
@@ -369,8 +342,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
 
     @property
     def frameless_window(self) -> FramelessWindow:
-        """
-        Getter method that returns the frameless window contained within this container.
+        """Getter method that returns the frameless window contained within this container.
 
         :return: frameless window instance.
         """
@@ -379,8 +351,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         return self.centralWidget()
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        """
-        Overrides `FramelessWindowContainer` closeEvent function.
+        """Overrides `FramelessWindowContainer` closeEvent function.
 
         :param event: close event.
         """
@@ -390,8 +361,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         self.closed.emit()
 
     def set_widget(self, widget: FramelessWindow):
-        """
-        Overrides base `FramelessWindowContainer` set_widget function.
+        """Overrides base `FramelessWindowContainer` set_widget function.
 
         :param widget: window central widget.
         """
@@ -404,8 +374,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
             self._set_new_object_name(widget)
 
     def set_on_top(self, flag: bool):
-        """
-        Sets whether container should stay on top.
+        """Sets whether container should stay on top.
 
         :param flag: True to set container on top; False otherwise.
         """
@@ -420,8 +389,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         self.show()
 
     def set_shadow_effect_enabled(self, flag: bool) -> bool:
-        """
-        Sets whether frameless window shadow effect is enabled.
+        """Sets whether frameless window shadow effect is enabled.
 
         :param flag: True to enable shadow effect; False otherwise.
         :return: True if shadow effect was set successfully; False otherwise.
@@ -440,8 +408,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         return True
 
     def set_transparency(self, flag: bool):
-        """
-        Sets whether window transparency effect is enabled.
+        """Sets whether window transparency effect is enabled.
 
         :param flag: True to enable window transparency effect; False otherwise.
         """
@@ -456,8 +423,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         window.repaint()
 
     def save_window_pref(self):
-        """
-        Function that forces the window to automatically be parented to DCC main window and also to force the saving
+        """Function that forces the window to automatically be parented to DCC main window and also to force the saving
         of the window size and position.
 
         ..note:: this functionality is only supported in Maya
@@ -466,8 +432,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         self.setProperty("saveWindowPref", True)
 
     def _setup_size(self, width: int, height: int):
-        """
-        Internal function that initializes frameless window size.
+        """Internal function that initializes frameless window size.
 
         :param width: initial width in pixels.
         :param height: initial height in pixels.
@@ -481,9 +446,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
             self.resize(width, height)
 
     def _setup_ui(self):
-        """
-        Internal function that initializes frameless window UI.
-        """
+        """Internal function that initializes frameless window UI."""
 
         self.setAttribute(Qt.WA_TranslucentBackground)
         if utils.is_pyside6() or utils.is_pyside2() or utils.is_pyqt5():
@@ -499,8 +462,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         self.layout().setContentsMargins(0, 0, 0, 0)
 
     def _set_new_object_name(self, widget: QWidget):
-        """
-        Internal function that updates this instance object name based on the given widget.
+        """Internal function that updates this instance object name based on the given widget.
 
         :param widget: frameless window central widget.
         """
@@ -539,8 +501,7 @@ class FramelessWindow(QWidget):
         settings_path: str = "",
         parent: QWidget | None = None,
     ):
-        """
-        Initializes the window with the specified properties.
+        """Initializes the window with the specified properties.
 
         :param name: The internal name of the window. Defaults to an empty string.
         :param title: The title of the window. Defaults to an empty string.
@@ -642,8 +603,7 @@ class FramelessWindow(QWidget):
 
     @classmethod
     def frameless_window(cls, widget: QWidget) -> FramelessWindow | None:
-        """
-        Returns the frameless window based on the given widget.
+        """Returns the frameless window based on the given widget.
 
         :param widget: widget to get frameless window from.
         :return: found frameless window.
@@ -659,8 +619,7 @@ class FramelessWindow(QWidget):
 
     @classmethod
     def delete_instances(cls, name: str | None = None):
-        """
-        Deletes all frameless window instances.
+        """Deletes all frameless window instances.
 
         :param name: name of the frameless window to delete. If None, all frameless windows will be deleted.
         """
@@ -680,8 +639,7 @@ class FramelessWindow(QWidget):
 
     @property
     def title_bar(self) -> FramelessTitleBar:
-        """
-        Getter method that returns titlebar instance for this window.
+        """Getter method that returns titlebar instance for this window.
 
         :return: frameless window title bar.
         """
@@ -690,8 +648,7 @@ class FramelessWindow(QWidget):
 
     @property
     def name(self) -> str:
-        """
-        Getter method that returns the name of this frameless window instance.
+        """Getter method that returns the name of this frameless window instance.
 
         :return: window name.
         """
@@ -700,8 +657,7 @@ class FramelessWindow(QWidget):
 
     @name.setter
     def name(self, value: str):
-        """
-        Setter method that sets the name of this frameless window instance.
+        """Setter method that sets the name of this frameless window instance.
 
         :param str value: window name.
         """
@@ -710,8 +666,7 @@ class FramelessWindow(QWidget):
 
     @property
     def title(self) -> str:
-        """
-        Getter method that returns the title of this frameless window instance.
+        """Getter method that returns the title of this frameless window instance.
 
         :return: window title.
         """
@@ -720,8 +675,7 @@ class FramelessWindow(QWidget):
 
     @property
     def parent_container(self) -> DockingContainer | FramelessWindowContainer:
-        """
-        Getter method that returns the parent container instance this frameless window is contained within.
+        """Getter method that returns the parent container instance this frameless window is contained within.
 
         :return: parent frameless window container.
         """
@@ -730,8 +684,7 @@ class FramelessWindow(QWidget):
 
     @property
     def title_contents_layout(self) -> QHBoxLayout:
-        """
-        Getter method that returns the layout for the frameless window title.
+        """Getter method that returns the layout for the frameless window title.
 
         :return: frameless window title layout.
         """
@@ -740,8 +693,7 @@ class FramelessWindow(QWidget):
 
     @property
     def corner_contents_layout(self) -> QHBoxLayout:
-        """
-        Getter method that returns the layout for the frameless window corners.
+        """Getter method that returns the layout for the frameless window corners.
 
         :return: frameless window corners layout.
         """
@@ -750,8 +702,7 @@ class FramelessWindow(QWidget):
 
     @property
     def docked(self) -> Signal:
-        """
-        Getter method that returns the docked signal associated with the title bar logo button.
+        """Getter method that returns the docked signal associated with the title bar logo button.
 
         :return: docked signal.
         """
@@ -760,8 +711,7 @@ class FramelessWindow(QWidget):
 
     @property
     def undocked(self) -> Signal:
-        """
-        Getter method that returns the undocked signal associated with the title bar logo button.
+        """Getter method that returns the undocked signal associated with the title bar logo button.
 
         :return: undocked signal.
         """
@@ -777,15 +727,12 @@ class FramelessWindow(QWidget):
     #     return self._window_resizer.resizeFinished
 
     def setup_widgets(self):
-        """
-        Function that can be overridden to add custom widgets.
-        """
+        """Function that can be overridden to add custom widgets."""
 
         pass
 
     def setup_layouts(self, main_layout: QVBoxLayout | QHBoxLayout | QGridLayout):
-        """
-        Function that can be overridden to add custom layouts.
+        """Function that can be overridden to add custom layouts.
 
         :param main_layout: main layout to add custom layouts to.
         """
@@ -793,15 +740,12 @@ class FramelessWindow(QWidget):
         pass
 
     def setup_signals(self):
-        """
-        Function that can be overridden to set up widget signals.
-        """
+        """Function that can be overridden to set up widget signals."""
 
         pass
 
     def show(self, move: QPoint | None = None) -> None:
-        """
-        Overrides base show function to show parent container.
+        """Overrides base show function to show parent container.
 
         param move: if given, move window to specific location.
         """
@@ -816,18 +760,14 @@ class FramelessWindow(QWidget):
         return result
 
     def hide(self):
-        """
-        Overrides base hide function to hide parent container.
-        """
+        """Overrides base hide function to hide parent container."""
 
         if self._parent_container:
             self._parent_container.hide()
         return super().hide()
 
     def move(self, *args, **kwargs) -> None:
-        """
-        Overrides move function to move window and offset the resizers if they are visible.
-        """
+        """Overrides move function to move window and offset the resizers if they are visible."""
 
         arg1 = args[0]
         if isinstance(arg1, QPoint) and self._window_resizer.is_visible():
@@ -837,9 +777,7 @@ class FramelessWindow(QWidget):
             self._parent_container.move(*args, **kwargs)
 
     def close(self) -> bool:
-        """
-        Overrides close function.
-        """
+        """Overrides close function."""
 
         self.hide()
         self.beginClosing.emit()
@@ -856,9 +794,7 @@ class FramelessWindow(QWidget):
         return result
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        """
-        Overrides key press event function.
-        """
+        """Overrides key press event function."""
 
         if self._overlay and event.modifiers() == Qt.AltModifier:
             self._overlay.show()
@@ -866,9 +802,7 @@ class FramelessWindow(QWidget):
         return super().keyPressEvent(event)
 
     def load_settings(self):
-        """
-        Load settings located within window settings file path (if it exists).
-        """
+        """Load settings located within window settings file path (if it exists)."""
 
         position = QPoint(*(self._init_pos or ()))
         init_pos = position or self._settings.value("pos")
@@ -890,9 +824,7 @@ class FramelessWindow(QWidget):
                 )
 
     def save_settings(self):
-        """
-        Saves settings into window settings file path.
-        """
+        """Saves settings into window settings file path."""
 
         if not self.is_docked() and self._parent_container:
             self._settings.setValue("geometry", self._parent_container.saveGeometry())
@@ -903,8 +835,7 @@ class FramelessWindow(QWidget):
                 self._settings.setValue("size", self._parent_container.size())
 
     def main_layout(self) -> QVBoxLayout | QHBoxLayout | QGridLayout | QLayout:
-        """
-        Returns window main content layouts instance.
+        """Returns window main content layouts instance.
 
         :return: contents layout.
         :note: if not layout exists, a new one will be created.
@@ -929,8 +860,7 @@ class FramelessWindow(QWidget):
     #     return self.main_layout()
 
     def set_title(self, title: str):
-        """
-        Sets title text.
+        """Sets title text.
 
         :param title: title.
         """
@@ -940,8 +870,7 @@ class FramelessWindow(QWidget):
         super().setWindowTitle(title)
 
     def set_resizable(self, flag: bool):
-        """
-        Sets whether window is resizable.
+        """Sets whether window is resizable.
 
         :param flag: True to make window resizable; False otherwise.
         """
@@ -949,8 +878,7 @@ class FramelessWindow(QWidget):
         self._window_resizer.set_enabled(flag)
 
     def set_on_top(self, flag: bool):
-        """
-        Sets whether container should stay on top.
+        """Sets whether container should stay on top.
 
         :param flag: True to set container on top; False otherwise.
         """
@@ -961,8 +889,7 @@ class FramelessWindow(QWidget):
         self._parent_container.set_on_top(flag)
 
     def resizer_height(self) -> int:
-        """
-        Returns window resizer height.
+        """Returns window resizer height.
 
         :return: resizer height.
         """
@@ -970,8 +897,7 @@ class FramelessWindow(QWidget):
         return self._window_resizer.resizer_height()
 
     def resizer_width(self) -> int:
-        """
-        Returns window resizer width.
+        """Returns window resizer width.
 
         :return: resizer width.
         """
@@ -979,8 +905,7 @@ class FramelessWindow(QWidget):
         return self._window_resizer.resizer_width()
 
     def apply_stylesheet(self, stylesheet: str | None = None):
-        """
-        Applies given stylesheet to the window. If not given, default stylesheet will be applied.
+        """Applies given stylesheet to the window. If not given, default stylesheet will be applied.
 
         :param stylesheet: stylesheet to apply.
         """
@@ -991,9 +916,7 @@ class FramelessWindow(QWidget):
             self.set_default_stylesheet()
 
     def set_default_stylesheet(self):
-        """
-        Tries to set the default stylesheet for this window.
-        """
+        """Tries to set the default stylesheet for this window."""
 
         try:
             theme.instance().apply(self)
@@ -1001,9 +924,7 @@ class FramelessWindow(QWidget):
             logger.error("Error while setting default stylesheet ...")
 
     def center_to_parent(self):
-        """
-        Centers container to parent.
-        """
+        """Centers container to parent."""
 
         utils.update_widget_sizes(self._parent_container)
         size = self.rect().size()
@@ -1019,8 +940,7 @@ class FramelessWindow(QWidget):
         )
 
     def is_minimized(self) -> bool:
-        """
-        Returns whether window is minimized.
+        """Returns whether window is minimized.
 
         :return: True if window is minimized; False otherwise.
         """
@@ -1028,8 +948,7 @@ class FramelessWindow(QWidget):
         return self._minimized
 
     def set_minimize_enabled(self, flag: bool):
-        """
-        Sets whether window can be minimized.
+        """Sets whether window can be minimized.
 
         :param flag: Turn to enable minimize functionality; False otherwise.
         """
@@ -1037,8 +956,7 @@ class FramelessWindow(QWidget):
         self._minimize_enabled = flag
 
     def is_movable(self) -> bool:
-        """
-        Returns whether window is movable.
+        """Returns whether window is movable.
 
         :return: True if window is movable; False otherwise.
         """
@@ -1046,8 +964,7 @@ class FramelessWindow(QWidget):
         return self._title_bar.move_enabled
 
     def set_movable(self, flag: bool):
-        """
-        Sets whether window is movable.
+        """Sets whether window is movable.
 
         :param flag: True to make window movable; False otherwise.
         """
@@ -1055,8 +972,7 @@ class FramelessWindow(QWidget):
         self._title_bar.move_enabled = flag
 
     def is_docked(self) -> bool:
-        """
-        Returns whether window is docked.
+        """Returns whether window is docked.
 
         :return: True if window is docked; False otherwise.
         """
@@ -1068,9 +984,7 @@ class FramelessWindow(QWidget):
         )
 
     def minimize(self):
-        """
-        Minimizes UI.
-        """
+        """Minimizes UI."""
 
         if not self._minimize_enabled:
             return
@@ -1082,16 +996,13 @@ class FramelessWindow(QWidget):
         QTimer.singleShot(0, lambda: self.window().resize(QSize(size, size)))
 
     def maximize(self):
-        """
-        Maximizes UI.
-        """
+        """Maximizes UI."""
 
         self._set_ui_minimized(False)
         self.window().resize(self._saved_size)
 
     def title_style(self) -> str:
-        """
-        Returns current title style.
+        """Returns current title style.
 
         :return: title style.
         """
@@ -1099,8 +1010,7 @@ class FramelessWindow(QWidget):
         return self._title_bar.title_style()
 
     def set_title_style(self, title_style: str):
-        """
-        Sets title style.
+        """Sets title style.
 
         :param title_style: title style.
         """
@@ -1108,8 +1018,7 @@ class FramelessWindow(QWidget):
         self._title_bar.set_title_style(title_style)
 
     def set_minimize_button_visible(self, flag: bool):
-        """
-        Sets whether minimize button is visible.
+        """Sets whether minimize button is visible.
 
         :param flag: True to make minimize button visible; False otherwise.
         """
@@ -1117,8 +1026,7 @@ class FramelessWindow(QWidget):
         self._title_bar.set_minimize_button_visible(flag)
 
     def set_maximize_button_visible(self, flag: bool):
-        """
-        Sets whether minimize button is visible.
+        """Sets whether minimize button is visible.
 
         :param flag: True to make maximize button visible; False otherwise.
         """
@@ -1126,8 +1034,7 @@ class FramelessWindow(QWidget):
         self._title_bar.set_maximize_button_visible(flag)
 
     def set_logo_color(self, color: QColor | tuple[int, int, int]):
-        """
-        Sets the color of the window icon.
+        """Sets the color of the window icon.
 
         :param color: color icon.
         """
@@ -1135,16 +1042,13 @@ class FramelessWindow(QWidget):
         self._title_bar.logo_button.set_icon_color(color)
 
     def show_overlay(self):
-        """
-        Shows frameless window overlay.
-        """
+        """Shows frameless window overlay."""
 
         if self._overlay:
             self._overlay.show()
 
     def attach_to_frameless_window(self, save_window_pref: bool = True):
-        """
-        Attaches this widget to a frameless window.
+        """Attaches this widget to a frameless window.
 
         :param save_window_pref: whether to save window settings.
         :return: frameless window instance.
@@ -1166,8 +1070,7 @@ class FramelessWindow(QWidget):
         return self._parent_container
 
     def resize_window(self, width: int = -1, height: int = -1):
-        """
-        Resizes window.
+        """Resizes window.
 
         :param width: window width.
         :param height: window height.
@@ -1181,17 +1084,14 @@ class FramelessWindow(QWidget):
         super().resize(width, height)
 
     def show_window(self):
-        """
-        Shows parent container window.
-        """
+        """Shows parent container window."""
 
         if self._parent_container:
             self._parent_container.show()
 
     # noinspection PyMethodMayBeStatic
     def _main_layout(self) -> QVBoxLayout | QHBoxLayout | QGridLayout | QLayout:
-        """
-        Internal function that that returns window main content layouts instance.
+        """Internal function that that returns window main content layouts instance.
         It can be overridden to return a custom main layout.
 
         :return: contents main layout.
@@ -1209,9 +1109,7 @@ class FramelessWindow(QWidget):
         return main_layout
 
     def _setup_ui(self):
-        """
-        Internal function that initializes UI.
-        """
+        """Internal function that initializes UI."""
 
         self.attach_to_frameless_window()
         self._minimized = False
@@ -1224,9 +1122,7 @@ class FramelessWindow(QWidget):
         self.apply_stylesheet()
 
     def _setup_signals(self):
-        """
-        Internal function that initializes window signals.
-        """
+        """Internal function that initializes window signals."""
 
         # noinspection PyUnresolvedReferences
         self.docked.connect(self._on_docked)
@@ -1241,9 +1137,7 @@ class FramelessWindow(QWidget):
         #     pass
 
     def _setup_frameless_layout(self):
-        """
-        Internal function that initializes frameless layout.
-        """
+        """Internal function that initializes frameless layout."""
 
         self.setLayout(self._frameless_layout)
         self._main_contents = FramelessWindowContents(self)
@@ -1257,17 +1151,14 @@ class FramelessWindow(QWidget):
         self._frameless_layout.setColumnStretch(2, 1)  # main contents row
 
     def _move_to_init_pos(self):
-        """
-        Internal function that moves widget to the internal initial position.
-        """
+        """Internal function that moves widget to the internal initial position."""
 
         utils.update_widget_sizes(self._parent_container)
         self._init_pos = utils.contain_widget_in_screen(self, self._init_pos)
         self._parent_container.move(self._init_pos)
 
     def _set_ui_minimized(self, flag: bool):
-        """
-        Internal function that minimizes/maximizes UI.
+        """Internal function that minimizes/maximizes UI.
 
         :param bool flag: True to minimize UI; False to maximize UI.
         """
@@ -1291,23 +1182,18 @@ class FramelessWindow(QWidget):
 
     # noinspection SpellCheckingInspection
     def _show_resizers(self):
-        """
-        Internal function that show resizers.
-        """
+        """Internal function that show resizers."""
 
         self._window_resizer.show()
 
     # noinspection SpellCheckingInspection
     def _hide_resizers(self):
-        """
-        Internal function that hides resizers.
-        """
+        """Internal function that hides resizers."""
 
         self._window_resizer.hide()
 
     def _on_docked(self, container: DockingContainer):
-        """
-        Internal callback function that is called when window is docked.
+        """Internal callback function that is called when window is docked.
 
         :param DockContainer container: dock container instance.
         """
@@ -1320,17 +1206,13 @@ class FramelessWindow(QWidget):
         self._parent_container = container
 
     def _on_undocked(self):
-        """
-        Internal callback function that is called when window is undocked.
-        """
+        """Internal callback function that is called when window is undocked."""
 
         self._show_resizers()
         self.set_movable(True)
 
     def _on_title_bar_double_clicked(self):
-        """
-        Internal callback function that is called when title bar is double-clicked by the user.
-        """
+        """Internal callback function that is called when title bar is double-clicked by the user."""
 
         self.minimize() if not self.is_minimized() else self.maximize()
 
@@ -1345,9 +1227,7 @@ class FramelessWindow(QWidget):
 
 
 class FramelessWindowThin(FramelessWindow):
-    """
-    Frameless window with modified title style
-    """
+    """Frameless window with modified title style"""
 
     def _setup_frameless_layout(self):
         super()._setup_frameless_layout()
@@ -1357,9 +1237,7 @@ class FramelessWindowThin(FramelessWindow):
 
 
 class FramelessTitleLabel(ClippedLabel):
-    """
-    Custom label implementation with elided functionality used for the title bar title.
-    """
+    """Custom label implementation with elided functionality used for the title bar title."""
 
     def __init__(
         self,
@@ -1369,8 +1247,7 @@ class FramelessTitleLabel(ClippedLabel):
         always_show_all: bool = False,
         parent: QWidget | None = None,
     ):
-        """
-        Initializes the widget with the specified properties.
+        """Initializes the widget with the specified properties.
 
         :param text: The text content of the widget. Defaults to an empty string.
         :param width: The width of the widget. Defaults to 0.
@@ -1397,9 +1274,7 @@ class FramelessTitleLabel(ClippedLabel):
 
 
 class FramelessTitleBar(QFrame):
-    """
-    Title bar for frameless window that allows to click-drag this windget to move the window widget.
-    """
+    """Title bar for frameless window that allows to click-drag this windget to move the window widget."""
 
     doubleClicked = Signal()
     moving = Signal(object, object)
@@ -1518,9 +1393,7 @@ class FramelessTitleBar(QFrame):
         return self._window_buttons_layout
 
     def setup_ui(self):
-        """
-        Initializes title UI.
-        """
+        """Initializes title UI."""
 
         self.setFixedHeight(dpi.dpi_scale(self._title_bar_height))
         self.setLayout(self._main_layout)
@@ -1604,8 +1477,7 @@ class FramelessTitleBar(QFrame):
             self._help_button.hide()
 
     def mousePressEvent(self, event: QMouseEvent):
-        """
-        Overrides base mousePressEvent function to cache the drag positions.
+        """Overrides base mousePressEvent function to cache the drag positions.
 
         :param event: Qt mouse event.
         """
@@ -1622,8 +1494,7 @@ class FramelessTitleBar(QFrame):
         event.ignore()
 
     def mouseDoubleClickEvent(self, event: QMouseEvent):
-        """
-        Overrides mouseDoubleClickEvent function to maximize/minimize window (if possible).
+        """Overrides mouseDoubleClickEvent function to maximize/minimize window (if possible).
 
         :param event: Qt mouse event.
         """
@@ -1632,8 +1503,7 @@ class FramelessTitleBar(QFrame):
         self.doubleClicked.emit()
 
     def mouseMoveEvent(self, event: QMouseEvent):
-        """
-        Overrides base mouseMoveEvent function to cache the drag positions.
+        """Overrides base mouseMoveEvent function to cache the drag positions.
 
         :param event: Qt mouse event.
         """
@@ -1659,8 +1529,7 @@ class FramelessTitleBar(QFrame):
             self.window().move(new_pos)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
-        """
-        Overrides base mouseReleaseEvent function to cache the drag positions.
+        """Overrides base mouseReleaseEvent function to cache the drag positions.
 
         :param event: Qt mouse event.
         """
@@ -1678,33 +1547,26 @@ class FramelessTitleBar(QFrame):
             self.end_move()
 
     def start_move(self):
-        """
-        Starts the movement of the title bar parent window.
-        """
+        """Starts the movement of the title bar parent window."""
 
         if self._move_enabled:
             self._widget_mouse_pos = self._frameless_window.mapFromGlobal(QCursor.pos())
 
     def end_move(self):
-        """
-        Ends the movement of the title bar parent window.
-        """
+        """Ends the movement of the title bar parent window."""
 
         if self._move_enabled:
             self._widget_mouse_pos = None
 
     def refresh(self):
-        """
-        Refreshes title bar.
-        """
+        """Refreshes title bar."""
 
         QApplication.processEvents()
         self.updateGeometry()
         self.update()
 
     def set_title_text(self, title: str):
-        """
-        Sets the title of the title bar.
+        """Sets the title of the title bar.
 
         :param title: title text.
         """
@@ -1712,8 +1574,7 @@ class FramelessTitleBar(QFrame):
         self._title_label.setText(title.upper())
 
     def set_title_spacing(self, spacing: bool):
-        """
-        Set title spacing.
+        """Set title spacing.
 
         :param spacing: whether spacing should be applied.
         """
@@ -1726,8 +1587,7 @@ class FramelessTitleBar(QFrame):
             self._split_layout.setSpacing(0)
 
     def set_title_align(self, align: Qt.AlignmentFlag):
-        """
-        Sets title align.
+        """Sets title align.
 
         :param align: alignment.
         """
@@ -1738,8 +1598,7 @@ class FramelessTitleBar(QFrame):
             self._split_layout.setStretch(1, 1)
 
     def title_style(self) -> str:
-        """
-        Returns title style.
+        """Returns title style.
 
         :return: title style.
         """
@@ -1747,8 +1606,7 @@ class FramelessTitleBar(QFrame):
         return self._title_style
 
     def set_title_style(self, style: str):
-        """
-        Sets the title style.
+        """Sets the title style.
 
         :param style: title style.
         """
@@ -1793,8 +1651,7 @@ class FramelessTitleBar(QFrame):
             )
 
     def set_minimize_button_visible(self, flag: bool):
-        """
-        Sets whether dragger shows minimize button or not.
+        """Sets whether dragger shows minimize button or not.
 
         :param flag: True to enable minimize; False otherwise.
         """
@@ -1802,8 +1659,7 @@ class FramelessTitleBar(QFrame):
         self._minimize_button.setVisible(flag)
 
     def set_maximize_button_visible(self, flag: bool):
-        """
-        Sets whether dragger shows maximize button or not.
+        """Sets whether dragger shows maximize button or not.
 
         :param flag: True to enable maximize; False otherwise.
         """
@@ -1811,8 +1667,7 @@ class FramelessTitleBar(QFrame):
         self._maximize_button.setVisible(flag)
 
     def set_logo_highlight(self, flag: bool):
-        """
-        Sets whether logo can be highlighted.
+        """Sets whether logo can be highlighted.
 
         :param flag: True to enable icon highlight; False otherwise.
         """
@@ -1820,9 +1675,7 @@ class FramelessTitleBar(QFrame):
         self._logo_button.set_logo_highlight(flag)
 
     def toggle_contents(self):
-        """
-        Shows or hides the additional contents of the title bar.
-        """
+        """Shows or hides the additional contents of the title bar."""
 
         if self._contents_layout.count() > 0:
             for i in range(self._contents_layout.count()):
@@ -1830,24 +1683,18 @@ class FramelessTitleBar(QFrame):
                 widget.show() if widget.isHidden() else widget.hide()
 
     def close_window(self):
-        """
-        Closes title bar parent window.
-        """
+        """Closes title bar parent window."""
 
         self._frameless_window.close()
 
     def open_help(self):
-        """
-        Opens help URL.
-        """
+        """Opens help URL."""
 
         if self._frameless_window.HELP_URL:
             webbrowser.open(self._frameless_window.HELP_URL)
 
     def setup_signals(self):
-        """
-        Creates title signals.
-        """
+        """Creates title signals."""
 
         self._close_button.leftClicked.connect(self._on_close_button_clicked)
         self._minimize_button.leftClicked.connect(self._on_minimize_button_clicked)
@@ -1855,30 +1702,22 @@ class FramelessTitleBar(QFrame):
         self._help_button.leftClicked.connect(self._on_help_button_clicked)
 
     def _on_close_button_clicked(self):
-        """
-        Internal callback function that is called when close button is left-clicked by the user.
-        """
+        """Internal callback function that is called when close button is left-clicked by the user."""
 
         self.close_window()
 
     def _on_maximize_button_clicked(self):
-        """
-        Internal callback function that is called when maximize button is left-clicked by the user.
-        """
+        """Internal callback function that is called when maximize button is left-clicked by the user."""
 
         self._frameless_window.maximize()
 
     def _on_minimize_button_clicked(self):
-        """
-        Internal callback function that is called when minimize button is left-clicked by the user.
-        """
+        """Internal callback function that is called when minimize button is left-clicked by the user."""
 
         self._frameless_window.minimize()
 
     def _on_help_button_clicked(self):
-        """
-        Internal callback function that is called when help button is left-clicked by the user.
-        """
+        """Internal callback function that is called when help button is left-clicked by the user."""
 
         self.open_help()
 
@@ -1900,8 +1739,7 @@ class FramelessKeyboardModifierFilter(QObject):
 
 
 class FramelessWindowContents(QFrame):
-    """
-    Frame that contains the contents of a window.
+    """Frame that contains the contents of a window.
     For CSS purposes.
     """
 
@@ -1922,8 +1760,7 @@ class FramelessOverlay(OverlayWidget):
         bottom_right: CornerResizer | None = None,
         resizable: bool = True,
     ):
-        """
-        Initialize a new instance of FramelessOverlay.
+        """Initialize a new instance of FramelessOverlay.
 
         :param parent: The parent window, which should be a FramelessWindow instance.
         :param title_bar: The title bar for the frameless window, which should be a FramelessTitleBar instance.
@@ -1947,8 +1784,7 @@ class FramelessOverlay(OverlayWidget):
 
     @classmethod
     def is_modifier(cls) -> bool:
-        """
-        Check if the current keyboard modifier is the Alt key.
+        """Check if the current keyboard modifier is the Alt key.
 
         :returns: True if the Alt key is the current keyboard modifier, False otherwise.
         """
@@ -1957,8 +1793,7 @@ class FramelessOverlay(OverlayWidget):
         return modifiers == Qt.AltModifier
 
     def mousePressEvent(self, event: QMouseEvent):
-        """
-        Handle the mouse press event for the widget.
+        """Handle the mouse press event for the widget.
 
         This method processes mouse press events to enable custom behavior such as starting move or resize
         actions based on certain conditions and modifier keys. It checks if the widget is enabled, whether
@@ -2012,8 +1847,7 @@ class FramelessOverlay(OverlayWidget):
         return super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent):
-        """
-        Handle the mouse move event for the widget.
+        """Handle the mouse move event for the widget.
 
         This method processes mouse move events to enable custom behavior such as resizing and hiding
         the widget based on certain conditions. It checks if the widget is enabled, whether a modifier
@@ -2055,8 +1889,7 @@ class FramelessOverlay(OverlayWidget):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
-        """
-        Handle the mouse release event for the widget.
+        """Handle the mouse release event for the widget.
 
         This method processes mouse release events to enable custom behavior such as ending move actions
         and emitting signals for finished resizing. It also checks if the mouse was clicked without any
@@ -2084,8 +1917,7 @@ class FramelessOverlay(OverlayWidget):
         super().mouseReleaseEvent(event)
 
     def setEnabled(self, flag: bool):
-        """
-        Set the enabled state of the widget.
+        """Set the enabled state of the widget.
 
         This method sets the enabled state of the widget. It toggles the debug mode and visibility based on the flag
         value, and then calls the base class's setEnabled method to handle additional behavior.
@@ -2098,8 +1930,7 @@ class FramelessOverlay(OverlayWidget):
         super().setEnabled(flag)
 
     def show(self):
-        """
-        Show the widget.
+        """Show the widget.
 
         This method updates the widget's stylesheet and then calls the base class's show method if the widget is
         enabled. If the widget is disabled, it logs a warning message indicating that the show method was called while
@@ -2113,15 +1944,12 @@ class FramelessOverlay(OverlayWidget):
             logger.warning("FramelessOverlay.show() was called when it is disabled")
 
     def update_stylesheet(self):
-        """
-        Updates style sheet.
-        """
+        """Updates style sheet."""
 
         self.set_debug_mode(self._debug)
 
     def _quadrant(self) -> int:
-        """
-        Internal function that returns the quadrant of where the mouse is located and returns the resizer direction.
+        """Internal function that returns the quadrant of where the mouse is located and returns the resizer direction.
 
         :return: resizer direction.
         """
@@ -2146,9 +1974,7 @@ class FramelessOverlay(OverlayWidget):
 
 
 class ResizerDirection:
-    """
-    Class that defines all the available resize directions
-    """
+    """Class that defines all the available resize directions"""
 
     Left = 1
     Top = 2
@@ -2158,9 +1984,7 @@ class ResizerDirection:
 
 # noinspection SpellCheckingInspection
 class Resizers:
-    """
-    Class that defines all the different resizer types
-    """
+    """Class that defines all the different resizer types"""
 
     Vertical = 1
     Horizontal = 2
@@ -2172,8 +1996,7 @@ class WindowResizer(QObject):
     resizeFinished = Signal()
 
     def __init__(self, parent, install_to_layout=None):
-        """
-        Initialize a new instance of the WindowResizer class.
+        """Initialize a new instance of the WindowResizer class.
 
         :param parent: The parent object for the WindowResizer instance.
         :param install_to_layout: Optional. The layout to which the resizer should be installed.
@@ -2194,8 +2017,7 @@ class WindowResizer(QObject):
 
     @property
     def top_left_resizer(self) -> CornerResizer:
-        """
-        Getter method for the top-left corner resizer of the window.
+        """Getter method for the top-left corner resizer of the window.
 
         :returns: The corner resizer object for the top-left corner.
         """
@@ -2204,8 +2026,7 @@ class WindowResizer(QObject):
 
     @property
     def top_right_resizer(self) -> CornerResizer:
-        """
-        Getter method for the top-right corner resizer of the window.
+        """Getter method for the top-right corner resizer of the window.
 
         :returns: The corner resizer object for the top-right corner.
         """
@@ -2214,8 +2035,7 @@ class WindowResizer(QObject):
 
     @property
     def bottom_left_resizer(self) -> CornerResizer:
-        """
-        Getter method for the bottom-left corner resizer of the window.
+        """Getter method for the bottom-left corner resizer of the window.
 
         :returns: The corner resizer object for the bottom-left corner.
         """
@@ -2224,8 +2044,7 @@ class WindowResizer(QObject):
 
     @property
     def bottom_right_resizer(self) -> CornerResizer:
-        """
-        Getter method for the bottom-right corner resizer of the window.
+        """Getter method for the bottom-right corner resizer of the window.
 
         :returns: The corner resizer object for the bottom-right corner.
         """
@@ -2234,9 +2053,7 @@ class WindowResizer(QObject):
 
     # noinspection SpellCheckingInspection
     def show(self):
-        """
-        Shows the resizers.
-        """
+        """Shows the resizers."""
 
         self._is_visible = True
         for resizer in self._resizers:
@@ -2244,9 +2061,7 @@ class WindowResizer(QObject):
 
     # noinspection SpellCheckingInspection
     def hide(self):
-        """
-        Hides the resizers.
-        """
+        """Hides the resizers."""
 
         self._is_visible = False
         for resizer in self._resizers:
@@ -2254,8 +2069,7 @@ class WindowResizer(QObject):
 
     # noinspection SpellCheckingInspection
     def is_visible(self) -> bool:
-        """
-        Returns whether resizers are visible.
+        """Returns whether resizers are visible.
 
         :return: True if resizers are visible; False otherwise.
         """
@@ -2264,8 +2078,7 @@ class WindowResizer(QObject):
 
     # noinspection SpellCheckingInspection
     def resizer_height(self) -> int:
-        """
-        Calculates the total height of the resizers.
+        """Calculates the total height of the resizers.
 
         :return: resizer height.
         """
@@ -2280,8 +2093,7 @@ class WindowResizer(QObject):
 
     # noinspection SpellCheckingInspection
     def resizer_width(self) -> int:
-        """
-        Calculates the total width of the resizers.
+        """Calculates the total width of the resizers.
 
         :return: resizer width.
         """
@@ -2296,9 +2108,7 @@ class WindowResizer(QObject):
 
     # noinspection PyUnresolvedReferences
     def set_resize_directions(self):
-        """
-        Sets the resize directions for the window resizer widgets.
-        """
+        """Sets the resize directions for the window resizer widgets."""
 
         self._top_resizer.set_resize_direction(ResizerDirection.Top)
         self._bottom_resizer.set_resize_direction(ResizerDirection.Bottom)
@@ -2319,8 +2129,7 @@ class WindowResizer(QObject):
 
     # noinspection SpellCheckingInspection
     def set_resizer_active(self, flag: bool):
-        """
-        Sets whether resizers are active.
+        """Sets whether resizers are active.
 
         :param flag: True to activate resizers; False otherwise.
         """
@@ -2329,8 +2138,7 @@ class WindowResizer(QObject):
 
     # noinspection SpellCheckingInspection
     def set_enabled(self, flag: bool):
-        """
-        Sets whether resizers are enabled.
+        """Sets whether resizers are enabled.
 
         :param flag: True to enable resizers; False otherwise.
         """
@@ -2339,8 +2147,7 @@ class WindowResizer(QObject):
 
     # noinspection SpellCheckingInspection, PyUnresolvedReferences
     def _install_to_layout(self, grid_layout: QGridLayout, parent: QObject | QWidget):
-        """
-        Internal function that install resizers into the given grid layout.
+        """Internal function that install resizers into the given grid layout.
 
         :param grid_layout: grid layout to install resizers into.
         :param parent: parent widget to install layout into.
@@ -2394,17 +2201,14 @@ class WindowResizer(QObject):
         self.set_resize_directions()
 
     def _setup_signals(self):
-        """
-        Internal function that setup resizer signals.
-        """
+        """Internal function that setup resizer signals."""
 
         for resizer in self._resizers:
             resizer.windowResizedFinished.connect(self.resizeFinished.emit)
 
 
 class Resizer(QWidget):
-    """
-    Base class that defines resizer widget functionality
+    """Base class that defines resizer widget functionality
     Those resizers can be used in windows and dialogs
     """
 
@@ -2433,8 +2237,7 @@ class Resizer(QWidget):
         self.windowResizedStarted.connect(self._on_window_resize_started)
 
     def paintEvent(self, event: QPaintEvent):
-        """
-        Overrides base QFrame paintEvent function
+        """Overrides base QFrame paintEvent function
         Override to make mouse events work in transparent widgets.
 
         :param event: Qt paint event
@@ -2445,8 +2248,7 @@ class Resizer(QWidget):
         painter.end()
 
     def mousePressEvent(self, event: QMouseEvent):
-        """
-        Overrides base QFrame mousePressEvent function
+        """Overrides base QFrame mousePressEvent function
 
         :param event: Qt mouse event
         """
@@ -2454,8 +2256,7 @@ class Resizer(QWidget):
         self.windowResizedStarted.emit()
 
     def mouseMoveEvent(self, event: QMouseEvent):
-        """
-        Overrides base QFrame mouseMoveEvent function
+        """Overrides base QFrame mouseMoveEvent function
 
         :param event: Qt mouse event
         """
@@ -2463,8 +2264,7 @@ class Resizer(QWidget):
         self.windowResized.emit()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
-        """
-        Overrides base QFrame mouseReleaseEvent function
+        """Overrides base QFrame mouseReleaseEvent function
 
         :param event: Qt mouse event
         """
@@ -2472,8 +2272,7 @@ class Resizer(QWidget):
         self.windowResizedFinished.emit()
 
     def set_resize_direction(self, direction: int):
-        """
-        Sets the resize direction
+        """Sets the resize direction
 
         .. code-block:: python
             setResizeDirection(ResizeDirection.Left | ResizeDirection.Top)
@@ -2484,17 +2283,13 @@ class Resizer(QWidget):
         self._direction = direction
 
     def window_resize_start(self):
-        """
-        Start resize operation.
-        """
+        """Start resize operation."""
 
         self._widget_mouse_pos = self.mapFromGlobal(QCursor.pos())
         self._widget_geometry = self.window().frameGeometry()
 
     def _on_window_resized(self):
-        """
-        Internal function that resizes the frame based on the mouse position and the current direction.
-        """
+        """Internal function that resizes the frame based on the mouse position and the current direction."""
 
         pos = QCursor.pos()
         new_geo = self.window().frameGeometry()
@@ -2529,21 +2324,16 @@ class Resizer(QWidget):
         self.window().setGeometry(x, y, w, h)
 
     def _on_window_resize_started(self):
-        """
-        Internal callback function that is called when resize operation starts
-        """
+        """Internal callback function that is called when resize operation starts"""
 
         self.window_resize_start()
 
 
 class CornerResizer(Resizer, object):
-    """
-    Resizer implementation for window corners
-    """
+    """Resizer implementation for window corners"""
 
     def __init__(self, direction: int | Qt.CursorShape, parent: QWidget | None = None):
-        """
-        Initialize a new instance of the CornerResizer class.
+        """Initialize a new instance of the CornerResizer class.
 
         :param direction: The direction or cursor shape of the resizer.
         :param parent: The parent widget, if any. Default is None, indicating no parent.
@@ -2570,17 +2360,14 @@ class CornerResizer(Resizer, object):
 
 
 class VerticalResizer(Resizer, object):
-    """
-    Resizer implementation for top and bottom sides of the window
-    """
+    """Resizer implementation for top and bottom sides of the window"""
 
     def __init__(
         self,
         direction: int | Qt.CursorShape = Qt.SizeVerCursor,
         parent: QWidget | None = None,
     ):
-        """
-        Initialize a new instance of the VerticalResizer class.
+        """Initialize a new instance of the VerticalResizer class.
 
         :param direction: The cursor shape or direction of resizing. Default is Qt.SizeVerCursor, indicating vertical
             resizing.
@@ -2598,13 +2385,10 @@ class VerticalResizer(Resizer, object):
 
 
 class HorizontalResizer(Resizer, object):
-    """
-    Resizer implementation for left and right sides of the window
-    """
+    """Resizer implementation for left and right sides of the window"""
 
     def __init__(self, direction: int | Qt.CursorShape = Qt.SizeHorCursor, parent=None):
-        """
-        Initialize a new instance of the HorizontalResizer class.
+        """Initialize a new instance of the HorizontalResizer class.
 
         :param direction: The cursor shape or direction of resizing. Default is Qt.SizeVerCursor, indicating vertical
             resizing.
@@ -2622,9 +2406,7 @@ class HorizontalResizer(Resizer, object):
 
 
 class SpawnerIcon(IconMenuButton):
-    """
-    Custom button with a menu that can spawn docked widgets.
-    """
+    """Custom button with a menu that can spawn docked widgets."""
 
     docked = Signal(object)
     undocked = Signal()
@@ -2635,8 +2417,7 @@ class SpawnerIcon(IconMenuButton):
         show_dock_tabs: bool = True,
         parent: QWidget | None = None,
     ):
-        """
-        Custom button with a menu that can spawn docked widgets.
+        """Custom button with a menu that can spawn docked widgets.
 
         This class extends the buttons.IconMenuButton class to provide a custom button with a menu that can spawn
         docked widgets. It emits signals when a widget is docked or undocked.
@@ -2662,8 +2443,7 @@ class SpawnerIcon(IconMenuButton):
         self._setup_logo_button()
 
     def mousePressEvent(self, event: QMouseEvent):
-        """
-        Handle the mouse press event for the SpawnerIcon.
+        """Handle the mouse press event for the SpawnerIcon.
 
         This method processes mouse press events to enable custom behavior such as initiating widget docking and
         handling tooltip visibility in specific scenarios.
@@ -2682,8 +2462,7 @@ class SpawnerIcon(IconMenuButton):
         #     self._tooltip_action.setChecked(tooltips.tooltip_state())
 
     def mouseMoveEvent(self, event: QMouseEvent):
-        """
-        Handle the mouse move event for the SpawnerIcon.
+        """Handle the mouse move event for the SpawnerIcon.
 
         This method processes mouse move events to enable custom behavior such as initiating widget docking and moving
         the widget to the mouse position in specific scenarios.
@@ -2705,8 +2484,7 @@ class SpawnerIcon(IconMenuButton):
             self.move_to_mouse()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
-        """
-        Handle the mouse release event for the SpawnerIcon.
+        """Handle the mouse release event for the SpawnerIcon.
 
         This method processes mouse release events to enable custom behavior such as initiating widget docking,
         deleting controls, or calling the superclass mouse release event handler in specific scenarios.
@@ -2763,8 +2541,7 @@ class SpawnerIcon(IconMenuButton):
     #     pass
 
     def name(self) -> str:
-        """
-        Returns frameless window name.
+        """Returns frameless window name.
 
         :return: frameless window name.
         :note:: this should match frameless window name.
@@ -2778,8 +2555,7 @@ class SpawnerIcon(IconMenuButton):
 
     # noinspection SpellCheckingInspection
     def set_logo_highlight(self, flag: bool):
-        """
-        Sets whether logo can be highlighted.
+        """Sets whether logo can be highlighted.
 
         :param flag: True to enable icon highlight; False otherwise.
         """
@@ -2804,9 +2580,7 @@ class SpawnerIcon(IconMenuButton):
             )
 
     def move_to_mouse(self):
-        """
-        Moves window to the mouse location.
-        """
+        """Moves window to the mouse location."""
 
         if not self._docking_container:
             return
@@ -2815,8 +2589,7 @@ class SpawnerIcon(IconMenuButton):
 
     @staticmethod
     def is_dock_locked() -> bool:
-        """
-        Returns whether dock functionality is locked.
+        """Returns whether dock functionality is locked.
 
         :return: True if dock functionality is locked; False otherwise.
         """
@@ -2827,8 +2600,7 @@ class SpawnerIcon(IconMenuButton):
         return docking.is_dock_locked()
 
     def is_workspace_floating(self) -> bool:
-        """
-        Returns whether workspace is floating.
+        """Returns whether workspace is floating.
 
         :return: True if workspace is floating; False otherwise.
         """
@@ -2843,9 +2615,7 @@ class SpawnerIcon(IconMenuButton):
         )
 
     def delete_control(self):
-        """
-        Deletes workspace control.
-        """
+        """Deletes workspace control."""
 
         if not dcc.is_maya():
             return
@@ -2861,17 +2631,14 @@ class SpawnerIcon(IconMenuButton):
 
     @staticmethod
     def _update_layout_direction():
-        """
-        Internal function that is necessary for workspace control actLikeMayaUIElement
+        """Internal function that is necessary for workspace control actLikeMayaUIElement
         correctly show drag handles.
         """
 
         pass
 
     def _setup_logo_button(self):
-        """
-        Internal function that initializes logo button.
-        """
+        """Internal function that initializes logo button."""
 
         size = uiconsts.Sizes.TitleLogoIcon
         self.setIconSize(QSize(size, size))
@@ -2882,9 +2649,7 @@ class SpawnerIcon(IconMenuButton):
         self.menu_align = Qt.AlignLeft
 
     def _init_dock_container(self):
-        """
-        Internal function that initializes dock container for current DCC.
-        """
+        """Internal function that initializes dock container for current DCC."""
 
         if not dcc.is_maya():
             return
@@ -2943,8 +2708,7 @@ class SpawnerIcon(IconMenuButton):
     def _splitter_ancestor(
         widget: QWidget,
     ) -> tuple[QWidget, QSplitter] | tuple[None, None]:
-        """
-        Internal function that returns widgets splitter ancestors.
+        """Internal function that returns widgets splitter ancestors.
 
         :param widget: widget to get splitter ancestors of.
         :return: tuple of splitter ancestors.
@@ -2965,8 +2729,7 @@ class SpawnerIcon(IconMenuButton):
         return None, None
 
     def _arrange_splitters(self, width: int):
-        """
-        Internal function that fixes splitter sizes, when docked into splitters.
+        """Internal function that fixes splitter sizes, when docked into splitters.
 
         :param width: width to set.
         """
