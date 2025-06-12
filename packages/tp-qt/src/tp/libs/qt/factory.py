@@ -56,14 +56,16 @@ def vertical_layout(
     alignment: Qt.AlignmentFlag | None = None,
     parent: QWidget | None = None,
 ) -> VerticalLayout:
-    """
-    Returns a new vertical layout that automatically handles DPI stuff.
+    """Returns a new vertical layout that automatically handles DPI stuff.
 
-    :param spacing: layout spacing
-    :param margins: layout margins.
-    :param alignment: optional layout alignment.
-    :param parent: optional layout parent.
-    :return: new vertical layout instance.
+    Args:
+        spacing: Layout spacing.
+        margins: Layout margins as (left, top, right, bottom).
+        alignment: Optional layout alignment.
+        parent: Optional layout parent.
+
+    Returns:
+        New vertical layout instance.
     """
 
     new_layout = VerticalLayout(parent=parent)
@@ -76,11 +78,11 @@ def vertical_layout(
 
 
 def vertical_main_layout() -> VerticalLayout:
-    """
-    Returns a new main vertical layout that automatically handles DPI stuff.
+    """Returns a new main vertical layout that automatically handles DPI stuff.
     This layout is usually used for the main widget layout of the parent widget.
 
-    :return: new vertical layout instance.
+    Returns:
+        New vertical layout instance configured with standard window margins.
     """
 
     return vertical_layout(
@@ -100,14 +102,16 @@ def horizontal_layout(
     alignment: Qt.AlignmentFlag | None = None,
     parent: QWidget | None = None,
 ) -> HorizontalLayout:
-    """
-    Returns a new horizontal layout that automatically handles DPI stuff.
+    """Returns a new horizontal layout that automatically handles DPI stuff.
 
-    :param spacing: layout spacing
-    :param margins: layout margins.
-    :param alignment: optional layout alignment.
-    :param parent: optional layout parent.
-    :return: new horizontal layout instance.
+    Args:
+        spacing: Layout spacing.
+        margins: Layout margins as (left, top, right, bottom).
+        alignment: Optional layout alignment.
+        parent: Optional layout parent.
+
+    Returns:
+        New horizontal layout instance.
     """
 
     new_layout = HorizontalLayout(parent)
@@ -120,12 +124,14 @@ def horizontal_layout(
 
 
 def horizontal_main_layout(parent: QWidget | None = None) -> HorizontalLayout:
-    """
-    Returns a new main horizontal layout that automatically handles DPI stuff.
+    """Returns a new main horizontal layout that automatically handles DPI stuff.
     This layout is usually used for the main widget layout of the parent widget.
 
-    :param parent: optional layout parent.
-    :return: new horizontal layout instance.
+    Args:
+        parent: Optional layout parent.
+
+    Returns:
+        New horizontal layout instance configured with standard window margins.
     """
 
     return horizontal_layout(
@@ -148,17 +154,19 @@ def grid_layout(
     horizontal_spacing: int | None = None,
     parent: QWidget | None = None,
 ) -> GridLayout:
-    """
-    Returns a new grid layout that automatically handles DPI stuff.
+    """Returns a new grid layout that automatically handles DPI stuff.
 
-    :param spacing: layout spacing
-    :param margins: layout margins.
-    :param column_min_width: optional colum minimum width.
-    :param column_min_width_b: optional colum secondary minimum width.
-    :param vertical_spacing: optional vertical spacing.
-    :param horizontal_spacing: optional horizontal spacing.
-    :param parent: optional layout parent.
-    :return: new grid layout instance.
+    Args:
+        spacing: Layout spacing.
+        margins: Layout margins as (left, top, right, bottom).
+        column_min_width: Optional column minimum width as [column_index, width].
+        column_min_width_b: Optional secondary column minimum width as [column_index, width].
+        vertical_spacing: Optional vertical spacing between rows.
+        horizontal_spacing: Optional horizontal spacing between columns.
+        parent: Optional layout parent.
+
+    Returns:
+        New grid layout instance.
     """
 
     new_layout = GridLayout(parent)
@@ -189,12 +197,14 @@ def grid_layout(
 
 
 def grid_main_layout(parent: QWidget | None = None) -> GridLayout:
-    """
-    Returns a new main grid layout that automatically handles DPI stuff.
+    """Returns a new main grid layout that automatically handles DPI stuff.
     This layout is usually used for the main widget layout of the parent widget.
 
-    :param parent: optional layout parent.
-    :return: new grid layout instance.
+    Args:
+        parent: Optional layout parent.
+
+    Returns:
+        New grid layout instance configured with standard window margins.
     """
 
     return grid_layout(
@@ -221,23 +231,23 @@ def label(
     properties: list[tuple[str, Any]] | None = None,
     parent: QWidget | None = None,
 ) -> BaseLabel:
-    """
-    Creates a new label widget.
+    """Creates a new label widget.
 
-    :param text: label text.
-    :param tooltip: optional label tooltip.
-    :param tooltip: optional label status tip.
-    :param upper: whether label text is forced to be uppercase.
-    :param bold: whether label font is bold.
-    :param alignment: optional alignment flag for the label.
-    :param elide_mode: whether label text should elide.
-    :param min_width: optional minimum width for the label.
-    :param max_width: optional maximum width for the label.
-    :param properties: optional dynamic properties to add to the label.
-    :param tooltip: optional label tooltip.
-    :param status_tip: optional status tip.
-    :param parent: parent widget.
-    :return: new label widget instance.
+    Args:
+        text: Label text content.
+        tooltip: Optional label tooltip.
+        status_tip: Optional label status tip.
+        upper: Whether label text is forced to be uppercase.
+        bold: Whether label font is bold.
+        alignment: Optional alignment flag for the label.
+        elide_mode: Whether label text should elide and how.
+        min_width: Optional minimum width for the label.
+        max_width: Optional maximum width for the label.
+        properties: Optional dynamic properties to add to the label as list of (name, value) tuples.
+        parent: Parent widget.
+
+    Returns:
+        New label widget instance.
     """
 
     new_label = BaseLabel(
@@ -274,18 +284,20 @@ def h1_label(
     max_width: int | None = None,
     parent: QWidget | None = False,
 ) -> BaseLabel:
-    """
-    Creates a new H1 label widget.
+    """Creates a new H1 label widget.
 
-    :param text: label text.
-    :param tooltip: label tooltip.
-    :param upper: whether label text is forced to be uppercase.
-    :param bold: whether label font is bold.
-    :param elide_mode: whether label text should elide.
-    :param min_width: optional minimum width for the label.
-    :param max_width: optional maximum width for the label.
-    :param parent: parent widget.
-    :return: new label widget instance.
+    Args:
+        text: Label text content.
+        tooltip: Label tooltip.
+        upper: Whether label text is forced to be uppercase.
+        bold: Whether label font is bold.
+        elide_mode: Whether label text should elide and how.
+        min_width: Optional minimum width for the label.
+        max_width: Optional maximum width for the label.
+        parent: Parent widget.
+
+    Returns:
+        New H1 label widget instance.
     """
 
     return label(
@@ -310,18 +322,20 @@ def h2_label(
     max_width: int | None = None,
     parent: QWidget | None = False,
 ) -> BaseLabel:
-    """
-    Creates a new H2 label widget.
+    """Creates a new H2 label widget.
 
-    :param text: label text.
-    :param tooltip: label tooltip.
-    :param upper: whether label text is forced to be uppercase.
-    :param bold: whether label font is bold.
-    :param elide_mode: whether label text should elide.
-    :param min_width: optional minimum width for the label.
-    :param max_width: optional maximum width for the label.
-    :param parent: parent widget.
-    :return: new label widget instance.
+    Args:
+        text: Label text content.
+        tooltip: Label tooltip.
+        upper: Whether label text is forced to be uppercase.
+        bold: Whether label font is bold.
+        elide_mode: Whether label text should elide and how.
+        min_width: Optional minimum width for the label.
+        max_width: Optional maximum width for the label.
+        parent: Parent widget.
+
+    Returns:
+        New H2 label widget instance.
     """
 
     return label(
@@ -346,18 +360,20 @@ def h3_label(
     max_width: int | None = None,
     parent: QWidget | None = False,
 ) -> BaseLabel:
-    """
-    Creates a new H3 label widget.
+    """Creates a new H3 label widget.
 
-    :param text: label text.
-    :param tooltip: label tooltip.
-    :param upper: whether label text is forced to be uppercase.
-    :param bold: whether label font is bold.
-    :param elide_mode: whether label text should elide.
-    :param min_width: optional minimum width for the label.
-    :param max_width: optional maximum width for the label.
-    :param parent: parent widget.
-    :return: new label widget instance.
+    Args:
+        text: Label text content.
+        tooltip: Label tooltip.
+        upper: Whether label text is forced to be uppercase.
+        bold: Whether label font is bold.
+        elide_mode: Whether label text should elide and how.
+        min_width: Optional minimum width for the label.
+        max_width: Optional maximum width for the label.
+        parent: Parent widget.
+
+    Returns:
+        New H3 label widget instance.
     """
 
     return label(
@@ -382,18 +398,20 @@ def h4_label(
     max_width: int | None = None,
     parent: QWidget | None = False,
 ) -> BaseLabel:
-    """
-    Creates a new H4 label widget.
+    """Creates a new H4 label widget.
 
-    :param text: label text.
-    :param tooltip: label tooltip.
-    :param upper: whether label text is forced to be uppercase.
-    :param bold: whether label font is bold.
-    :param elide_mode: whether label text should elide.
-    :param min_width: optional minimum width for the label.
-    :param max_width: optional maximum width for the label.
-    :param parent: parent widget.
-    :return: new label widget instance.
+    Args:
+        text: Label text content.
+        tooltip: Label tooltip.
+        upper: Whether label text is forced to be uppercase.
+        bold: Whether label font is bold.
+        elide_mode: Whether label text should elide and how.
+        min_width: Optional minimum width for the label.
+        max_width: Optional maximum width for the label.
+        parent: Parent widget.
+
+    Returns:
+        New H4 label widget instance.
     """
 
     return label(
@@ -418,18 +436,20 @@ def h5_label(
     max_width: int | None = None,
     parent: QWidget | None = False,
 ) -> BaseLabel:
-    """
-    Creates a new H5 label widget.
+    """Creates a new H5 label widget.
 
-    :param text: label text.
-    :param tooltip: label tooltip.
-    :param upper: whether label text is forced to be uppercase.
-    :param bold: whether label font is bold.
-    :param elide_mode: whether label text should elide.
-    :param min_width: optional minimum width for the label.
-    :param max_width: optional maximum width for the label.
-    :param parent: parent widget.
-    :return: new label widget instance.
+    Args:
+        text: Label text content.
+        tooltip: Label tooltip.
+        upper: Whether label text is forced to be uppercase.
+        bold: Whether label font is bold.
+        elide_mode: Whether label text should elide and how.
+        min_width: Optional minimum width for the label.
+        max_width: Optional maximum width for the label.
+        parent: Parent widget.
+
+    Returns:
+        New H5 label widget instance.
     """
 
     return label(
@@ -451,15 +471,17 @@ def clipped_label(
     always_show_all: bool = False,
     parent: QWidget | None = None,
 ) -> ClippedLabel:
-    """
-    Custom QLabel that clips itself if the widget width is smaller than the text.
+    """Custom QLabel that clips itself if the widget width is smaller than the text.
 
-    :param text: label text.
-    :param width: minimum width.
-    :param elide: whether to elide label.
-    :param always_show_all: force the label to show the complete text or hide the complete text.
-    :param parent: parent widget.
-    :return: new clipped label widget instance.
+    Args:
+        text: Label text content.
+        width: Minimum width.
+        elide: Whether to elide label.
+        always_show_all: Force the label to show the complete text or hide the complete text.
+        parent: Parent widget.
+
+    Returns:
+        New clipped label widget instance.
     """
 
     return ClippedLabel(
@@ -480,17 +502,19 @@ def icon_label(
     enable_menu: bool = True,
     parent: QWidget | None = None,
 ) -> IconLabel:
-    """
-    Creates a new widget with a horizontal layout with an icon and a label.
+    """Creates a new widget with a horizontal layout with an icon and a label.
 
-    :param label_icon: label icon.
-    :param text: label text.
-    :param tooltip: label tooltip.
-    :param upper: whether label text is forced to be uppercase.
-    :param bold: whether label font is bold.
-    :param enable_menu: whether enable label menu.
-    :param parent: parent widget.
-    :return: new label widget instance.
+    Args:
+        label_icon: Label icon to display.
+        text: Label text content.
+        tooltip: Label tooltip.
+        upper: Whether label text is forced to be uppercase.
+        bold: Whether label font is bold.
+        enable_menu: Whether to enable label menu.
+        parent: Parent widget.
+
+    Returns:
+        New icon label widget instance.
     """
 
     return IconLabel(
@@ -515,21 +539,22 @@ def combobox(
     support_middle_mouse_scroll: bool = True,
     parent: QWidget | None = None,
 ) -> BaseComboBox:
-    """
-    Creates a ComboBox widget with the specified parameters.
+    """Creates a ComboBox widget with the specified parameters.
 
-    :param items: An optional sequence of items to populate the ComboBox with. Defaults to None.
-    :param item_data: An optional sequence of item data corresponding to the items. Defaults to None.
-    :param sort_items: Whether to sort items. Defaults to False.
-    :param placeholder_text: The placeholder text to display in the ComboBox when no item is selected.
-        Defaults to an empty string.
-    :param tooltip: The tooltip text to display for the ComboBox. Defaults to an empty string.
-    :param set_index: The index of the item to set as selected initially. Defaults to 0.
-    :param sort_alphabetically: Whether to sort items alphabetically. Defaults to True.
-    :param support_middle_mouse_scroll: Whether to support middle mouse scroll. Defaults to True.
-    :param parent: The parent widget. Defaults to None.
+    Args:
+        items: An optional sequence of items to populate the ComboBox with. Defaults to None.
+        item_data: An optional sequence of item data corresponding to the items. Defaults to None.
+        sort_items: Whether to sort items. Defaults to False.
+        placeholder_text: The placeholder text to display in the ComboBox when no item is selected.
+            Defaults to an empty string.
+        tooltip: The tooltip text to display for the ComboBox. Defaults to an empty string.
+        set_index: The index of the item to set as selected initially. Defaults to 0.
+        sort_alphabetically: Whether to sort items alphabetically. Defaults to True.
+        support_middle_mouse_scroll: Whether to support middle mouse scroll. Defaults to True.
+        parent: The parent widget. Defaults to None.
 
-    :return: The created ComboBox widget.
+    Returns:
+        The created ComboBox widget.
     """
 
     if not support_middle_mouse_scroll:
@@ -574,25 +599,26 @@ def combobox_widget(
     searchable: bool = False,
     parent: QWidget | None = None,
 ) -> ComboBoxRegularWidget | ComboBoxSearchableWidget:
-    """
-    Creates a ComboBox widget with the specified parameters.
+    """Creates a ComboBox widget with the specified parameters.
 
-    :param label_text: The text for the label. Defaults to an empty string.
-    :param items: An optional sequence of items to populate the ComboBox with. Defaults to None.
-    :param label_ratio: The ratio of the label width. Defaults to None.
-    :param box_ratio: The ratio of the box width. Defaults to None.
-    :param tooltip: The tooltip text for the combo box. Defaults to an empty string.
-    :param set_index: The index to be set as selected. Defaults to 0.
-    :param sort_alphabetically: Whether to sort items alphabetically. Defaults to True.
-    :param margins: The margins around the widget. Defaults to (0, 0, 0, 0).
-    :param spacing: The spacing between the label and the combo box. Defaults to uiconsts.SMALL_SPACING.
-    :param box_min_width: The minimum width for the combo box. Defaults to None.
-    :param item_data: Additional data associated with the combo box items. Defaults to None.
-    :param support_middle_mouse_scroll: If True, supports scrolling with the middle mouse button. Defaults to True.
-    :param searchable: Whether to enable search functionality. Defaults to False.
-    :param parent: The parent widget. Defaults to None.
+    Args:
+        label_text: The text for the label. Defaults to an empty string.
+        items: An optional sequence of items to populate the ComboBox with. Defaults to None.
+        label_ratio: The ratio of the label width. Defaults to None.
+        box_ratio: The ratio of the box width. Defaults to None.
+        tooltip: The tooltip text for the combo box. Defaults to an empty string.
+        set_index: The index to be set as selected. Defaults to 0.
+        sort_alphabetically: Whether to sort items alphabetically. Defaults to False.
+        margins: The margins around the widget as (left, top, right, bottom). Defaults to (0, 0, 0, 0).
+        spacing: The spacing between the label and the combo box. Defaults to uiconsts.SMALL_SPACING.
+        box_min_width: The minimum width for the combo box. Defaults to None.
+        item_data: Additional data associated with the combo box items. Defaults to None.
+        support_middle_mouse_scroll: If True, supports scrolling with the middle mouse button. Defaults to True.
+        searchable: Whether to enable search functionality. Defaults to False.
+        parent: The parent widget. Defaults to None.
 
-    :return: The created ComboBox widget.
+    Returns:
+        The created ComboBox widget (regular or searchable depending on the searchable parameter).
     """
 
     if not searchable:
@@ -636,18 +662,20 @@ def line_edit(
     enable_menu: bool = False,
     parent: QWidget | None = None,
 ) -> BaseLineEdit:
-    """
-    Creates a basic line edit widget.
+    """Creates a basic line edit widget.
 
-    :param text: default line edit text.
-    :param read_only: whether line edit is read only.
-    :param placeholder_text: line edit placeholder text.
-    :param tooltip: line edit tooltip text.
-    :param edit_width: The width of the LineEdit for editing. Defaults to None.
-    :param fixed_width: The fixed width of the LineEdit. Defaults to None.
-    :param enable_menu: Whether to enable the context menu. Defaults to False.
-    :param parent: parent widget.
-    :return: newly created combo box.
+    Args:
+        text: Default line edit text.
+        read_only: Whether line edit is read only.
+        placeholder_text: Line edit placeholder text.
+        tooltip: Line edit tooltip text.
+        edit_width: The width of the LineEdit for editing. Defaults to None.
+        fixed_width: The fixed width of the LineEdit. Defaults to None.
+        enable_menu: Whether to enable the context menu. Defaults to False.
+        parent: Parent widget.
+
+    Returns:
+        Newly created line edit widget.
     """
 
     new_line_edit = BaseLineEdit(
@@ -679,23 +707,25 @@ def int_line_edit(
     scroll_distance: float = 1.0,
     update_on_slide_tick: bool = True,
 ) -> IntLineEdit:
-    """
-    Creates an integer line edit widget.
+    """Creates an integer line edit widget.
 
-    :param text: default line edit text.
-    :param read_only: whether line edit is read only.
-    :param placeholder_text: line edit placeholder text.
-    :param tooltip: line edit tooltip text.
-    :param edit_width: The width of the LineEdit for editing. Defaults to None.
-    :param fixed_width: The fixed width of the LineEdit. Defaults to None.
-    :param enable_menu: Whether to enable the context menu. Defaults to False.
-    :param slide_distance: The distance to slide on normal drag. Defaults to 1.0.
-    :param small_slide_distance: The distance to slide on small drag. Defaults to 0.1.
-    :param large_slide_distance: The distance to slide on large drag. Defaults to 5.0.
-    :param scroll_distance: The distance to scroll. Defaults to 1.0.
-    :param update_on_slide_tick: If True, updates on tick events. Defaults to False.
-    :param parent: parent widget.
-    :return: newly created combo box.
+    Args:
+        text: Default line edit text.
+        read_only: Whether line edit is read only.
+        placeholder_text: Line edit placeholder text.
+        tooltip: Line edit tooltip text.
+        parent: Parent widget.
+        edit_width: The width of the LineEdit for editing. Defaults to None.
+        fixed_width: The fixed width of the LineEdit. Defaults to None.
+        enable_menu: Whether to enable the context menu. Defaults to False.
+        slide_distance: The distance to slide on normal drag. Defaults to 0.01.
+        small_slide_distance: The distance to slide on small drag. Defaults to 0.001.
+        large_slide_distance: The distance to slide on large drag. Defaults to 0.1.
+        scroll_distance: The distance to scroll. Defaults to 1.0.
+        update_on_slide_tick: If True, updates on tick events. Defaults to True.
+
+    Returns:
+        Newly created integer line edit widget.
     """
 
     new_line_edit = IntLineEdit(
@@ -718,11 +748,13 @@ def int_line_edit(
 
 
 def text_browser(parent=None):
-    """
-    Creates a text browser widget.
+    """Creates a text browser widget.
 
-    :param parent: parent widget.
-    :return: newly created text browser.
+    Args:
+        parent: Parent widget.
+
+    Returns:
+        Newly created text browser widget.
     """
 
     new_text_browser = QTextBrowser(parent=parent)
@@ -735,13 +767,15 @@ def search_widget(
     search_line: QLineEdit | None = None,
     parent: QWidget | None = None,
 ) -> SearchFindWidget:
-    """
-    Returns widget that allows to do searches within widgets.
+    """Returns widget that allows to do searches within widgets.
 
-    :param placeholder_text: search placeholder text.
-    :param search_line: custom line edit widget to use.
-    :param parent: parent widget.
-    :return: search find widget instance.
+    Args:
+        placeholder_text: Search placeholder text.
+        search_line: Custom line edit widget to use.
+        parent: Parent widget.
+
+    Returns:
+        Search find widget instance.
     """
 
     new_widget = SearchFindWidget(search_line=search_line, parent=parent)
@@ -754,12 +788,14 @@ def search_line_edit(
     placeholder_text: str | None = None,
     parent: QWidget | None = None,
 ) -> SearchLineEdit:
-    """
-    Creates a new search line edit widget.
+    """Creates a new search line edit widget.
 
-    :param placeholder_text: search placeholder text.
-    :param parent: parent widget.
-    :return: new search line edit widget.
+    Args:
+        placeholder_text: Search placeholder text.
+        parent: Parent widget.
+
+    Returns:
+        New search line edit widget.
     """
 
     new_widget = SearchLineEdit(parent=parent)
@@ -776,14 +812,16 @@ def open_file_line_edit(
     path_description: str | None = None,
     parent: QWidget | None = None,
 ) -> FileSystemPathLineEdit:
-    """
-    Creates a new line edit widget that opens a file dialog when clicked.
+    """Creates a new line edit widget that opens a file dialog when clicked.
 
-    :param path_filter: file path filter.
-    :param validate_path: whether to validate the path.
-    :param path_description: optional path description.
-    :param parent: parent widget.
-    :return: new line edit widget.
+    Args:
+        path_filter: File path filter.
+        validate_path: Whether to validate the path.
+        path_description: Optional path description.
+        parent: Parent widget.
+
+    Returns:
+        New file system path line edit widget configured for file opening.
     """
 
     new_line_edit = FileSystemPathLineEdit(
@@ -804,8 +842,7 @@ def save_file_line_edit(
     path_description: str | None = None,
     parent: QWidget | None = None,
 ) -> FileSystemPathLineEdit:
-    """
-    Creates a new line edit widget that opens a save file dialog when clicked.
+    """Creates a new line edit widget that opens a save file dialog when clicked.
 
     :param path_filter: file path filter.
     :param validate_path: whether to validate the path.
@@ -844,8 +881,7 @@ def base_button(
     checked: bool = False,
     parent: QWidget | None = None,
 ) -> BaseButton | BasePushButton:
-    """
-    Creates an extended PushButton with a transparent background or with its regular style.
+    """Creates an extended PushButton with a transparent background or with its regular style.
 
     :param text: button text.
     :param button_icon: icon name or QIcon instance.
@@ -923,8 +959,7 @@ def regular_button(
     checked: bool = False,
     parent: QWidget | None = None,
 ) -> QPushButton:
-    """
-    Creates a standard Qt QPushButton.
+    """Creates a standard Qt QPushButton.
 
     :param text: button text.
     :param or QIcon button_icon: icon name or QIcon instance.
@@ -983,8 +1018,7 @@ def rounded_button(
     checked: bool = False,
     parent: QWidget | None = None,
 ) -> RoundButton:
-    """
-    Creates a rounded button with an icon within a round circle.
+    """Creates a rounded button with an icon within a round circle.
 
     :param str text: button text.
     :param str or QIcon button_icon: icon name or QIcon instance.
@@ -1028,8 +1062,7 @@ def shadowed_button(
     theme_updates: bool = True,
     parent: QWidget | None = None,
 ) -> ShadowedButton:
-    """
-    Creates a new shadowed button with the icon in a coloured box and a button shadow ath the bottom of the button.
+    """Creates a new shadowed button with the icon in a coloured box and a button shadow ath the bottom of the button.
 
     :param text: button text.
     :param button_icon: icon name to set.
@@ -1074,8 +1107,7 @@ def tool_button(
     tooltip: str = "",
     parent: QWidget | None = None,
 ) -> BaseToolButton:
-    """
-    Creates a new QToolButton instance.
+    """Creates a new QToolButton instance.
 
     :param text: tool button text.
     :param button_icon: tool button icon.
@@ -1105,8 +1137,7 @@ def left_aligned_button(
     show_left_click_menu_indicator: bool = False,
     parent: QWidget | None = None,
 ) -> LeftAlignedButton:
-    """
-    Creates a left aligned button.
+    """Creates a left aligned button.
 
     :param text: button text.
     :param button_icon: button icon.
@@ -1174,8 +1205,7 @@ def styled_button(
     button_height: int | None = None,
     parent: QWidget | None = None,
 ) -> QPushButton | BaseButton | BasePushButton | ShadowedButton | RoundButton:
-    """
-    Creates a new button with the given options.
+    """Creates a new button with the given options.
 
     Style 0: Default button with optional text or icon.
     Style 1: Default button with transparent background.
@@ -1321,8 +1351,7 @@ def styled_button(
 def ok_cancel_buttons(
     ok_text: str = "Ok", cancel_text: str = "Cancel", parent: QWidget | None = None
 ) -> OkCancelButtons:
-    """
-    Creates a new OkCancelButtons instance.
+    """Creates a new OkCancelButtons instance.
 
     :param ok_text: text for the OK button.
     :param cancel_text: text for the Cancel button.
@@ -1339,8 +1368,7 @@ def checkbox(
     tooltip: str = "",
     parent: QWidget | None = None,
 ) -> QCheckBox:
-    """
-    Creates a basic QCheckBox widget.
+    """Creates a basic QCheckBox widget.
 
     :param str text: checkbox text.
     :param bool checked: true to check by default; False otherwise.
@@ -1367,8 +1395,7 @@ def checkbox_widget(
     box_ratio: int = 0,
     parent: QWidget | None = None,
 ) -> BaseCheckBoxWidget:
-    """
-    Creates a BaseCheckbox widget instance.
+    """Creates a BaseCheckbox widget instance.
 
     :param str text: checkbox text.
     :param bool checked: true to check by default; False otherwise.
@@ -1407,8 +1434,7 @@ def string_edit(
     enable_menu: bool = False,
     parent: QWidget | None = None,
 ) -> StringEdit:
-    """
-    Creates a new string edit widget.
+    """Creates a new string edit widget.
 
     :param label_text: The text for the label. Defaults to an empty string.
     :param edit_text: The initial text for the text box. Defaults to an empty string.
@@ -1460,8 +1486,7 @@ def int_edit(
     update_on_slide_tick: bool = True,
     parent: QWidget | None = None,
 ) -> IntEdit:
-    """
-    Creates a new integer edit widget.
+    """Creates a new integer edit widget.
 
     :param label_text: The text for the label. Defaults to an empty string.
     :param edit_text: The initial text for the text box. Defaults to an empty string.
@@ -1524,8 +1549,7 @@ def float_edit(
     update_on_slide_tick: bool = True,
     parent: QWidget | None = None,
 ) -> FloatEdit:
-    """
-    Creates a new integer edit widget.
+    """Creates a new integer edit widget.
 
     :param label_text: The text for the label. Defaults to an empty string.
     :param edit_text: The initial text for the text box. Defaults to an empty string.
@@ -1582,8 +1606,7 @@ def collapsible_frame(
     content_spacing: int = uiconsts.SPACING,
     parent: QWidget | None = None,
 ) -> CollapsibleFrame | CollapsibleFrameThin:
-    """
-    Creates a collapsible frame widget.
+    """Creates a collapsible frame widget.
 
     :param title: The title of the frame.
     :param thin: Whether to use a thin frame.
@@ -1631,8 +1654,7 @@ def divider(
     alignment: Qt.AlignmentFlag = Qt.AlignLeft,
     parent: QWidget | None = None,
 ) -> Divider:
-    """
-    Creates a new divider widget.
+    """Creates a new divider widget.
 
     :param text: The text to display on the divider. Defaults to None.
     :param shadow: Whether to display a shadow. Defaults to True.
@@ -1652,8 +1674,7 @@ def divider(
 
 
 def label_divider(text: str = "", parent: QWidget | None = None) -> LabelDivider:
-    """
-    Creates a new label divider widget.
+    """Creates a new label divider widget.
 
     :param text: The text to display on the divider. Defaults to an empty string.
     :param parent: The parent widget. Defaults to None.
@@ -1664,8 +1685,7 @@ def label_divider(text: str = "", parent: QWidget | None = None) -> LabelDivider
 
 
 def horizontal_line(parent: QWidget | None = None) -> HorizontalLine:
-    """
-    Creates a new horizontal line widget.
+    """Creates a new horizontal line widget.
 
     :param parent: The parent widget. Defaults to None.
     :return: new horizontal line widget instance.
@@ -1675,8 +1695,7 @@ def horizontal_line(parent: QWidget | None = None) -> HorizontalLine:
 
 
 def vertical_line(parent: QWidget | None = None) -> VerticalLine:
-    """
-    Creates a new vertical line widget.
+    """Creates a new vertical line widget.
 
     :param parent: The parent widget. Defaults to None.
     :return: new vertical line widget instance.
@@ -1700,8 +1719,7 @@ def radio_button_group(
     alignment: Qt.AlignmentFlag | None = None,
     parent: QWidget | None = None,
 ) -> RadioButtonGroup:
-    """
-    Creates a radio button group.
+    """Creates a radio button group.
 
     :param radio_names: optional list of radio button names.
     :param tooltips: optional list of tooltips for each one of the radio buttons.
@@ -1736,8 +1754,7 @@ def show_custom_dialog(
     button_c: str | None = None,
     parent: QWidget | None = None,
 ) -> tuple[str, QWidget]:
-    """
-    Function that shows a dialog with a custom widget.
+    """Function that shows a dialog with a custom widget.
 
     :param custom_widget: Custom widget to show in the dialog.
     :param title: Title of the dialog.
@@ -1767,8 +1784,7 @@ def show_custom_dialog(
 def line_tab_widget(
     alignment: Qt.AlignmentFlag | None = Qt.AlignCenter, parent: QWidget | None = None
 ) -> LineTabWidget:
-    """
-    Creates a new line tab widget.
+    """Creates a new line tab widget.
 
     :param alignment: The alignment of the tab widget.
     :param parent: The parent widget. Defaults to None.
@@ -1781,8 +1797,7 @@ def line_tab_widget(
 def sliding_opacity_stacked_widget(
     parent: QWidget | None = None,
 ) -> SlidingOpacityStackedWidget:
-    """
-    Creates a new sliding opacity stack widget.
+    """Creates a new sliding opacity stack widget.
 
     :param parent: The parent widget. Defaults to None.
     :return: new sliding opacity stack widget instance.
@@ -1792,8 +1807,7 @@ def sliding_opacity_stacked_widget(
 
 
 def accordion(parent: QWidget | None = None) -> Accordion:
-    """
-    Creates a new accordion widget.
+    """Creates a new accordion widget.
 
     :param parent: The parent widget. Defaults to None.
     :return: new accordion widget instance.
@@ -1803,8 +1817,7 @@ def accordion(parent: QWidget | None = None) -> Accordion:
 
 
 def overlay_loading_widget(parent: QWidget | None = None):
-    """
-    Creates a new overlay loading widget.
+    """Creates a new overlay loading widget.
 
     :param parent: The parent widget. Defaults to None.
     :return: new overlay loading widget instance.

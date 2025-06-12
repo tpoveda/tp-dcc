@@ -2,37 +2,43 @@ from __future__ import annotations
 
 import os
 import enum
-import logging
 
+from loguru import logger
 from Qt.QtCore import QResource
 from Qt.QtWidgets import QWidget
 
+from tp.libs.python import helpers
+
 from . import setup, style_file_path
 from ...qt import dpi
-from ...python import helpers
-
-logger = logging.getLogger(__name__)
 
 
 def instance() -> Theme:
-    """
-    Returns global TNN theme instance.
+    """Returns global TNN theme instance.
+
+    Returns:
+        The global Theme instance.
     """
 
     return Theme.instance()
 
 
 class Theme:
-    """
-    Class that defines default theme, which loads a QSS and optionally can modify it on runtime.
+    """Class that defines the default theme, which loads a QSS and optionally
+    can modify it on runtime.
+
+    This class manages theme colors, sizes, and styles used throughout the application.
+    It provides a singleton instance for global access.
     """
 
     _INSTANCE: Theme | None = None
 
     # noinspection SpellCheckingInspection
     class Colors:
-        """
-        Class that defines available theme colors.
+        """Class that defines available theme colors.
+
+        This class contains color constants used throughout the application.
+        Colors are defined as hexadecimal values.
         """
 
         MatteBlack = "#151515"
@@ -70,8 +76,10 @@ class Theme:
         Beer = "#faad14"
 
     class Sizes(enum.Enum):
-        """
-        Enumerator that defines available theme sizes.
+        """Enumerator that defines available theme sizes.
+
+        These sizes are used to maintain consistent UI element dimensions
+        across the application.
         """
 
         Default = "default"
@@ -125,8 +133,13 @@ class Theme:
 
     @classmethod
     def instance(cls) -> Theme:
-        """
-        Returns global theme instance.
+        """Returns global theme instance.
+
+        This is a singleton implementation that ensures only one theme
+        instance exists throughout the application.
+
+        Returns:
+            The global Theme instance.
         """
 
         if cls._INSTANCE is None:
@@ -136,70 +149,70 @@ class Theme:
 
     @property
     def sizes(self) -> helpers.AttributeDict:
-        """
-        Getter method that returns available sizes.
+        """Getter method that returns available sizes.
 
-        :return: available sizes.
+        Returns:
+            Dictionary of available theme sizes.
         """
 
         return self._sizes
 
     @property
     def primary_color(self) -> str:
-        """
-        Getter method that returns primary theme color as a string.
+        """Getter method that returns primary theme color as a string.
 
-        :return: primary theme color.
+        Returns:
+            Primary theme color as a hexadecimal string.
         """
 
         return self._primary_color
 
     @property
     def info_color(self) -> str:
-        """
-        Getter method that returns info theme color as a string.
+        """Getter method that returns info theme color as a string.
 
-        :return: info theme color.
+        Returns:
+            Info theme color as a hexadecimal string.
         """
 
         return self._info_color
 
     @property
     def success_color(self) -> str:
-        """
-        Getter method that returns success theme color as a string.
+        """Getter method that returns success theme color as a string.
 
-        :return: success theme color.
+        Returns:
+            Success theme color as a hexadecimal string.
         """
 
         return self._success_color
 
     @property
     def warning_color(self) -> str:
-        """
-        Getter method that returns warning theme color as a string.
+        """Getter method that returns warning theme color as a string.
 
-        :return: warning theme color.
+        Returns:
+            Warning theme color as a hexadecimal string.
         """
 
         return self._warning_color
 
     @property
     def error_color(self) -> str:
-        """
-        Getter method that returns error theme color as a string.
+        """Getter method that returns error theme color as a string.
 
-        :return: error color.
+        Returns:
+            Error theme color as a hexadecimal string.
         """
 
         return self._error_color
 
     @property
     def hyperlink_style(self) -> str:
-        """
-        Getter method that returns error hyperlink color as a string.
+        """Getter method that returns hyperlink style as a string.
 
-        :return: hyperlink color.
+        Returns:
+            HTML style for hyperlinks using the primary color.
         """
 
         return self._hyperlink_style
@@ -207,11 +220,11 @@ class Theme:
     def update_from_qss_file_path(
         self, qss_file_path: str, resources_rcc_file_path: str | None = None
     ):
-        """
-        Updates current theme with the contents of the given QSS file.
+        """Updates current theme with the contents of the given QSS file.
 
-        :param qss_file_path: absolute file path pointing to a valid QSS file.
-        :param resources_rcc_file_path: optional RCC file to register within Qt resource system.
+        Args:
+            qss_file_path: Absolute file path pointing to a valid QSS file.
+            resources_rcc_file_path: Optional RCC file to register within Qt resource system.
         """
 
         if not qss_file_path or not os.path.isfile(qss_file_path):
@@ -227,11 +240,13 @@ class Theme:
             self.register_resources_rcc_file_path(resources_rcc_file_path)
 
     def register_resources_rcc_file_path(self, resources_rcc_file_path: str) -> bool:
-        """
-        Registers given RCC resources file path within Qt resources system.
+        """Registers given RCC resources file path within Qt resources system.
 
-        :param resources_rcc_file_path: absolute file path pointing to a valid RCC file.
-        :return: True if RCC file was registered successfully; False otherwise.
+        Args:
+            resources_rcc_file_path: Absolute file path pointing to a valid RCC file.
+
+        Returns:
+            True if RCC file was registered successfully; False otherwise.
         """
 
         if not resources_rcc_file_path or not os.path.isfile(resources_rcc_file_path):
@@ -245,10 +260,10 @@ class Theme:
         return True
 
     def apply(self, widget: QWidget):
-        """
-        Applies theme stylesheet to given widget.
+        """Applies theme stylesheet to given widget.
 
-        :param QWidget widget: widget to apply stylesheet to.
+        Args:
+            widget: Widget to apply stylesheet to.
         """
 
         stylesheet_to_apply: str = self._default_qss

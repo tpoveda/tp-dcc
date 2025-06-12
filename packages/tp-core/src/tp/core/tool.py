@@ -1,19 +1,16 @@
 from __future__ import annotations
 
 import sys
-import logging
 import traceback
 from dataclasses import dataclass
 
+from loguru import logger
 from Qt.QtCore import Signal, QObject
 from Qt.QtWidgets import QWidget, QStackedWidget
 
+from tp.libs.dcc import callback
 from tp.libs.qt.widgets import window
-
-from ..dcc import callback
-from ..libs.python import decorators, plugin
-
-logger = logging.getLogger(__name__)
+from tp.libs.python import decorators, plugin
 
 
 @dataclass
@@ -59,69 +56,56 @@ class Tool(QObject):
     # noinspection PyMethodParameters
     @decorators.classproperty
     def id(cls) -> str:
-        """Gets the identifier associated with the class.
-
-        This class property returns the identifier associated with the class.
-        """
+        """The identifier associated with the class."""
 
         return ""
 
     # noinspection PyMethodParameters
     @decorators.classproperty
     def creator(cls) -> str:
-        """Gets the creator associated with the class.
-
-        This class property returns the creator associated with the class.
-        """
+        """The creator associated with the class."""
 
         return "Tomi Poveda"
 
+    # noinspection PyMethodParameters
     @decorators.classproperty
     def ui_data(cls) -> UiData:
-        """Gets the UI data associated with the class.
-
-        This class property returns the UI data associated with the class.
-        """
+        """The UI data associated with the class."""
 
         return UiData()
 
     # noinspection PyMethodParameters
     @decorators.classproperty
     def tags(cls) -> list[str]:
-        """Gets the tags associated with the class.
-
-        This class property returns the tags associated with the class.
-        """
+        """The tags associated with the class."""
 
         return []
 
     @property
     def stats(self) -> plugin.PluginStats:
-        """Gets the statistics associated with the instance.
-
-        This property returns the statistics associated with the instance.
-        """
+        """The statistics associated with the instance."""
 
         return self._stats
 
     @property
     def callbacks(self) -> callback.FnCallback:
-        """Gets the callbacks associated with the instance.
-
-        This property returns the callbacks associated with the instance.
-        """
+        """The callbacks associated with the instance."""
 
         return self._callbacks
 
     # noinspection PyUnusedLocal
     def execute(self, *args, **kwargs) -> window.Window:
-        """Executes the tool with the specified arguments and keyword arguments.
+        """Execute the tool with the specified arguments and keyword arguments.
 
-        This method executes the function with the provided arguments and keyword arguments.
+        This method executes the function with the provided arguments and
+        keyword arguments.
 
-        :param args: Positional arguments to pass to the function.
-        :param kwargs: Keyword arguments to pass to the function.
-        :return: The frameless window resulting from the function execution.:/Users/TomasPoveda/AppData/Roaming/
+        Args:
+            args: Positional arguments to pass to the function.
+            kwargs: Keyword arguments to pass to the function.
+
+        Returns:
+            The frameless window resulting from the function execution.
         """
 
         kwargs["name"] = self.__class__.__name__
@@ -146,34 +130,39 @@ class Tool(QObject):
         return win
 
     def widgets(self) -> list[QWidget]:
-        """Returns a list of widgets associated with the instance.
+        """Return a list of widgets associated with the instance.
 
         This method returns a list of widgets associated with the instance.
 
-        :return: A list of widgets associated with the instance.
+        Returns:
+        A list of widgets associated with the instance.
         """
 
         return self._widgets
 
     def pre_content_setup(self):
-        """Function that is called before tool UI is created.
-        Can be override in tool subclasses.
-        """
+        """Function that is called before the tool UI is created.
 
-        pass
+        Notes:
+            Can be overridden in tool subclasses.
+        """
 
     # noinspection PyMethodMayBeStatic
     def contents(self) -> list[QWidget]:
-        """Function that returns tool widgets."""
+        """Function that returns tool widgets.
+
+        Returns:
+                List of content widgets.
+        """
 
         return []
 
     def post_content_setup(self):
-        """Function that is called after tool UI is created.
-        Can be override in tool subclasses.
-        """
+        """Function that is called after the tool UI is created.
 
-        pass
+        Notes:
+            Can be overridden in tool subclasses.
+        """
 
     def teardown(self):
         """Function that shutdown tool."""
@@ -181,15 +170,10 @@ class Tool(QObject):
         self._callbacks.clear()
 
     def run(self):
-        """Runs the tool.
-
-        This method runs the tool.
-        """
-
-        pass
+        """Runs the tool."""
 
     def _execute(self, *args, **kwargs) -> Tool:
-        """Internal function that executes tool in a safe way."""
+        """Execute the tool safely."""
 
         self.stats.start()
         exc_type, exc_value, exc_tb = None, None, None
@@ -207,7 +191,7 @@ class Tool(QObject):
         return self
 
     def _run_teardown(self):
-        """Internal function that tries to tear down the tool in a safe way."""
+        """Tear down the tool safely."""
 
         if self._closed:
             logger.warning(f'Tool f"{self}" already closed')

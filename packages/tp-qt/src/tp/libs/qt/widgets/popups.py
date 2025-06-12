@@ -6,8 +6,8 @@ from Qt.QtCore import Qt, QSize
 from Qt.QtWidgets import QApplication, QSizePolicy, QWidget, QLabel, QToolButton
 from Qt.QtGui import QIcon, QKeyEvent
 
-from tp.python import strings
-from tp.python.paths import canonical_path
+from tp.libs.python import strings
+from tp.libs.python.paths import canonical_path
 
 from .. import dpi, utils as qtutils
 from ..icon import colorize_icon
@@ -17,7 +17,11 @@ from .buttons import BaseButton
 
 
 class MessageBoxBase(FramelessWindowThin):
-    """Class that defines a base message box."""
+    """Base message box implementation.
+
+    A frameless window that provides standardized message box functionality
+    with customizable buttons, icons, and behavior.
+    """
 
     INFO = "Info"
     QUESTION = "Question"
@@ -72,29 +76,32 @@ class MessageBoxBase(FramelessWindowThin):
 
     @property
     def msg_closed(self) -> bool:
-        """
-        Getter function that returns whether the message box is closed or not.
+        """Whether the message box is closed or not.
 
-        :return: whether the message box is closed or not.
+        Returns:
+            bool: True if the message box is closed, False otherwise.
         """
 
         return self._msg_closed
 
     @property
     def result(self) -> str:
-        """
-        Getter function that returns the result of the message box.
+        """The result of the message box interaction.
 
-        :return: result of the message box.
+        Returns:
+            str: The result code from user interaction with the message box.
         """
 
         return self._result
 
     def keyPressEvent(self, event: QKeyEvent):
-        """
-        Overrides `keyPressEvent` function to handle key press events.
+        """Handle key press events.
 
-        :param event: Qt key event.
+        Override of Qt's keyPressEvent to trigger default button actions when
+        specified keys are pressed.
+
+        Args:
+            event (QKeyEvent): The key event from Qt.
         """
 
         if self._default > 0:
@@ -103,36 +110,43 @@ class MessageBoxBase(FramelessWindowThin):
                 self._buttons[self._default].leftClicked.emit()
 
     def close(self, result: str | None = None):
-        """
-        Overrides `close` function to close the message box.
+        """Close the message box with a result.
 
-        :param result: result of the message box.
+        Args:
+            result (str, optional): The result code to set before closing. Defaults to None.
         """
 
         self._msg_closed = True
         self._result = result
         super().close()
 
-    def _generate_name(self, name: str):
-        """
-        Internal function used to generate a unique name.
+    # noinspection PyMethodMayBeStatic
+    def _generate_name(self, name: str) -> str:
+        """Generate a unique name by appending a UUID fragment.
 
-        :param str  name: original name.
-        :return: unique name.
-        :rtype: str
+        Args:
+            name: The base name to make unique.
+
+        Returns:
+            A unique name with UUID suffix.
         """
 
         return f"{name}_{str(uuid.uuid4())[:4]}"
 
     # noinspection PyMethodMayBeStatic
-    def _calculate_label_height(self, text: str, label: QLabel):
-        """
-        Internal function that returns the height of a label based on its text.
+    def _calculate_label_height(self, text: str, label: QLabel) -> int:
+        """Calculate the appropriate height for a label based on its text
+        content.
 
-        :param str text: label text.
-        :param QLabel label: label instance.
-        :return: label height.
-        :rtype: int
+        Determines the height needed to display the text by calculating the
+        number of lines required and multiplying by line height.
+
+        Args:
+            text: The text content to calculate height for.
+            label: The label widget to use for font metrics.
+
+        Returns:
+            int: The calculated height in pixels.
         """
 
         font_metrics = label.fontMetrics()
@@ -154,8 +168,10 @@ class MessageBoxBase(FramelessWindowThin):
         return height * lines
 
     def _init(self):
-        """
-        Internal function that initializes message box contents.
+        """Initialize message box UI components.
+
+        Sets up the button layout, icons, and overall UI structure of the
+        message box.
         """
 
         self.set_maximize_button_visible(False)
@@ -273,6 +289,10 @@ class MessageBoxBase(FramelessWindowThin):
 
 
 class CustomDialog(MessageBoxBase):
+    """Custom dialog that extends the base message box to include a custom
+    widget.
+    """
+
     def __init__(
         self,
         parent: QWidget,
@@ -289,6 +309,25 @@ class CustomDialog(MessageBoxBase):
         default: int = 0,
         on_top: bool = True,
     ):
+        """Initialize a custom dialog with a custom widget.
+
+        Args:
+            parent: Parent widget for the dialog.
+            custom_widget: Custom widget to embed in the dialog.
+            title: Title of the dialog.
+            message: Message to display in the dialog.
+            icon: Icon to display in the dialog. Can be a string or QIcon.
+            button_a: Text for the first button. Defaults to "OK".
+            button_b: Text for the second button. Defaults to None.
+            button_c: Text for the third button. Defaults to None.
+            button_icon_a: Icon for the first button. Defaults to OK_ICON.
+            button_icon_b: Icon for the second button. Defaults to CANCEL_ICON.
+            button_icon_c: Icon for the third button. Defaults to None.
+            default: int: Index of the default button. Defaults to 0.
+            on_top: bool: Whether the dialog should stay on top of other
+                windows.
+        """
+
         self._custom_widget = custom_widget
 
         super().__init__(
@@ -319,19 +358,24 @@ class CustomDialog(MessageBoxBase):
         button_c: str | None = None,
         parent: QWidget | None = None,
     ) -> tuple[str, QWidget]:
-        """
-        Function that shows a dialog with a custom widget.
+        """Show a dialog with a custom widget and wait for user interaction.
 
-        :param custom_widget: Custom widget to show in the dialog.
-        :param title: Title of the dialog.
-        :param message: Message to show in the dialog.
-        :param icon: Icon to show in the dialog.
-        :param default: Default button index.
-        :param button_a: Text of the first button.
-        :param button_b: Text of the second button.
-        :param button_c: Text of the third button.
-        :param parent: Parent widget of the dialog.
-        :return: tuple with the result of the dialog and the custom widget.
+        Creates and displays a message box dialog that includes a custom
+        widget and processes events until the dialog is closed.
+
+        Args:
+            custom_widget: Custom widget to embed in the dialog.
+            title: Title of the dialog. Defaults to "Confirm".
+            message: Message to display. Defaults to "Proceed".
+            icon: Icon to display. Defaults to QUESTION.
+            default: Index of the default button. Defaults to 0.
+            button_a: Text for first button. Defaults to "OK".
+            button_b: Text for second button. Defaults to "Cancel".
+            button_c: Text for third button. Defaults to None.
+            parent: Parent widget for the dialog. Defaults to None.
+
+        Returns:
+            A tuple containing the result code and the custom widget.
         """
 
         dialog = cls(
@@ -346,14 +390,16 @@ class CustomDialog(MessageBoxBase):
             button_c=button_c,
         )
         dialog.show()
-        while dialog.msg_closed is False:
+        while not dialog.msg_closed:
             QApplication.processEvents()
 
         return dialog.result, custom_widget
 
     def _init(self):
-        """
-        Overrides internal `_init` function to initialize message box contents.
+        """Initialize custom dialog UI components.
+
+        Extends the base message box initialization to include the
+        custom widget.
         """
 
         super()._init()

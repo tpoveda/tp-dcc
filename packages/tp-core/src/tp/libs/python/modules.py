@@ -206,18 +206,18 @@ def import_module(
                 pass
             else:
                 msg = 'Failed to load module: "{}"'.format(module_path)
-                logger.error(msg, exc_info=True) if not skip_errors else logger.debug(
+                logger.exception(msg) if not skip_errors else logger.debug(
                     "{} | {}".format(msg, traceback.format_exc())
                 )
         except (ImportError, ModuleNotFoundError):
             msg = 'Failed to import module: "{}"'.format(module_path)
-            logger.error(msg, exc_info=True) if not skip_errors else logger.debug(
+            logger.exception(msg) if not skip_errors else logger.debug(
                 "{} | {}".format(msg, traceback.format_exc())
             )
             return None
         except SyntaxError:
             msg = 'Module contains syntax errors: "{}"'.format(module_path)
-            logger.error(msg, exc_info=True) if not skip_errors else logger.debug(
+            logger.exception(msg) if not skip_errors else logger.debug(
                 "{} | {}".format(msg, traceback.format_exc())
             )
             return None

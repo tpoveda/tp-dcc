@@ -14,8 +14,9 @@ elif platform.system().lower() == "darwin":
 else:
     DPI = 72.0
 
-# global UI scale value. This should correspond to any UI scaling in the host DCC. In standalone mode, the app factors
-# in the current DPI scales the UI accordingly.
+# Global UI scale value. This should correspond to any UI scaling in the
+# host DCC. In standalone mode, the app factors in the current DPI scale the
+# UI accordingly.
 UI_SCALE = 1.0
 SCALE_FACTORS = (0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0)
 

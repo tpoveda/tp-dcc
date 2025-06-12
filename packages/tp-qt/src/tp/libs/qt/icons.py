@@ -1,30 +1,24 @@
 from __future__ import annotations
 
 import os
-import logging
 from typing import TypedDict
 
+from loguru import logger
 from Qt.QtCore import Qt, QSize
 from Qt.QtGui import QIcon
 
-from ..dcc import app
-from ..python.decorators import Singleton
-
-logger = logging.getLogger(__name__)
+from tp.libs.dcc import app
+from tp.libs.python.decorators import Singleton
 
 
 class IconSizeDict(TypedDict):
-    """
-    Typed dictionary that defines an icon size.
-    """
+    """Typed dictionary that defines an icon size."""
 
     path: str
 
 
 class IconDict(TypedDict):
-    """
-    Typed dictionary that defines an icon.
-    """
+    """Typed dictionary that defines an icon."""
 
     name: str
     sizes: dict[int, IconSizeDict]
@@ -32,9 +26,7 @@ class IconDict(TypedDict):
 
 
 class IconsManager(metaclass=Singleton):
-    """
-    Class that allows to register and retrieve icons.
-    """
+    """Class that allows to register and retrieve icons."""
 
     _icons_cache: dict[str, dict[str, IconDict]] = {}
     _icon_paths: list[str] = []
@@ -46,9 +38,7 @@ class IconsManager(metaclass=Singleton):
 
     @classmethod
     def refresh(cls):
-        """
-        Refreshes all the available icons.
-        """
+        """Refreshes all the available icons."""
 
         cls._icons_cache.clear()
         cls._icon_paths.clear()
@@ -90,8 +80,7 @@ class IconsManager(metaclass=Singleton):
 
     @classmethod
     def icon_path(cls, icon_name: str) -> dict[str, IconDict] | None:
-        """
-        Returns the path to the icon with the given name.
+        """Returns the path to the icon with the given name.
 
         :param icon_name: name of the icon to get the path for.
         :return: icon path if found; None otherwise.
@@ -101,8 +90,7 @@ class IconsManager(metaclass=Singleton):
 
     @classmethod
     def icon_data_for_name(cls, icon_name: str, size: int = 16) -> IconSizeDict:
-        """
-        Returns the icon data for the given icon name.
+        """Returns the icon data for the given icon name.
 
         :param icon_name: name of the icon to get the data for.
         :param size: size of the icon to get the data for.
@@ -132,8 +120,7 @@ class IconsManager(metaclass=Singleton):
 
     @classmethod
     def icon_path_for_name(cls, icon_name: str, size: int = 16) -> str:
-        """
-        Returns the icon path for the given icon name.
+        """Returns the icon path for the given icon name.
 
         :param icon_name: name of the icon to get the path for.
         :param size: size of the icon to get the path for.
@@ -148,8 +135,7 @@ class IconsManager(metaclass=Singleton):
 
     @staticmethod
     def icon_path_is_from_qrc(icon_path: str) -> bool:
-        """
-        Returns whether the given icon path is from a Qt resource file or not.
+        """Returns whether the given icon path is from a Qt resource file or not.
 
         :param icon_path: icon path to check.
         :return: whether the icon path is from a Qt resource file or not.
@@ -159,8 +145,7 @@ class IconsManager(metaclass=Singleton):
 
     @classmethod
     def resize_icon(cls, icon: QIcon, size: QSize) -> QIcon:
-        """
-        Resizes the given icon to the given size.
+        """Resizes the given icon to the given size.
         Default scaling is done using smooth bi-linear interpolation and keep aspect
         ratio.
 
@@ -179,8 +164,7 @@ class IconsManager(metaclass=Singleton):
 
     @classmethod
     def icon(cls, icon_name: str, size: int = 16) -> QIcon | None:
-        """
-        Returns the icon with the given name.
+        """Returns the icon with the given name.
 
         :param icon_name: name of the icon to get.
         :param size: size of the icon to get.

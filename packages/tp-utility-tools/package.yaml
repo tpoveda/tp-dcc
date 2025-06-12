@@ -17,6 +17,8 @@ environment:
   TP_DCC_BASE_PATHS:
     - "{self}"
     - "{self}/src"
+  TP_DCC_TOOLS:
+    - "{self}/src/tp/tools/utility/renamer/tool.py"
 dependencies: []
 tests:
   - "{self}/tests"

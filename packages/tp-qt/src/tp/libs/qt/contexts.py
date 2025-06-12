@@ -8,15 +8,11 @@ from Qt.QtWidgets import QWidget
 
 @contextlib.contextmanager
 def block_signals(widget: QObject, children: bool = False):
-    """
-    Context manager to temporarily block signals of a widget and its children.
+    """Context manager to temporarily block signals of a widget and its children.
 
-    :param widget: The widget whose signals should be blocked.
-    :param children: Whether to block signals of the widget's children. Defaults to False.
-
-    Usage:
-    with block_signals(widget):
-        # Code block where signals are blocked
+    Args:
+        widget: The widget whose signals should be blocked.
+        children: Whether to block signals of the widget's children.
     """
 
     widget.blockSignals(True)

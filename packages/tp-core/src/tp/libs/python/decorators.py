@@ -1,17 +1,25 @@
 from __future__ import annotations
 
-from tp.core.consts import ENV_VAR, EnvironmentMode
-
 import os
 import abc
+import enum
 import logging
 from functools import wraps
 from typing import Callable, Optional, Type, Any
 
+ENV_VAR = "TP_ENV"
+
+
+class EnvironmentMode(enum.Enum):
+    """Enumeration that defines the different environment modes."""
+
+    Production = "prod"
+    Development = "dev"
+    Test = "test"
+
 
 def classproperty(func: Callable) -> ClassProperty:
-    """
-    Custom decorator that returns a class property object to be used as a decorator.
+    """Custom decorator that returns a class property object to be used as a decorator.
 
     :param func: decorated function.
     :return: class property.
@@ -21,8 +29,7 @@ def classproperty(func: Callable) -> ClassProperty:
 
 
 def log_arguments(level: int = logging.DEBUG):
-    """
-    Decorator that logs the arguments and return value of a function.
+    """Decorator that logs the arguments and return value of a function.
 
     :param level: logging level to use.
     """
@@ -58,8 +65,7 @@ def log_arguments(level: int = logging.DEBUG):
 
 # noinspection SpellCheckingInspection
 class ClassProperty:
-    """
-    A decorator that combines the behavior of @classmethod and @property.
+    """A decorator that combines the behavior of @classmethod and @property.
     This allows you to define properties that are accessible at the class level.
     """
 
@@ -68,8 +74,7 @@ class ClassProperty:
         fget: Optional[Callable[[Type[Any]], Any]] = None,
         fset: Optional[Callable[[Type[Any], Any], None]] = None,
     ):
-        """
-        Initialize the classproperty with an optional getter and setter.
+        """Initialize the classproperty with an optional getter and setter.
 
         :param fget: The getter function.
         :type fget: Optional[Callable[[Type[Any]], Any]]
@@ -80,8 +85,7 @@ class ClassProperty:
         self.fset = fset
 
     def __get__(self, instance: Any, owner: Type[Any]) -> Any:
-        """
-        Called to get the attribute of the owner class.
+        """Called to get the attribute of the owner class.
 
         :param instance: The instance accessing the property (ignored).
         :type instance: object
@@ -96,8 +100,7 @@ class ClassProperty:
         return self.fget(owner)
 
     def __set__(self, instance: Any, value: Any):
-        """
-        Called to set the attribute of the owner class.
+        """Called to set the attribute of the owner class.
 
         :param instance: The instance setting the property (ignored).
         :type instance: object
@@ -111,8 +114,7 @@ class ClassProperty:
         self.fset(type(instance), value)
 
     def getter(self, fget: Callable[[Type[Any]], Any]) -> ClassProperty:
-        """
-        Set the getter function of the property.
+        """Set the getter function of the property.
 
         :param fget: The getter function.
         :type fget: Callable[[Type[Any]], Any]
@@ -122,8 +124,7 @@ class ClassProperty:
         return type(self)(fget, self.fset)
 
     def setter(self, fset: Callable[[Type[Any], Any], None]) -> ClassProperty:
-        """
-        Set the setter function of the property.
+        """Set the setter function of the property.
 
         :param fset: The setter function.
         :type fset: Callable[[Type[Any], Any], None]
@@ -133,8 +134,7 @@ class ClassProperty:
 
 
 class Singleton(type):
-    """
-    A metaclass that enforces the singleton pattern. Classes using this metaclass can only have one instance.
+    """A metaclass that enforces the singleton pattern. Classes using this metaclass can only have one instance.
     Attempting to subclass a singleton class will raise a TypeError.
     """
 
@@ -142,8 +142,7 @@ class Singleton(type):
     def __new__(
         meta: Type[Singleton], name: str, bases: tuple, clsdict: dict[str, Any]
     ) -> Type[Singleton]:
-        """
-        Creates a new singleton class. Ensures that the class cannot be subclassed.
+        """Creates a new singleton class. Ensures that the class cannot be subclassed.
 
         :param meta: The metaclass itself (Singleton).
         :param name: The name of the class being created.
@@ -162,8 +161,7 @@ class Singleton(type):
 
     # noinspection PyUnresolvedReferences
     def __call__(cls: Type[Singleton], *args: Any, **kwargs: Any) -> Type[Singleton]:
-        """
-        Creates or returns the existing instance of the singleton class.
+        """Creates or returns the existing instance of the singleton class.
 
         :param cls: the class being instantiated.
         :param args: positional arguments to pass to the class constructor.
@@ -178,8 +176,7 @@ class Singleton(type):
 
 
 class AbstractDecorator(abc.ABC):
-    """
-    Abstract base class used to standardize decorator behaviour.
+    """Abstract base class used to standardize decorator behaviour.
     This pattern can also be used alongside 'with' statements.
     """
 
@@ -200,8 +197,7 @@ class AbstractDecorator(abc.ABC):
     def __get__(
         self, instance: object, owner: type[AbstractDecorator]
     ) -> AbstractDecorator:
-        """
-        Private method called whenever this object is accessed via attribute lookup.
+        """Private method called whenever this object is accessed via attribute lookup.
 
         :param object instance: object instance.
         :param type[AbstractDecorator] owner: decorator type.
@@ -215,8 +211,7 @@ class AbstractDecorator(abc.ABC):
         return self
 
     def __call__(self, *args, **kwargs) -> Any:
-        """
-        Private method that is called whenever this instance is evoked.
+        """Private method that is called whenever this instance is evoked.
 
         :return: call result.
         :rtype: Any
@@ -230,16 +225,13 @@ class AbstractDecorator(abc.ABC):
 
     @abc.abstractmethod
     def __enter__(self, *args, **kwargs):
-        """
-        Private method that is called when this instance is entered using a with statement.
-        """
+        """Private method that is called when this instance is entered using a with statement."""
 
         pass
 
     @abc.abstractmethod
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any):
-        """
-        Private method that is called when this instance is exited using a with statement.
+        """Private method that is called when this instance is exited using a with statement.
 
         :param Any exc_type: exception type.
         :param Any exc_val: exception value.
@@ -250,8 +242,7 @@ class AbstractDecorator(abc.ABC):
 
     @property
     def instance(self) -> object:
-        """
-        Returns the instance currently bound to this decorator.
+        """Returns the instance currently bound to this decorator.
 
         :return: instance currently bound to this decorator.
         :rtype: object
@@ -261,8 +252,7 @@ class AbstractDecorator(abc.ABC):
 
     @property
     def owner(self) -> type[AbstractDecorator]:
-        """
-        Getter method that returns the class associated with the bound instance.
+        """Getter method that returns the class associated with the bound instance.
 
         :return: class associated with the bound instance.
         :rtype: type[AbstractDecorator]
@@ -272,8 +262,7 @@ class AbstractDecorator(abc.ABC):
 
     @property
     def func(self) -> callable:
-        """
-        Getter method used to return the wrapped function.
+        """Getter method used to return the wrapped function.
 
         :return: wrapped function.
         .note:: If this is a descriptor object then the function will be bound to the instance.

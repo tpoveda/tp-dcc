@@ -6,6 +6,7 @@ import sys
 from loguru import logger
 
 from . import constants
+from ..utils import dcc
 
 
 def setup_tp_dcc_logger():
@@ -22,7 +23,7 @@ def setup_tp_dcc_logger():
         enqueue=True,
         backtrace=True,
         diagnose=True,
-        colorize=True,
+        colorize=False if dcc.is_maya() else True,
         format="{time:YYYY-MM-DD HH:mm:ss} [{level}] ({name}.{function}:{line}) > {message}",
     )
 

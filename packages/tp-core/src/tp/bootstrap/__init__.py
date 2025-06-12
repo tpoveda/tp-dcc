@@ -10,6 +10,7 @@ from .core import constants
 from .core.host import Host
 from .core.manager import PackagesManager
 from .utils import dcc
+from ..managers.tools import ToolsManager
 
 
 def init() -> PackagesManager:
@@ -44,6 +45,9 @@ def init() -> PackagesManager:
     if packages_manager is None:
         packages_manager = PackagesManager.from_path(root_path)
         setup_host(packages_manager)
+
+        # Initialize tools manager.
+        ToolsManager()
 
     return packages_manager
 

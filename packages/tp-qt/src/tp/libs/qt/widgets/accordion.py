@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 import enum
-import logging
 
+from loguru import logger
 from Qt.QtCore import Qt, Signal, QObject, QPoint, QRect, QMimeData, QEvent
 from Qt.QtWidgets import QApplication, QWidget, QVBoxLayout, QGroupBox, QScrollArea
 from Qt.QtGui import (
@@ -26,16 +26,15 @@ from Qt.QtGui import (
     QPaintEvent,
 )
 
-from tp import dcc
-from tp.qt import dpi
+from tp.libs import dcc
 
-logger = logging.getLogger(__name__)
+from .. import dpi
 
 
 class AccordionItem(QGroupBox):
-    """
-    Class that represents an expandable group that can contain multiple accordion item within it.
-    Collapsible accordion widget similar to Maya Attribute Editor
+    """Class that represents an expandable group that can contain multiple
+    accordion item within it. Collapsible accordion widget similar to Maya
+    Attribute Editor.
     """
 
     trigger = Signal(bool)
@@ -72,109 +71,77 @@ class AccordionItem(QGroupBox):
 
     @property
     def accordion_widget(self) -> Accordion:
-        """
-        Getter method that returns the accordion widget that contains this item.
-
-        :return: accordion widget.
-        """
+        """The accordion widget that contains this item."""
 
         return self._accordion_widget
 
     @property
     def widget(self) -> QWidget:
-        """
-        Getter method that returns the widget wrapped by this accordion item.
-
-        :return: widget.
-        """
+        """The widget wrapped by this accordion item."""
 
         return self._widget
 
     @property
     def rollout_style(self) -> Accordion.Style:
-        """
-        Getter method that returns the rollout style of this accordion item.
-
-        :return: accordion style.
-        """
+        """The rollout style of this accordion item."""
 
         return self._rollout_style
 
     @rollout_style.setter
     def rollout_style(self, value: Accordion.Style):
-        """
-        Setter method that sets the rollout style of this accordion item.
-
-        :param value: accordion style to set.
-        """
+        """The rollout style of this accordion item."""
 
         self._rollout_style = value
 
     @property
     def drag_drop_mode(self) -> Accordion.DragDrop:
-        """
-        Getter method that returns the drag and drop mode of this accordion item.
-
-        :return: drag and drop mode.
-        """
+        """The drag and drop mode of this accordion item."""
 
         return self._drag_drop_mode
 
     @drag_drop_mode.setter
     def drag_drop_mode(self, value: Accordion.DragDrop):
-        """
-        Setter method that sets the drag and drop mode of this accordion item.
-
-        :param value: drag and drop mode to set.
-        """
+        """Sets the drag and drop mode of this accordion item."""
 
         self._drag_drop_mode = value
 
     @property
     def collapsible(self) -> bool:
-        """
-        Getter method that returns whether this accordion item is collapsible.
-
-        :return: True if accordion item is collapsible; False otherwise.
-        """
+        """Whether this accordion item is collapsible."""
 
         return self._collapsible
 
     @collapsible.setter
     def collapsible(self, flag: bool):
-        """
-        Setter method that sets whether this accordion item is collapsible.
-
-        :param flag: flag to set.
-        """
+        """Sets whether this accordion item is collapsible."""
 
         self._collapsible = flag
 
     def enterEvent(self, event: QEvent):
-        """
-        Overrides base QGroupBox enterEvent function.
+        """Override base QGroupBox enterEvent function.
 
-        :param event: Qt event.
+        Args:
+            event: The Qt event that triggered this method.
         """
 
         self.accordion_widget.leaveEvent(event)
         event.accept()
 
     def leaveEvent(self, event: QEvent):
-        """
-        Overrides base QGroupBox leaveEvent function.
+        """Override base QGroupBox leaveEvent function.
 
-        :param event: Qt event.
+        Args:
+            event: The Qt event that triggered this method.
         """
 
         self.accordion_widget.enterEvent(event)
         event.accept()
 
     def dragEnterEvent(self, event: QDragEnterEvent):
-        """
-        Overrides base QGroupBox dragEnterEvent function.
+        """Override base QGroupBox dragEnterEvent function.
 
-        :param event: Qt drag enter event.
+        Args:
+            event: The Qt drag enter event that triggered this method.
         """
 
         if not self._drag_drop_mode:
@@ -188,10 +155,10 @@ class AccordionItem(QGroupBox):
             event.acceptProposedAction()
 
     def dragMoveEvent(self, event: QDragMoveEvent):
-        """
-        Overrides base QGroupBox dragMoveEvent function.
+        """Override base QGroupBox dragMoveEvent function.
 
-        :param event: Qt drag move event.
+        Args:
+            event: The Qt drag move event that triggered this method.
         """
 
         if not self._drag_drop_mode:
@@ -205,10 +172,10 @@ class AccordionItem(QGroupBox):
             event.acceptProposedAction()
 
     def dropEvent(self, event: QDropEvent):
-        """
-        Overrides base QGroupBox dropEvent function.
+        """Override base QGroupBox dropEvent function.
 
-        :param event: Qt drop event.
+        Args:
+            event: The Qt drop event that triggered this method.
         """
 
         widget = event.source()
@@ -218,10 +185,10 @@ class AccordionItem(QGroupBox):
         self._accordion_widget.emit_items_reordered()
 
     def mousePressEvent(self, event: QMouseEvent):
-        """
-        Overrides base QGroupBox mousePressEvent function.
+        """Override base QGroupBox mousePressEvent function.
 
-        :param event: Qt mouse press event.
+        Args:
+            event: The Qt mouse press event that triggered this method.
         """
 
         if event.button() == Qt.LeftButton and self.drag_drop_rect().contains(
@@ -250,19 +217,19 @@ class AccordionItem(QGroupBox):
             event.ignore()
 
     def mouseMoveEvent(self, event: QMouseEvent):
-        """
-        Overrides base QGroupBox mouseMoveEvent function.
+        """Override base QGroupBox mouseMoveEvent function.
 
-        :param event: Qt mouse move event.
+        Args:
+            event: The Qt mouse move event that triggered this method.
         """
 
         event.ignore()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
-        """
-        Overrides base QGroupBox mouseReleaseEvent function.
+        """Override base QGroupBox mouseReleaseEvent function.
 
-        :param event: Qt mouse release event.
+        Args:
+            event: The Qt mouse release event that triggered this method.
         """
 
         if self._clicked and self.expand_collapse_rect().contains(event.pos()):
@@ -273,10 +240,10 @@ class AccordionItem(QGroupBox):
         self._clicked = False
 
     def paintEvent(self, event: QPaintEvent):
-        """
-        Overrides base QGroupBox paintEvent function.
+        """Override base QGroupBox paintEvent function.
 
-        :param event: Qt paint event.
+        Args:
+            event: The Qt paint event that triggered this method.
         """
 
         painter = QPainter()
@@ -418,31 +385,35 @@ class AccordionItem(QGroupBox):
         painter.end()
 
     def custom_data(self, key: str, default: Any = None) -> Any:
-        """
-        Returns a custom pointer to information stored with this item.
+        """Return a custom pointer to information stored with this item.
 
-        :param key: data key to retrieve.
-        :param default: default value.
-        :return: custom data.
+        Args:
+            key: Data key to retrieve.
+            default: Default value to return if key is not found.
+
+        Returns:
+            The custom data associated with the key, or the default value
+            if not found.
         """
 
         return self._custom_data.get(str(key), default)
 
     def set_custom_data(self, key: str, value: Any):
-        """
-        Sets a custom pointer to information stored on this item.
+        """Set a custom pointer to information stored on this item.
 
-        :param key: data key to set.
-        :param value: data value to set.
+        Args:
+            key: Data key to set.
+            value: Data value to associate with the key.
         """
 
         self._custom_data[str(key)] = value
 
+    # noinspection PyMethodMayBeStatic
     def drag_drop_rect(self) -> QRect:
-        """
-        Returns default drag and drop rectangle.
+        """Return default drag and drop rectangle.
 
-        :return: drag and drop rectangle.
+        Returns:
+            A QRect representing the drag and drop area.
         """
 
         return QRect(
@@ -450,28 +421,28 @@ class AccordionItem(QGroupBox):
         )
 
     def expand_collapse_rect(self) -> QRect:
-        """
-        Returns the expanded drag and drop rectangle.
+        """Return the expanded drag and drop rectangle.
 
-        :return: expanded drag and drop rectangle.
+        Returns:
+            A QRect representing the expand/collapse area.
         """
 
         return QRect(0, 0, self.width(), dpi.dpi_scale(20))
 
     def is_collapsed(self) -> bool:
-        """
-        Returns whether accordion is collapsed.
+        """Return whether accordion is collapsed.
 
-        :return: True if accordion is collapsed; False otherwise.
+        Returns:
+            True if accordion is collapsed, False otherwise.
         """
 
         return self._collapsed
 
     def set_collapsed(self, state: bool = True):
-        """
-        Sets whether accordion is collapsed.
+        """Set whether accordion is collapsed.
 
-        :param state: True to collapse accordion; False to expand it.
+        Args:
+            state: True to collapse accordion, False to expand it.
         """
 
         if self.collapsible:
@@ -491,10 +462,10 @@ class AccordionItem(QGroupBox):
             accord.setUpdatesEnabled(True)
 
     def toggle_collapsed(self) -> bool:
-        """
-        Toggles current accordion collapse status.
+        """Toggle current accordion collapse status.
 
-        :return: True if accordion was collapsed; False otherwise.
+        Returns:
+            True if accordion was collapsed, False otherwise.
         """
 
         collapsed_state = not self.is_collapsed()
@@ -502,20 +473,18 @@ class AccordionItem(QGroupBox):
         return collapsed_state
 
     def _on_show_menu(self):
-        """
-        Internal function that requests to show the current accordion widget item contextual menu.
-        """
+        """Request to show the current accordionwidget item contextual menu."""
 
         if QRect(0, 0, self.width(), 20).contains(self.mapFromGlobal(QCursor.pos())):
             self._accordion_widget.emit_item_menu_requested(self)
 
     def _draw_triangle(self, painter: QPainter, x: int, y: int):
-        """
-        Internal function that handles the painting of the triangle icon.
+        """Handle the painting of the triangle icon.
 
-        :param painter: painter instance used to handle the painting operation.
-        :param x: X position.
-        :param y: Y position.
+        Args:
+            painter: Painter instance used to handle the painting operation.
+            x: X position for the triangle.
+            y: Y position for the triangle.
         """
 
         if self.rollout_style == Accordion.Style.Maya:
@@ -548,12 +517,12 @@ class AccordionItem(QGroupBox):
         painter.setBrush(current_brush)
 
     def _draw_icon(self, painter: QPainter, x: int, y: int):
-        """
-        Internal function that handles the painting of the icon.
+        """Handle the painting of the icon.
 
-        :param painter: painter instance used to handle the painting operation.
-        :param x: X position.
-        :param y: Y position.
+        Args:
+            painter: Painter instance used to handle the painting operation.
+            x: X position for the icon.
+            y: Y position for the icon.
         """
 
         if not self._icon:
@@ -562,8 +531,8 @@ class AccordionItem(QGroupBox):
 
 
 class Accordion(QScrollArea):
-    """
-    Class that represents an accordion widget that can contain multiple accordion item groups.
+    """Class that represents an accordion widget that can contain multiple
+    accordion item groups.
     """
 
     itemCollapsed = Signal(AccordionItem)
@@ -572,8 +541,8 @@ class Accordion(QScrollArea):
     itemsReordered = Signal()
 
     class Style(enum.IntEnum):
-        """
-        Enumerator class that defines the different types of accordion styles available.
+        """Enumerator class that defines the different types of accordion
+        styles available.
         """
 
         Boxed = 1
@@ -582,8 +551,8 @@ class Accordion(QScrollArea):
         Maya = 4
 
     class DragDrop(enum.IntEnum):
-        """
-        Enumerator class that defines drag drop operations for accordion items.
+        """Enumerator class that defines drag drop operations for
+        accordion items.
         """
 
         NoDragDrop = 0
@@ -618,21 +587,13 @@ class Accordion(QScrollArea):
 
     @property
     def drag_drop_mode(self) -> Accordion.DragDrop:
-        """
-        Getter method that returns the drag and drop mode of this accordion.
-
-        :return: drag and drop mode.
-        """
+        """The drag and drop mode of this accordion."""
 
         return self._drag_drop_mode
 
     @drag_drop_mode.setter
     def drag_drop_mode(self, value: Accordion.DragDrop):
-        """
-        Setter method that sets the drag and drop mode of this accordion.
-
-        :param value: drag and drop mode to set.
-        """
+        """Set the drag and drop mode of this accordion."""
 
         self._drag_drop_mode = value
         for item in self.findChildren(AccordionItem):
@@ -640,8 +601,7 @@ class Accordion(QScrollArea):
 
     @property
     def rollout_style(self) -> Accordion.Style:
-        """
-        Getter method that returns the rollout style of this accordion.
+        """Getter method that returns the rollout style of this accordion.
 
         :return: accordion style.
         """
@@ -650,11 +610,7 @@ class Accordion(QScrollArea):
 
     @rollout_style.setter
     def rollout_style(self, value: Accordion.Style):
-        """
-        Setter method that sets the rollout style of this accordion.
-
-        :param value: accordion style to set.
-        """
+        """The rollout style of this accordion."""
 
         self._rollout_style = value
         for item in self.findChildren(AccordionItem):
@@ -662,30 +618,26 @@ class Accordion(QScrollArea):
 
     @property
     def item_class(self) -> type:
-        """
-        Getter method that returns the item class used by this accordion.
-
-        :return: item class.
-        """
+        """The item class used by this accordion."""
 
         return self._item_class
 
     @item_class.setter
     def item_class(self, value: type):
-        """
-        Setter method that sets the item class used by this accordion.
-
-        :param value: item class to set.
-        """
+        """Set the item class used by this accordion."""
 
         self._item_class = value
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        """
-        Overrides base QScrollArea eventFilter function.
+        """Override base QScrollArea eventFilter function.
 
-        :param watched: widget that is being watched.
-        :param event: Qt event.
+        Args:
+            watched: Widget that is being watched.
+            event: The Qt event to be filtered.
+
+        Returns:
+            True if the event was handled and should not be processed further,
+            False otherwise.
         """
 
         if event.type() == QEvent.MouseButtonPress:
@@ -703,30 +655,30 @@ class Accordion(QScrollArea):
         return False
 
     def enterEvent(self, event: QEvent):
-        """
-        Overrides base QScrollArea enterEvent function.
+        """Override base QScrollArea enterEvent function.
 
-        :param event: Qt event.
+        Args:
+            event: The Qt event that triggered this method.
         """
 
         if self.can_scroll():
             QApplication.setOverrideCursor(Qt.OpenHandCursor)
 
     def leaveEvent(self, event: QEvent):
-        """
-        Overrides base QScrollArea leaveEvent function.
+        """Override base QScrollArea leaveEvent function.
 
-        :param event: Qt event.
+        Args:
+            event: The Qt event that triggered this method.
         """
 
         if self.can_scroll():
             QApplication.restoreOverrideCursor()
 
     def mouseMoveEvent(self, event: QMouseEvent):
-        """
-        Overrides base QScrollArea mouseMoveEvent function.
+        """Override base QScrollArea mouseMoveEvent function.
 
-        :param event: Qt mouse move event.
+        Args:
+            event: The Qt mouse move event that triggered this method.
         """
 
         if self._scrolling:
@@ -741,10 +693,10 @@ class Accordion(QScrollArea):
         event.accept()
 
     def mousePressEvent(self, event: QMouseEvent):
-        """
-        Overrides base QScrollArea mousePressEvent function.
+        """Override base QScrollArea mousePressEvent function.
 
-        :param event: Qt mouse press event.
+        Args:
+            event: The Qt mouse press event that triggered this method.
         """
 
         if event.button() == Qt.LeftButton and self.can_scroll():
@@ -755,10 +707,10 @@ class Accordion(QScrollArea):
         event.accept()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
-        """
-        Overrides base QScrollArea mouseReleaseEvent function.
+        """Override base QScrollArea mouseReleaseEvent function.
 
-        :param event: Qt mouse release event.
+        Args:
+            event: The Qt mouse release event that triggered this method.
         """
 
         if self._scrolling:
@@ -769,28 +721,28 @@ class Accordion(QScrollArea):
         event.accept()
 
     def can_scroll(self) -> bool:
-        """
-        Returns whether accordion item scroll bar can roll.
+        """Return whether accordion item scroll bar can roll.
 
-        :return: True if scroll bar can roll; False otherwise.
+        Returns:
+            True if the scroll bar can roll; False otherwise.
         """
 
         return self.verticalScrollBar().maximum() > 0
 
     def count(self) -> int:
-        """
-        Returns the total amount of items.
+        """Return the total amount of items in the accordion.
 
-        :return: total amount of items.
+        Returns:
+            The total amount of items in the accordion.
         """
 
         return self.widget().layout().count() - -1
 
     def set_spacing(self, value: int):
-        """
-        Sets the spacing between items.
+        """Sets the spacing between items.
 
-        :param value: spacing value.
+        Args:
+            value: The spacing value to set in pixels.
         """
 
         self.widget().layout().setSpacing(value)
@@ -803,15 +755,18 @@ class Accordion(QScrollArea):
         collapsed: bool = False,
         icon: QIcon | None = None,
     ) -> AccordionItem | None:
-        """
-        Adds a new accordion item.
+        """Add a new accordion item.
 
-        :param title: item title.
-        :param widget: widget wrapped by the new accordion item.
-        :param collapsible: whether accordion item can be collapsed.
-        :param collapsed: whether accordion item is collapsed by default.
-        :param icon: optional accordion item icon.
-        :return: AccordionItem or None: newly created accordion item.
+        Args:
+            title: The title of the accordion item.
+            widget: The widget to wrap inside the accordion item.
+            collapsible: Whether the accordion item can be collapsed.
+            collapsed: Whether the accordion item is collapsed by default.
+            icon: Optional icon for the accordion item.
+
+        Returns:
+            The newly created `AccordionItem` instance; None if an error
+                occurred.
         """
 
         self.setUpdatesEnabled(False)
@@ -831,15 +786,11 @@ class Accordion(QScrollArea):
             return item
         except Exception as err:
             self.setUpdatesEnabled(True)
-            logger.exception(
-                f"Error while adding item to accordion: {err}", exc_info=True
-            )
+            logger.exception(f"Error while adding item to accordion: {err}")
             return None
 
     def clear(self):
-        """
-        Clears all accordion items.
-        """
+        """Clears all accordion items."""
 
         self.setUpdatesEnabled(False)
         try:
@@ -859,15 +810,19 @@ class Accordion(QScrollArea):
             self.setUpdatesEnabled(True)
 
     def index_of(self, widget: QWidget) -> int:
-        """
-        Searches for widget (without including child layouts) and returns the index of widget or -1 if the widget is
-        not found.
+        """Searches for the widget (without including child layouts) and
+        returns the index of widget or -1 if the widget is not found.
 
-        :param widget: widget to find accordion item of.
-        :return: widget index.
+        Args:
+            widget: The widget to find the index of.
+
+        Returns:
+            The index of the widget in the accordion layout, or -1
+            if not found.
         """
 
         layout = self.widget().layout()
+        # noinspection PyTypeChecker
         for index in range(layout.count()):
             # noinspection PyUnresolvedReferences
             if layout.itemAt(index).widget().widget() == widget:
@@ -876,19 +831,20 @@ class Accordion(QScrollArea):
         return -1
 
     def is_box_mode(self) -> bool:
-        """
-        Returns whether box rollout style is enabled.
+        """Returns whether box rollout style is enabled.
 
-        :return: True if box rollout style is enabled; False otherwise.
+        Returns:
+            True if the box rollout style is enabled; False otherwise.
         """
 
         return self._rollout_style == Accordion.Style.Maya
 
     def set_box_mode(self, flag: bool):
-        """
-        Sets whether box rollout style or rounded rollout style are enabled.
+        """Sets whether box rollout style or rounded rollout style are enabled.
 
-        :param flag: True to enable boxed rollout style; False to enable rounded rollout style.
+        Args:
+            flag: True to enable boxed rollout style, False to enable
+                rounded rollout style.
         """
 
         if flag:
@@ -897,11 +853,13 @@ class Accordion(QScrollArea):
             self._rollout_style = Accordion.Style.Rounded
 
     def item_at(self, index: int) -> AccordionItem | None:
-        """
-        Returns the accordion item at the given index.
+        """Returns the accordion item at the given index.
 
-        :param index: accordion item layout index to find item of.
-        :return: found accordion item.
+        Args:
+            index: Accordion item layout index to find and remove.
+
+        Returns:
+            The accordion item that was removed, or None if not found.
         """
 
         found_layout_item = None
@@ -912,10 +870,9 @@ class Accordion(QScrollArea):
         return found_layout_item
 
     def move_item_down(self, index: int):
-        """
-        Move the accordion at given index down by one.
+        """Move the accordion at the given index down by one.
 
-        :param index: accordion item layout index.
+        :param index: Accordion item layout index.
         """
 
         layout = self.widget().layout()
@@ -925,9 +882,10 @@ class Accordion(QScrollArea):
             layout.insertWidget(index + 1, widget)
 
     def move_item_up(self, index: int):
-        """Move the accordion at given index up by one.
+        """Moves the accordion item at the given index up by one position.
 
-        :param index: accordion item layout index.
+        Args:
+            index: Accordion item layout index to move.
         """
 
         if index > 0:
@@ -937,12 +895,13 @@ class Accordion(QScrollArea):
             layout.insertWidget(index - 1, widget)
 
     def take_at(self, index: int) -> AccordionItem | None:
-        """
-        Returns the accordion item at the given index and removes it.
+        """Returns the accordion item at the given index and removes it.
 
-        :param index: accordion item layout index to find item of.
+        Args:
+            index: Accordion item layout index to find item of.
 
-        :return: found accordion item.
+        Returns:
+            The accordion item at the specified index, or None if not found.
         """
 
         self.setUpdatesEnabled(False)
@@ -961,11 +920,13 @@ class Accordion(QScrollArea):
         return None
 
     def widget_at(self, index: int) -> QWidget | None:
-        """
-        Returns the accordion item wrapped widget at given index.
+        """Return the accordion item wrapped widget at the given index.
 
-        :param index: accordion item layout index to find item of.
-        :return: widget instance.
+        Args:
+            index: The accordion item layout index to find the widget of.
+
+        Returns:
+            The widget instance at the specified index, or None if not found.
         """
 
         item = self.item_at(index)
@@ -974,40 +935,37 @@ class Accordion(QScrollArea):
         return None
 
     def emit_item_collapsed(self, item: AccordionItem):
-        """
-        Function that emits itemCollapsed signal with the given item.
+        """Emit `itemCollapsed` signal with the given item.
 
         Args:
-            item (AccordionItem): item to send with the signal.
+            item: item to send with the signal.
         """
 
         if not self.signalsBlocked():
             self.itemCollapsed.emit(item)
 
     def emit_item_menu_requested(self, item: AccordionItem):
-        """
-        Function that emits itemMenuRequested signal with the given item.
+        """Emit `itemMenuRequested` signal with the given item.
 
-        :param item: item to send with the signal.
+        Args:
+            item: Item to send with the signal.
         """
 
         if not self.signalsBlocked():
             self.itemMenuRequested.emit(item)
 
     def emit_item_drag_failed(self, item: AccordionItem):
-        """
-        Function that emits itemDragFailed signal with the given item.
+        """Emit `itemDragFailed` signal with the given item.
 
-        :param item: item to send with the signal.
+        Args:
+            item: item to send with the signal.
         """
 
         if not self.signalsBlocked():
             self.itemDragFailed.emit(item)
 
     def emit_items_reordered(self):
-        """
-        Function that emits itemsReordered signal with the given item.
-        """
+        """Emit `itemsReordered` signal with the given item."""
 
         if not self.signalsBlocked():
             self.itemsReordered.emit()

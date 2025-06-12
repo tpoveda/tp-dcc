@@ -3,61 +3,70 @@ from __future__ import annotations
 import os
 import sys
 import stat
-import pathlib
 import inspect
 import platform
+from pathlib import Path
 
 from .names import FindUniqueString
 
 
-def normalized(path: str) -> str:
-    """
-    Reformat a path to have no backwards slashes or double forward slashes.
+def normalized(path: str | Path) -> str:
+    """Reformat a path to have no backwards slashes or double forward slashes.
 
-    :param path: path to reformat.
-    :return: normalized path.
+    Args:
+        path: Path to reformat.
+
+    Returns:
+        Normalized path with forward slashes only.
     """
+
+    path_obj = Path(path)
 
     if platform.system().lower() == "windows":
         # Strip leading slashes on windows (IE /C:path/ -> C:/path/)
-        path = path.lstrip("\\/")
+        path_str = str(path_obj).lstrip("\\/")
+        path_obj = Path(path_str)
 
-    # normpath will collapse redundant path separators, convert slashes to platform efault then manually swap
-    # to forward slashes, ignoring the platform default
-    return os.path.normpath(path).replace("\\", "/")  # Forward slashes only
-
-
-def normalized_absolute(path: str) -> str:
-    """
-    Return the normalized, absolute path for the supplied path.
-
-    :param path: path to reformat.
-    :return: normalized, absolute path.
-    """
-
-    return normalized(os.path.abspath(path))
+    return str(path_obj).replace("\\", "/")
 
 
-def canonical_path(path: str, ignore_members: list[str] | None = None) -> str:
-    """
-    Determines the absolute path from the given relative path based on the caller's location.
+def normalized_absolute(path: str | Path) -> str:
+    """Return the normalized, absolute path for the supplied path.
 
-    :param path: relative path to a file/folder.
-    :param ignore_members: members to ignore in the stack.
-    :return: absolute path to the original callers root path.
+    Args:
+        path: Path to reformat.
+
+    Returns:
+        Normalized, absolute path.
     """
 
-    if os.path.isabs(path):
+    return normalized(Path(path).resolve())
+
+
+def canonical_path(path: str | Path, ignore_members: list[str] | None = None) -> str:
+    """Determine the absolute path from the given relative path based on the
+    caller's location.
+
+    Args:
+        path: Relative path to a file/folder.
+        ignore_members: Members to ignore in the stack.
+
+    Returns:
+        Absolute path to the original caller's root path.
+    """
+
+    path_obj = Path(path)
+
+    if path_obj.is_absolute():
         return normalized_absolute(path)
 
-    # determine the members to ignore in the stack including this one
+    # Determine the members to ignore in the stack, including this one.
     ignore_members = ignore_members or []
     if not isinstance(ignore_members, list):
         ignore_members = [ignore_members]
     ignore_members.append("canonical_path")
 
-    # get the current frame and inspect the stack and loop through the inspect stack and break when not a function
-    # to ignore.
+    # Get the current frame and inspect the stack
     frame = inspect.currentframe()
     inspect_stack = inspect.stack()[1:]
 
@@ -65,79 +74,100 @@ def canonical_path(path: str, ignore_members: list[str] | None = None) -> str:
         if function not in ignore_members:
             break
 
-    base_path = os.path.dirname(inspect.getfile(frame))
-    full_path = os.path.join(base_path, normalized(path))
+    base_path = Path(inspect.getfile(frame)).parent
+    full_path = base_path / normalized(path)
 
-    return normalized_absolute(os.path.realpath(full_path))
+    return normalized_absolute(full_path.resolve())
 
 
-def unique_path_name(directory: str, padding: int = 0) -> str:
+def unique_path_name(directory: str | Path, padding: int = 0) -> str:
+    """Returns a unique path by adding padding to the given path name if it
+    is not unique.
+
+    Args:
+        directory: Directory name including the path.
+        padding: Where the padding should start.
+
+    Returns:
+        New unique directory with the path.
     """
-    Returns a unique path by adding a padding to the given path name if it is not unique.
 
-    :param directory: directory name including path.
-    :param padding: where the padding should start.
-    :return: new unique directory with path.
-    """
-
-    unique_path = FindUniquePath(directory)
+    unique_path = FindUniquePath(str(directory))
     unique_path.padding = padding
     return unique_path.get()
 
 
-def is_read_only(file_path: str) -> bool:
-    """
-    Determines if the file is read only.
+def is_read_only(file_path: str | Path) -> bool:
+    """Determines if the file is read-only.
 
-    :param file_path: path to the file.
-    :return: True if the file is read only.
-    """
+    Args:
+        file_path: Path to the file.
 
-    return (
-        not os.access(file_path, os.R_OK | os.W_OK)
-        if os.path.isfile(file_path)
-        else False
-    )
-
-
-def ensure_file_is_writable(file_path: str):
-    """
-    Ensures that the file is writable.
-
-    :param file_path: path to the file.
+    Returns:
+        True if the file is read-only, False otherwise.
     """
 
-    return os.chmod(file_path, stat.S_IWRITE) if is_read_only(file_path) else None
+    path_obj = Path(file_path)
+
+    if not path_obj.is_file():
+        return False
+
+    return not os.access(str(path_obj), os.R_OK | os.W_OK)
 
 
-def find_first_in_paths(file_name: str, paths: list[str]) -> str:
+def ensure_file_is_writable(file_path: str | Path):
+    """Ensures that the file is writable.
+
+    Args:
+        file_path: Path to the file.
     """
-    Given a filename or path fragment, this function returns the first occurrence of a
-    file with that name in the given list of search paths.
 
-    :param file_name: name of the file to find.
-    :param paths: list of paths to search in.
-    :return: first occurrence of the file in the given paths.
+    path_obj = Path(file_path)
+    if is_read_only(path_obj):
+        path_obj.chmod(stat.S_IWRITE)
+
+
+def find_first_in_paths(file_name: str, paths: list[str | Path]) -> str:
+    """Given a filename or path fragment, this function returns the first
+    occurrence of a file with that name in the given list of search paths.
+
+    Args:
+        file_name: Name of the file to find.
+        paths: List of paths to search in.
+
+    Returns:
+        First occurrence of the file in the given paths.
+
+    Raises:
+        FileNotFoundError: If the file cannot be found in any of the given
+            paths.
     """
 
     for path in paths:
-        loc = os.path.join(path, file_name)
-        if os.path.exists(loc):
-            return loc
+        path_obj = Path(path)
+        candidate = path_obj / file_name
+        if candidate.exists():
+            return str(candidate)
 
-    raise Exception(f"The file {file_name} cannot be found in the given paths")
+    raise FileNotFoundError(f"The file {file_name} cannot be found in the given paths")
 
 
 def find_first_in_environment_variable(
     file_name: str, environment_variable: str
 ) -> str:
-    """
-    Given a filename or path fragment, this function returns the first occurrence of a
-    file with that name in the given environment variable.
+    """Given a filename or path fragment, this function returns the first
+    occurrence of a file with that name in the given environment variable.
 
-    :param file_name: name of the file to find.
-    :param environment_variable: environment variable to search in.
-    :return: first occurrence of the file in the given environment variable.
+    Args:
+        file_name: Name of the file to find.
+        environment_variable: Environment variable to search in.
+
+    Returns:
+        First occurrence of the file in the given environment variable.
+
+    Raises:
+        FileNotFoundError: If the file cannot be found in the environment
+            variable paths.
     """
 
     return find_first_in_paths(
@@ -146,49 +176,62 @@ def find_first_in_environment_variable(
 
 
 def find_in_sys_path(file_name: str):
-    """
-    Given a filename or path fragment, this function returns the first occurrence of a
-    file with that name in the system path.
+    """Given a filename or path fragment, this function returns the first
+    occurrence of a file with that name in the system path.
 
-    :param file_name: name of the file to find.
-    :return: first occurrence of the file in the system path.
+    Args:
+        file_name: Name of the file to find.
+
+    Returns:
+        First occurrence of the file in the system path.
+
+    Raises:
+        FileNotFoundError: If the file cannot be found in the system path.
     """
 
     return find_first_in_paths(file_name, sys.path)
 
 
 class FindUniquePath(FindUniqueString):
+    """Class to find a unique path in a given directory.
+
+    Inherits from FindUniqueString to generate unique path names by appending
+    incremental numbers when needed.
     """
-    Class to find a unique path in a given directory.
-    """
 
-    def __init__(self, directory: str):
-        directory = directory or os.getcwd()
-        self.parent_path = os.path.dirname(directory)
-        base_name = os.path.basename(directory)
-        super(FindUniquePath, self).__init__(base_name)
+    def __init__(self, directory: str | Path):
+        """Initializes the `FindUniquePath` with the given directory.
 
-    def _get_scope_list(self):
-        """
-        Returns a list of files and folders in the parent path.
-
-        :return: list of files and folders.
+        Args:
+            directory: Directory path to search for unique paths. If not provided,
+                it defaults to the current working directory.
         """
 
-        # noinspection PyBroadException
+        directory = Path(directory) if directory else Path.cwd()
+        self.parent_path = directory.parent
+        base_name = directory.name
+
+        super().__init__(base_name)
+
+    def _get_scope_list(self) -> list[str]:
+        """Returns a list of files and folders in the parent path.
+
+        Returns:
+            List of files and folders in the parent path.
+        """
+
         try:
-            files = os.listdir(self.parent_path)
-        except Exception:
-            files = []
-
-        return files
+            return [item.name for item in self.parent_path.iterdir()]
+        except (OSError, PermissionError):
+            return []
 
     def _search(self):
-        """
-        Internal function that generates the unique string.
+        """Internal function that generates the unique string.
 
-        :return: unique string.
+        Returns:
+            Unique string path as a POSIX-formatted path string.
         """
 
-        name = super(FindUniquePath, self)._search()
-        return pathlib.Path(self.parent_path, name).as_posix()
+        name = super()._search()
+
+        return (self.parent_path / name).as_posix()

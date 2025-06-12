@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Sequence
 from abc import abstractmethod
+from typing import Sequence, Protocol
 
 from Qt.QtCore import Qt, Property, Signal
 from Qt.QtWidgets import (
@@ -16,12 +16,22 @@ from Qt.QtGui import QIcon
 
 from . import layouts, buttons
 from .. import uiconsts, dpi
-from ...resources.style import theme
+from ..style import theme
+
+
+class ButtonGroupProtocol(Protocol):
+    """Protocol defining the interface for button groups."""
+
+    def create_button(self, button_data: dict) -> QPushButton:
+        """Creates a button instance within this group."""
+        ...
 
 
 class BaseButtonGroup(QWidget):
-    """
-    Base abstract class used to define group of buttons.
+    """Base abstract class used to define a group of buttons.
+
+    This class provides the foundation for creating button groups with
+    consistent layout and behavior.
     """
 
     def __init__(
@@ -44,42 +54,45 @@ class BaseButtonGroup(QWidget):
 
     @property
     def button_group(self) -> QButtonGroup:
-        """
-        Getter method that returns the button group instance.
+        """Getter method that returns the button group instance.
 
-        :return: button group.
+        Returns:
+            The button group instance.
         """
 
         return self._button_group
 
-    @abstractmethod
     def create_button(self, button_data: dict) -> QPushButton:
-        """
-        Creates button instance within this group.
+        """Creates a button instance within this group.
         Must be overridden by derived classes.
 
-        :param button_data: button creation keyword arguments.
-        :return: newly created button instance.
+        Args:
+            button_data: Button creation keyword arguments.
+
+        Returns:
+            Newly created button instance.
         """
 
-        raise NotImplementedError()
+        raise NotImplementedError("Subclasses must implement create_button")
 
     def set_spacing(self, spacing: int):
-        """
-        Sets main buttons group layout spacing between widgets.
+        """Sets main buttons group layout spacing between widgets.
 
-        :param spacing: main layout spacing.
+        Args:
+            spacing: Main layout spacing in pixels.
         """
 
         self._main_layout.setSpacing(spacing)
 
     def add_button(self, data: dict, index: int | None = None) -> QPushButton:
-        """
-        Adds new button into the group based on given button creation data.
+        """Adds a new button into the group based on given button creation data.
 
-        :param data: dictionary that defines the button to create.
-        :param index: optional index of the button within the group.
-        :return: newly created button.
+        Args:
+            data: Dictionary that defines the button to create.
+            index: Optional index of the button within the group.
+
+        Returns:
+            Newly created button instance.
         """
 
         if isinstance(data, str):
@@ -117,10 +130,11 @@ class BaseButtonGroup(QWidget):
         return button
 
     def set_buttons(self, buttons_data: list[dict]):
-        """
-        Removes all current group buttons and creates new ones based on the list of button creation data.
+        """Removes all current group buttons and creates new ones based on
+        the list of button creation data.
 
-        :param buttons_data: list of dictionaries defining the buttons to create.
+        Args:
+            buttons_data: List of dictionaries defining the buttons to create.
         """
 
         for button in self._button_group.buttons():
@@ -139,7 +153,11 @@ class BaseButtonGroup(QWidget):
 
 
 class PushButtonGroup(BaseButtonGroup):
-    """Class that allows to create group of push buttons."""
+    """Class that allows to create group of push buttons.
+
+    This implementation provides a group of push buttons that can be styled
+    consistently and managed as a collection.
+    """
 
     def __init__(
         self, orientation: Qt.Orientation = Qt.Horizontal, parent: QWidget | None = None
@@ -161,7 +179,11 @@ class PushButtonGroup(BaseButtonGroup):
 
 
 class BaseRadioButtonGroup(BaseButtonGroup):
-    """Class that allows to create group of radio buttons."""
+    """Class that allows to create group of radio buttons.
+
+    This implementation provides a group of radio buttons with exclusive selection
+    behavior and signals for detecting changes.
+    """
 
     checkedChanged = Signal(int)
 
@@ -176,7 +198,8 @@ class BaseRadioButtonGroup(BaseButtonGroup):
         self._button_group.buttonClicked.connect(self.checkedChanged.emit)
 
     def create_button(self, data_dict: dict) -> QRadioButton:
-        """Overrides `create_button` to create a radio button instance within this group.
+        """Overrides `create_button` to create a radio button instance
+        within this group.
 
         Args:
             data_dict: button creation keyword arguments.
@@ -214,8 +237,12 @@ class BaseRadioButtonGroup(BaseButtonGroup):
 
 
 class RadioButtonGroup(QWidget):
-    """
-    Custom widget that creates a horizontal or vertical group of radio buttons.
+    """Custom widget that creates a horizontal or vertical group of
+    radio buttons.
+
+    This widget provides a simple way to create and manage a group of
+    radio buttons with consistent layout, tooltips, and signals for
+    detecting changes.
     """
 
     toggled = Signal(int)
@@ -236,17 +263,19 @@ class RadioButtonGroup(QWidget):
         alignment: Qt.AlignmentFlag | None = None,
         parent: QWidget | None = None,
     ):
-        """
-        Constructor.
+        """Constructor.
 
-        :param radio_names: optional list of radio button names.
-        :param tooltips: optional list of tooltips for each one of the radio buttons.
-        :param default: optional default button to be checked.
-        :param vertical: whether to create buttons horizontally or vertically.
-        :param margins: optional margins used for buttons layout.
-        :param spacing: optional spacing used for buttons layout.
-        :param alignment: optional align for buttons layout.
-        :param parent: optional parent widget.
+        Args:
+            radio_names: Optional list of radio button names.
+            tooltips: Optional list of tooltips for each one of the
+                radio buttons.
+            default: Optional default button to be checked.
+            vertical: Whether to create buttons horizontally or vertically.
+            margins: Optional margins used for buttons layout
+                as (left, top, right, bottom).
+            spacing: Optional spacing used for buttons layout.
+            alignment: Optional alignment for buttons layout.
+            parent: Optional parent widget.
         """
 
         super().__init__(parent=parent)
@@ -288,10 +317,10 @@ class RadioButtonGroup(QWidget):
         )
 
     def checked(self) -> QRadioButton | None:
-        """
-        Returns the radio button that is currently checked.
+        """Returns the radio button that is currently checked.
 
-        :return: checked radio button.
+        Returns:
+            The checked radio button or None if no button is checked.
         """
 
         checked_radio_button: QRadioButton | None = None
@@ -304,10 +333,10 @@ class RadioButtonGroup(QWidget):
         return checked_radio_button
 
     def checked_index(self) -> int | None:
-        """
-        Returns the index of the radio button that is currently checked.
+        """Returns the index of the radio button that is currently checked.
 
-        :return: checked radio button index.
+        Returns:
+            The checked radio button index or None if no button is checked.
         """
 
         checked_radio_button_index: int | None = None
@@ -320,10 +349,10 @@ class RadioButtonGroup(QWidget):
         return checked_radio_button_index
 
     def set_checked(self, index: int):
-        """
-        Checks the radio button of give index.
+        """Checks the radio button of the given index.
 
-        :param index: index of the radio button to check.
+        Args:
+            index: Index of the radio button to check.
         """
 
         self._radio_buttons[index].setChecked(True)

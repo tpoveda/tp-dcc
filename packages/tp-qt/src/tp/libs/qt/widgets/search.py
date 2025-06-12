@@ -4,21 +4,21 @@ from Qt.QtCore import Qt, QObject, Signal, QSize, QEvent
 from Qt.QtWidgets import QWidget, QLineEdit, QToolButton, QStyle
 from Qt.QtGui import QPixmap, QIcon, QResizeEvent, QKeyEvent
 
+from tp.libs.python import paths
+
 from .. import dpi
 from ..widgets import layouts, buttons
-from ...python import paths
 
 
 class SearchFindWidget(QWidget, dpi.DPIScaling):
-    """
-    A widget for searching and finding text.
+    """A widget for searching and finding text.
 
     Inherits from QWidget and dpi.DPIScaling.
 
-    Signals:
-        textChanged (str): Emitted when the text is changed.
-        editingFinished (str): Emitted when editing is finished.
-        returnPressed (): Emitted when the return key is pressed.
+    Attributes:
+        textChanged: Signal emitted when the text is changed. Sends str.
+        editingFinished: Signal emitted when editing is finished. Sends str.
+        returnPressed: Signal emitted when the return key is pressed.
     """
 
     textChanged = Signal(str)
@@ -28,11 +28,11 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
     def __init__(
         self, search_line: QLineEdit | None = None, parent: QWidget | None = None
     ):
-        """
-        Initializes the SearchFindWidget.
+        """Initializes the SearchFindWidget.
 
-        :param search_line: The QLineEdit for searching. Defaults to None.
-        :param parent: The parent widget. Defaults to None.
+        Args:
+            search_line: The QLineEdit for searching. Defaults to None.
+            parent: The parent widget. Defaults to None.
         """
 
         super().__init__(parent=parent)
@@ -83,9 +83,7 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         self.layout().addWidget(self._search_line)
 
     def setup_signals(self):
-        """
-        Function that connects signals for all widget UI widgets.
-        """
+        """Connects signals for all widget UI widgets."""
 
         self._search_line.textChanged.connect(self.textChanged.emit)
         self._search_line.textChanged.connect(self.set_text)
@@ -96,10 +94,10 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         return self._search_line
 
     def changeEvent(self, event: QEvent):
-        """
-        Function that overrides base changeEvent function to make sure line edit is properly updated.
+        """Overrides base changeEvent function to update line edit properly.
 
-        :param event: Qt event.
+        Args:
+            event: Qt event.
         """
 
         try:
@@ -114,10 +112,10 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
     # 	super().changeEvent(event)
 
     def resizeEvent(self, event: QResizeEvent) -> None:
-        """
-        Function that overrides base resizeEvent function to make sure that search icons are properly placed.
+        """Overrides base resizeEvent function to properly place search icons.
 
-        :param event: Qt resize event.
+        Args:
+            event: Qt resize event.
         """
 
         if not self._clear_button and self._search_line:
@@ -134,10 +132,10 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         )
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        """
-        Function that overrides base keyPressEvent function to make sure that line is cleared too.
+        """Overrides base keyPressEvent function to ensure line is cleared.
 
-        :param event: Qt key event.
+        Args:
+            event: Qt key event.
         """
 
         if event.key() == Qt.Key_Escape:
@@ -147,11 +145,14 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
 
     # noinspection PyTypeChecker
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        """
-        Overrides base eventFilter function
-        :param watched: watched object.
-        :param event: event.
-        :return:
+        """Overrides base eventFilter function.
+
+        Args:
+            watched: Watched object.
+            event: Event object.
+
+        Returns:
+            True if event was filtered, False otherwise.
         """
 
         try:
@@ -165,10 +166,10 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         return super().eventFilter(watched, event)
 
     def get_text(self) -> str:
-        """
-        Returns current search text.
+        """Returns current search text.
 
-        :return: search text.
+        Returns:
+            Current search text.
         """
 
         if not self._search_line:
@@ -176,10 +177,10 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         return self._search_line.text()
 
     def set_text(self, text: str):
-        """
-        Sets current search text.
+        """Sets current search text.
 
-        :param text: search text.
+        Args:
+            text: Search text to set.
         """
 
         if not (self._clear_button and self._search_line):
@@ -190,10 +191,10 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
             self._search_line.setText(text)
 
     def get_placeholder_text(self) -> str:
-        """
-        Returns current search line edit placeholder text.
+        """Returns current search line edit placeholder text.
 
-        :return: placeholder text.
+        Returns:
+            Current placeholder text.
         """
 
         if not self._search_line:
@@ -202,10 +203,10 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         return self._search_line.text()
 
     def set_placeholder_text(self, text: str):
-        """
-        Sets search line edit placeholder text.
+        """Sets search line edit placeholder text.
 
-        :param text: placeholder text.
+        Args:
+            text: Placeholder text to set.
         """
 
         if not self._search_line:
@@ -213,10 +214,10 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         self._search_line.setPlaceholderText(text)
 
     def set_focus(self, reason: Qt.FocusReason = Qt.OtherFocusReason):
-        """
-        Sets the focus reason for the search line edit.
+        """Sets the focus reason for the search line edit.
 
-        :param reason: focus reason flag.
+        Args:
+            reason: Focus reason flag.
         """
 
         if self._search_line:
@@ -225,10 +226,10 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
             self.setFocus(Qt.OtherFocusReason)
 
     def clear(self, focus: bool = True):
-        """
-        Clear search line edit text.
+        """Clear search line edit text.
 
-        :param focus: whether to focus line edit widget after clearing it.
+        Args:
+            focus: Whether to focus line edit widget after clearing it.
         """
 
         if not self._search_line:
@@ -238,18 +239,14 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
             self.set_focus()
 
     def select_all(self):
-        """
-        Selects all search line edit text.
-        """
+        """Selects all search line edit text."""
 
         if not self._search_line:
             return
         self._search_line.selectAll()
 
     def update_minimum_size(self):
-        """
-        Updates the minimum size of the search line edit widget.
-        """
+        """Updates the minimum size of the search line edit widget."""
 
         self._search_line.setMinimumSize(
             max(
@@ -266,10 +263,10 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
         )
 
     def _search_line_frame_width(self) -> int:
-        """
-        Internal function that returns the search line widget frame width.
+        """Returns the search line widget frame width.
 
-        :return: search line edit frame width.
+        Returns:
+            Search line edit frame width in pixels.
         """
 
         try:
@@ -278,60 +275,56 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
             return 2
 
     def _clear_button_padded_width(self) -> int:
-        """
-        Internal function that returns clear button padded width.
+        """Returns clear button padded width.
 
-        :return: clear button padded width.
+        Returns:
+            Clear button padded width in pixels.
         """
 
         return self._clear_button.width() + self._search_line_frame_width() * 2
 
     def _clear_button_padded_height(self) -> int:
-        """
-        Internal function that returns clear button padded height.
+        """Returns clear button padded height.
 
-        :return: clear button padded height.
+        Returns:
+            Clear button padded height in pixels.
         """
 
         return self._clear_button.height() + self._search_line_frame_width() * 2
 
     def _search_button_padded_width(self) -> int:
-        """
-        Internal function that returns search button padded width.
+        """Returns search button padded width.
 
-        :return: search button padded width.
+        Returns:
+            Search button padded width in pixels.
         """
 
         return self._search_button.width() + 2 + self._search_line_frame_width() * 3
 
     def _search_button_padded_height(self) -> int:
-        """
-        Internal function that returns search button padded width.
+        """Returns search button padded height.
 
-        :return: search button padded width.
+        Returns:
+            Search button padded height in pixels.
         """
 
         return self._search_button.height() + self._search_line_frame_width() * 2
 
 
 class ClearToolButton(QToolButton):
-    """
-    For CSS purposes only
-    """
+    """A QToolButton subclass for CSS styling purposes only."""
 
     pass
 
 
 class SearchToolButton(QToolButton):
-    """
-    For CSS purposes only
-    """
+    """A QToolButton subclass for CSS styling purposes only."""
 
     pass
 
 
 class SearchLineEdit(QLineEdit, dpi.DPIScaling):
-    """Custom line edit similar to a standard search widget."""
+    """Custom line edit similar to a standard search widget with DPI scaling."""
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent=parent)
@@ -359,10 +352,10 @@ class SearchLineEdit(QLineEdit, dpi.DPIScaling):
         self.textChanged.connect(self._on_text_changed)
 
     def keyPressEvent(self, arg__1: QKeyEvent) -> None:
-        """
-        Function that overrides base keyPressEvent function to make sure that line is cleared too.
+        """Overrides base keyPressEvent function to ensure line is cleared.
 
-        :param QKeyEvent arg__1: Qt key event.
+        Args:
+            arg__1: Qt key event.
         """
 
         if arg__1.key() == Qt.Key_Escape:
@@ -371,9 +364,12 @@ class SearchLineEdit(QLineEdit, dpi.DPIScaling):
         super().keyPressEvent(arg__1)
 
     def _on_text_changed(self, text: str) -> None:
-        """
-        Internal callback function that is called each time the line edit text changes.
-        Shows/Hides clear action.
+        """Callback triggered when the line edit text changes.
+
+        Shows/Hides clear action based on text content.
+
+        Args:
+            text: Current text in the line edit.
         """
 
         self._clear_action.setVisible(not len(text) == 0)

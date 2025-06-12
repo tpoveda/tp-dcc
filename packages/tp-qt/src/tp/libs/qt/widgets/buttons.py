@@ -30,13 +30,12 @@ from Qt.QtGui import (
 )
 
 from . import menus, labels
-from ...resources.style import theme
+from ..style import theme
 from .. import dpi, icon, color, utils as qtutils
 
 
 class AbstractButton(dpi.DPIScaling):
-    """
-    Abstract class for all custom Qt buttons.
+    """Abstract class for all custom Qt buttons.
     Adds the ability to change button icon based on button press status.
     """
 
@@ -86,10 +85,10 @@ class AbstractButton(dpi.DPIScaling):
         self.update_icons()
 
     def set_highlight(self, value: float):
-        """
-        Sets the highlight offset of the icon.
+        """Sets the highlight offset of the icon.
 
-        :param value: highlight offset .
+        Args:
+            value: Highlight offset value.
         """
 
         self._highlight_offset = value
@@ -102,13 +101,14 @@ class AbstractButton(dpi.DPIScaling):
         scaling: list[int | float] = None,
         **kwargs,
     ):
-        """
-        Set the icon of the button.
+        """Set the icon of the button.
 
-        :param button_icon: button icon.
-        :param size: icon size.
-        :param color_offset: icon highlight offset.
-        :param scaling: icon scaling.
+        Args:
+            button_icon: Button icon.
+            size: Icon size.
+            color_offset: Icon highlight offset.
+            scaling: Icon scaling.
+            **kwargs: Additional keyword arguments.
         """
 
         if size is not None:
@@ -126,11 +126,11 @@ class AbstractButton(dpi.DPIScaling):
         self.update_icons()
 
     def set_icon_idle(self, idle_icon: QIcon, update: bool = False):
-        """
-        Sets the icon idle.
+        """Sets the icon idle.
 
-        :param idle_icon: idle icon.
-        :param update: whether force icons update.
+        Args:
+            idle_icon: Idle icon.
+            update: Whether to force icons update.
         """
 
         self._idle_icon = idle_icon
@@ -140,11 +140,11 @@ class AbstractButton(dpi.DPIScaling):
             self.update_icons()
 
     def set_icon_hover(self, hover_icon: QIcon, update: bool = False):
-        """
-        Sets the icon hover.
+        """Sets the icon hover.
 
-        :param hover_icon: hover icon.
-        :param update: whether forces icons update.
+        Args:
+            hover_icon: Hover icon.
+            update: Whether to force icons update.
         """
 
         self._hover_icon = hover_icon
@@ -154,11 +154,11 @@ class AbstractButton(dpi.DPIScaling):
     def set_icon_color(
         self, colors: QColor | tuple[int, int, int], update: bool = True
     ):
-        """
-        Set the color of the icon.
+        """Set the color of the icon.
 
-        :param colors: icon color or colors
-        :param update: whether force icons update.
+        Args:
+            colors: Icon color or colors.
+            update: Whether to force icons update.
         """
 
         if type(self._icons) is list and len(self._icons) >= 2:
@@ -172,9 +172,7 @@ class AbstractButton(dpi.DPIScaling):
             self.update_icons()
 
     def update_icons(self):
-        """
-        Updates the button icons.
-        """
+        """Updates the button icons."""
 
         if not self._icons:
             return
@@ -191,9 +189,7 @@ class AbstractButton(dpi.DPIScaling):
 
 
 class BaseButton(QPushButton, AbstractButton):
-    """
-    Custom QPushButton that allows to have left, middle and right click.
-    """
+    """Custom QPushButton that allows to have left, middle and right click."""
 
     SINGLE_CLICK = 1
     DOUBLE_CLICK = 2
@@ -214,7 +210,7 @@ class BaseButton(QPushButton, AbstractButton):
     actionTriggered = Signal(object, object)
 
     class Type(enum.Enum):
-        """Enumerator that defines available push button types"""
+        """Enumerator that defines available push button types."""
 
         Default = "default"
         Primary = "primary"
@@ -223,9 +219,7 @@ class BaseButton(QPushButton, AbstractButton):
         Danger = "danger"
 
     class BaseMenuButtonMenu(menus.SearchableMenu):
-        """
-        Custom menu that can be attached to BaseButton
-        """
+        """Custom menu that can be attached to BaseButton."""
 
         def __init__(self, *args, **kwargs):
             super(BaseButton.BaseMenuButtonMenu, self).__init__(*args, **kwargs)
@@ -252,12 +246,14 @@ class BaseButton(QPushButton, AbstractButton):
                 self._key_pressed = False
 
         def index(self, name: str, exclude_search: bool = True) -> int:
-            """
-            Returns index of the button with given name within the menu.
+            """Returns index of the button with given name within the menu.
 
-            :param name: button name to get index of.
-            :param exclude_search: whether to exclude search buttons.
-            :return: index of the button.
+            Args:
+                name: Button name to get index of.
+                exclude_search: Whether to exclude search buttons.
+
+            Returns:
+                Index of the button.
             """
 
             for i, action in enumerate(self.actions()):
@@ -281,19 +277,22 @@ class BaseButton(QPushButton, AbstractButton):
         double_click_enabled: bool = False,
         parent: QWidget | None = None,
     ):
-        """
-        Initialize a new instance of the class.
+        """Initialize a new instance of the class.
 
-        :param text: The text to display. Default is an empty string.
-        :param button_icon: The icon to display. Default is None.
-        :param icon_hover: The icon to display when hovering. Default is None.
-        :param icon_color_theme: The color theme for the icon. Default is None.
-        :param elided: Whether to elide the text if it's too long. Default is False.
-        :param theme_updates: Whether to update the theme dynamically. Default is True.
-        :param menu_padding: The padding for the menu. Default is 5.
-        :param menu_align: The alignment for the menu. Default is Qt.AlignLeft.
-        :param double_click_enabled: Whether double-click is enabled. Default is False.
-        :param parent: The parent widget, if any. Default is None, indicating no parent.
+        Args:
+            text: The text to display. Default is an empty string.
+            button_icon: The icon to display. Default is None.
+            icon_hover: The icon to display when hovering. Default is None.
+            icon_color_theme: The color theme for the icon. Default is None.
+            elided: Whether to elide the text if it's too long. Default is False.
+            theme_updates: Whether to update the theme dynamically. Default is
+                True.
+            menu_padding: The padding for the menu. Default is 5.
+            menu_align: The alignment for the menu. Default is Qt.AlignLeft.
+            double_click_enabled: Whether double-click is enabled. Default is
+                False.
+            parent: The parent widget, if any. Default is None, indicating no
+                parent.
         """
 
         self._idle_icon = button_icon or QIcon()
@@ -371,10 +370,10 @@ class BaseButton(QPushButton, AbstractButton):
         self._double_click_interval = interval
 
     def mousePressEvent(self, event: QMouseEvent):
-        """
-        Overrides mousePressEvent function.
+        """Overrides mousePressEvent function.
 
-        :param event: Qt mouse event.
+        Args:
+            event: Qt mouse event.
         """
 
         if event.button() == Qt.MiddleButton:
@@ -387,10 +386,10 @@ class BaseButton(QPushButton, AbstractButton):
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
-        """
-        Overrides mouseReleaseEvent function.
+        """Overrides mouseReleaseEvent function.
 
-        :param event: Qt mouse event.
+        Args:
+            event: Qt mouse event.
         """
 
         button = event.button()
@@ -414,19 +413,19 @@ class BaseButton(QPushButton, AbstractButton):
         super().mouseReleaseEvent(event)
 
     def mouseDoubleClickEvent(self, event: QMouseEvent):
-        """
-        Overrides mouseDoubleClickEvent function.
+        """Overrides mouseDoubleClickEvent function.
 
-        :param event: Qt mouse event.
+        Args:
+            event: Qt mouse event.
         """
 
         self._last_click = self.DOUBLE_CLICK
 
     def resizeEvent(self, event: QResizeEvent):
-        """
-        Overrides resizeEvent function that adds elide functionality.
+        """Overrides resizeEvent function that adds elide functionality.
 
-        :param event: Qt resize event.
+        Args:
+            event: Qt resize event.
         """
 
         if self._elided:
@@ -441,21 +440,23 @@ class BaseButton(QPushButton, AbstractButton):
         super().resizeEvent(event)
 
     def setText(self, text: str):
-        """
-        Overrides base setText function.
+        """Overrides base setText function.
 
-        :param text: new button text.
+        Args:
+            text: New button text.
         """
 
         self._text = text
         super(BaseButton, self).setText(text)
 
     def actions(self, mouse_menu: Qt.MouseButton = Qt.LeftButton) -> list[QAction]:
-        """
-        Overrides base actions function to returns the actions of mouse button.
+        """Overrides base actions function to returns the actions of mouse button.
 
-        :param mouse_menu: mouse button.
-        :return: list of actions.
+        Args:
+            mouse_menu: Mouse button.
+
+        Returns:
+            List of actions.
         """
 
         menu_instance = self._click_menu.get(mouse_menu, None)
@@ -465,11 +466,13 @@ class BaseButton(QPushButton, AbstractButton):
         return menu_instance.actions()[2:]
 
     def setWindowTitle(self, title: str, mouse_menu: Qt.MouseButton = Qt.LeftButton):
-        """
-        Overrides base setWindowTitle function to set the window title of the menu, if its get teared off.
+        """Overrides base setWindowTitle function.
 
-        :param title: window title
-        :param mouse_menu: menu button
+        Sets the window title of the menu, if it gets teared off.
+
+        Args:
+            title: Window title.
+            mouse_menu: Menu button.
         """
 
         menu = self.menu(mouse_menu, searchable=self.is_searchable(mouse_menu))
@@ -478,11 +481,11 @@ class BaseButton(QPushButton, AbstractButton):
     def setMenu(
         self, menu: BaseMenuButtonMenu, mouse_button: Qt.MouseButton = Qt.LeftButton
     ):
-        """
-        Overrides base setMenu function to set the menu based on mouse button.
+        """Overrides base setMenu function to set the menu based on mouse button.
 
-        :param menu: menu to set
-        :param mouse_button: mouse button.
+        Args:
+            menu: Menu to set.
+            mouse_button: Mouse button.
         """
 
         self._click_menu[mouse_button] = menu
@@ -493,13 +496,17 @@ class BaseButton(QPushButton, AbstractButton):
         searchable: bool = False,
         auto_create: bool = True,
     ) -> BaseMenuButtonMenu:
-        """
-        Overrides base menu function to get menu depending on the mouse button pressed.
+        """Overrides base menu function.
 
-        :param mouse_menu: mouse button.
-        :param searchable: whether menu is searchable.
-        :param auto_create: whether to auto create menu if it does not exist yet.
-        :return: requested menu.
+        Gets menu depending on the mouse button pressed.
+
+        Args:
+            mouse_menu: Mouse button.
+            searchable: Whether menu is searchable.
+            auto_create: Whether to auto create menu if it does not exist yet.
+
+        Returns:
+            Requested menu.
         """
 
         if self._click_menu[mouse_menu] is None and auto_create:
@@ -532,22 +539,25 @@ class BaseButton(QPushButton, AbstractButton):
         icon_size=16,
         tooltip: str | None = None,
     ) -> QAction | None:
-        """
-        Adds a new menu item through an action.
+        """Adds a new menu item through an action.
 
-        :param name: text for the new menu item.
-        :param mouse_menu: mouse button.
-        :param connect: function to connect when the menu item is pressed.
-        :param checkable: whether menu item is checkable.
-        :param checked: if checkable is True, whether menu item is checked by default.
-        :param action: if given this is the action will be added directly without any extra steps.
-        :param action_icon: icon for the menu item.
-        :param data: custom data to store within the action.
-        :param icon_text: text for the icon.
-        :param icon_color: color of the menu item in 0-255 range.
-        :param icon_size: size of the icon.
-        :param tooltip: new menu item tooltip.
-        :return: newly created action.
+        Args:
+            name: Text for the new menu item.
+            mouse_menu: Mouse button.
+            connect: Function to connect when the menu item is pressed.
+            checkable: Whether menu item is checkable.
+            checked: If checkable is True, whether menu item is checked by default.
+            action: If given, this action will be added directly without extra
+                steps.
+            action_icon: Icon for the menu item.
+            data: Custom data to store within the action.
+            icon_text: Text for the icon.
+            icon_color: Color of the menu item in 0-255 range.
+            icon_size: Size of the icon.
+            tooltip: New menu item tooltip.
+
+        Returns:
+            Newly created action or None if an existing action was added.
         """
 
         args = locals()
@@ -578,19 +588,21 @@ class BaseButton(QPushButton, AbstractButton):
         icon_text: str | None = None,
         tooltip: str | None = None,
     ):
-        """
-        Creates a new menu item through an action.
+        """Creates a new menu item through an action.
 
-        :param name: text for the new menu item.
-        :param mouse_menu: mouse button.
-        :param connect: function to connect when the menu item is pressed.
-        :param checkable: whether menu item is checkable.
-        :param checked: if checkable is True, whether menu item is checked by default.
-        :param action_icon: icon for the menu item.
-        :param object data: custom data to store within the action.
-        :param icon_text: text for the icon.
-        :param tooltip: new menu item tooltip.
-        :return: newly created action.
+        Args:
+            name: Text for the new menu item.
+            mouse_menu: Mouse button.
+            connect: Function to connect when the menu item is pressed.
+            checkable: Whether menu item is checkable.
+            checked: If checkable is True, whether menu item is checked by default.
+            action_icon: Icon for the menu item.
+            data: Custom data to store within the action.
+            icon_text: Text for the icon.
+            tooltip: New menu item tooltip.
+
+        Returns:
+            Newly created action.
         """
 
         found_menu = self.menu(mouse_menu, searchable=False)
@@ -632,21 +644,23 @@ class BaseButton(QPushButton, AbstractButton):
         icon_text: str | None = None,
         tooltip: str | None = None,
     ) -> QAction | None:
-        """
-        Inserts action at given index.
+        """Inserts action at given index.
 
-        :param index: index to insert action into.
-        :param  name: text for the new menu item.
-        :param mouse_menu: mouse button.
-        :param action: action to insert.
-        :param connect: function to connect when the menu item is pressed.
-        :param checkable: whether menu item is checkable.
-        :param checked: if checkable is True, whether menu item is checked by default.
-        :param action_icon: icon for the menu item.
-        :param data: custom data to store within the action.
-        :param icon_text: text for the icon.
-        :param tooltip: new menu item tooltip.
-        :return: inserted action.
+        Args:
+            index: Index to insert action into.
+            name: Text for the new menu item.
+            mouse_menu: Mouse button.
+            action: Action to insert.
+            connect: Function to connect when the menu item is pressed.
+            checkable: Whether menu item is checkable.
+            checked: If checkable is True, whether menu item is checked by default.
+            action_icon: Icon for the menu item.
+            data: Custom data to store within the action.
+            icon_text: Text for the icon.
+            tooltip: New menu item tooltip.
+
+        Returns:
+            Inserted action or None if an existing action was inserted.
         """
 
         menu = self.menu(mouse_menu, searchable=False)
@@ -673,10 +687,10 @@ class BaseButton(QPushButton, AbstractButton):
         return new_action
 
     def add_separator(self, mouse_menu: Qt.MouseButton = Qt.LeftButton):
-        """
-        Adds a new separator into the menu.
+        """Adds a new separator into the menu.
 
-        :param mouse_menu: mouse button.
+        Args:
+            mouse_menu: Mouse button.
         """
 
         found_menu = self.menu(mouse_menu)
@@ -688,12 +702,12 @@ class BaseButton(QPushButton, AbstractButton):
         mouse_menu: Qt.MouseButton | Qt.LeftButton,
         after_index: bool = False,
     ):
-        """
-        Inserts separator at given index.
+        """Inserts separator at given index.
 
-        :param index: index to insert separator into.
-        :param mouse_menu: mouse button.
-        :param after_index: whether to insert separator after given index.
+        Args:
+            index: Index to insert separator into.
+            mouse_menu: Mouse button.
+            after_index: Whether to insert separator after given index.
         """
 
         actions = self.actions(mouse_menu)
@@ -705,11 +719,13 @@ class BaseButton(QPushButton, AbstractButton):
             menu.insertSeparator(before)
 
     def is_searchable(self, mouse_menu: Qt.MouseButton = Qt.LeftButton):
-        """
-        Returns whether the button menu is searchable.
+        """Returns whether the button menu is searchable.
 
-        :param mouse_menu: mouse button
-        :return: True if the given mouse menu is searchable; False otherwise.
+        Args:
+            mouse_menu: Mouse button.
+
+        Returns:
+            True if the given mouse menu is searchable; False otherwise.
         """
 
         if self._click_menu[mouse_menu] is not None:
@@ -720,11 +736,11 @@ class BaseButton(QPushButton, AbstractButton):
     def set_searchable(
         self, mouse_menu: Qt.MouseButton = Qt.LeftButton, searchable: bool = True
     ):
-        """
-        Sets whether given menu is searchable.
+        """Sets whether given menu is searchable.
 
-        :param mouse_menu: mouse button.
-        :param searchable: True to make menu searchable; False otherwise.
+        Args:
+            mouse_menu: Mouse button.
+            searchable: True to make menu searchable; False otherwise.
         """
 
         self._menu_searchable[mouse_menu] = searchable
@@ -736,11 +752,11 @@ class BaseButton(QPushButton, AbstractButton):
     def set_tearoff_enabled(
         self, mouse_menu: Qt.MouseButton = Qt.LeftButton, tearoff: bool = True
     ):
-        """
-        Sets whether tear off is enabled for a specific menu.
+        """Sets whether tear off is enabled for a specific menu.
 
-        :param mouse_menu: mouse button.
-        :param tearoff: True to enable tearoff; False otherwise.
+        Args:
+            mouse_menu: Mouse button.
+            tearoff: True to enable tearoff; False otherwise.
         """
 
         found_menu = self.menu(mouse_menu, searchable=self.is_searchable(mouse_menu))
@@ -761,12 +777,15 @@ class BaseButton(QPushButton, AbstractButton):
     def menu_pos(
         self, align: Qt.AlignmentFlag = Qt.AlignLeft, widget: QWidget | None = None
     ) -> QPoint:
-        """
-        Returns the menu position based on the current position and perimeter.
+        """Returns the menu position based on the current position and perimeter.
 
-        :param align: align the menu left or right.
-        :param widget: widget used to calculate the width based off. Usually it is the menu itself.
-        :return: position of the menu.
+        Args:
+            align: Align the menu left or right.
+            widget: Widget used to calculate the width based off. Usually it is
+                the menu itself.
+
+        Returns:
+            Position of the menu.
         """
 
         pos = 0
@@ -783,21 +802,23 @@ class BaseButton(QPushButton, AbstractButton):
         return pos
 
     def index(self, name: str, mouse_menu: Qt.MouseButton = Qt.LeftButton):
-        """
-        Returns the index of the menu item or action name.
+        """Returns the index of the menu item or action name.
 
-        :param name: name of menu item.
-        :param mouse_menu: mouse button.
-        :return: index of the menu.
+        Args:
+            name: Name of menu item.
+            mouse_menu: Mouse button.
+
+        Returns:
+            Index of the menu.
         """
 
         return self.menu(mouse_menu).index(name)
 
     def clear_menu(self, mouse_menu: Qt.MouseButton = Qt.LeftButton):
-        """
-        Clears all the menu items of the specified menu.
+        """Clears all the menu items of the specified menu.
 
-        :param mouse_menu: mouse button.
+        Args:
+            mouse_menu: Mouse button.
         """
 
         if self._click_menu[mouse_menu] is not None:
@@ -806,7 +827,8 @@ class BaseButton(QPushButton, AbstractButton):
     def primary(self) -> BaseButton:
         """Sets push button style to primary.
 
-        :return: current push button instance.
+        Returns:
+            Current push button instance.
         """
 
         self._set_type(BaseButton.Type.Primary.value)
@@ -815,7 +837,8 @@ class BaseButton(QPushButton, AbstractButton):
     def success(self) -> BaseButton:
         """Sets push button style to success.
 
-        :return: current push button instance.
+        Returns:
+            Current push button instance.
         """
 
         self._set_type(BaseButton.Type.Success.value)
@@ -824,7 +847,8 @@ class BaseButton(QPushButton, AbstractButton):
     def warning(self) -> BaseButton:
         """Sets push button style to warning.
 
-        :return: current push button instance.
+        Returns:
+            Current push button instance.
         """
 
         self._set_type(BaseButton.Type.Warning.value)
@@ -833,7 +857,8 @@ class BaseButton(QPushButton, AbstractButton):
     def danger(self) -> BaseButton:
         """Sets push button style to danger.
 
-        :return: current push button instance.
+        Returns:
+            Current push button instance.
         """
 
         self._set_type(BaseButton.Type.Danger.value)
@@ -842,7 +867,8 @@ class BaseButton(QPushButton, AbstractButton):
     def tiny(self) -> BaseButton:
         """Sets push button size to tiny.
 
-        :return: current push button instance.
+        Returns:
+            Current push button instance.
         """
 
         self._set_size(theme.Theme.Sizes.Tiny.value)
@@ -851,7 +877,8 @@ class BaseButton(QPushButton, AbstractButton):
     def small(self) -> BaseButton:
         """Sets push button size to small.
 
-        :return: current push button instance.
+        Returns:
+            Current push button instance.
         """
 
         self._set_size(theme.Theme.Sizes.Small.value)
@@ -860,7 +887,8 @@ class BaseButton(QPushButton, AbstractButton):
     def medium(self) -> BaseButton:
         """Sets push button size to medium.
 
-        :return: current push button instance.
+        Returns:
+            Current push button instance.
         """
 
         self._set_size(theme.Theme.Sizes.Medium.value)
@@ -869,7 +897,8 @@ class BaseButton(QPushButton, AbstractButton):
     def large(self) -> BaseButton:
         """Sets push button size to large.
 
-        :return: current push button instance.
+        Returns:
+            Current push button instance.
         """
 
         self._set_size(theme.Theme.Sizes.Large.value)
@@ -878,7 +907,8 @@ class BaseButton(QPushButton, AbstractButton):
     def huge(self) -> BaseButton:
         """Sets push button size to huge.
 
-        :return: current push button instance.
+        Returns:
+            Current push button instance.
         """
 
         self._set_size(theme.Theme.Sizes.Huge.value)
@@ -887,18 +917,21 @@ class BaseButton(QPushButton, AbstractButton):
     def set_size(self, value: int):
         """Sets tool button custom size.
 
-        :param value: button size.
+        Args:
+            value: Button size.
         """
 
         self._size_value = value
         self.setFixedHeight(self._size_value)
 
     def _mouse_single_click_action(self, mouse_button: Qt.MouseButton) -> bool:
-        """
-        Internal function that is called when a single click is triggered.
+        """Internal function that is called when a single click is triggered.
 
-        :param mouse_button: pressed button.
-        :return: True if mouse was clicked; False otherwise.
+        Args:
+            mouse_button: Pressed button.
+
+        Returns:
+            True if mouse was clicked; False otherwise.
         """
 
         if self._last_click == self.SINGLE_CLICK or self._double_click_enabled is False:
@@ -915,10 +948,10 @@ class BaseButton(QPushButton, AbstractButton):
         return False
 
     def _mouse_double_click_action(self, mouse_button: Qt.MouseButton):
-        """
-        Internal function that is called when a double click is triggered.
+        """Internal function that is called when a double click is triggered.
 
-        :param mouse_button: pressed button
+        Args:
+            mouse_button: Pressed button.
         """
 
         if mouse_button == Qt.LeftButton:
@@ -929,10 +962,10 @@ class BaseButton(QPushButton, AbstractButton):
             self.rightDoubleClicked.emit()
 
     def _about_to_show(self, mouse_button: Qt.MouseButton):
-        """
-        Internal function that is called when context menu is about to show
+        """Internal function that is called when context menu is about to show.
 
-        :param mouse_button: mouse button.
+        Args:
+            mouse_button: Mouse button.
         """
 
         if mouse_button == Qt.LeftButton:
@@ -944,11 +977,13 @@ class BaseButton(QPushButton, AbstractButton):
 
     @staticmethod
     def _string_to_tags(string_to_convert: str) -> list[str]:
-        """
-        Internal function that converts given string into tags.
+        """Internal function that converts given string into tags.
 
-        :param string_to_convert: string to convert.
-        :return: string tags.
+        Args:
+            string_to_convert: String to convert.
+
+        Returns:
+            String tags.
         """
 
         tags: list[str] = []
@@ -961,7 +996,7 @@ class BaseButton(QPushButton, AbstractButton):
         """Internal function that returns push button type.
 
         Returns:
-            str: push button type.
+            Push button type.
         """
 
         return self._type
@@ -970,7 +1005,7 @@ class BaseButton(QPushButton, AbstractButton):
         """Sets push button type.
 
         Args:
-            value (str): push button type.
+            value: Push button type.
         """
 
         if value in [
@@ -990,7 +1025,7 @@ class BaseButton(QPushButton, AbstractButton):
         """Internal function that returns push button size.
 
         Returns:
-            str: push button size.
+            Push button size.
         """
 
         return self._size
@@ -999,7 +1034,7 @@ class BaseButton(QPushButton, AbstractButton):
         """Internal function that sets push button size.
 
         Args:
-            value (str): new push button size.
+            value: New push button size.
         """
 
         self._size = value
@@ -1010,9 +1045,10 @@ class BaseButton(QPushButton, AbstractButton):
     size = Property(int, _get_size, _set_size)
 
     def _on_context_menu(self, mouse_button: Qt.MouseButton):
-        """
-        Internal callback function that shows the context menu depending on the mouse button.
-        :param Qt.MouseButton mouse_button: mouse button
+        """Internal callback function that shows the context menu depending on the mouse button.
+
+        Args:
+            mouse_button: Mouse button.
         """
 
         menu = self._click_menu[mouse_button]
@@ -1025,10 +1061,10 @@ class BaseButton(QPushButton, AbstractButton):
 
     # noinspection PyUnusedLocal
     def _on_menu_changed(self, mouse_button: Qt.MouseButton, *args, **kwargs):
-        """
-        Internal callback function that is called each time menu changes.
+        """Internal callback function that is called each time menu changes.
 
-        :param Qt.MouseButton mouse_button: mouse button.
+        Args:
+            mouse_button: Mouse button.
         """
 
         if mouse_button == Qt.LeftButton:
@@ -1078,8 +1114,7 @@ class BaseToolButton(QToolButton):
         return super().leaveEvent(arg__1)
 
     def image(self, image_icon: QIcon, **kwargs):
-        """
-        Sets the name of the image to use by the tool button.
+        """Sets the name of the image to use by the tool button.
 
         :param image_icon: name of the icon to use.
         :return: itself instance.
@@ -1091,8 +1126,7 @@ class BaseToolButton(QToolButton):
         return self
 
     def tiny(self) -> BaseToolButton:
-        """
-        Sets tool button to tiny size.
+        """Sets tool button to tiny size.
 
         :return: itself instance.
         """
@@ -1102,8 +1136,7 @@ class BaseToolButton(QToolButton):
         return self
 
     def small(self) -> BaseToolButton:
-        """
-        Sets tool button to small size.
+        """Sets tool button to small size.
 
         :return: itself instance.
         """
@@ -1113,8 +1146,7 @@ class BaseToolButton(QToolButton):
         return self
 
     def medium(self) -> BaseToolButton:
-        """
-        Sets tool button to medium size.
+        """Sets tool button to medium size.
 
         :return: itself instance.
         """
@@ -1124,8 +1156,7 @@ class BaseToolButton(QToolButton):
         return self
 
     def large(self) -> BaseToolButton:
-        """
-        Sets tool button to large size.
+        """Sets tool button to large size.
 
         :return: itself instance.
         """
@@ -1135,8 +1166,7 @@ class BaseToolButton(QToolButton):
         return self
 
     def huge(self) -> BaseToolButton:
-        """
-        Sets tool button to huge size.
+        """Sets tool button to huge size.
 
         :return: itself instance.
         """
@@ -1146,8 +1176,7 @@ class BaseToolButton(QToolButton):
         return self
 
     def icon_only(self) -> BaseToolButton:
-        """
-        Sets tool button style to icon only.
+        """Sets tool button style to icon only.
 
         :return: itself instance.
         """
@@ -1158,8 +1187,7 @@ class BaseToolButton(QToolButton):
         return self
 
     def text_only(self) -> BaseToolButton:
-        """
-        Sets tool button style to text only.
+        """Sets tool button style to text only.
 
         :return: itself instance.
         """
@@ -1169,8 +1197,7 @@ class BaseToolButton(QToolButton):
         return self
 
     def text_beside_icon(self) -> BaseToolButton:
-        """
-        Sets tool button style to text beside icon.
+        """Sets tool button style to text beside icon.
 
         :return: itself instance.
         """
@@ -1180,8 +1207,7 @@ class BaseToolButton(QToolButton):
         return self
 
     def text_under_icon(self) -> BaseToolButton:
-        """
-        Sets tool button style to text under icon.
+        """Sets tool button style to text under icon.
 
         :return: itself instance.
         """
@@ -1192,9 +1218,7 @@ class BaseToolButton(QToolButton):
 
     # noinspection PyUnusedLocal
     def _polish_icon(self, **kwargs):
-        """
-        Internal function that polishes button icon.
-        """
+        """Internal function that polishes button icon."""
 
         if self._image and not self._image.isNull():
             accent_color = self._theme.primary_color
@@ -1208,8 +1232,7 @@ class BaseToolButton(QToolButton):
                 self.setIcon(self._image)
 
     def _get_theme_size(self) -> int:
-        """
-        Internal function that returns the button height size.
+        """Internal function that returns the button height size.
 
         :return: button height size.
         :rtype: int
@@ -1218,8 +1241,7 @@ class BaseToolButton(QToolButton):
         return self._theme_size
 
     def _set_theme_size(self, value: int):
-        """
-        Sets button height size.
+        """Sets button height size.
 
         :param int value: button height size.
         """
@@ -1233,9 +1255,7 @@ class BaseToolButton(QToolButton):
 
 
 class IconMenuButton(BaseButton):
-    """
-    Custom menu that represents a button with an icon (no text). Clicking it will pop up a context menu.
-    """
+    """Custom menu that represents a button with an icon (no text). Clicking it will pop up a context menu."""
 
     def __init__(
         self,
@@ -1249,8 +1269,7 @@ class IconMenuButton(BaseButton):
         theme_updates: bool = True,
         parent: QWidget | None = None,
     ):
-        """
-        Initialize a new instance of the class.
+        """Initialize a new instance of the class.
 
         :param button_icon: The icon for the button, either as a QIcon or a string path. Default is None.
         :param icon_hover: The icon to display when hovering, either as a QIcon or a string path. Default is None.
@@ -1281,8 +1300,7 @@ class IconMenuButton(BaseButton):
         self.actionTriggered.connect(self._on_menu_item_clicked)
 
     def text(self) -> str:
-        """
-        Overrides base text function.
+        """Overrides base text function.
 
         :return: menu name.
         """
@@ -1290,9 +1308,7 @@ class IconMenuButton(BaseButton):
         return self._current_text
 
     def setup_ui(self):
-        """
-        Setup icon menu button UI.
-        """
+        """Setup icon menu button UI."""
 
         for found_menu in self._click_menu.values():
             if found_menu is not None:
@@ -1301,8 +1317,7 @@ class IconMenuButton(BaseButton):
         self.menu_align = Qt.AlignRight
 
     def current_text(self) -> str:
-        """
-        Returns the current selected menu name.
+        """Returns the current selected menu name.
 
         :return: current menu name.
         """
@@ -1312,8 +1327,7 @@ class IconMenuButton(BaseButton):
     def current_action(
         self, mouse_menu: Qt.MouseButton = Qt.LeftButton
     ) -> QAction | None:
-        """
-        Returns current action.
+        """Returns current action.
 
         :param mouse_menu: mouse button.
         :return: current action.
@@ -1326,8 +1340,7 @@ class IconMenuButton(BaseButton):
         return None
 
     def current_index(self, mouse_menu: Qt.MouseButton = Qt.LeftButton) -> int:
-        """
-        Returns the current selected menu index.
+        """Returns the current selected menu index.
 
         :param mouse_menu: mouse button.
         :return: current index menu item.
@@ -1336,8 +1349,7 @@ class IconMenuButton(BaseButton):
         return self.index(self.current_text(), mouse_menu)
 
     def set_menu_name(self, name: str, mouse_menu: Qt.MouseButton = Qt.LeftButton):
-        """
-        Sets the main icon and menu states by the menu item name.
+        """Sets the main icon and menu states by the menu item name.
 
         :param str name: name of the menu item to set.
         :param Qt.Button mouse_menu: mouse button.
@@ -1355,8 +1367,7 @@ class IconMenuButton(BaseButton):
     def action_connect_list(
         self, actions: list[tuple[str, str]], mouse_menu: Qt.MouseButton = Qt.LeftButton
     ):
-        """
-        Creates the entire menu with the info contained within the actions list.
+        """Creates the entire menu with the info contained within the actions list.
 
         :param actions: list of actions. Eg: [('icon1', 'menuName1'), (...), ...]
         :param mouse_menu: button that will open the menu.
@@ -1369,8 +1380,7 @@ class IconMenuButton(BaseButton):
 
     # noinspection PyUnusedLocal
     def _on_menu_item_clicked(self, action: QAction, mouse_menu: Qt.MouseButton):
-        """
-        Internal callback function that is called each time a menu item is clicked by the user.
+        """Internal callback function that is called each time a menu item is clicked by the user.
 
         :param action: action clicked
         :param mouse_menu: mouse button.
@@ -1380,11 +1390,10 @@ class IconMenuButton(BaseButton):
 
 
 class RoundButton(QPushButton, dpi.DPIScaling):
-    """
-    Custom round button. It can be rendered in two different ways:
-        1. Mask: will cut the button into a circle. Allow also stylesheets. It is pixelated when drawing it out.
-        2. Stylesheet: creates a smooth circle button without pixelation. For rectangle buttons it will not be round
-            and also the user will not be able to user their own stylesheet.
+    """Custom round button. It can be rendered in two different ways:
+    1. Mask: will cut the button into a circle. Allow also stylesheets. It is pixelated when drawing it out.
+    2. Stylesheet: creates a smooth circle button without pixelation. For rectangle buttons it will not be round
+        and also the user will not be able to user their own stylesheet.
     """
 
     class RenderingMethod:
@@ -1424,8 +1433,7 @@ class RoundButton(QPushButton, dpi.DPIScaling):
             super().setStyleSheet(text)
 
     def set_method(self, method: int):
-        """
-        Sets the rendering method to use.
+        """Sets the rendering method to use.
             - Mask: pixelated edges but can set custom stylesheets.
             - Stylesheet: Smooth edges but cannot set custom stylesheets.
         :param method: render method to use.
@@ -1435,8 +1443,7 @@ class RoundButton(QPushButton, dpi.DPIScaling):
         self._update_button()
 
     def _round_style(self) -> str:
-        """
-        Internal function that returns custom rounded stylesheet string.
+        """Internal function that returns custom rounded stylesheet string.
 
         :return: rounded stylesheet string.
         """
@@ -1445,9 +1452,7 @@ class RoundButton(QPushButton, dpi.DPIScaling):
         return "border-radius: {}px;".format(radius)
 
     def _update_button(self):
-        """
-        Internal function that updates the button drawing.
-        """
+        """Internal function that updates the button drawing."""
 
         if self._method == self.RenderingMethod.MASK:
             self.setMask(QRegion(self.rect(), QRegion.Ellipse))
@@ -1456,25 +1461,19 @@ class RoundButton(QPushButton, dpi.DPIScaling):
 
 
 class ShadowedButtonImage(QLabel, dpi.DPIScaling):
-    """
-    stylesheet purposes
-    """
+    """stylesheet purposes"""
 
     pass
 
 
 class ShadowedButtonShadow(QFrame, dpi.DPIScaling):
-    """
-    stylesheet purposes
-    """
+    """stylesheet purposes"""
 
     pass
 
 
 class ShadowedButton(BaseButton):
-    """
-    Custom button with shadow indicator.
-    """
+    """Custom button with shadow indicator."""
 
     _MENU_INDICATOR_ICON = "menu_indicator"
 
@@ -1584,9 +1583,7 @@ class ShadowedButton(BaseButton):
     #         self._icon_color_theme = self._icon_color_theme or '$BUTTON_ICON_COLOR'
 
     def setup_ui(self):
-        """
-        Initializes shadow button UI.
-        """
+        """Initializes shadow button UI."""
 
         self._main_layout = QGridLayout(spacing=0)
         self.setLayout(self._main_layout)
@@ -1607,8 +1604,7 @@ class ShadowedButton(BaseButton):
         self._main_layout.setContentsMargins(0, 0, 0, 0)
 
     def set_force_upper(self, flag: bool):
-        """
-        Sets whether button text should appear as upper case.
+        """Sets whether button text should appear as upper case.
 
         :param flag: whether to force text upper case.
         """
@@ -1616,8 +1612,7 @@ class ShadowedButton(BaseButton):
         self._force_upper = flag
 
     def set_shadow_height(self, height: int):
-        """
-        Sets the shadow height in pixels.
+        """Sets the shadow height in pixels.
 
         :param height: shadow height (in pixels).
         """
@@ -1633,8 +1628,7 @@ class ShadowedButton(BaseButton):
         pressed_colors: QColor | None = None,
         scaling: tuple[float, float, float] | None = None,
     ):
-        """
-        Set button icon.
+        """Set button icon.
 
         :param icons: icon to set.
         :param colors: optional icon color.
@@ -1676,8 +1670,7 @@ class ShadowedButton(BaseButton):
         self._image_widget.setPixmap(self._icon_pixmap)
 
     def update_image_widget(self, new_height: int):
-        """
-        Updates button to make sure widget is always square.
+        """Updates button to make sure widget is always square.
 
         :param new_height: new height of the widget to update to.
         """
@@ -1715,8 +1708,7 @@ class LabelSmallButton(QWidget):
         self._setup_signals()
 
     def setDisabled(self, flag: bool):
-        """
-        Overrides base setDisabled function.
+        """Overrides base setDisabled function.
 
         :param flag: whether to disable the button.
         """
@@ -1726,24 +1718,18 @@ class LabelSmallButton(QWidget):
             self._label.setDisabled(flag)
 
     def _setup_signals(self):
-        """
-        Internal function that sets up signals.
-        """
+        """Internal function that sets up signals."""
 
         self._button.clicked.connect(self._on_button_clicked)
 
     def _on_button_clicked(self):
-        """
-        Internal callback function that is called when button is clicked.
-        """
+        """Internal callback function that is called when button is clicked."""
 
         self.clicked.emit()
 
 
 class LeftAlignedButton(QPushButton):
-    """
-    Custom button that is left aligned with text and icon.
-    """
+    """Custom button that is left aligned with text and icon."""
 
     def __init__(
         self,
@@ -1769,8 +1755,7 @@ class LeftAlignedButton(QPushButton):
         )
 
     def menu(self, mouse_button: Qt.MouseButton = Qt.LeftButton) -> QMenu | None:
-        """
-        Returns the menu associated to the given mouse button.
+        """Returns the menu associated to the given mouse button.
 
         :param mouse_button: mouse button.
         :return: menu for the given menu.
@@ -1779,8 +1764,7 @@ class LeftAlignedButton(QPushButton):
         return self._mouse_buttons.get(mouse_button, None)
 
     def set_menu(self, menu: QMenu, mouse_button: Qt.MouseButton):
-        """
-        Sets the given menu to the given mouse button.
+        """Sets the given menu to the given mouse button.
 
         :param menu: menu to set to mouse button.
         :param mouse_button: mouse button.
@@ -1807,8 +1791,7 @@ class LeftAlignedButton(QPushButton):
         connection: callable = None,
         mouse_button: Qt.MouseButton = Qt.RightButton,
     ) -> QAction:
-        """
-        Creates a menu item to the specific mouse menu. If menu at given mouse button does not exist, it will be
+        """Creates a menu item to the specific mouse menu. If menu at given mouse button does not exist, it will be
         created.
 
         :param text:  menu item text label.
@@ -1834,8 +1817,7 @@ class LeftAlignedButton(QPushButton):
         return action
 
     def _on_custom_context_menu_requested(self, pos: QPoint):
-        """
-        Internal callback function that is called when button custom context menu is requested.
+        """Internal callback function that is called when button custom context menu is requested.
 
         :param pos: the position to show the context menu at.
         """
@@ -1845,9 +1827,7 @@ class LeftAlignedButton(QPushButton):
 
 
 class OkCancelButtons(QWidget):
-    """
-    Custom widget that contains Ok and Cancel buttons.
-    """
+    """Custom widget that contains Ok and Cancel buttons."""
 
     okPressed = Signal()
     cancelPressed = Signal()
@@ -1872,8 +1852,7 @@ class OkCancelButtons(QWidget):
 
     @property
     def ok_button(self) -> BasePushButton:
-        """
-        Getter method that returns the Ok button.
+        """Getter method that returns the Ok button.
 
         :return: Ok button.
         """
@@ -1882,8 +1861,7 @@ class OkCancelButtons(QWidget):
 
     @property
     def cancel_button(self) -> BasePushButton:
-        """
-        Getter method that returns the Cancel button.
+        """Getter method that returns the Cancel button.
 
         :return: Cancel button.
         """

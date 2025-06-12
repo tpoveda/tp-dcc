@@ -7,7 +7,9 @@ from ..mixins import stacked_animation_mixin
 
 @stacked_animation_mixin
 class SlidingOpacityStackedWidget(QStackedWidget):
-    """Custom stack widget that activates opacity animation when current stack index changes"""
+    """Custom stack widget that activates opacity animation when
+    the current stack index changes
+    """
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)

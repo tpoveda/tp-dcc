@@ -47,16 +47,16 @@ from Qt.QtGui import (
     QPaintEvent,
 )
 
+from tp.libs import dcc
+from tp.libs.dcc import ui
+from tp.libs.python import paths
 
-from ... import dcc
-from ...dcc import ui
-from ...python import paths
-from ...resources.style import theme
-from ...qt import dpi, utils, icon, uiconsts
 from .labels import ClippedLabel
 from .overlay import OverlayWidget
 from .buttons import BaseButton, IconMenuButton
 from .layouts import VerticalLayout, HorizontalLayout, GridLayout
+from ..style import theme
+from .. import uiconsts, dpi, utils, icon
 
 if dcc.is_maya():
     from maya import cmds, OpenMayaUI
@@ -74,14 +74,21 @@ logger = logging.getLogger(__name__)
 
 
 class ContainerType(enum.Enum):
-    """Enumerator that defines the different frameless container types"""
+    """Enumerator that defines the different frameless container types.
+
+    This enum represents the possible container types for frameless UI elements.
+    """
 
     Docking = 1
     FramelessWindow = 2
 
 
 class ContainerWidget:
-    """Base class used by custom container widgets."""
+    """Base class used by custom container widgets.
+
+    This class serves as a foundation for all container widgets in the frameless
+    window system, providing common functionality and interfaces.
+    """
 
     def __init__(self, *args, **kwargs):
         pass
@@ -89,7 +96,9 @@ class ContainerWidget:
     def is_docking_container(self) -> bool:
         """Returns whether current instance is a docking container widget.
 
-        :return: True if current instance is a DockingContainer instance; False otherwise.
+        Returns:
+            bool: True if current instance is a DockingContainer instance; False
+                otherwise.
         """
 
         return isinstance(self, DockingContainer)
@@ -97,7 +106,9 @@ class ContainerWidget:
     def is_frameless_window(self) -> bool:
         """Returns whether current instance is a frameless window widget.
 
-        :return: True if current instance is a FramelessWindow instance; False otherwise.
+        Returns:
+            bool: True if current instance is a FramelessWindow instance; False
+                otherwise.
         """
 
         return isinstance(self, FramelessWindowContainer)
@@ -105,7 +116,8 @@ class ContainerWidget:
     def container_type(self) -> int:
         """Returns the type of container.
 
-        :return: type container.
+        Returns:
+            int: The container type value from the ContainerType enum.
         """
 
         return (
@@ -117,7 +129,8 @@ class ContainerWidget:
     def set_widget(self, widget: QWidget):
         """Sets container widget.
 
-        :param widget: container widget.
+        Args:
+            widget: The widget to set as the container's content.
         """
 
         # noinspection PyUnresolvedReferences
@@ -133,7 +146,12 @@ class ContainerWidget:
 
 
 class DockingContainer(DockableMixin, QWidget, ContainerWidget):
-    """Custom widget container that can be docked withing DCCs"""
+    """Custom widget container that can be docked within DCCs.
+
+    This container allows widgets to be docked within supported Digital Content
+    Creation applications (DCCs), providing integration with the host application's
+    UI system.
+    """
 
     def __init__(
         self,
@@ -143,6 +161,15 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         *args,
         **kwargs,
     ):
+        """Initialize a docking container widget.
+
+        Args:
+            parent: The parent window for this container.
+            workspace_control_name: Name of the workspace control in the DCC.
+            show_dock_tabs: Whether to show dock tabs in the UI.
+            *args: Additional positional arguments for parent classes.
+            **kwargs: Additional keyword arguments for parent classes.
+        """
         super(DockingContainer, self).__init__(parent=parent, *args, **kwargs)
 
         self._main_widget: FramelessWindow | None = None
@@ -162,7 +189,8 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
     def enterEvent(self, event: QEvent) -> None:
         """Overrides base QWidget enterEvent function.
 
-        :param event: Qt enter event.
+        Args:
+            event: Qt enter event.
         """
 
         if self._detaching:
@@ -172,7 +200,8 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
     def resizeEvent(self, event: QResizeEvent) -> None:
         """Overrides base QWidget resizeEvent function.
 
-        :param event: Qt resize event.
+        Args:
+            event: Qt resize event.
         """
 
         if not self._detaching and not self.isFloating():
@@ -184,7 +213,8 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
     def showEvent(self, event: QShowEvent) -> None:
         """Overrides base QWidget showEvent function.
 
-        :param event: Qt show event.
+        Args:
+            event: Qt show event.
         """
 
         floating = self.isFloating()
@@ -207,7 +237,8 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
     def moveEvent(self, event: QMoveEvent) -> None:
         """Overrides base QWidget moveEvent function.
 
-        :param event: Qt move event.
+        Args:
+            event: Qt move event.
         """
 
         if not self._detaching:
@@ -227,7 +258,8 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
     def set_widget(self, widget: FramelessWindow):
         """Overrides base FramelessWindow set_widget function.
 
-        :param FramelessWindow widget: frameless window widget.
+        Args:
+            widget: Frameless window widget to set as the container's content.
         """
 
         self._main_widget = widget
@@ -238,7 +270,11 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         self.setMinimumHeight(0)
 
     def move_to_mouse(self):
-        """Moves current dock widget into current mouse cursor position."""
+        """Moves current dock widget to the current mouse cursor position.
+
+        Positions the dock widget at the current mouse position with appropriate
+        offsets to ensure good visual placement.
+        """
 
         pos = QCursor.pos()
         window = self._win
@@ -254,7 +290,11 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         window.setWindowOpacity(0.8)
 
     def undock(self):
-        """Undocks container widget."""
+        """Undocks container widget.
+
+        Detaches the container from its docked position and converts it to a
+        floating frameless window.
+        """
 
         self._detach_counter = 0
         self._detaching = False
@@ -279,7 +319,10 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         ui.FnUi().delete_ui(self._workspace_control_name)
 
     def _setup_ui(self):
-        """Internal function that initializes docking widget UI."""
+        """Internal function that initializes docking widget UI.
+
+        Sets up the logo icon and layout for the docking container.
+        """
 
         size = 24
         ui_layout = VerticalLayout()
@@ -299,7 +342,11 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
 
 
 class FramelessWindowContainer(QMainWindow, ContainerWidget):
-    """Frameless window implementation."""
+    """Frameless window container implementation.
+
+    This class provides a container for frameless windows, handling window
+    decoration removal and adding custom shadow effects and transparency.
+    """
 
     closed = Signal()
 
@@ -311,13 +358,14 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         on_top: bool = False,
         parent: QWidget | None = None,
     ):
-        """Initialize a new instance of the class.
+        """Initialize a new frameless window container.
 
-        :param width: The width of the window. Default is None.
-        :param height: The height of the window. Default is None.
-        :param save_window_pref: Determines whether to save window preferences. Default is True.
-        :param on_top: Determines whether the window should stay on top. Default is False.
-        :param parent: The parent widget, if any. Default is None, indicating no parent.
+        Args:
+            width: The width of the window. Default is None.
+            height: The height of the window. Default is None.
+            save_window_pref: Whether to save window preferences. Default is True.
+            on_top: Whether the window should stay on top. Default is False.
+            parent: The parent widget. Default is None, indicating no parent.
         """
 
         self._on_top = on_top
@@ -342,18 +390,20 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
 
     @property
     def frameless_window(self) -> FramelessWindow:
-        """Getter method that returns the frameless window contained within this container.
+        """Get the frameless window contained within this container.
 
-        :return: frameless window instance.
+        Returns:
+            FramelessWindow: The frameless window instance.
         """
 
         # noinspection PyTypeChecker
         return self.centralWidget()
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        """Overrides `FramelessWindowContainer` closeEvent function.
+        """Override closeEvent to emit closed signal.
 
-        :param event: close event.
+        Args:
+            event: The close event.
         """
 
         super(FramelessWindowContainer, self).closeEvent(event)
@@ -361,9 +411,10 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         self.closed.emit()
 
     def set_widget(self, widget: FramelessWindow):
-        """Overrides base `FramelessWindowContainer` set_widget function.
+        """Set the window's central widget.
 
-        :param widget: window central widget.
+        Args:
+            widget: The frameless window to use as central widget.
         """
 
         self.setCentralWidget(widget)
@@ -376,7 +427,8 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
     def set_on_top(self, flag: bool):
         """Sets whether container should stay on top.
 
-        :param flag: True to set container on top; False otherwise.
+        Args:
+            flag: True to set container on top; False otherwise.
         """
 
         flags = self.windowFlags()
@@ -389,10 +441,13 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         self.show()
 
     def set_shadow_effect_enabled(self, flag: bool) -> bool:
-        """Sets whether frameless window shadow effect is enabled.
+        """Enable or disable the window shadow effect.
 
-        :param flag: True to enable shadow effect; False otherwise.
-        :return: True if shadow effect was set successfully; False otherwise.
+        Args:
+            flag: True to enable shadow effect; False otherwise.
+
+        Returns:
+            bool: True if shadow effect was set successfully; False otherwise.
         """
 
         if not self.frameless_window:
@@ -408,9 +463,10 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         return True
 
     def set_transparency(self, flag: bool):
-        """Sets whether window transparency effect is enabled.
+        """Enable or disable window transparency effect.
 
-        :param flag: True to enable window transparency effect; False otherwise.
+        Args:
+            flag: True to enable window transparency; False otherwise.
         """
 
         window = self.window()
@@ -423,19 +479,23 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         window.repaint()
 
     def save_window_pref(self):
-        """Function that forces the window to automatically be parented to DCC main window and also to force the saving
-        of the window size and position.
+        """Save window preferences for size and position.
 
-        ..note:: this functionality is only supported in Maya
+        Forces the window to automatically be parented to the DCC main window
+        and saves the window size and position.
+
+        Note:
+            This functionality is only supported in Maya.
         """
 
         self.setProperty("saveWindowPref", True)
 
     def _setup_size(self, width: int, height: int):
-        """Internal function that initializes frameless window size.
+        """Initialize the frameless window size.
 
-        :param width: initial width in pixels.
-        :param height: initial height in pixels.
+        Args:
+            width: Initial width in pixels.
+            height: Initial height in pixels.
         """
 
         if not (width is None and height is None):
@@ -446,7 +506,11 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
             self.resize(width, height)
 
     def _setup_ui(self):
-        """Internal function that initializes frameless window UI."""
+        """Initialize the frameless window UI.
+
+        Sets up window flags, attributes, and layout settings for the frameless
+        appearance.
+        """
 
         self.setAttribute(Qt.WA_TranslucentBackground)
         if utils.is_pyside6() or utils.is_pyside2() or utils.is_pyqt5():
@@ -462,15 +526,22 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         self.layout().setContentsMargins(0, 0, 0, 0)
 
     def _set_new_object_name(self, widget: QWidget):
-        """Internal function that updates this instance object name based on the given widget.
+        """Update this instance's object name based on the given widget.
 
-        :param widget: frameless window central widget.
+        Args:
+            widget: Frameless window central widget to derive the name from.
         """
 
         self.setObjectName(widget.objectName() + "Frameless")
 
 
 class FramelessWindow(QWidget):
+    """Main frameless window implementation.
+
+    This class provides a customizable window without the standard OS frame,
+    implementing custom title bar, resize handles, and docking capabilities.
+    """
+
     HELP_URL = (
         ""  # Web URL to use when displaying the help documentation for this window
     )
@@ -501,25 +572,27 @@ class FramelessWindow(QWidget):
         settings_path: str = "",
         parent: QWidget | None = None,
     ):
-        """Initializes the window with the specified properties.
+        """Initialize a frameless window with the specified properties.
 
-        :param name: The internal name of the window. Defaults to an empty string.
-        :param title: The title of the window. Defaults to an empty string.
-        :param width: The width of the window. Defaults to None.
-        :param height: The height of the window. Defaults to None.
-        :param resizable: Whether the window is resizable. Defaults to True.
-        :param modal: Whether the window is modal. Defaults to False.
-        :param init_pos: The initial position of the window as a tuple (x, y). Defaults to None.
-        :param title_bar_class: The class used for the title bar of the window. Defaults to None.
-        :param as_overlay: Whether the window is displayed as an overlay. Defaults to True.
-        :param always_show_all_title: Whether to always show the entire title. Defaults to False.
-        :param on_top: Whether the window is always on top. Defaults to False.
-        :param save_window_pref: Whether to save window preferences. Defaults to False.
-        :param minimize_enabled: Whether window minimization is enabled. Defaults to True.
-        :param minimize_button: Whether the minimize button is displayed. Defaults to False.
-        :param maximize_button: Whether the maximize button is displayed. Defaults to False.
-        :param settings_path: The path to the settings file. Defaults to an empty string.
-        :param parent: The parent widget. Defaults to None.
+        Args:
+            name: The internal name of the window. Defaults to an empty string.
+            title: The title of the window. Defaults to an empty string.
+            width: The width of the window. Defaults to None.
+            height: The height of the window. Defaults to None.
+            resizable: Whether the window is resizable. Defaults to True.
+            modal: Whether the window is modal. Defaults to False.
+            init_pos: Initial position (x, y). Defaults to None.
+            title_bar_class: Class for the title bar. Defaults to None.
+            as_overlay: Whether to use overlay mode. Defaults to True.
+            always_show_all_title: Whether to always show the full title.
+                Defaults to False.
+            on_top: Whether window stays on top. Defaults to False.
+            save_window_pref: Whether to save window preferences. Defaults to False.
+            minimize_enabled: Whether minimization is enabled. Defaults to True.
+            minimize_button: Whether to show minimize button. Defaults to False.
+            maximize_button: Whether to show maximize button. Defaults to False.
+            settings_path: Path for storing settings. Defaults to an empty string.
+            parent: The parent widget. Defaults to None.
         """
 
         super().__init__()
@@ -603,10 +676,13 @@ class FramelessWindow(QWidget):
 
     @classmethod
     def frameless_window(cls, widget: QWidget) -> FramelessWindow | None:
-        """Returns the frameless window based on the given widget.
+        """Find the frameless window containing the given widget.
 
-        :param widget: widget to get frameless window from.
-        :return: found frameless window.
+        Args:
+            widget: Widget to get frameless window from.
+
+        Returns:
+            FramelessWindow or None: The found frameless window, or None if not found.
         """
 
         while widget is not None:
@@ -619,9 +695,11 @@ class FramelessWindow(QWidget):
 
     @classmethod
     def delete_instances(cls, name: str | None = None):
-        """Deletes all frameless window instances.
+        """Delete frameless window instances.
 
-        :param name: name of the frameless window to delete. If None, all frameless windows will be deleted.
+        Args:
+            name: Name of the specific window to delete. If None, all frameless
+                windows will be deleted.
         """
 
         for instance in cls._INSTANCES:
@@ -639,81 +717,90 @@ class FramelessWindow(QWidget):
 
     @property
     def title_bar(self) -> FramelessTitleBar:
-        """Getter method that returns titlebar instance for this window.
+        """Get the title bar instance for this window.
 
-        :return: frameless window title bar.
+        Returns:
+            FramelessTitleBar: The window's title bar instance.
         """
 
         return self._title_bar
 
     @property
     def name(self) -> str:
-        """Getter method that returns the name of this frameless window instance.
+        """Get the name of this frameless window instance.
 
-        :return: window name.
+        Returns:
+            str: The window name.
         """
 
         return self._name
 
     @name.setter
     def name(self, value: str):
-        """Setter method that sets the name of this frameless window instance.
+        """Set the name of this frameless window instance.
 
-        :param str value: window name.
+        Args:
+            value: The new window name.
         """
 
         self._name = value
 
     @property
     def title(self) -> str:
-        """Getter method that returns the title of this frameless window instance.
+        """Get the title of this frameless window instance.
 
-        :return: window title.
+        Returns:
+            str: The window title.
         """
 
         return self._title
 
     @property
     def parent_container(self) -> DockingContainer | FramelessWindowContainer:
-        """Getter method that returns the parent container instance this frameless window is contained within.
+        """Get the parent container instance containing this frameless window.
 
-        :return: parent frameless window container.
+        Returns:
+            DockingContainer or FramelessWindowContainer: The parent container.
         """
 
         return self._parent_container
 
     @property
     def title_contents_layout(self) -> QHBoxLayout:
-        """Getter method that returns the layout for the frameless window title.
+        """Get the layout for the frameless window title.
 
-        :return: frameless window title layout.
+        Returns:
+            QHBoxLayout: The title layout.
         """
 
         return self._title_bar.contents_layout
 
     @property
     def corner_contents_layout(self) -> QHBoxLayout:
-        """Getter method that returns the layout for the frameless window corners.
+        """Get the layout for the frameless window corners.
 
-        :return: frameless window corners layout.
+        Returns:
+            QHBoxLayout: The corner contents layout.
         """
 
         return self._title_bar.corner_contents_layout
 
     @property
     def docked(self) -> Signal:
-        """Getter method that returns the docked signal associated with the title bar logo button.
+        """Get the docked signal associated with the title bar logo button.
 
-        :return: docked signal.
+        Returns:
+            Signal: The docked signal.
         """
 
         return self._title_bar.logo_button.docked
 
     @property
     def undocked(self) -> Signal:
-        """Getter method that returns the undocked signal associated with the title bar logo button.
+        """Get the undocked signal associated with the title bar logo button.
 
-        :return: undocked signal.
+        Returns:
+            Signal: The undocked signal.
         """
 
         return self._title_bar.logo_button.undocked
@@ -727,27 +814,42 @@ class FramelessWindow(QWidget):
     #     return self._window_resizer.resizeFinished
 
     def setup_widgets(self):
-        """Function that can be overridden to add custom widgets."""
+        """Set up custom widgets for the window.
+
+        This method can be overridden in subclasses to add custom widgets to the
+        window layout.
+        """
 
         pass
 
     def setup_layouts(self, main_layout: QVBoxLayout | QHBoxLayout | QGridLayout):
-        """Function that can be overridden to add custom layouts.
+        """Set up custom layouts for the window.
 
-        :param main_layout: main layout to add custom layouts to.
+        This method can be overridden in subclasses to customize the window layout.
+
+        Args:
+            main_layout: Main layout to add custom layouts to.
         """
 
         pass
 
     def setup_signals(self):
-        """Function that can be overridden to set up widget signals."""
+        """Set up widget signals.
+
+        This method can be overridden in subclasses to set up custom signal
+        connections between widgets.
+        """
 
         pass
 
     def show(self, move: QPoint | None = None) -> None:
-        """Overrides base show function to show parent container.
+        """Show the window and its parent container.
 
-        param move: if given, move window to specific location.
+        Args:
+            move: If provided, moves the window to the specified location.
+
+        Returns:
+            None: Result from the parent show method.
         """
 
         result = super().show()
@@ -878,9 +980,10 @@ class FramelessWindow(QWidget):
         self._window_resizer.set_enabled(flag)
 
     def set_on_top(self, flag: bool):
-        """Sets whether container should stay on top.
+        """Set whether the container should stay on top of other windows.
 
-        :param flag: True to set container on top; False otherwise.
+        Args:
+            flag: True to set container on top; False otherwise.
         """
 
         if not self._parent_container:
@@ -2615,7 +2718,10 @@ class SpawnerIcon(IconMenuButton):
         )
 
     def delete_control(self):
-        """Deletes workspace control."""
+        """Deletes the workspace control.
+
+        Removes the workspace control from the DCC interface.
+        """
 
         if not dcc.is_maya():
             return
