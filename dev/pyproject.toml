@@ -1,0 +1,47 @@
+[project]
+name = "tp-dcc-pipeline"
+version = "0.1.0"
+description = "TP DCC Pipeline"
+dependencies = [
+    "Qt.py==1.4.4",
+    "PyYAML==6.0.2",
+    "packaging==25.0",
+    "pip-tools==7.4.1",
+    "loguru==0.7.3",
+    "shotgun-api3 @ git+https://github.com/shotgunsoftware/python-api.git@v3.8.2",
+    "Pyro5==5.15"
+]
+
+[project.optional-dependencies]
+dev = [
+    "PySide6==6.9.0",
+    "ruff==0.11.6",
+    "mypy==1.15.0",
+    "maya-stubs==0.4.1",
+    "types-houdini==20.5.487.0",
+    "types-PyYAML==6.0.12.20250402",
+    "cookiecutter==2.6.0",
+    "myst-parser==4.0.1",
+    "Sphinx==8.2.3",
+    "sphinx-autodoc-typehints==3.1.0",
+    "furo==2024.8.6",
+    "pyinstaller==6.13.0",
+    "pytest==8.3.5",
+    "pytest-cov==6.1.1",
+]
+
+maya2026 = [
+]
+
+ue5 = [
+]
+
+mobu2026 = [
+]
+
+hou20522 = [
+]
+
+[tool.mypy]
+ignore_missing_imports = true
+check_untyped_defs = true
