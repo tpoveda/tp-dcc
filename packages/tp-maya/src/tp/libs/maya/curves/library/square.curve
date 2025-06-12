@@ -1,0 +1,61 @@
+{
+  "squareShape": {
+    "overrideColor": 0,
+    "overrideEnabled": false,
+    "overrideColorRGB": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "overrideRGBColors": false,
+    "useOutlinerColor": false,
+    "outlinerColor": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "knots": [
+      0.0,
+      1.0,
+      2.0,
+      3.0,
+      4.0
+    ],
+    "cvs": [
+      [
+        0.0,
+        -1.0,
+        1.0,
+        1.0
+      ],
+      [
+        0.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      [
+        0.0,
+        1.0,
+        -1.0,
+        1.0
+      ],
+      [
+        0.0,
+        -1.0,
+        -1.0,
+        1.0
+      ],
+      [
+        0.0,
+        -1.0,
+        1.0,
+        1.0
+      ]
+    ],
+    "degree": 1,
+    "form": 1,
+    "worldMatrix": null,
+    "matrix": null
+  }
+}
