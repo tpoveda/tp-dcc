@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   version="1.2"
+   viewBox="0 0 100 100"
+   width="100"
+   height="100"
+   id="svg1"
+   sodipodi:docname="uncheck.svg"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="11.81"
+     inkscape:cx="50"
+     inkscape:cy="50"
+     inkscape:window-width="5120"
+     inkscape:window-height="1377"
+     inkscape:window-x="-8"
+     inkscape:window-y="2152"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <title
+     id="title1">New Project</title>
+  <defs
+     id="defs1">
+    <image
+       width="100"
+       height="100"
+       id="img1"
+       href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkAQMAAABKLAcXAAAAAXNSR0IB2cksfwAAAANQTFRFDw8PuwF7uQAAABRJREFUeJxjYBgFo2AUjIJRQE8AAAV4AAEI/UWDAAAAAElFTkSuQmCC" />
+  </defs>
+  <style
+     id="style1">&#10;		.s0 { fill: #0e86ff } &#10;	</style>
+  <use
+     id="Background"
+     href="#img1"
+     x="0"
+     y="0" />
+  <path
+     id="Shape 1"
+     class="s0"
+     d="m42 71l-21-18c0 0-2.2-1.6 0-4 2.2-2.4 5-5 5-5 0 0 1.2-1.6 3 0 1.8 1.6 15.2 13.3 15.2 13.3l25.8-27.9c0 0 0.8-1.3 2-0.4 1.2 0.9 7 6 7 6 0 0 1.5 1-0.7 3.2-2.2 2.1-30.3 32.8-30.3 32.8 0 0-3 2.6-6 0z"
+     style="fill:#0e86ff;fill-opacity:0.26970956" />
+  <metadata
+     id="metadata1">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>New Project</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>

@@ -1,0 +1,25 @@
+@import "../definitions";
+
+/* tp/qt/widgets/frameless.py */
+FramelessTitleBar
+{
+  border-radius: $frameless-round-size $frameless-round-size 0 0;
+  background-color: $dynamic-black-color;
+}
+
+/* tp/qt/widgets/dividers.py */
+LabelDivider
+{
+    background-color: #3e3e3e;
+    padding: 0;
+    margin: 0;
+    border-bottom: 1px solid #666;
+    border-top: 1px solid #2a2a2a;
+}
+
+HorizontalLine
+{
+    background-color: $background-in-color;
+    margin-left: 3px;
+    margin-right: 3px;
+}
