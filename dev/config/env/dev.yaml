@@ -6,5 +6,7 @@ tp-qt:
     version: '0.1.0'
 tp-maya:
     version: '0.1.0'
+tp-unreal:
+    version: '0.1.0'
 tp-utility-tools:
     version: '0.1.0'
