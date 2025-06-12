@@ -1,21 +1,18 @@
 from __future__ import annotations
 
 import re
-import logging
 
 from maya import cmds
+from loguru import logger
 
-from tp.maya.cmds import filtertypes
-from tp.maya.cmds.nodeutils import naming
+from tp.libs.maya.cmds import filtertypes
+from tp.libs.maya.cmds.nodeutils import naming
 
 from ..consts import PrefixSuffixType, EditIndexMode
 
-logger = logging.getLogger(__name__)
-
 
 def trailing_number(name: str) -> tuple[str, int | None, int]:
-    """
-    Returns the trailing number of a string, the name with the number removed, and the padding of the number.
+    """Returns the trailing number of a string, the name with the number removed, and the padding of the number.
 
     Examples:
         - 'shaderName' returns ('shaderName', None, 0).
@@ -42,8 +39,7 @@ def trailing_number(name: str) -> tuple[str, int | None, int]:
 def rename_shape_nodes(
     node_name: str, uuid: str | None = None, return_long_name: bool = False
 ) -> list[str]:
-    """
-    Renames the shape nodes of the given transform/joint node.
+    """Renames the shape nodes of the given transform/joint node.
 
     :param node_name: node name to rename the shape nodes from.
     :param uuid: optional UUID for the renaming. If given, it will be used for the renaming instead of the object name.
@@ -72,8 +68,7 @@ def rename_shape_nodes(
 
 
 def rename_shape_nodes_from_list(node_names: list[str], return_long_name: bool = False):
-    """
-    Renames the shape nodes of the given transform/joint nodes from the given list.
+    """Renames the shape nodes of the given transform/joint nodes from the given list.
 
     :param node_names: list of node names to rename the shape nodes from.
     :param return_long_name: whether to return the long name of the object.
@@ -96,8 +91,7 @@ def safe_rename(
     rename_shape: bool = True,
     return_long_name: bool = True,
 ) -> str:
-    """
-    Safe rename given object name with the new name. The safe renaming checks for:
+    """Safe rename given object name with the new name. The safe renaming checks for:
          - If given, UUIDs are used for the renaming.
          - Checks for invalid names.
          - Checks for numbers starting a name.
@@ -151,8 +145,7 @@ def safe_rename_objects(
     rename_shape: bool = True,
     return_long_names: bool = True,
 ) -> list[str]:
-    """
-    Safe rename list of given object names with the new names. The safe renaming checks for:
+    """Safe rename list of given object names with the new names. The safe renaming checks for:
          - If given, UUIDs are used for the renaming.
          - Checks for invalid names.
          - Checks for numbers starting a name.
@@ -189,8 +182,7 @@ def renumber_objects_with_single_name(
     padding: int = 2,
     rename_shape: bool = True,
 ) -> list[str]:
-    """
-    Renames the objects in the list to be:
+    """Renames the objects in the list to be:
         - 'newName_01'
         - 'newName_02'
         - 'newName_03'
@@ -217,8 +209,7 @@ def rename_selected_objects(
     rename_shape: bool = True,
     hierarchy: bool = False,
 ) -> list[str]:
-    """
-    Renames the selected nodes in the selection order to be:
+    """Renames the selected nodes in the selection order to be:
         - 'baseName_01'
         - 'baseName_02'
         - 'baseName_03'
@@ -258,8 +249,7 @@ def search_replace_name(
     uuid: str | None = None,
     rename_shape: bool = True,
 ) -> str:
-    """
-    Renames the given node name with the given replace text in the given search text.
+    """Renames the given node name with the given replace text in the given search text.
 
     :param name: node name to rename.
     :param search_text: text to search for, this text will be replaced.
@@ -282,8 +272,7 @@ def search_replace_objects(
     replace_text: str,
     rename_shape: bool = True,
 ) -> list[str]:
-    """
-    Renames a list of node names with the given replace text in the given search text.
+    """Renames a list of node names with the given replace text in the given search text.
 
     :param objects_to_rename: list of node names to rename.
     :param search_text: text to search for, this text will be replaced.
@@ -316,8 +305,7 @@ def search_replace_filtered_type(
     remove_maya_defaults: bool = True,
     transform_only: bool = True,
 ) -> list[str]:
-    """
-    Search and replace the given text in the selected objects of the given type.
+    """Search and replace the given text in the selected objects of the given type.
 
     :param search_text: text to search for.
     :param replace_text: text to replace with.
@@ -351,8 +339,7 @@ def search_replace_filtered_type(
 def check_suffix_prefix_exists(
     name: str, suffix_prefix: str, suffix_prefix_type: PrefixSuffixType
 ) -> bool:
-    """
-    Checks whether the given suffix or prefix exists.
+    """Checks whether the given suffix or prefix exists.
 
     :param name: name of the object to be renamed.
     :param suffix_prefix: suffix or prefix to check.
@@ -381,8 +368,7 @@ def prefix_suffix_object(
     rename_shape: bool = True,
     check_existing_suffix_prefix: bool = True,
 ):
-    """
-    Prefixes or suffixes the given object name with the given prefix or suffix type.
+    """Prefixes or suffixes the given object name with the given prefix or suffix type.
 
     :param object_to_rename: node name to rename.
     :param prefix_suffix: the prefix or suffix to apply.
@@ -431,8 +417,7 @@ def prefix_suffix_objects(
     rename_shape: bool = True,
     check_existing_suffix_prefix: bool = True,
 ) -> list[str]:
-    """
-    Prefixes or suffixes the given object names with the given prefix or suffix type.
+    """Prefixes or suffixes the given object names with the given prefix or suffix type.
 
     :param objects_to_rename: list of node names to rename.
     :param prefix_suffix: the prefix or suffix to apply.
@@ -469,8 +454,7 @@ def prefix_suffix_filtered_type(
     remove_maya_defaults: bool = True,
     transforms_only: bool = True,
 ):
-    """
-    Prefixes or suffixes the selected objects of the given type.
+    """Prefixes or suffixes the selected objects of the given type.
     If `nice_name_type` is given, this function will filter and prefix/suffix based on the type.
 
     :param prefix_suffix: the prefix or suffix to apply.
@@ -507,8 +491,7 @@ def prefix_suffix_filtered_type(
 
 
 def check_index_in_name_parts(name_parts: list[str], index: int) -> bool:
-    """
-    Returns whether an index in the given name parts is found.
+    """Returns whether an index in the given name parts is found.
 
     :param name_parts: list of name parts separated by a separator character (usually, an underscore).
     :param index: index number, that can be negative.
@@ -529,8 +512,7 @@ def edit_index_item_object(
     rename_shape: bool = True,
     uuid: str | None = None,
 ) -> str:
-    """
-    Split given node name by the given separator and edit the position by given index number.
+    """Split given node name by the given separator and edit the position by given index number.
 
     Supported modes:
         - Insert: inserts (add) a new value into that position.
@@ -603,8 +585,7 @@ def edit_index_item_objects(
     separator: str = "_",
     rename_shape: bool = True,
 ) -> list[str]:
-    """
-    Split node names by the given separator and edit the position by given index number.
+    """Split node names by the given separator and edit the position by given index number.
 
     Supported modes:
         - Insert: inserts (add) a new value into that position.
@@ -655,8 +636,7 @@ def edit_index_item_filtered_type(
     remove_maya_defaults: bool = True,
     transforms_only: bool = True,
 ) -> list[str]:
-    """
-    Split node names by the given separator and edit the position by given index number.
+    """Split node names by the given separator and edit the position by given index number.
     If `nice_name_type` is given, this function will filter and edit the index item based on the type.
 
     Supported modes:
@@ -715,8 +695,7 @@ def shuffle_item_by_index(
     rename_shape: bool = True,
     separator: str = "_",
 ) -> str:
-    """
-    Shuffle the position of an item by the given index number.
+    """Shuffle the position of an item by the given index number.
 
     Index is the text to move/shuffle, can be negative number.
 
@@ -767,8 +746,7 @@ def shuffle_item_by_index_objects(
     separator: str = "_",
     rename_shape: bool = True,
 ) -> list[str]:
-    """
-    Shuffle the position of an item by the given index number.
+    """Shuffle the position of an item by the given index number.
 
     :param objects_to_rename: list of node names to rename.
     :param index: the index to edit.
@@ -804,8 +782,7 @@ def shuffle_item_by_index_filtered_type(
     remove_maya_defaults: bool = True,
     transforms_only: bool = True,
 ) -> list[str]:
-    """
-    Shuffle the position of an item by the given index number.
+    """Shuffle the position of an item by the given index number.
 
     :param index: the index to edit.
     :param nice_name_type: the type of the object to rename.
@@ -848,8 +825,7 @@ def change_suffix_padding(
     add_underscore: bool = True,
     rename_shape: bool = True,
 ) -> [str]:
-    """
-    Change the padding of the suffix of the given object.
+    """Change the padding of the suffix of the given object.
 
     :param object_to_rename: node name to rename.
     :param uuid: optional UUID for the renaming. If given, it will be used for the renaming instead of the object name.
@@ -885,8 +861,7 @@ def change_suffix_padding_objects(
     add_underscore: bool = True,
     rename_shape: bool = True,
 ) -> list[str]:
-    """
-    Change the padding of the suffix of the given objects.
+    """Change the padding of the suffix of the given objects.
 
     :param objects_to_rename: list of node names to rename.
     :param padding: the number of padding to use for the numbering (1=1, 2=01, 3=001, ...).
@@ -919,8 +894,7 @@ def change_suffix_padding_filter(
     remove_maya_defaults: bool = True,
     transforms_only: bool = True,
 ) -> list[str]:
-    """
-    Change the padding of the suffix of the selected objects of the given type.
+    """Change the padding of the suffix of the selected objects of the given type.
 
     :param nice_name_type: the type of the object to rename.
     :param padding: the number of padding to use for the numbering (1=1, 2=01, 3=001, ...).
@@ -961,8 +935,7 @@ def remove_numbers_from_object(
     rename_shape: bool = True,
     remove_underscores: bool = True,
 ):
-    """
-    Removes the numbers from the given object name.
+    """Removes the numbers from the given object name.
 
     :param object_to_rename: node name to rename.
     :param uuid: optional UUID for the renaming. If given, it will be used for the renaming instead of the object name.
@@ -991,8 +964,7 @@ def remove_numbers_from_objects(
     rename_shape: bool = True,
     remove_underscores: bool = True,
 ):
-    """
-    Removes the numbers from the given object names.
+    """Removes the numbers from the given object names.
 
     :param objects_to_rename: list of node names to rename.
     :param trailing_only: whether to remove only the trailing numbers.
@@ -1025,8 +997,7 @@ def remove_numbers_filtered_type(
     remove_maya_defaults: bool = True,
     transforms_only: bool = True,
 ) -> list[str]:
-    """
-    Removes the numbers from the selected objects of the given type.
+    """Removes the numbers from the selected objects of the given type.
 
     :param nice_name_type: the type of the object to rename.
     :param trailing_only: whether to remove only the trailing numbers.
@@ -1067,8 +1038,7 @@ def renumber_objects(
     add_underscore: bool = True,
     rename_shape: bool = True,
 ) -> list[str]:
-    """
-    Renames the objects in the list to be:
+    """Renames the objects in the list to be:
         - 'baseName_01'
         - 'baseName_02'
         - 'baseName_03'
@@ -1111,8 +1081,7 @@ def renumber_filtered_type(
     remove_maya_defaults: bool = True,
     transforms_only: bool = True,
 ) -> list[str]:
-    """
-    Renames the selected nodes in the selection order to be:
+    """Renames the selected nodes in the selection order to be:
         - 'baseName_01'
         - 'baseName_02'
         - 'baseName_03'
@@ -1159,8 +1128,7 @@ def assign_namespace(
     uuid: str | None = None,
     rename_shape: bool = True,
 ) -> str:
-    """
-    Assigns or removes a namespace to the given object.
+    """Assigns or removes a namespace to the given object.
 
     :param object_to_rename: node name to rename.
     :param namespace: namespace to add or remove.
@@ -1182,8 +1150,7 @@ def assign_namespace(
 
 
 def remove_empty_namespaces() -> list[str]:
-    """
-    Recursive function that removes all empty namespaces in the scene.
+    """Recursive function that removes all empty namespaces in the scene.
 
     :return: list of removed namespaces.
     """
@@ -1213,8 +1180,7 @@ def remove_empty_namespaces() -> list[str]:
 def remove_namespace_from_object(
     object_to_rename: str, uuid: str | None = None, rename_shape: bool = True
 ) -> str:
-    """
-    Removes the namespace from given object by renaming it.
+    """Removes the namespace from given object by renaming it.
     Namespace will not be removed.
 
     :param object_to_rename: name of the object we want to remove namespace from.
@@ -1229,8 +1195,7 @@ def remove_namespace_from_object(
 
 
 def empty_and_delete_namespace(namespace: str, rename_shape: bool = True) -> bool:
-    """
-    Returns given namespace from scene and renames all associated objects.
+    """Returns given namespace from scene and renames all associated objects.
 
     :param namespace: namespace to remove.
     :param rename_shape: whether to rename the shape nodes as well.
@@ -1259,8 +1224,7 @@ def empty_and_delete_namespace(namespace: str, rename_shape: bool = True) -> boo
 
 
 def delete_namespaces(objects_to_rename: list[str], rename_shape: bool = True) -> bool:
-    """
-    Removes the namespace from the scene from the first selected object.
+    """Removes the namespace from the scene from the first selected object.
 
     :param objects_to_rename: list of objects to rename.
     :param rename_shape: whether to rename the shape nodes as well.
@@ -1284,8 +1248,7 @@ def delete_namespaces(objects_to_rename: list[str], rename_shape: bool = True) -
 
 
 def delete_selected_namespace(rename_shape: bool = True) -> bool:
-    """
-    Removes the namespace from the scene from the first selected object.
+    """Removes the namespace from the scene from the first selected object.
     Note that this operation will affect all associated objects.
 
     :param rename_shape: whether to rename the shape nodes as well.
@@ -1306,8 +1269,7 @@ def create_assign_namespace_objects(
     remove_namespace: bool = False,
     rename_shape: bool = True,
 ) -> list[str]:
-    """
-    Creates/Removes a namespace from filtered objects.
+    """Creates/Removes a namespace from filtered objects.
 
     :param objects_to_rename: list of node names to rename.
     :param namespace: namespace to add or remove.
@@ -1349,8 +1311,7 @@ def create_assign_namespace_filtered_type(
     remove_maya_defaults: bool = True,
     transforms_only: bool = True,
 ) -> list[str]:
-    """
-    Creates/Removes a namespace from filtered objects.
+    """Creates/Removes a namespace from filtered objects.
 
     :param namespace: namespace to add or remove.
     :param nice_name_type: the type of the object to rename.
@@ -1390,8 +1351,7 @@ def auto_prefix_suffix_object(
     uuid: str | None = None,
     rename_shape: bool = True,
 ) -> str:
-    """
-    Automatically prefixes or suffixes the given object name based on its type.
+    """Automatically prefixes or suffixes the given object name based on its type.
 
     The auto renaming tries to be smart in some scenarios, for example, a transform node will look for the first shape
     node to define its type and rename accordingly. For custom types, such as, groups or controls it will use custom
@@ -1447,8 +1407,7 @@ def auto_prefix_suffix_objects(
     prefix_suffix_type: PrefixSuffixType = PrefixSuffixType.Suffix,
     rename_shape: bool = True,
 ) -> list[str]:
-    """
-    Automatically prefixes or suffixes the given object names based on their types.
+    """Automatically prefixes or suffixes the given object names based on their types.
 
     :param objects_to_rename: list of node names to rename.
     :param prefix_suffix_type: the type of prefix or suffix to apply.
@@ -1478,8 +1437,7 @@ def auto_prefix_suffix_filtered_type(
     remove_maya_defaults: bool = True,
     transforms_only: bool = True,
 ):
-    """
-    Automatically prefixes or suffixes the selected objects based on their types.
+    """Automatically prefixes or suffixes the selected objects based on their types.
 
     :param nice_name_type: the type of the object to rename.
     :param prefix_suffix_type: the type of prefix or suffix to apply.
@@ -1514,8 +1472,7 @@ def auto_prefix_suffix_filtered_type(
 def non_unique_name_number(
     name: str, short_new_name: bool = True, padding_default: int = 2
 ) -> str:
-    """
-    If given name is not a unique name, it returns the first numbered unique name.
+    """If given name is not a unique name, it returns the first numbered unique name.
 
     Automatically detects padding if the existing name already has a numbered suffix (for example, node_001 is a 3
     padding).
@@ -1566,8 +1523,7 @@ def force_unique_short_name_object(
     short_new_name: bool = True,
     rename_shape: bool = True,
 ) -> str:
-    """
-    Forces unique short names for the given object.
+    """Forces unique short names for the given object.
 
     :param object_to_rename: node name to rename.
     :param uuid: optional UUID for the renaming. If given, it will be used for the renaming instead of the object name.
@@ -1602,8 +1558,7 @@ def force_unique_short_name_objects(
     short_new_name: bool = True,
     rename_shape: bool = True,
 ) -> list[str]:
-    """
-    Forces unique short names for the given objects.
+    """Forces unique short names for the given objects.
 
     :param objects_to_rename: list of node names to rename.
     :param padding_default: the number of padding to use for the numbering (1=1, 2=01, 3=001, ...).
@@ -1636,8 +1591,7 @@ def force_unique_short_name_filtered(
     remove_maya_defaults: bool = True,
     transforms_only: bool = True,
 ) -> list[str]:
-    """
-    Forces unique short names for the selected objects of the given type.
+    """Forces unique short names for the selected objects of the given type.
 
     :param nice_name_type: the type of the object to rename.
     :param padding: the number of padding to use for the numbering (1=1, 2=01, 3=001, ...).

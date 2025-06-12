@@ -2,21 +2,22 @@ from __future__ import annotations
 
 import typing
 
-from tp import dcc
+from tp.libs import dcc
 
 if typing.TYPE_CHECKING:
     from .controllers.abstract import ARenamerController
 
 
 class RenamerControllerFactory:
-    """Factory class that returns the proper renamer controller based on the current DCC."""
+    """Factory class that returns the proper renamer controller based on the
+    current DCC."""
 
     @staticmethod
     def controller() -> ARenamerController:
-        """
-        Returns the proper renamer controller based on the current DCC.
+        """Return the proper renamer controller based on the current DCC.
 
-        :return: renamer controller instance.
+        Returns:
+            The renamer controller instance.
         """
 
         if dcc.is_maya():

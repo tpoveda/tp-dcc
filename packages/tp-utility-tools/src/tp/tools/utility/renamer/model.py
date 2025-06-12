@@ -1,73 +1,46 @@
 from __future__ import annotations
 
-import logging
-
+from loguru import logger
 from Qt.QtCore import Signal
 
-from tp.qt.mvc import Model, UiProperty
-from tp.naming.consts import EditIndexMode
+from tp.libs.qt.mvc import Model, UiProperty
+from tp.libs.naming.consts import EditIndexMode
 
-from .events import (
-    UpdateNodeTypesEvent,
-    UpdatePrefixesSuffixesEvent,
-    RenameBaseNameEvent,
-    SearchReplaceEvent,
-    AddPrefixEvent,
-    AddSuffixEvent,
-    RemovePrefixEvent,
-    RemoveSuffixEvent,
-    EditIndexEvent,
-    ShuffleIndexEvent,
-    ChangePaddingEvent,
-    RenumberEvent,
-    RemoveNumbersEvent,
-    AssignNamespaceEvent,
-    DeleteSelectedNamespaceEvent,
-    DeleteUnusedNamespacesEvent,
-    OpenNamespaceEditorEvent,
-    OpenReferenceEditorEvent,
-    AutoPrefixEvent,
-    AutoSuffixEvent,
-    MakeUniqueNameEvent,
-)
-
-logger = logging.getLogger(__name__)
+from . import events
 
 
 class RenamerModel(Model):
-    """
-    Model class that stores all the data for the Renamer tool.
-    """
+    """Model class that stores all the data for the Renamer tool."""
 
-    updateNodeTypes = Signal(UpdateNodeTypesEvent)
-    updatePrefixesSuffixes = Signal(UpdatePrefixesSuffixesEvent)
-    renameBaseName = Signal(RenameBaseNameEvent)
-    searchReplace = Signal(SearchReplaceEvent)
-    addPrefix = Signal(AddPrefixEvent)
-    addSuffix = Signal(AddSuffixEvent)
-    removePrefix = Signal(RemovePrefixEvent)
-    removeSuffix = Signal(RemoveSuffixEvent)
-    editIndex = Signal(EditIndexEvent)
-    shuffleIndex = Signal(ShuffleIndexEvent)
-    changePadding = Signal(ChangePaddingEvent)
-    doRenumber = Signal(RenumberEvent)
-    removeNumbers = Signal(RemoveNumbersEvent)
-    assignNamespace = Signal(AssignNamespaceEvent)
-    deleteSelectedNamespace = Signal(DeleteSelectedNamespaceEvent)
-    deleteUnusedNamespaces = Signal(DeleteUnusedNamespacesEvent)
-    openNamespaceEditor = Signal(OpenNamespaceEditorEvent)
-    openReferenceEditor = Signal(OpenReferenceEditorEvent)
-    autoPrefix = Signal(AutoPrefixEvent)
-    autoSuffix = Signal(AutoSuffixEvent)
-    makeUniqueName = Signal(MakeUniqueNameEvent)
+    updateNodeTypes = Signal(events.UpdateNodeTypesEvent)
+    updatePrefixesSuffixes = Signal(events.UpdatePrefixesSuffixesEvent)
+    renameBaseName = Signal(events.RenameBaseNameEvent)
+    searchReplace = Signal(events.SearchReplaceEvent)
+    addPrefix = Signal(events.AddPrefixEvent)
+    addSuffix = Signal(events.AddSuffixEvent)
+    removePrefix = Signal(events.RemovePrefixEvent)
+    removeSuffix = Signal(events.RemoveSuffixEvent)
+    editIndex = Signal(events.EditIndexEvent)
+    shuffleIndex = Signal(events.ShuffleIndexEvent)
+    changePadding = Signal(events.ChangePaddingEvent)
+    doRenumber = Signal(events.RenumberEvent)
+    removeNumbers = Signal(events.RemoveNumbersEvent)
+    assignNamespace = Signal(events.AssignNamespaceEvent)
+    deleteSelectedNamespace = Signal(events.DeleteSelectedNamespaceEvent)
+    deleteUnusedNamespaces = Signal(events.DeleteUnusedNamespacesEvent)
+    openNamespaceEditor = Signal(events.OpenNamespaceEditorEvent)
+    openReferenceEditor = Signal(events.OpenReferenceEditorEvent)
+    autoPrefix = Signal(events.AutoPrefixEvent)
+    autoSuffix = Signal(events.AutoSuffixEvent)
+    makeUniqueName = Signal(events.MakeUniqueNameEvent)
 
     def initialize_properties(self) -> list[UiProperty]:
-        """
-        Overrides `initialize_properties` to Initialize the properties associated with the instance.
+        """Overrides `initialize_properties` to Initialize the properties associated with the instance.
 
         This method initializes the properties associated with the instance.
 
-        :return: A list of initialized UI properties.
+        Returns:
+            A list of initialized UI properties.
         """
 
         return [
@@ -96,28 +69,22 @@ class RenamerModel(Model):
         ]
 
     def update_node_types(self):
-        """
-        Updates available node types.
-        """
+        """Updates available node types."""
 
-        event = UpdateNodeTypesEvent()
+        event = events.UpdateNodeTypesEvent()
         self.updateNodeTypes.emit(event)
         self.update_property("node_types", event.node_types)
 
     def update_prefixes_suffixes(self):
-        """
-        Updates available prefixes and suffixes.
-        """
+        """Updates available prefixes and suffixes."""
 
-        event = UpdatePrefixesSuffixesEvent()
+        event = events.UpdatePrefixesSuffixesEvent()
         self.updatePrefixesSuffixes.emit(event)
         self.update_property("prefixes", event.prefixes)
         self.update_property("suffixes", event.suffixes)
 
     def force_rename(self):
-        """
-        Forces the renaming of the nodes.
-        """
+        """Forces the renaming of the nodes."""
 
         search_hierarchy, selection_only = self._get_filter_options()
         nice_name_type = self.properties.node_types.value[
@@ -137,7 +104,7 @@ class RenamerModel(Model):
             )
             return
 
-        event = RenameBaseNameEvent(
+        event = events.RenameBaseNameEvent(
             base_name=base_name,
             nice_name_type=nice_name_type,
             padding=int(self.properties.numeric_padding.value),
@@ -148,9 +115,7 @@ class RenamerModel(Model):
             logger.error("Failed to rename nodes.")
 
     def search_replace(self):
-        """
-        Searches and replaces the nodes.
-        """
+        """Searches and replaces the nodes."""
 
         search_hierarchy, selection_only = self._get_filter_options()
         nice_name_type = self.properties.node_types.value[
@@ -168,7 +133,7 @@ class RenamerModel(Model):
             )
             return
 
-        event = SearchReplaceEvent(
+        event = events.SearchReplaceEvent(
             search=search_text,
             replace=replace_text,
             nice_name_type=nice_name_type,
@@ -181,9 +146,7 @@ class RenamerModel(Model):
             logger.error("Failed to search and replace node names.")
 
     def add_prefix(self):
-        """
-        Adds a prefix to the nodes.
-        """
+        """Adds a prefix to the nodes."""
 
         search_hierarchy, selection_only = self._get_filter_options()
         nice_name_type = self.properties.node_types.value[
@@ -198,7 +161,7 @@ class RenamerModel(Model):
             logger.warning("Prefix cannot start with a digit.")
             return
 
-        event = AddPrefixEvent(
+        event = events.AddPrefixEvent(
             prefix=prefix,
             nice_name_type=nice_name_type,
             rename_shape=self.properties.auto_shapes.value,
@@ -210,9 +173,7 @@ class RenamerModel(Model):
             logger.error("Failed to add prefix to node names.")
 
     def add_suffix(self):
-        """
-        Adds a suffix to the nodes.
-        """
+        """Adds a suffix to the nodes."""
 
         search_hierarchy, selection_only = self._get_filter_options()
         nice_name_type = self.properties.node_types.value[
@@ -224,7 +185,7 @@ class RenamerModel(Model):
             logger.warning("Please type a suffix.")
             return
 
-        event = AddSuffixEvent(
+        event = events.AddSuffixEvent(
             suffix=suffix,
             nice_name_type=nice_name_type,
             rename_shape=self.properties.auto_shapes.value,
@@ -236,9 +197,7 @@ class RenamerModel(Model):
             logger.error("Failed to add suffix to node names.")
 
     def remove_prefix(self):
-        """
-        Removes a prefix from the node names.
-        """
+        """Removes a prefix from the node names."""
 
         search_hierarchy, selection_only = self._get_filter_options()
         nice_name_type = self.properties.node_types.value[
@@ -248,7 +207,7 @@ class RenamerModel(Model):
             logger.warning("The `All` filter cannot be used with force name.")
             return
 
-        event = RemovePrefixEvent(
+        event = events.RemovePrefixEvent(
             nice_name_type=nice_name_type,
             rename_shape=self.properties.auto_shapes.value,
             hierarchy=search_hierarchy,
@@ -259,9 +218,7 @@ class RenamerModel(Model):
             logger.error("Failed to remove prefix from node names.")
 
     def remove_suffix(self):
-        """
-        Removes a suffix from the node names.
-        """
+        """Removes a suffix from the node names."""
 
         search_hierarchy, selection_only = self._get_filter_options()
         nice_name_type = self.properties.node_types.value[
@@ -271,7 +228,7 @@ class RenamerModel(Model):
             logger.warning("The `All` filter cannot be used with force name.")
             return
 
-        event = RemoveSuffixEvent(
+        event = events.RemoveSuffixEvent(
             nice_name_type=nice_name_type,
             rename_shape=self.properties.auto_shapes.value,
             hierarchy=search_hierarchy,
@@ -282,10 +239,10 @@ class RenamerModel(Model):
             logger.error("Failed to remove suffix from node names.")
 
     def edit_index(self):
-        """
-        Edits the index of the node names.
+        """Edits the index of the node names.
 
-        :raises ValueError: If the edit mode is invalid.
+        Raises:
+            ValueError: If the index is not a valid integer.
         """
 
         search_hierarchy, selection_only = self._get_filter_options()
@@ -311,7 +268,7 @@ class RenamerModel(Model):
         if index > 0:
             index -= 1
 
-        event = EditIndexEvent(
+        event = events.EditIndexEvent(
             text=text,
             nice_name_type=nice_name_type,
             rename_shape=self.properties.auto_shapes.value,
@@ -325,10 +282,10 @@ class RenamerModel(Model):
             logger.error("Failed to edit index of node names.")
 
     def shuffle_index(self, offset: int):
-        """
-        Shuffles the index of the node names.
+        """Shuffles the index of the node names.
 
-        :param offset: The offset to shuffle the index.
+        Args:
+            offset: The offset to shuffle the index.
         """
 
         search_hierarchy, selection_only = self._get_filter_options()
@@ -343,7 +300,7 @@ class RenamerModel(Model):
         if shuffle_index > 0:
             shuffle_index -= 1
 
-        event = ShuffleIndexEvent(
+        event = events.ShuffleIndexEvent(
             nice_name_type=nice_name_type,
             rename_shape=self.properties.auto_shapes.value,
             hierarchy=search_hierarchy,
@@ -363,9 +320,7 @@ class RenamerModel(Model):
         self.update_property("index_shuffle", str(new_value))
 
     def change_padding(self):
-        """
-        Changes the padding of the node names.
-        """
+        """Changes the padding of the node names."""
 
         search_hierarchy, selection_only = self._get_filter_options()
         nice_name_type = self.properties.node_types.value[
@@ -376,7 +331,7 @@ class RenamerModel(Model):
             logger.warning("The `All` filter cannot be used with change padding.")
             return
 
-        event = ChangePaddingEvent(
+        event = events.ChangePaddingEvent(
             padding=padding,
             nice_name_type=nice_name_type,
             rename_shape=self.properties.auto_shapes.value,
@@ -388,10 +343,10 @@ class RenamerModel(Model):
             logger.error("Failed to change padding of node names.")
 
     def renumber(self, trailing_only: bool = False):
-        """
-        Renumber the node names.
+        """Renumber the node names.
 
-        :param trailing_only: Whether to renumber only the trailing numbers.
+        Args:
+            trailing_only: Whether to renumber only the trailing numbers.
         """
 
         search_hierarchy, selection_only = self._get_filter_options()
@@ -403,7 +358,7 @@ class RenamerModel(Model):
             logger.warning("The `All` filter cannot be used with renumber.")
             return
 
-        event = RenumberEvent(
+        event = events.RenumberEvent(
             nice_name_type=nice_name_type,
             remove_trailing_numbers=trailing_only,
             padding=padding,
@@ -416,17 +371,17 @@ class RenamerModel(Model):
             logger.error("Failed to renumber node names.")
 
     def remove_numbers(self, trailing_only: bool = False):
-        """
-        Removes the numbers from the node names.
+        """Removes the numbers from the node names.
 
-        :param trailing_only: Whether to remove only the trailing numbers.
+        Args:
+            trailing_only: Whether to remove only the trailing numbers.
         """
 
         search_hierarchy, selection_only = self._get_filter_options()
         nice_name_type = self.properties.node_types.value[
             self.properties.active_node_type_index.value
         ]
-        event = RemoveNumbersEvent(
+        event = events.RemoveNumbersEvent(
             nice_name_type=nice_name_type,
             trailing_only=trailing_only,
             rename_shape=self.properties.auto_shapes.value,
@@ -438,9 +393,7 @@ class RenamerModel(Model):
             logger.error("Failed to remove numbers from node names.")
 
     def assign_namespace(self):
-        """
-        Assigns a namespace to the node names.
-        """
+        """Assigns a namespace to the node names."""
 
         search_hierarchy, selection_only = self._get_filter_options()
         nice_name_type = self.properties.node_types.value[
@@ -451,7 +404,7 @@ class RenamerModel(Model):
             True if self.properties.namespace_option_index.value == 1 else False
         )
 
-        event = AssignNamespaceEvent(
+        event = events.AssignNamespaceEvent(
             namespace=namespace,
             nice_name_type=nice_name_type,
             remove_namespace=remove_namespace,
@@ -464,11 +417,9 @@ class RenamerModel(Model):
             logger.error("Failed to assign namespace to node names.")
 
     def delete_selected_namespace(self):
-        """
-        Deletes selected namespaces.
-        """
+        """Deletes selected namespaces."""
 
-        event = DeleteSelectedNamespaceEvent(
+        event = events.DeleteSelectedNamespaceEvent(
             rename_shape=self.properties.auto_shapes.value
         )
         self.deleteSelectedNamespace.emit(event)
@@ -476,42 +427,34 @@ class RenamerModel(Model):
             logger.error("Failed to delete selected namespace.")
 
     def delete_unused_namespaces(self):
-        """
-        Deletes unused namespaces.
-        """
+        """Deletes unused namespaces."""
 
-        event = DeleteUnusedNamespacesEvent()
+        event = events.DeleteUnusedNamespacesEvent()
         self.deleteUnusedNamespaces.emit(event)
         if not event.success:
             logger.error("Failed to delete unused namespaces.")
 
     def open_namespace_editor(self):
-        """
-        Opens namespace editor.
-        """
+        """Opens namespace editor."""
 
-        event = OpenNamespaceEditorEvent()
+        event = events.OpenNamespaceEditorEvent()
         self.openNamespaceEditor.emit(event)
 
     def open_reference_editor(self):
-        """
-        Opens reference editor.
-        """
+        """Opens reference editor."""
 
-        event = OpenReferenceEditorEvent()
+        event = events.OpenReferenceEditorEvent()
         self.openReferenceEditor.emit(event)
 
     def auto_prefix(self):
-        """
-        Auto prefixes nodes based on its node type.
-        """
+        """Auto prefixes nodes based on its node type."""
 
         search_hierarchy, selection_only = self._get_filter_options()
         nice_name_type = self.properties.node_types.value[
             self.properties.active_node_type_index.value
         ]
 
-        event = AutoPrefixEvent(
+        event = events.AutoPrefixEvent(
             nice_name_type=nice_name_type,
             rename_shape=self.properties.auto_shapes.value,
             hierarchy=search_hierarchy,
@@ -522,16 +465,14 @@ class RenamerModel(Model):
             logger.error("Failed to auto prefix node names.")
 
     def auto_suffix(self):
-        """
-        Auto suffixes nodes based on its node type.
-        """
+        """Auto suffixes nodes based on its node type."""
 
         search_hierarchy, selection_only = self._get_filter_options()
         nice_name_type = self.properties.node_types.value[
             self.properties.active_node_type_index.value
         ]
 
-        event = AutoSuffixEvent(
+        event = events.AutoSuffixEvent(
             nice_name_type=nice_name_type,
             rename_shape=self.properties.auto_shapes.value,
             hierarchy=search_hierarchy,
@@ -542,9 +483,7 @@ class RenamerModel(Model):
             logger.error("Failed to auto suffix node names.")
 
     def make_unique_name(self):
-        """
-        Make a unique name for the node.
-        """
+        """Make a unique name for the node."""
 
         search_hierarchy, selection_only = self._get_filter_options()
         nice_name_type = self.properties.node_types.value[
@@ -552,7 +491,7 @@ class RenamerModel(Model):
         ]
         padding = int(self.properties.renumber_padding.value)
 
-        event = MakeUniqueNameEvent(
+        event = events.MakeUniqueNameEvent(
             nice_name_type=nice_name_type,
             padding=padding,
             rename_shape=self.properties.auto_shapes.value,
@@ -564,10 +503,11 @@ class RenamerModel(Model):
             logger.error("Failed to make unique name for node.")
 
     def _get_filter_options(self) -> tuple[bool, bool]:
-        """
-        Internal function that returns the filter options.
+        """Return the filter options.
 
-        :return: tuple containing whether to search hierarchy and whether to rename only the current selection.
+        Returns:
+            Tuple containing whether to search hierarchy and whether to
+            rename only the current selection.
         """
 
         search_hierarchy = False

@@ -4,53 +4,29 @@ import typing
 
 from maya import mel
 
-from tp.naming.consts import PrefixSuffixType
-from tp.naming.maya import api as naming
-from tp.maya.cmds import filtertypes, decorators
+from tp.libs.naming.consts import PrefixSuffixType
+from tp.libs.naming.maya import api as naming
+from tp.libs.maya.cmds import filtertypes, decorators
 
 from ..abstract import ARenamerController
 
 if typing.TYPE_CHECKING:
-    from ...events import (
-        UpdateNodeTypesEvent,
-        UpdatePrefixesSuffixesEvent,
-        RenameBaseNameEvent,
-        SearchReplaceEvent,
-        AddPrefixEvent,
-        AddSuffixEvent,
-        RemovePrefixEvent,
-        RemoveSuffixEvent,
-        EditIndexEvent,
-        ShuffleIndexEvent,
-        ChangePaddingEvent,
-        RenumberEvent,
-        RemoveNumbersEvent,
-        AssignNamespaceEvent,
-        DeleteSelectedNamespaceEvent,
-        DeleteUnusedNamespacesEvent,
-        OpenNamespaceEditorEvent,
-        OpenReferenceEditorEvent,
-        AutoPrefixEvent,
-        AutoSuffixEvent,
-        MakeUniqueNameEvent,
-    )
+    from ... import events
 
 
 class MayaRenamerController(ARenamerController):
     """Class that defines the interface for a renamer hook for Maya."""
 
-    def update_node_types(self, event: UpdateNodeTypesEvent):
-        """
-        Returns list of node types that can be used to filter nodes that can be renamed.
+    def update_node_types(self, event: events.UpdateNodeTypesEvent):
+        """Returns list of node types that can be used to filter nodes that can be renamed.
 
         :param event: update node types event.
         """
 
         event.node_types = list(filtertypes.TYPE_FILTERS.keys())
 
-    def update_prefixes_suffixes(self, event: UpdatePrefixesSuffixesEvent):
-        """
-        Updates prefixes and suffixes that can be used to filter nodes that can be renamed.
+    def update_prefixes_suffixes(self, event: events.UpdatePrefixesSuffixesEvent):
+        """Updates prefixes and suffixes that can be used to filter nodes that can be renamed.
 
         :param event: update prefixes and suffixes event.
         """
@@ -59,9 +35,8 @@ class MayaRenamerController(ARenamerController):
         event.suffixes = list(filtertypes.SUFFIXES.copy())
 
     @decorators.undo
-    def rename_base_name(self, event: RenameBaseNameEvent):
-        """
-        Renames the base name of the nodes.
+    def rename_base_name(self, event: events.RenameBaseNameEvent):
+        """Renames the base name of the nodes.
 
         :param event: rename base name event.
         """
@@ -75,9 +50,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True if new_names else False
 
     @decorators.undo
-    def search_replace(self, event: SearchReplaceEvent):
-        """
-        Renames the base name of the nodes.
+    def search_replace(self, event: events.SearchReplaceEvent):
+        """Renames the base name of the nodes.
 
         :param event: search replace event.
         """
@@ -93,9 +67,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True if new_names else False
 
     @decorators.undo
-    def add_prefix(self, event: AddPrefixEvent):
-        """
-        Adds a prefix to the nodes.
+    def add_prefix(self, event: events.AddPrefixEvent):
+        """Adds a prefix to the nodes.
 
         :param event: add prefix event.
         """
@@ -111,9 +84,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True if new_names else False
 
     @decorators.undo
-    def add_suffix(self, event: AddSuffixEvent):
-        """
-        Adds a suffix to the nodes.
+    def add_suffix(self, event: events.AddSuffixEvent):
+        """Adds a suffix to the nodes.
 
         :param event: add suffix event.
         """
@@ -129,9 +101,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True if new_names else False
 
     @decorators.undo
-    def remove_prefix(self, event: RemovePrefixEvent):
-        """
-        Removes a prefix from the nodes.
+    def remove_prefix(self, event: events.RemovePrefixEvent):
+        """Removes a prefix from the nodes.
 
         :param event: remove prefix event.
         """
@@ -151,9 +122,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True if new_names else False
 
     @decorators.undo
-    def remove_suffix(self, event: RemoveSuffixEvent):
-        """
-        Removes a suffix from the nodes.
+    def remove_suffix(self, event: events.RemoveSuffixEvent):
+        """Removes a suffix from the nodes.
 
         :param event: remove suffix event.
         """
@@ -173,9 +143,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True if new_names else False
 
     @decorators.undo
-    def edit_index(self, event: EditIndexEvent):
-        """
-        Edit index of the nodes.
+    def edit_index(self, event: events.EditIndexEvent):
+        """Edit index of the nodes.
 
         :param event: edit index event.
         """
@@ -196,9 +165,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True if new_names else False
 
     @decorators.undo
-    def shuffle_index(self, event: ShuffleIndexEvent):
-        """
-        Shuffle index of the nodes.
+    def shuffle_index(self, event: events.ShuffleIndexEvent):
+        """Shuffle index of the nodes.
 
         :param event: shuffle index event.
         """
@@ -218,9 +186,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True if new_names else False
 
     @decorators.undo
-    def change_padding(self, event: ChangePaddingEvent):
-        """
-        Change padding of the nodes.
+    def change_padding(self, event: events.ChangePaddingEvent):
+        """Change padding of the nodes.
 
         :param event: change padding event.
         """
@@ -239,9 +206,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True if new_names else False
 
     @decorators.undo
-    def renumber(self, event: RenumberEvent):
-        """
-        Renumber nodes.
+    def renumber(self, event: events.RenumberEvent):
+        """Renumber nodes.
 
         :param event: renumber event.
         """
@@ -261,9 +227,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True if new_names else False
 
     @decorators.undo
-    def remove_numbers(self, event: RemoveNumbersEvent):
-        """
-        Remove numbers from nodes.
+    def remove_numbers(self, event: events.RemoveNumbersEvent):
+        """Remove numbers from nodes.
 
         :param event: remove numbers event.
         """
@@ -281,9 +246,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True if new_names else False
 
     @decorators.undo
-    def assign_namespace(self, event: AssignNamespaceEvent):
-        """
-        Assign namespace to nodes.
+    def assign_namespace(self, event: events.AssignNamespaceEvent):
+        """Assign namespace to nodes.
 
         :param event: assign namespace event.
         """
@@ -302,9 +266,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True if new_names else False
 
     @decorators.undo
-    def delete_selected_namespace(self, event: DeleteSelectedNamespaceEvent):
-        """
-        Deletes selected namespace.
+    def delete_selected_namespace(self, event: events.DeleteSelectedNamespaceEvent):
+        """Deletes selected namespace.
 
         :param event: delete selected namespace event.
         """
@@ -314,9 +277,8 @@ class MayaRenamerController(ARenamerController):
         )
 
     @decorators.undo
-    def delete_unused_namespaces(self, event: DeleteUnusedNamespacesEvent):
-        """
-        Deletes unused namespaces.
+    def delete_unused_namespaces(self, event: events.DeleteUnusedNamespacesEvent):
+        """Deletes unused namespaces.
 
         :param event: delete unused namespaces event.
         """
@@ -324,9 +286,8 @@ class MayaRenamerController(ARenamerController):
         deleted_namespaces = naming.remove_empty_namespaces()
         event.success = True if deleted_namespaces else False
 
-    def open_namespace_editor(self, event: OpenNamespaceEditorEvent):
-        """
-        Opens namespace editor.
+    def open_namespace_editor(self, event: events.OpenNamespaceEditorEvent):
+        """Opens namespace editor.
 
         :param event: open namespace editor event.
         """
@@ -334,9 +295,8 @@ class MayaRenamerController(ARenamerController):
         mel.eval("namespaceEditor")
         event.success = True
 
-    def open_reference_editor(self, event: OpenReferenceEditorEvent):
-        """
-        Opens reference editor.
+    def open_reference_editor(self, event: events.OpenReferenceEditorEvent):
+        """Opens reference editor.
 
         :param event: open reference editor event.
         """
@@ -345,9 +305,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True
 
     @decorators.undo
-    def auto_prefix(self, event: AutoPrefixEvent):
-        """
-        Auto prefix nodes.
+    def auto_prefix(self, event: events.AutoPrefixEvent):
+        """Auto prefix nodes.
 
         :param event: auto prefix event.
         """
@@ -365,9 +324,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True if new_names else False
 
     @decorators.undo
-    def auto_suffix(self, event: AutoSuffixEvent):
-        """
-        Auto suffix nodes.
+    def auto_suffix(self, event: events.AutoSuffixEvent):
+        """Auto suffix nodes.
 
         :param event: auto suffix event.
         """
@@ -385,9 +343,8 @@ class MayaRenamerController(ARenamerController):
         event.success = True if new_names else False
 
     @decorators.undo
-    def make_unique_name(self, event: MakeUniqueNameEvent):
-        """
-        Make unique name for nodes.
+    def make_unique_name(self, event: events.MakeUniqueNameEvent):
+        """Make unique name for nodes.
 
         :param event: make unique name event.
         """

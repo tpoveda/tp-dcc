@@ -1,244 +1,203 @@
 from __future__ import annotations
 
 import typing
-from abc import abstractmethod
 
-from tp.qt.mvc import Controller
+from tp.libs.qt.mvc import Controller
 
 if typing.TYPE_CHECKING:
-    from ..events import (
-        UpdateNodeTypesEvent,
-        UpdatePrefixesSuffixesEvent,
-        RenameBaseNameEvent,
-        AddPrefixEvent,
-        AddSuffixEvent,
-        RemovePrefixEvent,
-        RemoveSuffixEvent,
-        EditIndexEvent,
-        ShuffleIndexEvent,
-        ChangePaddingEvent,
-        RenumberEvent,
-        RemoveNumbersEvent,
-        AssignNamespaceEvent,
-        DeleteSelectedNamespaceEvent,
-        DeleteUnusedNamespacesEvent,
-        OpenNamespaceEditorEvent,
-        OpenReferenceEditorEvent,
-        AutoPrefixEvent,
-        AutoSuffixEvent,
-        MakeUniqueNameEvent,
-    )
+    from .. import events
 
 
 class ARenamerController(Controller):
     """Abstract class that defines the interface for a renamer controller."""
 
-    @abstractmethod
-    def update_node_types(self, event: UpdateNodeTypesEvent):
-        """
-        Updates node types that can be used to filter nodes that can be renamed.
+    def update_node_types(self, event: events.UpdateNodeTypesEvent):
+        """Updates node types that can be used to filter nodes that can be
+        renamed.
 
-        :param event: update node types event.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def update_prefixes_suffixes(self, event: UpdatePrefixesSuffixesEvent):
-        """
-        Updates prefixes and suffixes that can be used to filter nodes that can be renamed.
-
-        :param event: update prefixes and suffixes event.
+        Args:
+            event: Update node types event.
         """
 
         raise NotImplementedError
 
-    @abstractmethod
-    def rename_base_name(self, event: RenameBaseNameEvent):
-        """
-        Renames the base name of the nodes.
+    def update_prefixes_suffixes(self, event: events.UpdatePrefixesSuffixesEvent):
+        """Updates prefixes and suffixes that can be used to filter nodes
+        that can be renamed.
 
-        :param event: rename base name event.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def search_replace(self, event: RenameBaseNameEvent):
-        """
-        Renames the base name of the nodes.
-
-        :param event: rename base name event.
+        Args:
+            event: Update prefixes and suffixes event.
         """
 
         raise NotImplementedError
 
-    @abstractmethod
-    def add_prefix(self, event: AddPrefixEvent):
-        """
-        Adds a prefix to the nodes.
+    def rename_base_name(self, event: events.RenameBaseNameEvent):
+        """Renames the base name of the nodes.
 
-        :param event: add prefix event.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def add_suffix(self, event: AddSuffixEvent):
-        """
-        Adds a suffix to the nodes.
-
-        :param event: add suffix event.
+        Args:
+            event: Rename base name event.
         """
 
         raise NotImplementedError
 
-    @abstractmethod
-    def remove_prefix(self, event: RemovePrefixEvent):
-        """
-        Removes a prefix from the nodes.
+    def search_replace(self, event: events.RenameBaseNameEvent):
+        """Renames the base name of the nodes.
 
-        :param event: remove prefix event.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def remove_suffix(self, event: RemoveSuffixEvent):
-        """
-        Removes a suffix from the nodes.
-
-        :param event: remove suffix event.
+        Args:
+            event: Rename base name event.
         """
 
         raise NotImplementedError
 
-    @abstractmethod
-    def edit_index(self, event: EditIndexEvent):
-        """
-        Edit index of the nodes.
+    def add_prefix(self, event: events.AddPrefixEvent):
+        """Adds a prefix to the nodes.
 
-        :param event: edit index event.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def shuffle_index(self, event: ShuffleIndexEvent):
-        """
-        Shuffle index of the nodes.
-
-        :param event: shuffle index event.
+        Args:
+            event: Add prefix event.
         """
 
         raise NotImplementedError
 
-    @abstractmethod
-    def change_padding(self, event: ChangePaddingEvent):
-        """
-        Change padding of the nodes.
+    def add_suffix(self, event: events.AddSuffixEvent):
+        """Adds a suffix to the nodes.
 
-        :param event: change padding event.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def renumber(self, event: RenumberEvent):
-        """
-        Renumber nodes.
-
-        :param event: renumber event.
+        Args:
+            event: Add suffix event.
         """
 
         raise NotImplementedError
 
-    @abstractmethod
-    def remove_numbers(self, event: RemoveNumbersEvent):
-        """
-        Remove numbers from nodes.
+    def remove_prefix(self, event: events.RemovePrefixEvent):
+        """Removes a prefix from the nodes.
 
-        :param event: remove numbers event.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def assign_namespace(self, event: AssignNamespaceEvent):
-        """
-        Assign namespace to nodes.
-
-        :param event: assign namespace event.
+        Args:
+            event: Remove prefix event.
         """
 
         raise NotImplementedError
 
-    @abstractmethod
-    def delete_selected_namespace(self, event: DeleteSelectedNamespaceEvent):
-        """
-        Deletes selected namespace.
+    def remove_suffix(self, event: events.RemoveSuffixEvent):
+        """Removes a suffix from the nodes.
 
-        :param event: delete selected namespace event.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def delete_unused_namespaces(self, event: DeleteUnusedNamespacesEvent):
-        """
-        Deletes unused namespaces.
-
-        :param event: delete unused namespaces event.
+        Args:
+            event: Remove suffix event.
         """
 
         raise NotImplementedError
 
-    @abstractmethod
-    def open_namespace_editor(self, event: OpenNamespaceEditorEvent):
-        """
-        Opens namespace editor.
+    def edit_index(self, event: events.EditIndexEvent):
+        """Edit index of the nodes.
 
-        :param event: open namespace editor event.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def open_reference_editor(self, event: OpenReferenceEditorEvent):
-        """
-        Opens reference editor.
-
-        :param event: open reference editor event.
+        Args:
+            event: Edit index event.
         """
 
         raise NotImplementedError
 
-    @abstractmethod
-    def auto_prefix(self, event: AutoPrefixEvent):
-        """
-        Auto prefix nodes.
+    def shuffle_index(self, event: events.ShuffleIndexEvent):
+        """Shuffle index of the nodes.
 
-        :param event: auto prefix event.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def auto_suffix(self, event: AutoSuffixEvent):
-        """
-        Auto suffix nodes.
-
-        :param event: auto suffix event.
+        Args:
+            event: Shuffle index event.
         """
 
         raise NotImplementedError
 
-    @abstractmethod
-    def make_unique_name(self, event: MakeUniqueNameEvent):
-        """
-        Make unique name for nodes.
+    def change_padding(self, event: events.ChangePaddingEvent):
+        """Change padding of the nodes.
 
-        :param event: make unique name event.
+        Args:
+            event: Change padding event.
+        """
+
+        raise NotImplementedError
+
+    def renumber(self, event: events.RenumberEvent):
+        """Renumber nodes.
+
+        Args:
+            event: Renumber event.
+        """
+
+        raise NotImplementedError
+
+    def remove_numbers(self, event: events.RemoveNumbersEvent):
+        """Remove numbers from nodes.
+
+        Args:
+            event: Remove numbers event.
+        """
+
+        raise NotImplementedError
+
+    def assign_namespace(self, event: events.AssignNamespaceEvent):
+        """Assign namespace to nodes.
+
+        Args:
+            event: Assign namespace event.
+        """
+
+        raise NotImplementedError
+
+    def delete_selected_namespace(self, event: events.DeleteSelectedNamespaceEvent):
+        """Deletes selected namespace.
+
+        Args:
+            event: Delete selected namespace event.
+        """
+
+        raise NotImplementedError
+
+    def delete_unused_namespaces(self, event: events.DeleteUnusedNamespacesEvent):
+        """Deletes unused namespaces.
+
+        Args:
+            event: Delete unused namespaces event.
+        """
+
+        raise NotImplementedError
+
+    def open_namespace_editor(self, event: events.OpenNamespaceEditorEvent):
+        """Opens namespace editor.
+
+        Args:
+            event: Open namespace editor event.
+        """
+
+        raise NotImplementedError
+
+    def open_reference_editor(self, event: events.OpenReferenceEditorEvent):
+        """Opens reference editor.
+
+        Args:
+            event: Open reference editor event.
+        """
+
+        raise NotImplementedError
+
+    def auto_prefix(self, event: events.AutoPrefixEvent):
+        """Auto prefix nodes.
+
+        Args:
+            event: Auto prefix event.
+        """
+
+        raise NotImplementedError
+
+    def auto_suffix(self, event: events.AutoSuffixEvent):
+        """Auto suffix nodes.
+
+        Args:
+            event: Auto suffix event.
+        """
+
+        raise NotImplementedError
+
+    def make_unique_name(self, event: events.MakeUniqueNameEvent):
+        """Make unique name for nodes.
+
+        Args:
+            event: Make unique name event.
         """
 
         raise NotImplementedError

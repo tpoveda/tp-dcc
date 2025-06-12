@@ -6,9 +6,8 @@ from Qt.QtCore import Signal
 from Qt.QtWidgets import QWidget
 from Qt.QtGui import QIcon
 
-from tp.qt import contexts
-from tp.python import paths
-from tp.qt import uiconsts, factory
+from tp.libs.python import paths
+from tp.libs.qt import uiconsts, contexts, factory
 
 from . import consts, tooltips
 
@@ -30,9 +29,7 @@ class RenamerWidget(QWidget):
         self._setup_signals()
 
     def _setup_widgets(self):
-        """
-        Internal function that setup all view widgets.
-        """
+        """Internal function that setup all view widgets."""
 
         # Filters
         self._filters_frame = factory.collapsible_frame(
@@ -297,9 +294,7 @@ class RenamerWidget(QWidget):
         )
 
     def _setup_layouts(self):
-        """
-        Internal function that creates all UI layouts and add all widgets to them.
-        """
+        """Internal function that creates all UI layouts and add all widgets to them."""
 
         contents_layout = factory.vertical_main_layout()
         self.setLayout(contents_layout)
@@ -476,9 +471,7 @@ class RenamerWidget(QWidget):
         ]
 
     def _link_properties(self):
-        """
-        Internal function that link between UI widgets and tool UI properties.
-        """
+        """Internal function that link between UI widgets and tool UI properties."""
 
         self._model.link_property(self._nodes_filter_combo, "active_node_type_index")
         self._model.link_property(self._auto_shapes_checkbox, "auto_shapes")
@@ -501,9 +494,7 @@ class RenamerWidget(QWidget):
         self._model.link_property(self._namespace_combo, "namespace_option_index")
 
     def _setup_signals(self):
-        """
-        Internal function that setup all signals connections.
-        """
+        """Internal function that setup all signals connections."""
 
         self._model.listen("node_types", self._on_model_node_types_changed)
         self._model.listen("prefixes", self._on_model_prefixes_changed)
@@ -567,8 +558,7 @@ class RenamerWidget(QWidget):
         )
 
     def _on_model_node_types_changed(self, node_types: list[str]):
-        """
-        Internal callback function that is called when node types are changed.
+        """Internal callback function that is called when node types are changed.
 
         :param node_types: list of node types.
         """
@@ -578,8 +568,7 @@ class RenamerWidget(QWidget):
             self._nodes_filter_combo.add_items(node_types)
 
     def _on_model_prefixes_changed(self, prefixes: list[str]):
-        """
-        Internal callback function that is called when prefixes are changed.
+        """Internal callback function that is called when prefixes are changed.
 
         :param prefixes: list of prefixes.
         """
@@ -589,8 +578,7 @@ class RenamerWidget(QWidget):
             self._prefix_combo.add_items(prefixes)
 
     def _on_model_suffixes_changed(self, suffixes: list[str]):
-        """
-        Internal callback function that is called when suffixes are changed.
+        """Internal callback function that is called when suffixes are changed.
 
         :param suffixes: list of suffixes.
         """
@@ -600,8 +588,7 @@ class RenamerWidget(QWidget):
             self._suffix_combo.add_items(suffixes)
 
     def _on_options_radio_toggled(self, index: int):
-        """
-        Internal callback function that is called when the options radio is toggled.
+        """Internal callback function that is called when the options radio is toggled.
 
         :param index: index of the radio button that was toggled.
         """
@@ -616,9 +603,7 @@ class RenamerWidget(QWidget):
                 self._at_index_string_edit.setDisabled(True)
 
     def _on_prefix_combo_item_changed(self):
-        """
-        Internal callback function that is called when the prefix combo item is changed.
-        """
+        """Internal callback function that is called when the prefix combo item is changed."""
 
         index = self._prefix_combo.current_index()
 
@@ -631,9 +616,7 @@ class RenamerWidget(QWidget):
         self._model.update_property("prefix", f"{text_parts[-2]}_")
 
     def _on_suffix_combo_item_changed(self):
-        """
-        Internal callback function that is called when the suffix combo item is changed.
-        """
+        """Internal callback function that is called when the suffix combo item is changed."""
 
         index = self._suffix_combo.current_index()
 
@@ -646,52 +629,39 @@ class RenamerWidget(QWidget):
         self._model.update_property("suffix", f"_{text_parts[-2]}")
 
     def _on_force_rename_button_clicked(self):
-        """
-        Internal callback function that is called when the force rename button is clicked.
-        """
+        """Internal callback function that is called when the force rename button is clicked."""
 
         self._model.force_rename()
 
     def _on_search_replace_button_clicked(self):
-        """
-        Internal callback function that is called when the search replace button is clicked.
-        """
+        """Internal callback function that is called when the search replace button is clicked."""
 
         self._model.search_replace()
 
     def _on_prefix_button_clicked(self):
-        """
-        Internal callback function that is called when the prefix button is clicked.
-        """
+        """Internal callback function that is called when the prefix button is clicked."""
 
         self._model.add_prefix()
 
     def _on_suffix_button_clicked(self):
-        """
-        Internal callback function that is called when the suffix button is clicked.
-        """
+        """Internal callback function that is called when the suffix button is clicked."""
 
         self._model.add_suffix()
 
     def _on_remove_prefix_button_clicked(self):
-        """
-        Internal callback function that is called when the remove prefix button is clicked.
-        """
+        """Internal callback function that is called when the remove prefix button is clicked."""
 
         self._model.remove_prefix()
 
     def _on_remove_suffix_button_clicked(self):
-        """
-        Internal callback function that is called when the remove suffix button is clicked.
-        """
+        """Internal callback function that is called when the remove suffix button is clicked."""
 
         self._model.remove_suffix()
 
     def _on_index_combo_item_changed(
         self, event: factory.ComboBoxRegularWidget.ComboItemChangedEvent
     ):
-        """
-        Internal callback function that is called when the index combo item is changed.
+        """Internal callback function that is called when the index combo item is changed.
 
         :param event: index combo item changed event.
         """
@@ -699,29 +669,22 @@ class RenamerWidget(QWidget):
         self._at_index_string_edit.setDisabled(True if event.index == 2 else False)
 
     def _on_at_index_button_clicked(self):
-        """
-        Internal callback function that is called when the at index button is clicked.
-        """
+        """Internal callback function that is called when the at index button is clicked."""
 
         self._model.edit_index()
 
     def _on_index_shuffle_negate_button_clicked(self):
-        """
-        Internal callback function that is called when the index shuffle negate button is clicked.
-        """
+        """Internal callback function that is called when the index shuffle negate button is clicked."""
 
         self._model.shuffle_index(-1)
 
     def _on_index_shuffle_positive_button_clicked(self):
-        """
-        Internal callback function that is called when the index shuffle positive button is clicked.
-        """
+        """Internal callback function that is called when the index shuffle positive button is clicked."""
 
         self._model.shuffle_index(1)
 
     def _on_renumber_button_clicked(self):
-        """
-        Internal callback function that is called when the renumber button is clicked.
+        """Internal callback function that is called when the renumber button is clicked.
 
         :raises ValueError: If the renumber option is invalid.
         """
@@ -739,71 +702,51 @@ class RenamerWidget(QWidget):
             raise ValueError(f"Invalid renumber option: {renumber_option}")
 
     def _on_remove_numbers_button_clicked(self):
-        """
-        Internal callback function that is called when the remove numbers button is clicked.
-        """
+        """Internal callback function that is called when the remove numbers button is clicked."""
 
         self._model.remove_numbers(trailing_only=False)
 
     def _on_remove_tail_numbers_button_clicked(self):
-        """
-        Internal callback function that is called when the remove tail numbers button is clicked.
-        """
+        """Internal callback function that is called when the remove tail numbers button is clicked."""
 
         self._model.remove_numbers(trailing_only=True)
 
     def _on_namespace_button_clicked(self):
-        """
-        Internal callback function that is called when the namespace button is clicked.
-        """
+        """Internal callback function that is called when the namespace button is clicked."""
 
         self._model.assign_namespace()
 
     def _on_delete_selected_namespace_button_clicked(self):
-        """
-        Internal callback function that is called when the delete selected namespace button is clicked.
-        """
+        """Internal callback function that is called when the delete selected namespace button is clicked."""
 
         self._model.delete_selected_namespace()
 
     def _on_delete_unused_namespaces_button_clicked(self):
-        """
-        Internal callback function that is called when the delete unused namespaces button is clicked.
-        """
+        """Internal callback function that is called when the delete unused namespaces button is clicked."""
 
         self._model.delete_unused_namespaces()
 
     def _on_open_namespace_editor_button_clicked(self):
-        """
-        Internal callback function that is called when the open namespace editor button is clicked.
-        """
+        """Internal callback function that is called when the open namespace editor button is clicked."""
 
         self._model.open_namespace_editor()
 
     def _on_open_reference_editor_button_clicked(self):
-        """
-        Internal callback function that is called when the open reference editor button is clicked.
-        """
+        """Internal callback function that is called when the open reference editor button is clicked."""
 
         self._model.open_reference_editor()
 
     def _on_auto_prefix_button_clicked(self):
-        """
-        Internal callback function that is called each time auto prefix button is clicked.
-        """
+        """Internal callback function that is called each time auto prefix button is clicked."""
 
         self._model.auto_prefix()
 
     def _on_auto_suffix_button_clicked(self):
-        """
-        Internal callback function that is called each time auto suffix button is clicked.
-        """
+        """Internal callback function that is called each time auto suffix button is clicked."""
 
         self._model.auto_suffix()
 
     def _on_make_unique_name_button_clicked(self):
-        """
-        Internal callback function that is called each time make unique button is clicked.
-        """
+        """Internal callback function that is called each time make unique button is clicked."""
 
         self._model.make_unique_name()
