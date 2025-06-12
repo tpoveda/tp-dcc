@@ -10,9 +10,9 @@ from collections.abc import Iterator
 import yaml
 from loguru import logger
 
-from tp.core.utils import env, folder
 from tp.bootstrap.utils import fileio
-from tp.core.plugin import PluginsManager
+from tp.libs.python import osplatform, folder
+from tp.libs.plugin import PluginsManager
 
 from . import constants, errors
 from .setting import SettingObject
@@ -339,7 +339,7 @@ class PreferencesManager:
             str: The resolved root path.
         """
 
-        resolved_path = env.patch_windows_user_home(path_to_resolve)
+        resolved_path = osplatform.patch_windows_user_home(path_to_resolve)
         expanded = os.path.expandvars(resolved_path)
         path = Path(expanded).expanduser().resolve()
 

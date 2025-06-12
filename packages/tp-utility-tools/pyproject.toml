@@ -31,10 +31,10 @@ dev = [
 packages = { find = { where = ["src"], exclude = ["tests", "docs"] } }
 
 [tool.setuptools.package-data]
-"tp.utility-tools" = ["*.json", "*.yml", "*.yaml", "*.txt", "*.md", "*.ui", "*.qss", "*.scss", "*.png", "*.svg"]
+"tp.tools.utility" = ["*.json", "*.yml", "*.yaml", "*.txt", "*.md", "*.ui", "*.qss", "*.scss", "*.png", "*.svg"]
 
 [tool.setuptools.dynamic]
-version = { attr = "tp.utility-tools.__version__" }
+version = { attr = "tp.tools.utility.__version__" }
 readme = { file = ["README.md"], content-type = "text/markdown" }
 
 [tool.pytest.ini_options]

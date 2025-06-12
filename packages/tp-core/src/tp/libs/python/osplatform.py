@@ -3,101 +3,86 @@ from __future__ import annotations
 import os
 import sys
 import stat
-import enum
+import ctypes
 import logging
 import platform
+from pathlib import Path
+from collections.abc import Sequence
+
+try:
+    from ctypes.wintypes import MAX_PATH
+except (ImportError, ValueError):
+    MAX_PATH = 260
+
 
 logger = logging.getLogger(__name__)
 
 
-class Platform(enum.StrEnum):
-    """Enum that defines the different platforms."""
+def add_paths_to_env(env_var: str, paths: Sequence[str]):
+    """Adds the given paths to the environment variable.
 
-    Windows = "Windows"
-    Linux = "Linux"
-    Mac = "MacOS"
-
-
-def get_sys_platform() -> str:
-    """
-    Returns the OS system platform current Python session runs on.
-
-    :return: OS platform.
+    Args:
+        env_var: The name of the environment variable to add the paths to.
+        paths: Paths to add to the environment variable
     """
 
-    if sys.platform.startswith("java"):
-        os_name = platform.java_ver()[3][0]
-        # "Windows XP", "Windows 7", etc.
-        if os_name.startswith("Windows"):
-            system = "win32"
-        # "Mac OS X", etc.
-        elif os.name.startswith("Mac"):
-            system = "darwin"
-        # "Linux", "SunOS", "FreeBSD", etc.
-        else:
-            system = "linux2"
-    else:
-        system = sys.platform
+    existing_paths = {
+        str(Path(p.strip()).resolve())
+        for p in os.getenv(env_var, "").split(os.pathsep)
+        if p.strip()
+    }
 
-    return system
+    for new_path in paths:
+        normalized = str(Path(new_path.strip()).resolve())
+        existing_paths.add(normalized)
 
-
-def get_platform() -> Platform:
-    """
-    Returns the Platform current Python session runs on.
-
-    :return: OS platform.
-    :rtype: Platform
-    """
-
-    system_platform = get_sys_platform()
-
-    pl = Platform.Windows
-    if "linux" in system_platform:
-        pl = Platform.Linux
-    elif system_platform == "darwin":
-        pl = Platform.Mac
-
-    return pl
-
-
-def is_linux() -> bool:
-    """
-    Check to see if current platform is Linux.
-
-    :return: True if the current platform is Linux; False otherwise.
-    """
-
-    current_platform = get_platform()
-    return current_platform == Platform.Linux
-
-
-def is_mac() -> bool:
-    """
-    Check to see if current platform is Mac.
-
-    :return: True if the current platform is macOS; False otherwise.
-    """
-
-    current_platform = get_platform()
-    return current_platform == Platform.Mac
+    os.environ[env_var] = os.pathsep.join(existing_paths)
 
 
 def is_windows() -> bool:
-    """
-    Check to see if current platform is Windows.
+    """Checks if the current platform is Windows.
 
-    :return: True if the current platform is Windows; False otherwise.
+    Returns:
+        True if the current platform is Windows; False otherwise.
     """
 
-    current_platform = get_platform()
-    return current_platform == Platform.Windows
+    return platform.system().lower().startswith("win")
+
+
+def is_linux() -> bool:
+    """Checks if the current platform is Linux.
+
+    Returns:
+        True if the current platform is Linux; False otherwise.
+    """
+
+    return platform.system().lower().startswith("lin")
+
+
+def is_mac() -> bool:
+    """Checks if the current platform is macOS.
+
+    Returns:
+        True if the current platform is macOS; False otherwise.
+    """
+
+    plat = platform.system().lower()
+    return plat.startswith("mac") or plat.startswith("os") or plat.startswith("darwin")
+
+
+def is_unix() -> bool:
+    """Checks if the current platform is Unix-based (Linux or macOS).
+
+    Returns:
+        True if the current platform is Unix-based; False otherwise.
+    """
+
+    return is_mac() or is_linux()
 
 
 # noinspection PyBroadException
 def get_permission(filepath: str) -> bool:
-    """
-    Get permission on a given file path.
+    """Get permission on a given file path.
 
     :param filepath: file path to get permission.
     :return: whether the permission was granted or not.
@@ -140,9 +125,7 @@ def get_permission(filepath: str) -> bool:
 
 # noinspection SpellCheckingInspection
 def machine_info() -> dict:
-    """
-    Returns dictionary with information about the current machine
-    """
+    """Returns dictionary with information about the current machine"""
 
     machine_dict = {
         "pythonVersion": sys.version,
@@ -157,3 +140,25 @@ def machine_info() -> dict:
     }
 
     return machine_dict
+
+
+def patch_windows_user_home(root_path: str) -> str:
+    """Patch Windows '~' paths to use 'My Documents' instead of the home
+    directory.
+
+    Args:
+        root_path: The original root path, potentially starting with '~'.
+
+    Returns:
+        str: The patched absolute path if needed, or the original expanded
+            path.
+    """
+
+    if is_windows() and root_path.startswith("~"):
+        parts = os.path.normpath(root_path).split(os.path.sep)
+        dll = ctypes.windll.shell32
+        buf = ctypes.create_unicode_buffer(MAX_PATH + 1)
+        if dll.SHGetSpecialFolderPathW(None, buf, 0x0005, False):
+            return str(os.path.join(buf.value, *parts[1:]))
+
+    return os.path.expanduser(root_path)

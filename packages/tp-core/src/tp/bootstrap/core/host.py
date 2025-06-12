@@ -103,7 +103,7 @@ class Host(ABC):
             logger.debug(f'"{self._host_name}" host already initialized.')
             return
 
-        # Register pre-startup command callback.
+        # Register the pre-startup command callback.
         self._packages_manager.resolver.callbacks.setdefault(
             "pre_startup_commands", []
         ).append(self._pre_startup_command_callback)
@@ -241,7 +241,7 @@ class Host(ABC):
         manager.set_instance(manager.PreferencesManager(self._packages_manager))
 
 
-class HostApplication:
+class HostApplication(ABC):
     """Class that contains specific host application information and
     methods.
     """

@@ -10,7 +10,7 @@ from pathlib import Path
 from loguru import logger
 from packaging.version import parse as parse_version, Version
 
-from tp.core.utils import env
+from tp.libs.python import osplatform
 
 from .variable import Variable
 from .dependency import Dependency
@@ -201,7 +201,7 @@ class Package:
             )
             var.solve(self._tokens)
             if apply_environment:
-                env.add_paths_to_env(key, var.values)
+                osplatform.add_paths_to_env(key, var.values)
             package_variables[key] = var
 
         # Update system path with PYTHONPATH variables.

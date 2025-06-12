@@ -15,9 +15,10 @@ except ImportError:
 
 import yaml
 
+from tp.libs.python import modules
+
 from .dictplugin import DictPlugin
 from .plugin import Plugin, PluginDependencyError
-from ..utils import modules
 
 
 class PluginLoadError(Exception):

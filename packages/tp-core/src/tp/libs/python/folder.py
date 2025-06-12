@@ -6,21 +6,20 @@ import errno
 import shutil
 import pathlib
 import fnmatch
-import logging
 import subprocess
+from pathlib import Path
 from typing import Iterator
 from distutils import dir_util
 
-from . import osplatform, fileio, paths
+from loguru import logger
 
-logger = logging.getLogger(__name__)
+from . import osplatform, fileio, paths
 
 
 def create_folder(
     name: str, directory: str | None = None, make_unique: bool = False
 ) -> str:
-    """
-    Creates a new folder on the given path and with the given name.
+    """Creates a new folder on the given path and with the given name.
 
     :param name: name of the new directory.
     :param directory: path to the new directory.
@@ -56,8 +55,7 @@ def create_folder(
 
 
 def walk_level(root_directory: str, level: int | None = None) -> Iterator[str]:
-    """
-    Generator function recursively yields all files within given root directory.
+    """Generator function recursively yields all files within given root directory.
 
     :param root_directory: root directory.
     :param level: optional level to filter by.
@@ -85,8 +83,7 @@ def get_files(
     recursive: bool = False,
     pattern: str = "*",
 ) -> list[str]:
-    """
-    Returns files found in the given folder.
+    """Returns files found in the given folder.
 
     :param root_directory: folder we want to search files on.
     :param full_path: whether full path to the files will be returned otherwise file
@@ -120,39 +117,62 @@ def get_files(
 
 
 def ensure_folder_exists(
-    folder_path: str, permissions: int = 0o755, place_holder: bool = False
-) -> str:
-    """
-    Checks that folder given folder exists. If not, folder is created.
+    directory: str, permissions: int | None = None, placeholder: bool = False
+) -> bool:
+    """Ensure that a given folder exists, optionally setting permissions and
+    creating a placeholder file.
 
-    :param folder_path: folder path to check or created.
-    :param permissions: folder permission mode.
-    :param place_holder: whether to create placeholder text file or not.
-    :return: folder path.
-    :raise OSError: raise OSError if the creation of the folder fails.
+    This function checks whether the specified directory exists. If it does
+    not, it creates the directory, applies the given permissions (if any),
+    and optionally adds a placeholder file to allow detection by version
+    control systems that do not track empty folders.
+
+    Args:
+        directory: Absolute path of the folder to ensure exists.
+        permissions: Unix-style permission bits to set on the created
+            directory. Defaults to 0o775 if not provided.
+        placeholder: If True, creates a 'placeholder' file in the new
+            directory. Useful for ensuring version control systems detect
+            the directory.
+
+    Returns:
+        True if the directory was created; False if it already existed.
+
+    Raises:
+        OSError: If directory creation fails for reasons other than it
+        already existing.
     """
 
-    if os.path.exists(folder_path):
-        return folder_path
+    path = Path(directory)
+    if path.exists():
+        return False
+
+    permissions = permissions or 0o775
 
     try:
-        logger.debug("Creating folder {} [{}]".format(folder_path, permissions))
-        os.makedirs(folder_path, permissions)
-        if place_holder:
-            place_path = os.path.join(folder_path, "placeholder")
-            if not os.path.exists(place_path):
-                with open(place_path, "wt") as fh:
-                    fh.write("Automatically generated place holder file")
-    except OSError as err:
-        if err.errno != errno.EEXIST:
+        path.mkdir(parents=True, mode=permissions)
+        logger.debug(f"Created directory: {path} with permissions: {oct(permissions)}")
+
+        if placeholder:
+            placeholder_path = path / "placeholder"
+            if not placeholder_path.exists():
+                placeholder_path.write_text(
+                    "Automatically generated placeholder file.\n"
+                    "This file exists to allow source control systems to "
+                    "track this directory.",
+                    encoding="utf-8",
+                )
+                logger.debug(f"Created placeholder file at: {placeholder_path}")
+    except OSError as exc:
+        if exc.errno != errno.EEXIST:
+            logger.error(f"Failed to create directory '{path}': {exc}", exc_info=True)
             raise
 
-    return folder_path
+    return True
 
 
 def rename_folder(directory: str, name: str, make_unique: bool = False) -> str | None:
-    """
-    Renames given with a new name.
+    """Renames given with a new name.
 
     :param directory: full path to the directory we want to rename
     :param name: new name of the folder we want to rename
@@ -196,8 +216,7 @@ def copy_folder(
     directory_destination: str,
     ignore_patterns: str | list[str] | None = None,
 ) -> str | None:
-    """
-    Copies the given directory (and all its contents) into the given destination directory.
+    """Copies the given directory (and all its contents) into the given destination directory.
 
     :param directory: absolute path of the directory we want to copy.
     :param directory_destination: absolute path where we want to copy the directory.
@@ -244,8 +263,7 @@ def copy_folder(
 
 
 def copy_folder_contents(directory, directory_destination, *args, **kwargs):
-    """
-    Copies the given directory contents into the given destination directory.
+    """Copies the given directory contents into the given destination directory.
 
     :param str directory: absolute path of the directory we want to copy.
     :param str directory_destination: absolute path where we want to copy the directory.
@@ -271,8 +289,7 @@ def copy_folder_contents(directory, directory_destination, *args, **kwargs):
 def move_folder(
     directory: str, directory_destination: str, only_contents: bool = False
 ) -> bool:
-    """
-    Moves the given directory (and all its contents) into the given destination directory.
+    """Moves the given directory (and all its contents) into the given destination directory.
 
     :param directory: absolute path of the directory we want to move.
     :param directory_destination: absolute path where we want to move the directory.
@@ -309,8 +326,7 @@ def move_folder(
 
 
 def delete_folder(folder_name: str, directory: str | None = None) -> str | None:
-    """
-    Deletes the folder by name in the given directory.
+    """Deletes the folder by name in the given directory.
 
     :param folder_name: str, name of the folder to delete.
     :param directory: str, the directory path where the folder is stored.
@@ -318,9 +334,7 @@ def delete_folder(folder_name: str, directory: str | None = None) -> str | None:
     """
 
     def delete_read_only_error(action, name, exc):
-        """
-        Helper to delete read only files
-        """
+        """Helper to delete read only files"""
 
         osplatform.get_permission(name)
         action(name)
@@ -346,8 +360,7 @@ def delete_folder(folder_name: str, directory: str | None = None) -> str | None:
 
 
 def clean_folder(directory: str) -> bool:
-    """
-    Removes everything in the given directory.
+    """Removes everything in the given directory.
 
     :param directory: directory we want to clean.
     :return: True if the folder cleanup operation was successfully; False otherwise.

@@ -4,83 +4,128 @@ import os
 import sys
 import uuid
 import pathlib
-import logging
 import inspect
 import pkgutil
 import importlib
 import traceback
 import importlib.util
 from types import ModuleType
-from typing import Iterator, Iterable, Type, Any
+from typing import Iterable, Type, Any
+from collections.abc import Callable, Sequence, Iterator
+
+from loguru import logger
 
 from . import helpers
 
-logger = logging.getLogger(__name__)
 
 # File prefixes to exclude for determining a valid python module
 # include Operating System meta files and hidden files to ignore
 MODULE_EXCLUDE_PREFIXES = (
     "__init__.py",
     ".__init__",
-    # OSX related metaFiles
-    ".DS_Store",
-    ".Spotlight-V100",
-    ".Trashes",
-    ".fseventsd",
     "._",
 )
 
 
-def is_dotted_module_path(module_path: str) -> bool:
+def is_valid_module_path(
+    path: str, exclude: Sequence[str] | set[str] | None = None
+) -> bool:
+    """Returns whether the given path is a valid module path.
+
+    Args:
+        path: Path to check.
+        exclude: Names to exclude from the check.
+
+    Returns:
+        Whether the given path is a valid module path.
     """
-    Checks if the given module path is a dotted module path.
 
-    This function determines whether a module path is in the dotted notation,
-    which is typically used to represent nested module paths in Python.
+    exclude = exclude or []
+    base_name = os.path.basename(path)
+    if not base_name.startswith(MODULE_EXCLUDE_PREFIXES) and base_name not in exclude:
+        return pathlib.Path(path).suffix in (".py", ".pyc")
 
-    :param module_path: The module path to check.
-    :return: True if the module path is in dotted notation, False otherwise.
+    return False
+
+
+def is_dotted_path(path: str) -> bool:
+    """Returns whether the given path is dotted (tp.utils).
+
+    Args:
+        path: path to check.
+
+    Returns:
+        True if the given path is dotted; False otherwise.
     """
 
-    return len(module_path.split(".")) > 2
+    return len(path.split(".")) > 2
 
 
 def convert_to_dotted_path(path: str) -> str:
-    """
-    Converts a filesystem path to a dotted module path.
+    """Returns a dotted path relative to the given path.
 
-    This function takes a filesystem path and converts it to a dotted module path,
-    which is used to represent the module in Python's import system.
+    Args:
+        path: Python file path to convert (eg. myPath/folder/test.py).
 
-    :param path: The filesystem path to convert.
-    :return: The dotted module path.
+    Returns:
+        dotted path (e.g. folder.test)
     """
 
     directory, file_path = os.path.split(path)
-    directory = pathlib.Path(directory).as_posix()
     file_name = os.path.splitext(file_path)[0]
     package_path = [file_name]
-    sys_path = list(set([pathlib.Path(p).as_posix() for p in sys.path]))
 
-    # We ignore current working directory. Useful if we want to execute tools directly inside PyCharm
+    # Normalize sys.path entries to POSIX style for consistent comparison
+    sys_path = set(pathlib.Path(p).resolve().as_posix() for p in sys.path if p)
+
+    # Get the absolute resolved directory in POSIX format
+    directory = pathlib.Path(directory).resolve().as_posix()
+
+    # We ignore the current working directory. Useful if we want to execute
+    # tools directly inside PyCharm.
     current_work_dir = pathlib.Path(os.getcwd()).as_posix()
     if current_work_dir in sys_path:
         sys_path.remove(current_work_dir)
 
-    drive_letter = os.path.splitdrive(path)[0] + "\\"
-    while directory not in sys_path:
-        directory, name = os.path.split(directory)
-        directory = pathlib.Path(directory).as_posix()
-        if directory == drive_letter or name == "":
+    drive_root = pathlib.Path(directory).drive
+
+    # Iterate up the directory tree.
+    while True:
+        if directory in sys_path:
+            break
+        parent, name = os.path.split(directory)
+        if not name or parent == drive_root:
             return ""
         package_path.append(name)
+        directory = parent
 
     return ".".join(reversed(package_path))
 
 
-def file_path_to_module_path(file_path: str) -> str:
+def safe_import_module(module_path: str, name: str | None = None) -> ModuleType | None:
+    """Imports the given module path safely.
+
+    Args:
+        module_path: module dotted path (tp.utils) or an absolute one.
+        name: name for the imported module which will be used if the module
+            path is an absolute path. If not given, then `module_path`
+            basename without the extension will be used.
+
+    Returns:
+        imported module object
     """
-    Converts a filesystem path to a module path.
+
+    # noinspection PyBroadException
+    try:
+        return import_module(
+            module_path, name=name, skip_errors=True, skip_warnings=True
+        )
+    except Exception:
+        return None
+
+
+def file_path_to_module_path(file_path: str) -> str:
+    """Converts a filesystem path to a module path.
 
     This function takes a filesystem path and converts it to a module path suitable for importing.
     For example, it transforms a file path like 'path/to/module.py' to 'path.to.module'.
@@ -112,8 +157,7 @@ def file_path_to_module_path(file_path: str) -> str:
 
 
 def valid_module_path(path: str, exclude: Iterable[str] | None = None) -> bool:
-    """
-    Checks if a given module path is valid.
+    """Checks if a given module path is valid.
 
     This function verifies if a given module path is valid by checking if it exists and is not in the exclusion list.
 
@@ -134,80 +178,87 @@ def import_module(
     name: str | None = None,
     skip_warnings: bool = True,
     skip_errors: bool = False,
-    force_reload: bool = False,
 ) -> ModuleType | None:
+    """Imports the given module path. If the given module path is a dotted
+        one, import lib will be used. Otherwise, it's expected that given
+        module path is the absolute path to the source file.
+
+    Args:
+        module_path: module dotted path (tp.utils) or an absolute one.
+        name: name for the imported module which will be used if the module
+            path is an absolute path. If not given, then `module_path`
+            basename without the extension will be used.
+        skip_warnings: whether warnings should be skipped.
+        skip_errors: whether errors should be skipped.
+
+    Returns:
+        imported module object
+
+    Raises:
+        ImportError: if an error occurs while importing module.
     """
-    Imports a module from a given module path.
 
-    This function imports a module from the specified module path, with options to skip warnings, skip errors,
-    and force reload the module. An optional name can be provided for the imported module.
-
-    :param module_path: The filesystem path or dotted path of the module to import.
-    :param name: An optional name to assign to the imported module. Defaults to None.
-    :param skip_warnings: If True, skips warnings during import. Defaults to True.
-    :param skip_errors: If True, skips errors during import. Defaults to False.
-    :param force_reload: If True, forces reloading of the module. Defaults to False.
-    :return: The imported module.
-    """
-
-    if is_dotted_module_path(module_path) and not os.path.exists(module_path):
+    if is_dotted_path(module_path) and not os.path.exists(module_path):
         try:
             return importlib.import_module(module_path)
         except (NameError, KeyError, AttributeError) as exc:
             if "__init__" in str(exc) or "__path__" in str(exc):
                 pass
             else:
-                msg = f'Failed to load module: "{module_path}"'
+                msg = 'Failed to load module: "{}"'.format(module_path)
                 logger.error(msg, exc_info=True) if not skip_errors else logger.debug(
-                    f"{msg} | {traceback.format_exc()}"
+                    "{} | {}".format(msg, traceback.format_exc())
                 )
         except (ImportError, ModuleNotFoundError):
-            msg = f'Failed to import module: "{module_path}"'
+            msg = 'Failed to import module: "{}"'.format(module_path)
             logger.error(msg, exc_info=True) if not skip_errors else logger.debug(
-                f"{msg} | {traceback.format_exc()}"
+                "{} | {}".format(msg, traceback.format_exc())
             )
             return None
         except SyntaxError:
-            msg = f'Module contains syntax errors: "{module_path}"'
+            msg = 'Module contains syntax errors: "{}"'.format(module_path)
             logger.error(msg, exc_info=True) if not skip_errors else logger.debug(
-                f"{msg} | {traceback.format_exc()}"
+                "{} | {}".format(msg, traceback.format_exc())
             )
             return None
+
+    if os.path.exists(module_path):
+        name = name or os.path.splitext(os.path.basename(module_path))[0]
+        if name in sys.modules:
+            return sys.modules[name]
+
+    if not name:
+        if not skip_warnings:
+            logger.warning(
+                f"Impossible to load module because module "
+                f"path: {module_path} was not found!"
+            )
+        return None
+
+    if os.path.isdir(module_path):
+        module_path = os.path.join(module_path, "__init__.py")
+        if not os.path.isfile(module_path):
+            raise ValueError(f'Cannot find module path: "{module_path}"')
+
     try:
-        if os.path.exists(module_path):
-            if not name:
-                name = os.path.splitext(os.path.basename(module_path))[0]
-            if name in sys.modules:
-                if force_reload:
-                    pass
-                    # logger.info(f'Force module reloading: {name}')
-                    # sys.modules.pop(name)
-                return sys.modules[name]
-        if not name:
-            if not skip_warnings:
-                logger.warning(
-                    f"Impossible to load module because module path: {module_path} was not found!"
-                )
-            return None
-        if os.path.isdir(module_path):
-            module_path = os.path.join(module_path, "__init__.py")
-            if not os.path.isfile(module_path):
-                raise ValueError(f'Cannot find module path: "{module_path}"')
         spec = importlib.util.spec_from_file_location(
             name, os.path.realpath(module_path)
         )
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
+        mod = importlib.util.module_from_spec(spec)  # type: ignore
+        spec.loader.exec_module(mod)  # type: ignore
         sys.modules[name] = mod
-        return mod
     except ImportError:
-        logger.error(f'Failed to load module: "{module_path}"')
+        msg = 'Failed to import module: "{}"'.format(module_path)
+        logger.error(msg, exc_info=True) if not skip_errors else logger.debug(
+            "{} | {}".format(msg, traceback.format_exc())
+        )
         raise
+
+    return mod
 
 
 def resolve_module(name: str, log_error: bool = False):
-    """
-    Resolves a module by name.
+    """Resolves a module by name.
 
     This function attempts to resolve and import a module by its name.
     It includes an option to log errors if the module cannot be resolved.
@@ -239,8 +290,7 @@ def resolve_module(name: str, log_error: bool = False):
 def iterate_module(
     module: ModuleType, include_abstract: bool = False, class_filter: type = object
 ) -> Iterator[tuple[str, type]]:
-    """
-    Iterates over the classes in a given module.
+    """Iterates over the classes in a given module.
 
     This function traverses the specified module and yields the names and types of classes found within it.
     It supports filtering out abstract classes and restricting the iteration to subclasses of a specified type.
@@ -269,8 +319,7 @@ def iterate_modules(
     recursive: bool = True,
     return_pyc: bool = False,
 ) -> list[str]:
-    """
-    Iterates over modules in the given directory path.
+    """Iterates over modules in the given directory path.
 
     This function traverses the specified directory and yields modules found within it.
     It supports excluding certain files or directories, skipping `__init__.py` files,
@@ -339,11 +388,36 @@ def iterate_modules(
     return list(modules_found.values())
 
 
+def iterate_package_modules(
+    path: str, exclude: Sequence[str] | None = None
+) -> Iterator[str]:
+    """Iterates over the modules found in the given path.
+
+    Args:
+        path: path to iterate over.
+        exclude: names to exclude from the iteration.
+
+    Yields:
+        module path.
+    """
+
+    exclude_set = set(exclude) if exclude else set()
+    resolved_path = pathlib.Path(path).resolve()
+    for root, _, files in os.walk(resolved_path):
+        root_path = pathlib.Path(root)
+        is_package = any(file.endswith(".py") for file in files)
+        if not is_package:
+            continue
+        for file_name in files:
+            module_path = root_path / file_name
+            if is_valid_module_path(str(module_path), exclude=exclude_set):
+                yield module_path.as_posix()
+
+
 def iterate_package(
     package_path: str, force_reload: bool = False
 ) -> Iterator[ModuleType]:
-    """
-    Iterates over all modules in a given package.
+    """Iterates over all modules in a given package.
 
     This function traverses the specified package path and yields the modules found within it.
     It supports an option to force reload the modules.
@@ -388,28 +462,23 @@ def iterate_package(
 
 
 def iterate_module_members(
-    module_to_iterate: ModuleType, predicate: Any = None
-) -> Iterator[Any]:
-    """
-    Iterates over the members of a given module.
+    module: ModuleType, predicate: Callable[[Any], bool] | None = None
+) -> Iterator[tuple[str, object]]:
+    """Iterates over the members of the given module.
 
-    This function traverses the specified module and yields its members.
-    Optionally, a predicate can be provided to filter the members.
+    Args:
+        module: module to iterate over.
+        predicate: predicate to filter members.
 
-    :param module_to_iterate: The module whose members are to be iterated.
-    :param predicate: An optional type to filter the members. Only members that match the predicate will be yielded.
-        Defaults to None.
-    :return: An iterator of tuples, each containing the member name and member type.
-    :rtype: Iterator[ModuleType]
+    Yields:
+        member name and object.
     """
 
-    for mod in inspect.getmembers(module_to_iterate, predicate=predicate):
-        yield mod
+    yield from inspect.getmembers(module, predicate=predicate)
 
 
 def iterate_module_subclasses(module: ModuleType, class_type: Type):
-    """
-    Iterates over all subclasses of a given type in a module.
+    """Iterates over all subclasses of a given type in a module.
 
     This function traverses the specified module and yields all classes that are subclasses of the specified type.
 
@@ -424,8 +493,7 @@ def iterate_module_subclasses(module: ModuleType, class_type: Type):
 
 
 def get_package_children(module_path: str) -> list[str]:
-    """
-    Retrieves the names of all child modules in a package.
+    """Retrieves the names of all child modules in a package.
 
     This function takes a module path and returns a list of names of all child modules contained in that package.
 
@@ -437,17 +505,16 @@ def get_package_children(module_path: str) -> list[str]:
 
 
 def load_module_from_source(
-    file_path: str, unique_namespace=False
+    file_path: str, unique_namespace: bool = False
 ) -> ModuleType | None:
-    """
-    Loads a module from a source file.
+    """Loads a Python from given source file.
 
-    This function loads a module from the specified file path. Optionally, a unique namespace can be used to avoid
-    conflicts.
+    Args:
+        file_path: absolute path pointing to a Python file.
+        unique_namespace: whether to load module within a unique namespace.
 
-    :param file_path: The filesystem path to the module source file.
-    :param unique_namespace: If True, loads the module into a unique namespace to avoid conflicts. Defaults to False.
-    :return: The loaded module, or None if the module could not be loaded.
+    Returns:
+        ModuleType or None: loaded module.
     """
 
     file_name = os.path.splitext(os.path.basename(file_path))[0]
@@ -459,14 +526,12 @@ def load_module_from_source(
         spec = importlib.util.spec_from_file_location(
             module_name, os.path.realpath(file_path)
         )
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
+        mod = importlib.util.module_from_spec(spec)  # type: ignore
+        spec.loader.exec_module(mod)  # type: ignore
         sys.modules[module_name] = mod
         return mod
     except Exception:
-        logger.info(
-            f"Failed trying to direct load : {file_path} | {traceback.format_exc()}"
-        )
+        logger.error(f"Failed trying to direct load : {file_path}", exc_info=True)
         return None
 
 
@@ -476,8 +541,7 @@ def find_class(
     __locals__: dict | None = None,
     __globals__: dict | None = None,
 ) -> type | None:
-    """
-    Finds and returns a class by its name from a specified module path.
+    """Finds and returns a class by its name from a specified module path.
 
     This function searches for a class with the given name within the specified module path.
     Optionally, local and global dictionaries can be provided for the search context.
@@ -506,8 +570,7 @@ def try_import(
     __locals__: dict | None = None,
     __globals__: dict | None = None,
 ) -> Any:
-    """
-    Attempts to import a module from the given path.
+    """Attempts to import a module from the given path.
 
     This function tries to import a module from the specified path. If the import fails,
     it returns a default value. Optionally, local and global dictionaries can be provided

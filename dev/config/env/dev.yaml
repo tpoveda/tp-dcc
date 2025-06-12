@@ -1,7 +1,5 @@
 # TP DCC Python packages to load by this environment.
 
-tp-bootstrap:
-    version: '0.1.0'
 tp-core:
     version: '0.1.0'
 tp-qt:

@@ -6,7 +6,7 @@ from typing import cast, Any
 
 from loguru import logger
 
-from tp.core.utils import env
+from tp.libs.python import osplatform
 
 from .host import Host
 from . import constants
@@ -189,7 +189,7 @@ class PackagesManager:
         cache_env = os.getenv(constants.CACHE_FOLDER_PATH_ENV_VAR)
         if cache_env is None:
             root_path = os.path.join(self.preference_roots_config()["user"], "cache")
-            root_path = env.patch_windows_user_home(root_path)
+            root_path = osplatform.patch_windows_user_home(root_path)
             return root_path
 
         return os.path.expandvars(os.path.expanduser(cache_env))
