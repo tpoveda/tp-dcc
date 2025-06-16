@@ -17,6 +17,8 @@ environment:
   TP_DCC_BASE_PATHS:
     - "{self}"
     - "{self}/src"
+  TP_DCC_META_PATHS:
+    - "{self}/src/tp/libs/{app}/meta"
 dependencies: []
 tests:
   - "{self}/tests"

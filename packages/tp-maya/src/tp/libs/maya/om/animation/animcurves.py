@@ -2,16 +2,18 @@ from __future__ import annotations
 
 from maya.api import OpenMaya, OpenMayaAnim
 
-from tp.maya.om.animation import timerange
+from . import timerange
 
 
 def serialize_animation_curve(anim_curve_node: OpenMaya.MObject) -> dict:
-    """
-    Serializes given animation curve node.
+    """Serialize the given animation curve node.
 
-    :param OpenMaya.MObject anim_curve_node: Maya object representing the animation curve to serialize.
-    :return: JSON valid dictionary with the animation curve data.
-    :rtype: dict
+    Args:
+        anim_curve_node: Maya object representing the animation curve to
+            serialize.
+
+    Returns:
+        JSON valid dictionary with the animation curve data.
     """
 
     anim_curve = OpenMayaAnim.MFnAnimCurve(anim_curve_node)

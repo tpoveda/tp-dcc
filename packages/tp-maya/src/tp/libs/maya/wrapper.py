@@ -1,21 +1,20 @@
 from __future__ import annotations
 
-import logging
 import contextlib
 
 from functools import wraps
 from typing import Type, Iterator, Iterable, Callable, Any
 
-from tp.python import helpers
 from maya import cmds
+from loguru import logger
 from maya.api import OpenMaya, OpenMayaAnim
+
+from tp.libs.python import helpers
 
 from .om import constants  # noqa: F401
 from .om import factory, nodes, plugs, attributetypes, mathlib, dagutils, scene
 from .om.constants import *  # noqa: F403
 from .om.apitypes import *  # noqa: F403
-
-logger = logging.getLogger(__name__)
 
 LOCAL_TRANSLATE_ATTR = "translate"
 LOCAL_ROTATE_ATTR = "rotate"
@@ -27,8 +26,7 @@ LOCAL_TRANSFORM_ATTRS = LOCAL_TRANSLATE_ATTRS + LOCAL_ROTATE_ATTRS + LOCAL_SCALE
 
 
 def lock_node_context(fn: Callable):
-    """
-    Decorator function to lock and unlock the node.
+    """Decorator function to lock and unlock the node.
 
     :param fn: decorated function.
     """
@@ -50,8 +48,7 @@ def lock_node_context(fn: Callable):
 
 
 def lock_node_plug_context(fn: Callable):
-    """
-    Decorator function to lock and unlock a node plug.
+    """Decorator function to lock and unlock a node plug.
 
     :param fn: decorated function.
     """
@@ -82,8 +79,7 @@ def lock_node_plug_context(fn: Callable):
 
 @contextlib.contextmanager
 def lock_state_attr_context(node: DGNode, attr_names: Iterable[str], state: bool):
-    """
-    Context manager which handles the lock state for a list of attribute on the given node.
+    """Context manager which handles the lock state for a list of attribute on the given node.
 
     :param node: node to lock/unlock attributes of.
     :param attr_names: list of attribute names.
@@ -109,9 +105,7 @@ def lock_state_attr_context(node: DGNode, attr_names: Iterable[str], state: bool
 
 # noinspection PyPep8Naming
 class DGNode:
-    """
-    Wrapper class for the Maya dependency graph nodes.
-    """
+    """Wrapper class for the Maya dependency graph nodes."""
 
     MFN_TYPE: Type[OpenMaya.MFnBase] = OpenMaya.MFnDependencyNode
 
@@ -125,8 +119,7 @@ class DGNode:
             self.setObject(mobj)
 
     def __hash__(self) -> int:
-        """
-        Returns the hash value of the node.
+        """Returns the hash value of the node.
 
         :return: hash value.
         """
@@ -136,8 +129,7 @@ class DGNode:
         )
 
     def __repr__(self) -> str:
-        """
-        Returns the string representation of the node.
+        """Returns the string representation of the node.
 
         :return: string representation.
         """
@@ -145,8 +137,7 @@ class DGNode:
         return f"<{self.__class__.__name__}> {self.fullPathName()}"
 
     def __str__(self) -> str:
-        """
-        Returns the string representation of the node.
+        """Returns the string representation of the node.
 
         :return: string representation.
         """
@@ -154,8 +145,7 @@ class DGNode:
         return self.fullPathName()
 
     def __bool__(self) -> bool:
-        """
-        Returns whether the node is currently valid within the Maya scene.
+        """Returns whether the node is currently valid within the Maya scene.
 
         :return: True if the node is valid; False otherwise.
         """
@@ -163,8 +153,7 @@ class DGNode:
         return self.exists()
 
     def __getitem__(self, item: str) -> Plug:
-        """
-        Overrides __getitem__ function to attempt to retrieve the MPlug for this node.
+        """Overrides __getitem__ function to attempt to retrieve the MPlug for this node.
 
         :param item: attribute name.
         :return: Plug
@@ -178,8 +167,7 @@ class DGNode:
             raise KeyError(f"{self.name()} has no attribute by the name {item}")
 
     def __setitem__(self, key: str, value: Any):
-        """
-        Overrides __setitem__ function to attempt to set node attribute.
+        """Overrides __setitem__ function to attempt to set node attribute.
 
         :param key: attribute name.
         :param value: attribute value.
@@ -199,8 +187,7 @@ class DGNode:
             raise RuntimeError(f"Node {self.name()} has no attribute called: {key}")
 
     def __getattr__(self, name: str) -> Any:
-        """
-        Overrides __getattr__ function to try to access node attribute.
+        """Overrides __getattr__ function to try to access node attribute.
 
         :param name: name of the attribute to access.
         :return: attribute value.
@@ -213,8 +200,7 @@ class DGNode:
         return super().__getattribute__(name)
 
     def __setattr__(self, key: str, value: Any):
-        """
-        Overrides __setattr__ function to try to call node before calling the function.
+        """Overrides __setattr__ function to try to call node before calling the function.
 
         :param key: name of the attribute to set.
         :param value: value of the attribute.
@@ -233,8 +219,7 @@ class DGNode:
         super().__setattr__(key, value)
 
     def __eq__(self, other: DGNode) -> bool:
-        """
-        Overrides __eq__ function to check whether other object is equal to this one.
+        """Overrides __eq__ function to check whether other object is equal to this one.
 
         :param other: object instance to check.
         :return: True if given object and current rule are equal; False otherwise.
@@ -248,8 +233,7 @@ class DGNode:
         return self._handle == other.handle()
 
     def __ne__(self, other: DGNode) -> bool:
-        """
-        Overrides __ne__ function to check whether other object is not equal to this one.
+        """Overrides __ne__ function to check whether other object is not equal to this one.
 
         :param other: object instance to check.
         :return: True if given object and current rule are not equal; False otherwise.
@@ -261,8 +245,7 @@ class DGNode:
         return self._handle != other.handle()
 
     def __contains__(self, key: str) -> bool:
-        """
-        Overrides __contains__ function to check whether an attribute with given name exists in current DG node.
+        """Overrides __contains__ function to check whether an attribute with given name exists in current DG node.
 
         :param key: attribute name.
         :return: True if attribute with given name exists; False otherwise.
@@ -271,8 +254,7 @@ class DGNode:
         return self.hasAttribute(key)
 
     def __delitem__(self, key: str):
-        """
-        Overrides __delitem__ to delete attribute with given name from node.
+        """Overrides __delitem__ to delete attribute with given name from node.
 
         :param key: name of the attribute to delete.
         """
@@ -281,8 +263,7 @@ class DGNode:
 
     @property
     def typeName(self) -> str:
-        """
-        Returns Maya API type name.
+        """Returns Maya API type name.
 
         :return: API type name.
         """
@@ -291,8 +272,7 @@ class DGNode:
 
     @property
     def isLocked(self) -> bool:
-        """
-        Returns whether the node is locked.
+        """Returns whether the node is locked.
 
         :return: True if node is locked; False otherwise.
         """
@@ -306,8 +286,7 @@ class DGNode:
         namespace: str | None = None,
         mod: OpenMaya.MDGModifier | None = None,
     ) -> DGNode:
-        """
-        Function that builds the node within the Maya scene.
+        """Function that builds the node within the Maya scene.
 
         :param name: name of the new node.
         :param node_type: Maya node type to create.
@@ -321,8 +300,7 @@ class DGNode:
         return self
 
     def exists(self) -> bool:
-        """
-        Returns whether the node is currently valid within the Maya scene.
+        """Returns whether the node is currently valid within the Maya scene.
 
         :return: True if the node is valid; False otherwise.
         """
@@ -331,8 +309,7 @@ class DGNode:
         return False if handle is None else handle.isValid() and handle.isAlive()
 
     def handle(self) -> OpenMaya.MObjectHandle:
-        """
-        Returns the MObjectHandle of the node.
+        """Returns the MObjectHandle of the node.
 
         :return: MObjectHandle of the node.
         .warning:: Developer is responsible for checking if the node exists before calling this method.
@@ -341,8 +318,7 @@ class DGNode:
         return self._handle
 
     def mfn(self) -> OpenMaya.MFnDagNode | OpenMaya.MFnDependencyNode:
-        """
-        Returns the function set for this node.
+        """Returns the function set for this node.
 
         :return: function set for this node.
         """
@@ -353,8 +329,7 @@ class DGNode:
         return self._mfn
 
     def typeId(self) -> OpenMaya.MTypeId | None:
-        """
-        Returns the Maya type id of the node.
+        """Returns the Maya type id of the node.
 
         :return: type id of the node.
         """
@@ -362,8 +337,7 @@ class DGNode:
         return self._mfn.typeId if self.exists() else None
 
     def hasFn(self, fn_Type: OpenMaya.MFn) -> bool:
-        """
-        Returns whether the node has the given function set.
+        """Returns whether the node has the given function set.
 
         :param fn_Type: function set to check.
         :return: True if the node has the given function set; False otherwise.
@@ -372,8 +346,7 @@ class DGNode:
         return self.object().hasFn(fn_Type)
 
     def apiType(self) -> OpenMaya.MFn:
-        """
-        Returns the API type of the node.
+        """Returns the API type of the node.
 
         :return: API type of the node.
         """
@@ -382,8 +355,7 @@ class DGNode:
         return mobj.apiType() if mobj is not None else None
 
     def object(self) -> OpenMaya.MObject | None:
-        """
-        Returns the Maya object of the node.
+        """Returns the Maya object of the node.
 
         :return: Maya object.
         """
@@ -391,8 +363,7 @@ class DGNode:
         return self._handle.object() if self.exists() else None
 
     def setObject(self, mobj: OpenMaya.MObject | OpenMaya.MDagPath):
-        """
-        Sets the Maya object of the node.
+        """Sets the Maya object of the node.
 
         :param mobj: Maya object to set.
         """
@@ -406,8 +377,7 @@ class DGNode:
         self._mfn = self.MFN_TYPE(object_path)
 
     def name(self, include_namespace: bool = True) -> str:
-        """
-        Returns the node name.
+        """Returns the node name.
 
         :param include_namespace: whether to include the namespace.
         :return: node name.
@@ -427,8 +397,7 @@ class DGNode:
     def fullPathName(
         self, partial_name: bool = False, include_namespace: bool = True
     ) -> str:
-        """
-        Returns the node scene name, this result is dependent on the arguments.
+        """Returns the node scene name, this result is dependent on the arguments.
 
         :param partial_name: whether to return the partial name of the node.
         :param include_namespace: whether to include the namespace.
@@ -442,8 +411,7 @@ class DGNode:
         return nodes.name(self.object(), partial_name, include_namespace)
 
     def isReferenced(self) -> bool:
-        """
-        Returns whether the node is referenced.
+        """Returns whether the node is referenced.
 
         :return: True if node is referenced; False otherwise.
         """
@@ -451,8 +419,7 @@ class DGNode:
         return self.mfn().isFromReferencedFile
 
     def isDefaultNode(self) -> bool:
-        """
-        Returns whether this node is a default Maya node.
+        """Returns whether this node is a default Maya node.
 
         :return: True if this node is a default Maya node; False otherwise.
         """
@@ -461,8 +428,7 @@ class DGNode:
 
     @lock_node_context
     def rename(self, new_name, maintain_namespace=False, mod=None, apply=True) -> bool:
-        """
-        Renames this node.
+        """Renames this node.
 
         :param new_name: new node name.
         :param maintain_namespace: whether to maintain current namespace.
@@ -487,8 +453,7 @@ class DGNode:
         return True
 
     def namespace(self):
-        """
-        Returns the current namespace for the node.
+        """Returns the current namespace for the node.
 
         :return: node namespace.
         :rtype: str
@@ -504,8 +469,7 @@ class DGNode:
         return name
 
     def parentNamespace(self):
-        """
-        Returns the parent namespace from the node.
+        """Returns the parent namespace from the node.
 
         :return: parent namespace.
         :rtype: str
@@ -522,8 +486,7 @@ class DGNode:
         return parent
 
     def renameNamespace(self, namespace: str):
-        """
-        Renames the current namespace with the given one.
+        """Renames the current namespace with the given one.
 
         :param str namespace: new namespace.
         """
@@ -546,8 +509,7 @@ class DGNode:
         OpenMaya.MNamespace.setCurrentNamespace(namespace)
 
     def removeNamespace(self, mod=None, apply=True):
-        """
-        Deletes the namespace from this node.
+        """Deletes the namespace from this node.
 
         :param DGModifier mod: optional Maya modifier to apply; if None, one will be created.
         :param bool apply: whether to apply modifier immediately.
@@ -569,8 +531,7 @@ class DGNode:
     def lock(
         self, state: bool, mod: OpenMaya.MDGModifier | None = None, apply: bool = True
     ) -> OpenMaya.MDGModifier:
-        """
-        Sets the lock state for this node.
+        """Sets the lock state for this node.
 
         :param bool state: lock state to change to.
         :param OpenMaya.MDGModifier mod: optional Maya modifier to apply; if None, one will be created.
@@ -590,8 +551,7 @@ class DGNode:
         return mod
 
     def hasAttribute(self, attribute_name: str) -> bool:
-        """
-        Returns whether the attribute given name exist on this node.
+        """Returns whether the attribute given name exist on this node.
 
         :param attribute_name: name of the attribute to check.
         :return: True if the given attribute exists on the node; False otherwise.
@@ -608,8 +568,7 @@ class DGNode:
         return self.mfn().hasAttribute(attribute_name)
 
     def attribute(self, name: str) -> Plug | None:
-        """
-        Returns the attribute with the given name this node.
+        """Returns the attribute with the given name this node.
 
         :param name: name of the attribute to find.
         :return: found plug instance or None.
@@ -635,8 +594,7 @@ class DGNode:
         mod: OpenMaya.MDGModifier | None = None,
         apply: bool = True,
     ) -> bool:
-        """
-        Sets the value of the attribute if it exists.
+        """Sets the value of the attribute if it exists.
 
         :param name: name of the attribute to set value of.
         :param value: value of the attribute to set.
@@ -661,8 +619,7 @@ class DGNode:
         mod: OpenMaya.MDGModifier | None = None,
         **kwargs,
     ) -> Plug:
-        """
-        Adds an attribute into this node.
+        """Adds an attribute into this node.
 
         :param name: name of the attribute to add.
         :param type: type of the attribute to add.
@@ -692,8 +649,7 @@ class DGNode:
         mod: OpenMaya.MDGModifier | None = None,
         **kwargs,
     ) -> Plug:
-        """
-        Creates a compound attribute with the given children attributes.
+        """Creates a compound attribute with the given children attributes.
 
         :param name: name of the compound attribute to add.
         :param attr_map: [{"name":str, "type": attributetypes.kType, "isArray": bool}]
@@ -710,8 +666,7 @@ class DGNode:
 
     @lock_node_context
     def addProxyAttribute(self, source_plug: Plug, name: str) -> Plug | None:
-        """
-        Creates a proxy attribute where the created plug on this node will be connected to the source plug while still
+        """Creates a proxy attribute where the created plug on this node will be connected to the source plug while still
         being modifiable.
 
         :param source_plug: plug to copy to the current node which whill become the primary attribute.
@@ -741,8 +696,7 @@ class DGNode:
     def createAttributesFromDict(
         self, data: dict, mod: OpenMaya.MDGModifier | None = None
     ) -> list[Plug]:
-        """
-        Creates an attribute on the node based on the attribute data in the following form:
+        """Creates an attribute on the node based on the attribute data in the following form:
         {
             "channelBox": true,
             "default": 3,
@@ -787,8 +741,7 @@ class DGNode:
         return created_plugs
 
     def renameAttribute(self, name: str, new_name: str) -> bool:
-        """
-        Renames an attribute on the current node.
+        """Renames an attribute on the current node.
 
         :param name: name of the attribute to rename.
         :param new_name: new attribute name.
@@ -806,8 +759,7 @@ class DGNode:
     def deleteAttribute(
         self, attribute_name: str, mod: OpenMaya.MDGModifier | None = None
     ) -> bool:
-        """
-        Removes the attribute with given name from this node.
+        """Removes the attribute with given name from this node.
 
         :param attribute_name: attribute name to delete.
         :param mod: optional Maya modifier to add to.
@@ -829,8 +781,7 @@ class DGNode:
         mod: OpenMaya.MDGModifier | None = None,
         apply: bool = True,
     ) -> OpenMaya.MDGModifier | None:
-        """
-        Connects the attribute on this node with given name as the source to the destination plug.
+        """Connects the attribute on this node with given name as the source to the destination plug.
 
         :param attribute_name: name of the attribute that will be used as the source.
         :param destination_plug: destination plug.
@@ -848,8 +799,7 @@ class DGNode:
     def iterateConnections(
         self, source: bool = True, destination: bool = True
     ) -> Iterator[tuple[Plug, Plug], ...]:
-        """
-        Generator function that iterates over node connections.
+        """Generator function that iterates over node connections.
 
         :param source: whether to iterate source connections.
         :param destination: whether to iterate destination connections.
@@ -865,8 +815,7 @@ class DGNode:
             )
 
     def sources(self) -> Iterator[tuple[Plug, Plug], ...]:
-        """
-        Generator function that iterates over source plugs.
+        """Generator function that iterates over source plugs.
 
         :return: generator with the first element is the plug instance and the second the connected plug.
         """
@@ -877,8 +826,7 @@ class DGNode:
             yield Plug(self, source), Plug(self, destination)
 
     def destinations(self) -> Iterator[tuple[Plug, Plug], ...]:
-        """
-        Generator function that iterates over destination plugs.
+        """Generator function that iterates over destination plugs.
 
         :return: generator with the first element is the plug instance and the second the connected plug.
         """
@@ -890,8 +838,7 @@ class DGNode:
 
     @staticmethod
     def sourceNode(plug: Plug) -> DGNode | DagNode | None:
-        """
-        Helper function that returns the source node of the given plug.
+        """Helper function that returns the source node of the given plug.
 
         :param plug: plug to return source node of.
         :return: either the source node or None if the plug is not connected to any node.
@@ -919,8 +866,7 @@ class DGNode:
         | DisplayLayer
         | None
     ):
-        """
-        Returns the source node connected to the given plug of this node instance.
+        """Returns the source node connected to the given plug of this node instance.
 
         :param str plug_name: name of the plug to return source node of.
         :return: source node connected to the plug.
@@ -933,8 +879,7 @@ class DGNode:
     def setLockStateOnAttributes(
         self, attributes: Iterable[str], state: bool = True
     ) -> bool:
-        """
-        Locks/unlocks the given attributes.
+        """Locks/unlocks the given attributes.
 
         :param attributes: list of attributes to lock/unlock.
         :param state: whether to lock or unlock the attributes.
@@ -948,8 +893,7 @@ class DGNode:
     def showHideAttributes(
         self, attributes: Iterable[str], state: bool = False
     ) -> bool:
-        """
-        Shows or hides given attributes in the channel box.
+        """Shows or hides given attributes in the channel box.
 
         :param attributes: list of attributes names to lock/unlock
         :param state: whether to hide or show the attributes.
@@ -965,8 +909,7 @@ class DGNode:
         return True
 
     def findAttributes(self, *names) -> list[Plug | None]:
-        """
-        Searches the node for each attribute name given and returns the plug instance.
+        """Searches the node for each attribute name given and returns the plug instance.
 
         :param names: list of attribute names.
         :return: each element matching plug or None if not found.
@@ -985,8 +928,7 @@ class DGNode:
         return results
 
     def iterateAttributes(self) -> Iterator[Plug]:
-        """
-        Generator function that iterates over all the attributes on this node.
+        """Generator function that iterates over all the attributes on this node.
 
         :return: generator of iterated attributes.
         """
@@ -1000,8 +942,7 @@ class DGNode:
         filtered_types: Iterable[str] | None = None,
         include_attributes: Iterable[str] | None = None,
     ) -> Iterator[Plug]:
-        """
-        Generator function that iterates over all the extra attributes on this node.
+        """Generator function that iterates over all the extra attributes on this node.
 
         :param skip: list of attributes to skip.
         :param filtered_types: optional list of types we want to filter.
@@ -1018,8 +959,7 @@ class DGNode:
             yield Plug(self, attr)
 
     def iterateProxyAttributes(self) -> Iterator[Plug]:
-        """
-        Generator function that iterates over all the proxy attributes on this node.
+        """Generator function that iterates over all the proxy attributes on this node.
 
         :return: generator of iterated proxy attributes.
         """
@@ -1037,8 +977,7 @@ class DGNode:
         use_short_names: bool = False,
         include_namespace: bool = True,
     ) -> dict:
-        """
-        Serializes current node into a dictionary compatible with JSON.
+        """Serializes current node into a dictionary compatible with JSON.
 
         :param skip_attributes: list of attributes names to serialize.
         :param include_connections: whether to find and serialize all connections where the destination is this node.
@@ -1063,8 +1002,7 @@ class DGNode:
     def delete(
         self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True
     ) -> bool:
-        """
-        Deletes the node from the scene.
+        """Deletes the node from the scene.
 
         :param mod: modifier to add the delete operation into.
         :param apply: whether to apply the modifier immediately.
@@ -1093,9 +1031,7 @@ class DGNode:
 
 # noinspection PyPep8Naming
 class DagNode(DGNode):
-    """
-    Wrapper class for the Maya DAG nodes.
-    """
+    """Wrapper class for the Maya DAG nodes."""
 
     MFN_TYPE: Type[OpenMaya.MFnBase] = OpenMaya.MFnDagNode
 
@@ -1107,8 +1043,7 @@ class DagNode(DGNode):
         namespace: str | None = None,
         mod: OpenMaya.MDGModifier | None = None,
     ) -> DagNode:
-        """
-        Function that builds the node within the Maya scene.
+        """Function that builds the node within the Maya scene.
 
         :param name: name of the new node.
         :param node_type: Maya node type to create.
@@ -1136,8 +1071,7 @@ class DagNode(DGNode):
         use_short_names: bool = False,
         include_namespace: bool = True,
     ) -> dict:
-        """
-        Serializes current node into a dictionary compatible with JSON.
+        """Serializes current node into a dictionary compatible with JSON.
 
         :param skip_attributes: list of attributes names to serialize.
         :param include_connections: whether to find and serialize all connections where the destination is this node.
@@ -1183,8 +1117,7 @@ class DagNode(DGNode):
             return {}
 
     def parent(self):
-        """
-        Returns the parent node as an MObject
+        """Returns the parent node as an MObject
 
         :return: parent Maya object.
         :rtype: DagNode or None
@@ -1208,8 +1141,7 @@ class DagNode(DGNode):
         mod: OpenMaya.MDagModifier | None = None,
         apply: bool = True,
     ) -> OpenMaya.MDagModifier:
-        """
-        Sets the parent of this node.
+        """Sets the parent of this node.
 
         :param parent: new parent node.
         :param maintain_offset: whether to maintain it is current position in world space.
@@ -1242,8 +1174,7 @@ class DagNode(DGNode):
         return result
 
     def dagPath(self) -> OpenMaya.MDagPath:
-        """
-        Returns the MDagPath of this node.
+        """Returns the MDagPath of this node.
 
         :return: DAG path for this node.
         """
@@ -1251,8 +1182,7 @@ class DagNode(DGNode):
         return self.mfn().getPath()
 
     def depth(self) -> int:
-        """
-        Returns the depth level this node sits within the hierarchy.
+        """Returns the depth level this node sits within the hierarchy.
 
         :return: hierarchy depth level.
         """
@@ -1260,8 +1190,7 @@ class DagNode(DGNode):
         return self.fullPathName().count("|") - 1
 
     def root(self) -> DagNode:
-        """
-        Returns the root dag node parent from this node instance.
+        """Returns the root dag node parent from this node instance.
 
         :return: root node.
         """
@@ -1269,8 +1198,7 @@ class DagNode(DGNode):
         return node_by_object(dagutils.root(self.object()))
 
     def boundingBox(self) -> OpenMaya.MBoundingBox:
-        """
-        Returns the bounding box information for this node.
+        """Returns the bounding box information for this node.
 
         :return: bounding box information.
         """
@@ -1280,8 +1208,7 @@ class DagNode(DGNode):
         return mfn.boundingBox
 
     def iterateShapes(self) -> Iterator[DagNode]:
-        """
-        Generator function that iterates over all shape nodes under this dag node instance.
+        """Generator function that iterates over all shape nodes under this dag node instance.
 
         :return: iterated shape nodes.
         """
@@ -1293,8 +1220,7 @@ class DagNode(DGNode):
             yield node_by_object(dag_path.node())
 
     def shapes(self) -> list[DagNode]:
-        """
-        Returns a list of all shape nodes under this dag node instance.
+        """Returns a list of all shape nodes under this dag node instance.
 
         :return: list of shape nodes.
         """
@@ -1304,8 +1230,7 @@ class DagNode(DGNode):
     def setShapeColor(
         self, color: Iterable[float, float, float], shape_index: int | None = None
     ):
-        """
-        Sets the color of this node transform or the node shape.
+        """Sets the color of this node transform or the node shape.
 
         :param color: RGB color to set.
         :param shape_index: shape index to set. If None, then the transform color will be set. -1 will
@@ -1326,16 +1251,13 @@ class DagNode(DGNode):
             nodes.set_node_color(self.object(), color)
 
     def deleteShapeNodes(self):
-        """
-        Deletes all shape nodes on this node.
-        """
+        """Deletes all shape nodes on this node."""
 
         for shape in self.shapes():
             shape.delete()
 
     def child(self, index: int, node_types: tuple[int] = ()) -> DagNode:
-        """
-        Returns the immediate child object based on given index.
+        """Returns the immediate child object based on given index.
 
         :param index: index of the child to find.
         :param node_types: node types to get child of.
@@ -1353,8 +1275,7 @@ class DagNode(DGNode):
             current_index += 1
 
     def addChild(self, node: DagNode):
-        """
-        Re-parent given node to this node.
+        """Re-parent given node to this node.
 
         :param node: child node to re-parent to this node.
         """
@@ -1362,8 +1283,7 @@ class DagNode(DGNode):
         node.setParent(self)
 
     def iterateParents(self) -> Iterator[DagNode]:
-        """
-        Ggenerator function that iterates over each parent until root has been reached.
+        """Ggenerator function that iterates over each parent until root has been reached.
 
         :return: iterated parent nodes.
         """
@@ -1377,8 +1297,7 @@ class DagNode(DGNode):
         recursive: bool = True,
         node_types: Iterable[int] | None = None,
     ) -> Iterator[DagNode]:
-        """
-        Generator function that iterates over each child of this node.
+        """Generator function that iterates over each child of this node.
 
         :param node: optional node to iterate children of.
         :param recursive: whether to recursively loop all children of children.
@@ -1399,8 +1318,7 @@ class DagNode(DGNode):
                     yield _child
 
     def children(self, node_types: tuple[int, ...] = ()) -> list[DagNode]:
-        """
-        Returns all immediate children objects.
+        """Returns all immediate children objects.
 
         :param node_types: node types to get children of.
         :return: found children.
@@ -1418,8 +1336,7 @@ class DagNode(DGNode):
     def iterateSiblings(
         self, node_types: set[int] = (OpenMaya.MFn.kTransform,)
     ) -> Iterator[DagNode]:
-        """
-        Generator function that iterates over all sibling nodes of this node.
+        """Generator function that iterates over all sibling nodes of this node.
 
         :param node_types: list of node types to filter.
         :return: iterated sibling nodes.
@@ -1435,8 +1352,7 @@ class DagNode(DGNode):
     def translation(
         self, space: OpenMaya.MSpace | None = None, scene_units: bool = False
     ) -> OpenMaya.MVector:
-        """
-        Returns the translation for this node.
+        """Returns the translation for this node.
 
         :param space: coordinate system to use.
         :param scene_units: whether the translation vector needs to be converted to scene units.
@@ -1452,8 +1368,7 @@ class DagNode(DGNode):
         space: OpenMaya.MSpace | None = None,
         scene_units: bool = False,
     ):
-        """
-        Sets the translation component of this node.
+        """Sets the translation component of this node.
 
         :param translation: vector that represents a position in space.
         :param space: space to work.
@@ -1471,8 +1386,7 @@ class DagNode(DGNode):
     def rotation(
         self, space: OpenMaya.MSpace | None = None, as_quaternion: bool = True
     ) -> OpenMaya.MQuaternion | OpenMaya.MEulerRotation:
-        """
-        Returns the rotation for this node.
+        """Returns the rotation for this node.
 
         :param space: coordinate system to use.
         :param as_quaternion: whether to return rotation as a quaternion.
@@ -1492,8 +1406,7 @@ class DagNode(DGNode):
         | Iterable[float, float, float],
         space: OpenMaya.MSpace | None = None,
     ):
-        """
-        Sets the translation component of this node.
+        """Sets the translation component of this node.
 
         :param tuple or list or OpenMaya.MEulerAngle or OpenMaya.MQuaternion rotation: rotation to set.
         :param int space: space to work.
@@ -1519,8 +1432,7 @@ class DagNode(DGNode):
         transform.setRotation(rotation, space)
 
     def scale(self, space: OpenMaya.MSpace | None = None) -> OpenMaya.MVector:
-        """
-        Returns the scale for this node.
+        """Returns the scale for this node.
 
         :param space: coordinate system to use.
         :return: object scale.
@@ -1531,8 +1443,7 @@ class DagNode(DGNode):
         return OpenMaya.MVector(transform.scale(space))
 
     def setScale(self, scale: OpenMaya.MVector | Iterable[float, float, float]):
-        """
-        Sets the scale for this node.
+        """Sets the scale for this node.
 
         :param scale: scale to set.
         """
@@ -1543,8 +1454,7 @@ class DagNode(DGNode):
         transform.setScale(scale)
 
     def rotationOrder(self) -> int:
-        """
-        Returns the rotation order for this node.
+        """Returns the rotation order for this node.
 
         :return: rotation order index.
         """
@@ -1554,8 +1464,7 @@ class DagNode(DGNode):
     def setRotationOrder(
         self, rotate_order: int = constants.kRotateOrder_XYZ, preserve: bool = True
     ):
-        """
-        Sets rotation order for this node.
+        """Sets rotation order for this node.
 
         :param rotate_order: rotate order index (defaults to XYZ).
         :param preserve: If True, X, Y, Z rotations will be modified so that the resulting rotation under the new
@@ -1571,8 +1480,7 @@ class DagNode(DGNode):
     def worldMatrix(
         self, context: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
     ) -> OpenMaya.MMatrix:
-        """
-        Returns the world matrix of this node.
+        """Returns the world matrix of this node.
 
         :param context: optional context to use.
         :return: world matrix.
@@ -1582,8 +1490,7 @@ class DagNode(DGNode):
         return OpenMaya.MFnMatrixData(world_matrix.asMObject(context)).matrix()
 
     def setWorldMatrix(self, matrix: OpenMaya.MMatrix):
-        """
-        Sets the world matrix of this node.
+        """Sets the world matrix of this node.
 
         :param matrix: world matrix to set.
         """
@@ -1591,8 +1498,7 @@ class DagNode(DGNode):
         nodes.set_matrix(self.object(), matrix, space=OpenMaya.MSpace.kWorld)
 
     def matrix(self, context: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal):
-        """
-        Returns the local matrix of this node.
+        """Returns the local matrix of this node.
 
         :param context: optional context to use.
         :return: local matrix.
@@ -1602,8 +1508,7 @@ class DagNode(DGNode):
         return OpenMaya.MFnMatrixData(local_matrix.asMObject(context)).matrix()
 
     def setMatrix(self, matrix: OpenMaya.MMatrix):
-        """
-        Sets the local matrix of this node.
+        """Sets the local matrix of this node.
 
         :param matrix: local matrix to set.
         """
@@ -1615,8 +1520,7 @@ class DagNode(DGNode):
         rotate_order: int | None = None,
         space: OpenMaya.MSpace | None = OpenMaya.MSpace.kWorld,
     ) -> OpenMaya.MTransformationMatrix:
-        """
-        Returns the current node matrix in the form of MTransformationMatrix.
+        """Returns the current node matrix in the form of MTransformationMatrix.
 
         :param rotate_order: rotation order to use.
         :param space: coordinate space to use.
@@ -1635,8 +1539,7 @@ class DagNode(DGNode):
     def parentInverseMatrix(
         self, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
     ) -> OpenMaya.MMatrix:
-        """
-        Returns the current node parent inverse matrix.
+        """Returns the current node parent inverse matrix.
 
         :param ctx: context to use.
         :return: parent inverse matrix.
@@ -1645,8 +1548,7 @@ class DagNode(DGNode):
         return nodes.parent_inverse_matrix(self.object(), ctx=ctx)
 
     def worldMatrixPlug(self, index: int = 0) -> Plug:
-        """
-        Returns the world matrix plug for this node.
+        """Returns the world matrix plug for this node.
 
         :param index: index of the world matrix plug.
         :return: world matrix plug.
@@ -1657,8 +1559,7 @@ class DagNode(DGNode):
         )
 
     def worldInverseMatrixPlug(self, index: int = 0) -> Plug:
-        """
-        Returns the world inverse matrix plug for this node.
+        """Returns the world inverse matrix plug for this node.
 
         :param index: index of the world inverse matrix plug.
         :return: world inverse matrix plug.
@@ -1677,8 +1578,7 @@ class DagNode(DGNode):
         space: OpenMaya.MSpace = OpenMaya.MSpace.kWorld,
         ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal,
     ) -> OpenMaya.MMatrix:
-        """
-        Returns the offset matrix between this node and the given target node.
+        """Returns the offset matrix between this node and the given target node.
 
         :param target_node: target transform node.
         :param space: coordinate space.
@@ -1693,8 +1593,7 @@ class DagNode(DGNode):
     def decompose(
         self, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
     ) -> tuple[OpenMaya.MVector, OpenMaya.MVector, OpenMaya.MVector]:
-        """
-        Returns the world matrix decomposed for this node.
+        """Returns the world matrix decomposed for this node.
 
         :param ctx: context to use.
         :return: tuple with the world translation, rotation and scale of this node.
@@ -1710,8 +1609,7 @@ class DagNode(DGNode):
     def resetTransform(
         self, translate: bool = True, rotate: bool = True, scale: bool = True
     ):
-        """
-        Resets the local translate, rotate and scale attributes to 0.0.
+        """Resets the local translate, rotate and scale attributes to 0.0.
 
         :param translate: whether to reset translate attributes.
         :param rotate: whether to reset rotate attributes.
@@ -1741,9 +1639,7 @@ class DagNode(DGNode):
             self.setScale((1.0, 1.0, 1.0))
 
     def resetTransformToOffsetParent(self):
-        """
-        Resets the local translate, rotate and scale attributes to the offset parent matrix.
-        """
+        """Resets the local translate, rotate and scale attributes to the offset parent matrix."""
 
         parent = self.parent()
         world_matrix = self.worldMatrix()
@@ -1754,8 +1650,7 @@ class DagNode(DGNode):
         self.resetTransform()
 
     def isHidden(self) -> bool:
-        """
-        Returns whether this node is visible.
+        """Returns whether this node is visible.
 
         :return: True if this node is visible; False otherwise.
         """
@@ -1768,8 +1663,7 @@ class DagNode(DGNode):
         mod: OpenMaya.MDGModifier | OpenMaya.MDagModifier | None = None,
         apply: bool = True,
     ) -> bool:
-        """
-        Sets whether this node is visible.
+        """Sets whether this node is visible.
 
         :param flag: True to make this node visible; False to hide it.
         :param mod: optional modifier to use to set the visibility this node.
@@ -1790,8 +1684,7 @@ class DagNode(DGNode):
         return True
 
     def show(self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True) -> bool:
-        """
-        Sets the visibility for this node to 1.0.
+        """Sets the visibility for this node to 1.0.
 
         :param mod: optional modifier to use to show this node.
         :param apply: whether to apply the operation immediately.
@@ -1801,8 +1694,7 @@ class DagNode(DGNode):
         return self.setVisible(True, mod=mod, apply=apply)
 
     def hide(self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True):
-        """
-        Sets the visibility for this node to 0.0.
+        """Sets the visibility for this node to 0.0.
 
         :param mod: optional modifier to use to hide this node.
         :param apply: whether to apply the operation immediately.
@@ -1814,13 +1706,10 @@ class DagNode(DGNode):
 
 # noinspection PyPep8Naming
 class Plug:
-    """
-    Wrapper class for OpenMaya.MPlug that provides an easier solution to access connections and values.
-    """
+    """Wrapper class for OpenMaya.MPlug that provides an easier solution to access connections and values."""
 
     def __init__(self, node: DGNode | DagNode, mplug: OpenMaya.MPlug):
-        """
-        Plug constructor.
+        """Plug constructor.
 
         :param node: node instance for this plug.
         :param mplug: Maya plug instance.
@@ -1830,8 +1719,7 @@ class Plug:
         self._mplug = mplug
 
     def __repr__(self) -> str:
-        """
-        Overrides __repr__ function to return the display string for this plug instance.
+        """Overrides __repr__ function to return the display string for this plug instance.
 
         :return: display string.
         """
@@ -1841,8 +1729,7 @@ class Plug:
         )
 
     def __str__(self) -> str:
-        """
-        Overrides __str__ function to return the full path name for this instance.
+        """Overrides __str__ function to return the full path name for this instance.
 
         :return: full path name.
         """
@@ -1850,8 +1737,7 @@ class Plug:
         return "" if not self.exists() else self._mplug.name()
 
     def __eq__(self, other: Plug) -> bool:
-        """
-        Overrides __eq__ function to compare the internal plug with the given one.
+        """Overrides __eq__ function to compare the internal plug with the given one.
 
         :param other: plug instance.
         :return: True if both plugs are the same; False otherwise.
@@ -1860,8 +1746,7 @@ class Plug:
         return self._mplug == other.plug()
 
     def __ne__(self, other: Plug) -> bool:
-        """
-        Overrides __ne__ function to compare the internal plug with the given one.
+        """Overrides __ne__ function to compare the internal plug with the given one.
 
         :param other: plug instance.
         :return: True if plugs are different; False otherwise.
@@ -1870,8 +1755,7 @@ class Plug:
         return self._mplug != other.plug()
 
     def __abs__(self):
-        """
-        Overrides __abs__ function to return the absolute value of a plug.
+        """Overrides __abs__ function to return the absolute value of a plug.
 
         :return: absolute value of the plug.
         :rtype: any
@@ -1880,8 +1764,7 @@ class Plug:
         return abs(self.value())
 
     def __int__(self) -> int:
-        """
-        Overrides __int__ function to return the value of the plug as an integer.
+        """Overrides __int__ function to return the value of the plug as an integer.
 
         :return: plug value as an integer.
         """
@@ -1889,8 +1772,7 @@ class Plug:
         return self._mplug.asInt()
 
     def __float__(self) -> float:
-        """
-        Overrides __float__ function to return the value of the plug as a float.
+        """Overrides __float__ function to return the value of the plug as a float.
 
         :return: plug value as a float.
         """
@@ -1898,8 +1780,7 @@ class Plug:
         return self._mplug.asFloat()
 
     def __neg__(self) -> Any:
-        """
-        Overrides __neg__ function to return the negative value of the plug.
+        """Overrides __neg__ function to return the negative value of the plug.
 
         :return: plug negative value.
         """
@@ -1907,8 +1788,7 @@ class Plug:
         return -self.value()
 
     def __bool__(self) -> bool:
-        """
-        Overrides __bool__ function to return True if the plug exists.
+        """Overrides __bool__ function to return True if the plug exists.
 
         :return: True if the plug exists; False otherwise.
         """
@@ -1916,8 +1796,7 @@ class Plug:
         return self.exists()
 
     def __getitem__(self, item: int) -> Plug | None:
-        """
-        Overrides __getitem__ function to return the child attribute if this plug is a compound one.
+        """Overrides __getitem__ function to return the child attribute if this plug is a compound one.
         Index starts from 0.
 
         :param item: element or child index to get.
@@ -1933,8 +1812,7 @@ class Plug:
         raise TypeError(f"{self._mplug.name()} does not support indexing")
 
     def __getattr__(self, item: str) -> Any:
-        """
-        Overrides __getattr__ function to try to access OpenMaya.MPlug attribute before accessing this instance
+        """Overrides __getattr__ function to try to access OpenMaya.MPlug attribute before accessing this instance
         attribute.
 
         :param item: name of the attribute to access.
@@ -1947,8 +1825,7 @@ class Plug:
         return super().__getattribute__(item)
 
     def __setattr__(self, key: str, value: Any):
-        """
-        Overrides __setattr__ function to try to call OpenMaya.MPlug function before calling the function.
+        """Overrides __setattr__ function to try to call OpenMaya.MPlug function before calling the function.
         If a Plug instance is passed, given plug will be connected into this plug instance.
 
         :param key: name of the attribute to set.
@@ -1966,8 +1843,7 @@ class Plug:
         super().__setattr__(key, value)
 
     def __iter__(self) -> Iterator[Plug]:
-        """
-        Overrides __iter__ function that allow the iteration of all the compound plugs.
+        """Overrides __iter__ function that allow the iteration of all the compound plugs.
 
         :return: generator of iterated compound plugs.
         """
@@ -1984,8 +1860,7 @@ class Plug:
                 yield Plug(self._node, mplug.child(i))
 
     def __len__(self) -> int:
-        """
-        Overrides __len__ function to return the total number of attributes in compound or array attributes or 0
+        """Overrides __len__ function to return the total number of attributes in compound or array attributes or 0
         if the attribute is not iterable.
 
         :return: total number of array or compound attributes.
@@ -1999,8 +1874,7 @@ class Plug:
         return 0
 
     def __rshift__(self, other: Plug):
-        """
-        Overrides __rshift__ function to allow to connect this plug instance into a downstream plug.
+        """Overrides __rshift__ function to allow to connect this plug instance into a downstream plug.
 
         :param other: downstream plug to connect.
         """
@@ -2008,8 +1882,7 @@ class Plug:
         self.connect(other)
 
     def __lshift__(self, other: Plug):
-        """
-        Overrides __lshift__ function to connect this plug instance into an upstream plug.
+        """Overrides __lshift__ function to connect this plug instance into an upstream plug.
 
         :param other: upstream plug to connect.
         """
@@ -2017,8 +1890,7 @@ class Plug:
         other.connect(self)
 
     def __floordiv__(self, other: Plug):
-        """
-        Overrides __floordiv__ function to allow to disconnect this plug from the given one.
+        """Overrides __floordiv__ function to allow to disconnect this plug from the given one.
 
         :param other: plug to disconnect from.
         """
@@ -2026,8 +1898,7 @@ class Plug:
         self.disconnect(other)
 
     def apiType(self):
-        """
-        Returns the Maya API type integer
+        """Returns the Maya API type integer
 
         :return: Maya API type.
         :rtype: int
@@ -2036,8 +1907,7 @@ class Plug:
         return plugs.plug_type(self._mplug)
 
     def mfn(self):
-        """
-        Returns the Maya function set for this plug.
+        """Returns the Maya function set for this plug.
 
         :return: Maya function set.
         :rtype: OpenMaya.MFnBase
@@ -2047,8 +1917,7 @@ class Plug:
         return plugs.plug_fn(attr)(attr)
 
     def mfnType(self):
-        """
-        Returns the Maya function set attribute type.
+        """Returns the Maya function set attribute type.
 
         :return: attribute type index.
         :rtype: int
@@ -2057,8 +1926,7 @@ class Plug:
         return plugs.plug_fn(self._mplug.attribute())
 
     def exists(self) -> bool:
-        """
-        Returns whether this plug is valid.
+        """Returns whether this plug is valid.
 
         :return: True if plag is valid; False otherwise.
         """
@@ -2074,8 +1942,7 @@ class Plug:
         use_full_attribute_path: bool = True,
         use_long_names: bool = True,
     ) -> str:
-        """
-        Returns the partial name for the plug.
+        """Returns the partial name for the plug.
 
         :param include_node_name: whether to include the node name.
         :param  include_non_mandatory_indices: whether to include non-mandatory indices.
@@ -2096,8 +1963,7 @@ class Plug:
         )
 
     def plug(self) -> OpenMaya.MPlug:
-        """
-        Returns the Maya MPlug object.
+        """Returns the Maya MPlug object.
 
         :return: Maya MPlug object.
         """
@@ -2105,8 +1971,7 @@ class Plug:
         return self._mplug
 
     def node(self) -> DGNode | DagNode:
-        """
-        Returns the attached node API instance for this plug.
+        """Returns the attached node API instance for this plug.
 
         :return: DGNode or DagNode for this plug.
         """
@@ -2114,8 +1979,7 @@ class Plug:
         return self._node
 
     def default(self) -> Any:
-        """
-        Returns the default value of this plug instance.
+        """Returns the default value of this plug instance.
 
         :return: default plug value.
         """
@@ -2126,8 +1990,7 @@ class Plug:
         return plugs.plug_default(self._mplug)
 
     def setDefault(self, value: Any) -> bool:
-        """
-        Sets the default for this plug default instance.
+        """Sets the default for this plug default instance.
 
         :param value: default value to set.
         :return: True if set default operation was successful; False otherwise.
@@ -2136,8 +1999,7 @@ class Plug:
         return plugs.set_plug_default(self._mplug, value) if self.exists() else False
 
     def isProxy(self) -> bool:
-        """
-        Returns whether this plug is a proxy one.
+        """Returns whether this plug is a proxy one.
 
         :return: True if plug is a proxy one; False otherwise.
         """
@@ -2145,8 +2007,7 @@ class Plug:
         return OpenMaya.MFnAttribute(self._mplug.attribute()).isProxyAttribute
 
     def setAsProxy(self, source_plug: Plug):
-        """
-        Sets the current attribute as a proxy attribute and connects to the given source plug.
+        """Sets the current attribute as a proxy attribute and connects to the given source plug.
 
         :param source_plug: source plug to connect this plug.
         """
@@ -2159,8 +2020,7 @@ class Plug:
         source_plug.connect(self)
 
     def isAnimated(self):
-        """
-        Returns whether current plug is animated.
+        """Returns whether current plug is animated.
 
         :return: True if current plug is animated; False otherwise.
         :rtype: bool
@@ -2173,8 +2033,7 @@ class Plug:
         return OpenMayaAnim.MAnimUtil.isAnimated(self._mplug)
 
     def findAnimation(self):
-        """
-        Returns the anim curve/s that are animating this plug instance.
+        """Returns the anim curve/s that are animating this plug instance.
 
         :return: list of animation curves.
         :rtype:
@@ -2188,8 +2047,7 @@ class Plug:
         ]
 
     def isFreeToChanged(self) -> bool:
-        """
-        Returns whether the plug is free to be changed.
+        """Returns whether the plug is free to be changed.
 
         :return: True if the plug is free to be changed; False otherwise.
         """
@@ -2197,8 +2055,7 @@ class Plug:
         return self._mplug.isFreeToChange() == self._mplug.kFreeToChange
 
     def value(self, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal) -> Any:
-        """
-        Returns the value of the plug.
+        """Returns the value of the plug.
 
         :param ctx: context to use.
         :return: plug value.
@@ -2210,8 +2067,7 @@ class Plug:
         return value
 
     def enumFields(self) -> list[str]:
-        """
-        Returns the list of field names for this enum plug.
+        """Returns the list of field names for this enum plug.
 
         :return: list of field names.
         :raises InvalidPlugPathError: if the plug is not an enum type.
@@ -2227,8 +2083,7 @@ class Plug:
 
     @lock_node_plug_context
     def addEnumFields(self, fields: list[str]):
-        """
-        Adds a list of field names to the plug.
+        """Adds a list of field names to the plug.
         If a name already exists it will be skipped. New fields will always be added to the end.
 
         :param fields: list of field names to add.
@@ -2248,8 +2103,7 @@ class Plug:
             index += 1
 
     def setFields(self, fields: list[str]):
-        """
-        Sets the list of fields for this plug.
+        """Sets the list of fields for this plug.
 
         :param fields: list of fields to set for this plug.
         """
@@ -2266,8 +2120,7 @@ class Plug:
             self.setDefault(default_value)
 
     def array(self) -> Plug:
-        """
-        Returns the plug array for this array element.
+        """Returns the plug array for this array element.
 
         :return: plug array.
         """
@@ -2276,8 +2129,7 @@ class Plug:
         return Plug(self._node, self._mplug.array())
 
     def parent(self) -> Plug:
-        """
-        Returns the parent plug if this plug is a compound.
+        """Returns the parent plug if this plug is a compound.
 
         :return: parent plug.
         :rtype: Plug
@@ -2287,8 +2139,7 @@ class Plug:
         return Plug(self._node, self._mplug.parent())
 
     def children(self) -> list[Plug]:
-        """
-        Returns all the child plugs of this compound plug.
+        """Returns all the child plugs of this compound plug.
 
         :return: children plugs.
         :rtype: list(Plug)
@@ -2300,8 +2151,7 @@ class Plug:
         ]
 
     def child(self, index) -> Plug:
-        """
-        Returns the child plug by index.
+        """Returns the child plug by index.
 
         :param index: child index.
         :return: child plug at given index.
@@ -2315,8 +2165,7 @@ class Plug:
         return Plug(self._node, self._mplug.child(index))
 
     def element(self, index: int) -> Plug:
-        """
-        Returns the logical element plug if this plug is an array.
+        """Returns the logical element plug if this plug is an array.
 
         :param index: element index.
         :return: element plug.
@@ -2330,8 +2179,7 @@ class Plug:
         return Plug(self._node, self._mplug.elementByLogicalIndex(index))
 
     def elementByPhysicalIndex(self, index: int) -> Plug:
-        """
-        Returns the element plug by the physical index if this plug is an array.
+        """Returns the element plug by the physical index if this plug is an array.
 
         :param index: physical index.
         :return: element plug.
@@ -2341,8 +2189,7 @@ class Plug:
         return Plug(self._node, self._mplug.elementByPhysicalIndex(index))
 
     def nextAvailableElementPlug(self):
-        """
-        Returns the next available output plug for this array.
+        """Returns the next available output plug for this array.
 
         :return:  next available output plug.
         :rtype: Plug
@@ -2353,8 +2200,7 @@ class Plug:
         return Plug(self._node, plugs.next_available_element_plug(self._mplug))
 
     def nextAvailableDestElementPlug(self, force: bool = False):
-        """
-        Returns the next available input plug for this array.
+        """Returns the next available input plug for this array.
 
         :param force: whether to force the next available plug.
         :return:  next available input plug.
@@ -2370,8 +2216,7 @@ class Plug:
     def set(
         self, value: Any, mod: OpenMaya.MDGModifier | None = None, apply: bool = True
     ) -> OpenMaya.MDGModifier:
-        """
-        Sets the value of this plug instance.
+        """Sets the value of this plug instance.
 
         :param value: OpenMaya value type.
         :param mod: optional Maya modifier to add to.
@@ -2389,8 +2234,7 @@ class Plug:
 
     @lock_node_plug_context
     def setFromDict(self, **plug_info):
-        """
-        Sets the plug value from a dictionary.
+        """Sets the plug value from a dictionary.
 
         :param plug_info: plug value dictionary.
         """
@@ -2406,8 +2250,7 @@ class Plug:
         mod: OpenMaya.MDGModifier | None = None,
         apply: bool = True,
     ) -> OpenMaya.MDGModifier:
-        """
-        Connects given plug to this plug instance.
+        """Connects given plug to this plug instance.
 
         :param Plug or OpenMaya.MPlug plug: plug to connect into this plug.
         :param children: children attributes to connect
@@ -2443,8 +2286,7 @@ class Plug:
         mod: OpenMaya.MDGModifier | None = None,
         apply: bool = True,
     ) -> OpenMaya.MDGModifier:
-        """
-        Disconnects given destination plug.
+        """Disconnects given destination plug.
 
         :param plug: destination plug.
         :param mod: optional Maya modifier to add to.
@@ -2466,8 +2308,7 @@ class Plug:
         destination: bool = True,
         mod: OpenMaya.MDGModifier | None = None,
     ) -> tuple[bool, OpenMaya.MDGModifier]:
-        """
-        Disconnects all plugs from the current plug.
+        """Disconnects all plugs from the current plug.
 
         :param bool source: whether to disconnect source connections.
         :param bool destination: whether to disconnect destination connections.
@@ -2480,8 +2321,7 @@ class Plug:
         )
 
     def source(self) -> Plug | None:
-        """
-        Returns the source plug from this plug or None if it is not connected to any node.
+        """Returns the source plug from this plug or None if it is not connected to any node.
 
         :return: connected source node plug.
         """
@@ -2492,8 +2332,7 @@ class Plug:
         )
 
     def sourceNode(self) -> DGNode | DagNode | None:
-        """
-        Returns the source node from this plug or None if it is not connected to any node.
+        """Returns the source node from this plug or None if it is not connected to any node.
 
         :return: source node.
         """
@@ -2502,8 +2341,7 @@ class Plug:
         return source.node() if source is not None else None
 
     def destinations(self) -> Iterator[Plug]:
-        """
-        Generator function that iterates over all destination plugs connected to this plug instance.
+        """Generator function that iterates over all destination plugs connected to this plug instance.
 
         :return: iterated destination plugs.
         """
@@ -2512,8 +2350,7 @@ class Plug:
             yield Plug(node_by_object(destination_plug.node()), destination_plug)
 
     def destinationNodes(self) -> Iterator[DGNode]:
-        """
-        Generator function that iterates over all destination nodes.
+        """Generator function that iterates over all destination nodes.
 
         :return: iterated destination nodes.
         """
@@ -2523,8 +2360,7 @@ class Plug:
 
     @lock_node_plug_context
     def rename(self, name: str, mod: OpenMaya.MDGModifier | None = None) -> bool:
-        """
-        Renames the current plug.
+        """Renames the current plug.
 
         :param name: new plug name.
         :param mod: optional modifier to add to.
@@ -2539,23 +2375,18 @@ class Plug:
         return True
 
     def show(self):
-        """
-        Shows the attribute in the channel box and makes the attribute keyable.
-        """
+        """Shows the attribute in the channel box and makes the attribute keyable."""
 
         self._mplug.isChannelBox = True
 
     def hide(self):
-        """
-        Hides the attribute from the channel box and makes the attribute non-keyable.
-        """
+        """Hides the attribute from the channel box and makes the attribute non-keyable."""
 
         self._mplug.isChannelBox = False
         self._mplug.isKeyable = False
 
     def lock(self, flag):
-        """
-        Sets the current plug lock state.
+        """Sets the current plug lock state.
 
         :param bool flag: True to lock current plug; False to unlock it.
         """
@@ -2563,17 +2394,14 @@ class Plug:
         self._mplug.isLocked = flag
 
     def lockAndHide(self):
-        """
-        Locks and hides the attribute.
-        """
+        """Locks and hides the attribute."""
 
         self._mplug.isLocked = True
         self._mplug.isChannelBox = False
         self._mplug.isKeyable = False
 
     def setKeyable(self, flag):
-        """
-        Sets the keyable state of the attribute.
+        """Sets the keyable state of the attribute.
 
         :param bool flag: True to make the attribute keyable; False otherwise.
         """
@@ -2584,8 +2412,7 @@ class Plug:
     def delete(
         self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True
     ) -> OpenMaya.MDGModifier:
-        """
-        Deletes the plug from the attached node. If batching is needed then use the modifier parameter to pass a
+        """Deletes the plug from the attached node. If batching is needed then use the modifier parameter to pass a
         DGModifier, once all operations are done, call modifier.doIt() function.
 
         :param mod: modifier to dad to. If None, one will be created.
@@ -2617,8 +2444,7 @@ class Plug:
     def deleteElements(
         self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True
     ) -> OpenMaya.MDGModifier:
-        """
-        Deletes all array elements from this plug.
+        """Deletes all array elements from this plug.
 
         :param OpenMaya.DGModifier mod: modifier to dad to. If None, one will be created.
         :param bool apply: if True, then plugs value will be set immediately with the modifier, if False, then is
@@ -2648,8 +2474,7 @@ class Plug:
 
     # noinspection PyUnusedLocal
     def serializeFromScene(self, *args, **kwargs) -> dict:
-        """
-        Serializes current PLUG instance and returns a JSON compatible dictionary with the container data.
+        """Serializes current PLUG instance and returns a JSON compatible dictionary with the container data.
 
         :return: serialized plug data.
         """
@@ -2658,8 +2483,7 @@ class Plug:
 
     @staticmethod
     def _convert_value_type(value: Any) -> Any:
-        """
-        Internal static method that converts given value to a valid value type.
+        """Internal static method that converts given value to a valid value type.
 
         :param any value: value to convert.
         :return: converted value.
@@ -2691,9 +2515,7 @@ class Camera(DagNode):
 
 
 class IkHandle(DagNode):
-    """
-    Wrapper class for Maya ikHandle nodes.
-    """
+    """Wrapper class for Maya ikHandle nodes."""
 
     # Twist controls scene worldUpType enum value.
     SCENE_UP = 0
@@ -2731,8 +2553,7 @@ class IkHandle(DagNode):
 
     @staticmethod
     def vector_to_forward_axis_enum(vec: Iterable[float, float, float]) -> int:
-        """
-        Returns forward axis index from given vector.
+        """Returns forward axis index from given vector.
         The forward axis direction is determined by finding the axis with the largets magnitude in the vector.
 
         If the sum of the values in the vector is negative, the method will return the corresponding negative up axis
@@ -2773,8 +2594,7 @@ class IkHandle(DagNode):
 
     @staticmethod
     def vector_to_up_axis_enum(vec: Iterable[float, float, float]) -> int:
-        """
-        Returns up axis index from given vector.
+        """Returns up axis index from given vector.
         The up axis direction is determined by finding the axis with the largest magnitude in the vector.
 
         If the sum of the values in the vector is negative, the method will return the corresponding negative up axis
@@ -2820,16 +2640,13 @@ class IkHandle(DagNode):
 
 
 class Joint(DagNode):
-    """
-    Wrapper class for Maya joints.
-    """
+    """Wrapper class for Maya joints."""
 
     def create(
         self,
         **kwargs,
     ) -> Joint:
-        """
-        Function that builds the node within the Maya scene.
+        """Function that builds the node within the Maya scene.
 
         :return: newly created meta node instance.
         """
@@ -2864,8 +2681,7 @@ class Joint(DagNode):
         mod: OpenMaya.MDagModifier | None = None,
         apply: bool = True,
     ) -> OpenMaya.MDagModifier:
-        """
-        Sets the parent of this node.
+        """Sets the parent of this node.
 
         :param parent: new parent node.
         :param maintain_offset: whether to maintain it is current position in world space.
@@ -2892,16 +2708,13 @@ class Joint(DagNode):
 
 # noinspection PyPep8Naming
 class ContainerAsset(DGNode):
-    """
-    Wrapper class for MFnContainerNode nodes providing a set of common methods.
-    """
+    """Wrapper class for MFnContainerNode nodes providing a set of common methods."""
 
     MFN_TYPE = OpenMaya.MFnContainerNode
 
     # noinspection PyMethodOverriding
     def create(self, name: str):
-        """
-        Creates the MFnSet and sets this instance MObject to the new node.
+        """Creates the MFnSet and sets this instance MObject to the new node.
 
         :param name: name for the asset container node.
         """
@@ -2912,8 +2725,7 @@ class ContainerAsset(DGNode):
         return self
 
     def serializeFromScene(self, *args, **kwargs) -> dict:
-        """
-        Serializes current asset container instance and returns a JSON compatible
+        """Serializes current asset container instance and returns a JSON compatible
         dictionary with the container data.
 
         :return: serialized asset container data.
@@ -2935,8 +2747,7 @@ class ContainerAsset(DGNode):
 
     # noinspection PyMethodOverriding
     def delete(self, remove_container: bool = True):
-        """
-        Deletes the node from the scene.
+        """Deletes the node from the scene.
 
         :param remove_container: If True, then the container will be deleted, otherwise
             only members will be removed.
@@ -2948,8 +2759,7 @@ class ContainerAsset(DGNode):
 
     @property
     def blackBox(self):
-        """
-        Getter method that returns the current black box attribute value.
+        """Getter method that returns the current black box attribute value.
 
         :return: True if the contents of the container are public; False otherwise.
         """
@@ -2958,8 +2768,7 @@ class ContainerAsset(DGNode):
 
     @blackBox.setter
     def blackBox(self, flag):
-        """
-        Setter method that sets current black box attribute value.
+        """Setter method that sets current black box attribute value.
 
         :param flag: True if the contents of the container are not public; False
             otherwise.
@@ -2971,8 +2780,7 @@ class ContainerAsset(DGNode):
         self.attribute("blackBox").set(flag)
 
     def isCurrent(self) -> bool:
-        """
-        Returns whether this current container is the current active container.
+        """Returns whether this current container is the current active container.
 
         :return: True if this container is the active one; False otherwise.
         """
@@ -2982,8 +2790,7 @@ class ContainerAsset(DGNode):
         return mfn.isCurrent()
 
     def makeCurrent(self, value):
-        """
-        Sets this container to be the currently active.
+        """Sets this container to be the currently active.
 
         :param bool value: whether to make container currently active.
         """
@@ -2994,8 +2801,7 @@ class ContainerAsset(DGNode):
 
     @contextlib.contextmanager
     def makeCurrentContext(self, value: bool):
-        """
-        Context manager that sets this container to be the currently active.
+        """Context manager that sets this container to be the currently active.
 
         :param value: whether to make container currently active.
         """
@@ -3011,8 +2817,7 @@ class ContainerAsset(DGNode):
                 self.makeCurrent(current_state)
 
     def members(self):
-        """
-        Returns current members of this container instance.
+        """Returns current members of this container instance.
 
         :return: list of member nodes.
         :rtype: list(DagNode)
@@ -3023,8 +2828,7 @@ class ContainerAsset(DGNode):
         return map(node_by_object, mfn.getMembers())
 
     def addNode(self, node_to_add: DGNode, force: bool = False) -> bool:
-        """
-        Adds the given node to the container without publishing it.
+        """Adds the given node to the container without publishing it.
 
         :param DGNode node_to_add: node to add into this container.
         :param bool force: whether to force the operation.
@@ -3050,8 +2854,7 @@ class ContainerAsset(DGNode):
         return False
 
     def addNodes(self, nodes_to_add: list[DGNode], force: bool = False):
-        """
-        Adds the given nodes to the container without published them.
+        """Adds the given nodes to the container without published them.
 
         :param nodes_to_add: nodes to add into this container.
         :param force: whether to force the operation.
@@ -3070,8 +2873,7 @@ class ContainerAsset(DGNode):
             )
 
     def publishedAttributes(self) -> list[Plug]:
-        """
-        Returns all published attributes in this container.
+        """Returns all published attributes in this container.
 
         :return: list of published attributes.
         """
@@ -3084,8 +2886,7 @@ class ContainerAsset(DGNode):
         return [plug_by_name(attr) for attr, _ in helpers.iterate_chunks(results, 2)]
 
     def publishAttribute(self, attribute: Plug):
-        """
-        Publishes the given attribute to the container.
+        """Publishes the given attribute to the container.
 
         :param attribute: attribute to publish.
         """
@@ -3093,8 +2894,7 @@ class ContainerAsset(DGNode):
         self.publishAttributes([attribute])
 
     def publishAttributes(self, attributes: Iterable[Plug]):
-        """
-        Publishes the given attributes to the container.
+        """Publishes the given attributes to the container.
 
         :param attributes: list of attributes to publish.
         """
@@ -3116,8 +2916,7 @@ class ContainerAsset(DGNode):
                 pass
 
     def unPublishAttribute(self, attribute_name: str) -> bool:
-        """
-        Unpublishes attribute with given name from this container.
+        """Unpublishes attribute with given name from this container.
 
         :param attribute_name: name of the attribute to unpublish.
         :return: True if the attribute was unpublished successfully; False otherwise.
@@ -3136,9 +2935,7 @@ class ContainerAsset(DGNode):
         return True
 
     def unPublishAttributes(self):
-        """
-        Unpublish all attributes published in this container.
-        """
+        """Unpublish all attributes published in this container."""
 
         for published_attribute in self.publishedAttributes():
             self.unpublish_attribute(
@@ -3146,8 +2943,7 @@ class ContainerAsset(DGNode):
             )
 
     def publishedNodes(self):
-        """
-        Returns list of published node in this container.
+        """Returns list of published node in this container.
 
         :return: list of published nodes.
         :rtype: list(DGNode)
@@ -3162,8 +2958,7 @@ class ContainerAsset(DGNode):
         ]
 
     def publishNode(self, node_to_publish: DGNode):
-        """
-        Publishes the given node to the container.
+        """Publishes the given node to the container.
 
         :param node_to_publish: node to publish.
         """
@@ -3183,8 +2978,7 @@ class ContainerAsset(DGNode):
             pass
 
     def publishNodes(self, nodes_to_publish: Iterable[DGNode]):
-        """
-        Publishes the given nodes to the container.
+        """Publishes the given nodes to the container.
 
         :param nodes_to_publish: list of nodes to publish.
         """
@@ -3193,8 +2987,7 @@ class ContainerAsset(DGNode):
             self.publishNode(i)
 
     def publishNodeAsChildParentAnchor(self, node: DGNode):
-        """
-        Publishes the given node as a child parent anchor.
+        """Publishes the given node as a child parent anchor.
 
         :param node: node to publish.
         """
@@ -3212,8 +3005,7 @@ class ContainerAsset(DGNode):
         )
 
     def unPublishNode(self, node: DGNode):
-        """
-        Unpublishes given node from the container.
+        """Unpublishes given node from the container.
 
         :param node: node to unpublish.
         """
@@ -3229,9 +3021,7 @@ class ContainerAsset(DGNode):
                 break
 
     def removeUnboundAttributes(self):
-        """
-        Removes any unbound attributes from the container.
-        """
+        """Removes any unbound attributes from the container."""
 
         container_name = self.fullPathName()
         for unbound in (
@@ -3243,8 +3033,7 @@ class ContainerAsset(DGNode):
             cmds.container(container_name, edit=True, removeUnbound=unbound)
 
     def setParentAnchor(self, node: DagNode):
-        """
-        Sets the given node as a parent anchor to the container.
+        """Sets the given node as a parent anchor to the container.
 
         :param node: node to set as parent anchor.
         """
@@ -3258,8 +3047,7 @@ class ContainerAsset(DGNode):
         )
 
     def setChildAnchor(self, node: DagNode):
-        """
-        Sets the given node as a child anchor to the container.
+        """Sets the given node as a child anchor to the container.
 
         :param node: node to set as child anchor.
         """
@@ -3273,8 +3061,7 @@ class ContainerAsset(DGNode):
         )
 
     def childAnchor(self) -> DGNode:
-        """
-        Returns the child anchor node of this container.
+        """Returns the child anchor node of this container.
 
         :return: child anchor node.
         """
@@ -3283,8 +3070,7 @@ class ContainerAsset(DGNode):
         return node_by_name(child[1]) if child else None
 
     def parentAnchor(self) -> DGNode:
-        """
-        Returns the parent anchor node of this container.
+        """Returns the parent anchor node of this container.
 
         :return: parent anchor node.
         """
@@ -3293,8 +3079,7 @@ class ContainerAsset(DGNode):
         return node_by_name(parent[1]) if parent else None
 
     def subContainers(self) -> Iterator[ContainerAsset]:
-        """
-        Generator function that iterates over all sub containers.
+        """Generator function that iterates over all sub containers.
 
         :return: iterated sub containers.
         """
@@ -3305,17 +3090,14 @@ class ContainerAsset(DGNode):
 
 # noinspection PyPep8Naming
 class AnimCurve(DGNode):
-    """
-    Wrapper class for Maya animCurve nodes.
-    """
+    """Wrapper class for Maya animCurve nodes."""
 
     MFN_TYPE = OpenMayaAnim.MFnAnimCurve
 
     def setPrePostInfinity(
         self, pre: int, post: int, change: OpenMayaAnim.MAnimCurveChange | None = None
     ):
-        """
-        Sets the behaviour of the curve for the range occurring before the first key and after the last key.
+        """Sets the behaviour of the curve for the range occurring before the first key and after the last key.
 
         :param pre: sets the behaviour of the curve for the range occurring before the first key.
         :param post: sets the behaviour of the curve for the range occurring after the last key.
@@ -3358,8 +3140,7 @@ class AnimCurve(DGNode):
         keep_existing_keys: bool = False,
         change: OpenMayaAnim.MAnimCurveChange | None = None,
     ):
-        """
-        Adds a set of new keys with the given corresponding values and tangent types at the given times.
+        """Adds a set of new keys with the given corresponding values and tangent types at the given times.
 
         :param times: times at which keys are to be added.
         :param values: values to which the keys is to be set.
@@ -3409,9 +3190,7 @@ class SkinCluster(DGNode):
 
 # noinspection PyPep8Naming
 class ObjectSet(DGNode):
-    """
-    Wrapper class for Maya object sets
-    """
+    """Wrapper class for Maya object sets"""
 
     MFN_TYPE = OpenMaya.MFnSet
 
@@ -3422,8 +3201,7 @@ class ObjectSet(DGNode):
         mod: OpenMaya.MDGModifier | None = None,
         members: list[DGNode] | None = None,
     ) -> ObjectSet:
-        """
-        Creates the MFnSet and sets this instance MObject to the new node.
+        """Creates the MFnSet and sets this instance MObject to the new node.
 
         :param name: name for the object set node.
         :param mod: modifier to add to, if None it will create one.
@@ -3439,8 +3217,7 @@ class ObjectSet(DGNode):
         return self
 
     def isMember(self, node: DGNode) -> bool:
-        """
-        Returns whether given node is a member of this set.
+        """Returns whether given node is a member of this set.
 
         :param node: node to check for membership.
         :return: True if given node is a member of this set; False otherwise.
@@ -3451,8 +3228,7 @@ class ObjectSet(DGNode):
         return mfn.isMember(self.object()) if node.exists() else False
 
     def addMember(self, node: DGNode) -> bool:
-        """
-        Adds given node to the set.
+        """Adds given node to the set.
 
         :param DGNode node: node to add as a new member to this set.
         :return: True if the node was added successfully; False otherwise.
@@ -3475,8 +3251,7 @@ class ObjectSet(DGNode):
         return True
 
     def addMembers(self, new_members: list[DGNode]):
-        """
-        Adds a list of new objects into the set.
+        """Adds a list of new objects into the set.
 
         :param list[DGNode] new_members: list of nodes to add as new members to this set.
         """
@@ -3485,8 +3260,7 @@ class ObjectSet(DGNode):
             self.addMember(member)
 
     def members(self, flatten: bool = False) -> list[DGNode]:
-        """
-        Returns the members of this set as a list.
+        """Returns the members of this set as a list.
 
         :param bool flatten: whether all sets that exist inside this set will be expanded into a list of their contents.
         :return: a list of all members in the set.
@@ -3498,8 +3272,7 @@ class ObjectSet(DGNode):
         return list(map(node_by_name, mfn.getMembers(flatten).getSelectionStrings()))
 
     def removeMember(self, member: DGNode):
-        """
-        Removes given item from the set.
+        """Removes given item from the set.
 
         :param DGNode member: item to remove.
         """
@@ -3508,8 +3281,7 @@ class ObjectSet(DGNode):
             self.removeMembers([member])
 
     def removeMembers(self, members: list[DGNode]):
-        """
-        Removes items of the list from the set.
+        """Removes items of the list from the set.
 
         :param list[DGNode] members: member nodes to remove.
         """
@@ -3525,9 +3297,7 @@ class ObjectSet(DGNode):
         mfn.removeMembers(member_list)
 
     def clear(self):
-        """
-        Removes all members from this set.
-        """
+        """Removes all members from this set."""
 
         # noinspection PyTypeChecker
         mfn: OpenMaya.MFnSet = self._mfn
@@ -3540,13 +3310,10 @@ class BlendShape(DGNode):
 
 # noinspection PyPep8Naming
 class DisplayLayer(DGNode):
-    """
-    Wrapper class for Maya display layers.
-    """
+    """Wrapper class for Maya display layers."""
 
     def addNodes(self, display_nodes: list[DagNode]):
-        """
-        Adds the given nodes to the display layer.
+        """Adds the given nodes to the display layer.
 
         :param display_nodes: nodes to add to the display layer.
         """
@@ -3556,8 +3323,7 @@ class DisplayLayer(DGNode):
             draw_info_plug.connect(display_node.drawOverride)
 
     def addNode(self, node: DagNode):
-        """
-        Adds the given node to the display layer.
+        """Adds the given node to the display layer.
 
         :param node: node to add to the display layer.
         """
@@ -3570,33 +3336,25 @@ class AnimLayer(DGNode):
 
 
 class ObjectDoesNotExistError(Exception):
-    """
-    Raised anytime the current object is operated on and does not exist.
-    """
+    """Raised anytime the current object is operated on and does not exist."""
 
     pass
 
 
 class ReferenceObjectError(Exception):
-    """
-    Raised when an object is a reference and the requested operation is not allowed on a reference.
-    """
+    """Raised when an object is a reference and the requested operation is not allowed on a reference."""
 
     pass
 
 
 class InvalidPlugPathError(Exception):
-    """
-    Custom exception raised when a plug path is not valid.
-    """
+    """Custom exception raised when a plug path is not valid."""
 
     pass
 
 
 class InvalidTypeForPlugError(Exception):
-    """
-    Custom exception raised when the given type is not valid for a plug.
-    """
+    """Custom exception raised when the given type is not valid for a plug."""
 
     pass
 
@@ -3620,8 +3378,7 @@ def node_by_object(
     | DisplayLayer
     | AnimLayer
 ):
-    """
-    Returns the correct API node for the given MObject by wrapping the MObject within an API node instance.
+    """Returns the correct API node for the given MObject by wrapping the MObject within an API node instance.
 
     :param OpenMaya.MObject mobj: Maya object.
     :return: API node instance.
@@ -3685,8 +3442,7 @@ def node_by_name(
     | AnimLayer
     | None
 ):
-    """
-    Returns a DAG node instance based on the given node name (expecting a full path).
+    """Returns a DAG node instance based on the given node name (expecting a full path).
 
     :param node_name: Maya node name or object instance.
     :return: API node instance.
@@ -3736,8 +3492,7 @@ def node_by_name(
 
 
 def nodes_by_names(node_names: Iterable[str]) -> list[DGNode | DagNode]:
-    """
-    Returns DAG node instances based on the given node names (expecting a full path).
+    """Returns DAG node instances based on the given node names (expecting a full path).
 
     :param node_names: Maya node name.
     :return: API node instances.
@@ -3748,8 +3503,7 @@ def nodes_by_names(node_names: Iterable[str]) -> list[DGNode | DagNode]:
 
 
 def nodes_by_type_names(node_type_names: str | Iterable[str]) -> list[DGNode | DagNode]:
-    """
-    Returns node instances based on the given node type name.
+    """Returns node instances based on the given node type name.
 
     :param node_type_names: node types to retrieve.
     :return: list of node instances.
@@ -3761,8 +3515,7 @@ def nodes_by_type_names(node_type_names: str | Iterable[str]) -> list[DGNode | D
 
 
 def selected(filter_types: Iterable[int] | None = None) -> Iterable[DGNode | DagNode]:
-    """
-    Returns selected nodes in the scene.
+    """Returns selected nodes in the scene.
 
     :param filter_types: node types to filter by.
     :return: selected nodes.
@@ -3776,8 +3529,7 @@ def select(
     mod: OpenMaya.MDGModifier | OpenMaya.MDagModifier | None = None,
     apply: bool = True,
 ) -> OpenMaya.MDGModifier | OpenMaya.MDagModifier:
-    """
-    Select given nodes within current scene.
+    """Select given nodes within current scene.
 
     :param nodes_to_select: nodes to select.
     :param mod: optional modifier to run the command in.
@@ -3800,8 +3552,7 @@ def select_by_names(
     mod: OpenMaya.MDGModifier | OpenMaya.MDagModifier | None = None,
     apply: bool = True,
 ) -> OpenMaya.MDGModifier | OpenMaya.MDagModifier:
-    """
-    Select given node names within current scene.
+    """Select given node names within current scene.
 
     :param names: node names to select.
     :param mod: optional modifier to run the command in.
@@ -3820,8 +3571,7 @@ def select_by_names(
 def clear_selection(
     mod: OpenMaya.MDGModifier | OpenMaya.MDagModifier | None = None, apply: bool = True
 ) -> OpenMaya.MDGModifier | OpenMaya.MDagModifier:
-    """
-    Clears current selection.
+    """Clears current selection.
 
     :param mod: modifier to run the command in.
     :param apply: whether to apply the modifier immediately.
@@ -3836,8 +3586,7 @@ def clear_selection(
 
 
 def plug_by_name(plug_path: str) -> Plug:
-    """
-    Returns the Plug instance for the given plug path.
+    """Returns the Plug instance for the given plug path.
 
     :param plug_path: full path to the plug.
     :return: plug instance matching the given plug path.

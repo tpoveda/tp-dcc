@@ -1,0 +1,39 @@
+modulePaths: []
+defaultNamingPreset: ModRig
+naming:
+    profile:
+        indexPadding: 2
+        startIndex: 0
+        template: default
+    templates:
+        alternative: '{name}_{side}_{suffix}'
+        default: '{side}_{name}_{suffix}'
+        unreal: '{suffix}_{name}_{side}'
+namingPresetHierarchy:
+    children:
+    -   children: []
+        name: defaultUserPreset
+    -   children:
+        -   children: []
+            name: UE5ClaviclePreset
+        -   children: []
+            name: UE5ThumbPreset
+        name: UE5Preset
+    name: ModRig
+namingPresetPaths: []
+project:
+    maxRecent: 3
+    previousProject: E:\tools\dev\modrig
+    recentProjects: []
+requiredMayaPlugins:
+- matrixNodes
+- lookdevKit
+- quatNodes
+rig:
+    display:
+        lineWidth: 2.0
+    io:
+        nglayers:
+            fileFormat: pickle
+        skin:
+            fileFormat: pickle

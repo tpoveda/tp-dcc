@@ -15,6 +15,7 @@ from Qt import QtCompat
 from Qt.QtWidgets import QMainWindow
 
 from tp.bootstrap.core import host
+from tp.libs.maya.meta import base
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,8 @@ class MayaHost(host.Host):
         Creates the TP DCC menu and shelves in Maya and handles the
         registration of metadata classes.
         """
+
+        base.MetaRegistry()
 
     def shutdown(self):
         """Shuts down the host.

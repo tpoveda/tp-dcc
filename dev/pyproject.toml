@@ -9,7 +9,9 @@ dependencies = [
     "pip-tools==7.4.1",
     "loguru==0.7.3",
     "shotgun-api3 @ git+https://github.com/shotgunsoftware/python-api.git@v3.8.2",
-    "Pyro5==5.15"
+    "Pyro5==5.15",
+    "numpy==2.3.0",
+    "scipy==1.15.3",
 ]
 
 [project.optional-dependencies]
