@@ -19,7 +19,7 @@ namingPresetHierarchy:
         -   children: []
             name: UE5ThumbPreset
         name: UE5Preset
-    name: ModRig
+    name: modRig
 namingPresetPaths: []
 project:
     maxRecent: 3

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import typing
 from typing import cast
 from collections.abc import Iterator
@@ -100,6 +101,24 @@ class Rig:
 
         return self._config
 
+    def version_info(self) -> dict[str, str]:
+        """Return the build version for the rig composed by the
+        application version, tp-dcc version and ModRig version.
+
+        Returns:
+            Version info as a dictionary.
+        """
+
+        if self._meta is None:
+            return {}
+
+        try:
+            return json.loads(
+                self._meta.attribute(constants.RIG_VERSION_INFO_ATTR).value()
+            )
+        except json.JSONDecodeError:
+            return {}
+
     def naming_manager(self) -> NameManager:
         """Return the naming manager for the current rig instance.
 
@@ -108,6 +127,61 @@ class Rig:
         """
 
         return self.configuration.find_name_manager_for_type("rig")
+
+    def exists(self) -> bool:
+        """Return whether this rig exists by checking the existing of the
+        metanode instance.
+
+        Returns:
+            True if the rig exists; False otherwise.
+        """
+
+        return self._meta is not None and self._meta.exists()
+
+    def name(self) -> str:
+        """Return the name of the rig by accessing metanode instance data.
+
+        Returns:
+            The name of the rig if it exists; otherwise, an empty string.
+        """
+
+        return self._meta.rig_name() if self.exists() else ""
+
+    def cached_configuration(self) -> dict:
+        """Return the configuration cached on the rig metanode instance as a
+        dictionary.
+
+        Returns:
+            The configuration dictionary if it exists; otherwise, an empty
+            dictionary.
+        """
+
+        config_plug = self._meta.attribute(constants.RIG_CONFIG_ATTR)
+        try:
+            config_data = config_plug.value()
+            if config_data:
+                return json.loads(config_data)
+        except ValueError:
+            pass
+
+        return {}
+
+    @profiler.fn_timer
+    def save_configuration(self) -> dict:
+        """Serialize and save the configuration for this rig on the metanode
+        instance.
+
+        Returns:
+            The saved serialized configuration as a dictionary.
+        """
+
+        logger.debug("Saving rig configuration...")
+        config_data = self.configuration.serialize(rig=self)
+        if config_data:
+            config_plug = self._meta.attribute(constants.RIG_CONFIG_ATTR)
+            config_plug.set(json.dumps(config_data))
+
+        return config_data
 
     @profiler.fn_timer
     def start_session(
@@ -137,6 +211,13 @@ class Rig:
 
         namer = self.naming_manager()
         meta = ModRig(name=namer.resolve("rigMeta", {"rigName": name, "type": "meta"}))
+        meta.attribute(constants.NAME_ATTR).set(name)
+        meta.attribute(constants.ID_ATTR).set(name)
+        meta.create_transform(namer.resolve("rigHrc", {"rigName": name, "type": "hrc"}))
+        meta.create_selection_sets(namer)
+        self._meta = meta
+
+        return self._meta
 
 
 def iterate_scene_rig_meta_nodes() -> Iterator[ModRig]:

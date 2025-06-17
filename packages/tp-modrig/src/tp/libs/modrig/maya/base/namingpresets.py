@@ -12,10 +12,10 @@ from tp.libs.naming import manager
 from tp.libs.python import folder, jsonio
 
 from . import settings
+from . import constants
 
 PRESET_EXT = "namingpreset"
 CONFIG_EXT = "namingcfg"
-MODRIG_PRESET = "ModRig"
 
 
 def surround_text_as_token(text: str) -> str:
@@ -304,7 +304,7 @@ class NameManagerData:
         super().__init__()
 
         self._name = name
-        self._noddle_type = mod_rig_type
+        self._mod_rig_type = mod_rig_type
         self._manager: manager.NameManager | None = None
 
     def __eq__(self, other: NameManagerData) -> bool:
@@ -315,7 +315,8 @@ class NameManagerData:
             other: The other `NameManagerData` instance to compare with.
 
         Returns:
-            True if both instances have the same name and noddle type; False otherwise.
+            True if both instances have the same name and modrig type;
+                False otherwise.
         """
 
         if not isinstance(other, NameManagerData):
@@ -331,7 +332,7 @@ class NameManagerData:
             other: The other `NameManagerData` instance to compare with.
 
         Returns:
-            True if the instances have different names or noddle types;
+            True if the instances have different names or modrig types;
         """
 
         if not isinstance(other, NameManagerData):
@@ -344,7 +345,7 @@ class NameManagerData:
 
         Returns:
             A string representation of the instance, including its name and
-                noddle type.
+                modrig type.
         """
 
         return f"{self.__class__.__name__}(name={self.name}, type={self.modrig_type}"
@@ -359,7 +360,7 @@ class NameManagerData:
     def modrig_type(self) -> str:
         """The type of the modrig module this naming manager is used for."""
 
-        return self._noddle_type
+        return self._mod_rig_type
 
     @property
     def manager(self) -> manager.NameManager:
@@ -377,7 +378,7 @@ class NameManagerData:
         """Return the raw representation of this naming manager data.
 
         Returns:
-            A dictionary containing the name and noddle type of this
+            A dictionary containing the name and modrig type of this
         """
 
         return {"name": self.name, "type": self.modrig_type}
@@ -509,7 +510,7 @@ class PresetsManager:
 
         Args:
             hierarchy: hierarchy data in the following format:
-            {'name': 'ModRig', 'children': [
+            {'name': 'modRig', 'children': [
                 {'name': 'defaultPreset', 'children': []},
                 {'name': 'UE5Preset', 'children': [
                     {'name': 'UE5ClaviclePreset', 'children': []}, {'name': 'UE5ThumbPreset', 'children': []}]}]}
@@ -707,7 +708,7 @@ class PresetsManager:
         """Handle the loading of the given naming hierarchy data.
 
         :param dict hierarchy: hierarchy data:
-            {'name': 'ModRig', 'children': [
+            {'name': 'modRig', 'children': [
                 {'name': 'defaultPreset', 'children': []},
                 {'name': 'UE5Preset', 'children': [
                     {'name': 'UE5ClaviclePreset', 'children': []},
@@ -763,7 +764,7 @@ class PresetsManager:
         if hierarchy:
             root = _process_child(hierarchy, parent=None)
         else:
-            root = self.find_preset(MODRIG_PRESET)
+            root = self.find_preset(constants.DEFAULT_PRESET_NAME)
 
         for preset in self._presets:
             if preset.parent is None and preset != root:

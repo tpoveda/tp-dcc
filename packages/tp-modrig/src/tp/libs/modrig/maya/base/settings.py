@@ -30,7 +30,7 @@ class ModRigSettings(settings.YAMLSettings, metaclass=decorators.Singleton):
             The default naming preset absolute path.
         """
 
-        return paths.canonical_path("../../library/naming")
+        return paths.canonical_path("../../naming")
 
     @staticmethod
     def default_modules_config_path() -> str:
