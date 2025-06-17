@@ -1,0 +1,24 @@
+name: "tp-modrig"
+version: "0.1.0"
+author: "Tomi Poveda"
+authorEmail: "tpovedatd@gmail.com"
+description: "Package that contains Modular Rigging library"
+displayName: "Tp-Modrig"
+commands:
+  - '{self}/scripts/tp_modrig.py'
+documentation:
+  masterDoc: "README.md"
+  sourceCodeFolder: "{self}/src"
+  sourceFolder: "{self}/docs"
+environment:
+  PYTHONPATH:
+  - "{self}"
+  - "{self}/src"
+  TP_DCC_BASE_PATHS:
+    - "{self}"
+    - "{self}/src"
+  MODRIG_NAME_PRESET_PATH:
+    - "{self}/src/tp/libs/modrig/naming"
+dependencies: []
+tests:
+  - "{self}/tests"

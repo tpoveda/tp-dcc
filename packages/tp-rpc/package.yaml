@@ -1,0 +1,22 @@
+name: "tp-rpc"
+version: "0.1.0"
+author: "Tomi Poveda"
+authorEmail: "tpovedatd@gmail.com"
+description: "Package that contains custom RPC client/server implementation that allow to send data between different DCCs"
+displayName: "Tp-Rpc"
+commands:
+  - '{self}/scripts/tp_rpc.py'
+documentation:
+  masterDoc: "README.md"
+  sourceCodeFolder: "{self}/src"
+  sourceFolder: "{self}/docs"
+environment:
+  PYTHONPATH:
+  - "{self}"
+  - "{self}/src"
+  TP_DCC_BASE_PATHS:
+    - "{self}"
+    - "{self}/src"
+dependencies: []
+tests:
+  - "{self}/tests"

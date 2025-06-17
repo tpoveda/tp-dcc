@@ -1,0 +1,13 @@
+{
+  "name": "modRig",
+  "configs": [
+    {
+      "name": "modRigGlobalConfig",
+      "type": "global"
+    },
+    {
+      "name": "modRigRigConfig",
+      "type": "rig"
+    }
+  ]
+}
