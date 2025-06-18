@@ -1,0 +1,9 @@
+{
+  "name": "root",
+  "enabled": true,
+  "displayName": "Root",
+  "version": 1,
+  "descriptorVersion": 1,
+  "type": "root",
+  "side": "center"
+}

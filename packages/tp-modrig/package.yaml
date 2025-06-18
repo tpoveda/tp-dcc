@@ -17,8 +17,12 @@ environment:
   TP_DCC_BASE_PATHS:
     - "{self}"
     - "{self}/src"
+  TP_DCC_META_PATHS:
+    - "{self}/src/tp/libs/modrig/{dcc}/meta"
   MODRIG_NAME_PRESET_PATH:
     - "{self}/src/tp/libs/modrig/naming"
+  MODULES_ENV_VAR_KEY:
+    - "{self}/src/tp/libs/modrig/{dcc}/library/modules"
 dependencies: []
 tests:
   - "{self}/tests"

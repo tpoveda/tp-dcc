@@ -33,7 +33,7 @@ class ModRigSettings(settings.YAMLSettings, metaclass=decorators.Singleton):
         return paths.canonical_path("../../naming")
 
     @staticmethod
-    def default_modules_config_path() -> str:
+    def default_modules_path() -> str:
         """Return the absolute path where default modules are located.
 
         Returns:
@@ -43,7 +43,7 @@ class ModRigSettings(settings.YAMLSettings, metaclass=decorators.Singleton):
         return paths.canonical_path("../library/modules")
 
     @staticmethod
-    def default_user_templates_path() -> str:
+    def default_templates_path() -> str:
         """Return the default ModRig templates path.
 
         Returns:
@@ -53,7 +53,7 @@ class ModRigSettings(settings.YAMLSettings, metaclass=decorators.Singleton):
         return paths.canonical_path("../library/templates")
 
     @staticmethod
-    def default_user_graphs_path() -> str:
+    def default_graphs_path() -> str:
         """Return the default ModRig graphs path.
 
         Returns:
@@ -151,7 +151,7 @@ class ModRigSettings(settings.YAMLSettings, metaclass=decorators.Singleton):
         """
 
         return helpers.remove_dupes(
-            [self.default_modules_config_path()] + self.user_modules_paths()
+            [self.default_modules_path()] + self.user_modules_paths()
         )
 
     def user_template_paths(self) -> list[str]:
@@ -162,7 +162,7 @@ class ModRigSettings(settings.YAMLSettings, metaclass=decorators.Singleton):
         """
 
         found_paths = self.get(TEMPLATES_PATHS_KEY, [])
-        return found_paths or [self.default_user_templates_path()]
+        return found_paths or [self.default_templates_path()]
 
     def user_template_save_path(self) -> str:
         """Return the user template save path.
@@ -178,7 +178,7 @@ class ModRigSettings(settings.YAMLSettings, metaclass=decorators.Singleton):
             user_template_path = os.getenv("NODDLE_TEMPLATE_SAVE_PATH", "")
             resolved = os.path.expandvars(os.path.expanduser(user_template_path))
             if not os.path.exists(resolved):
-                user_template_path = self.default_user_templates_path()
+                user_template_path = self.default_templates_path()
 
         return user_template_path
 
@@ -190,7 +190,7 @@ class ModRigSettings(settings.YAMLSettings, metaclass=decorators.Singleton):
         """
 
         found_paths = self.get(GRAPH_PATHS_KEY, [])
-        return found_paths or [self.default_user_graphs_path()]
+        return found_paths or [self.default_graphs_path()]
 
     def empty_scenes_path(self) -> str:
         """Returns the absolute path where empty scene templates are located.
@@ -199,9 +199,7 @@ class ModRigSettings(settings.YAMLSettings, metaclass=decorators.Singleton):
             The location where empty scene templates are located.
         """
 
-        return pathlib.Path(
-            self.default_user_templates_path(), "emptyScenes"
-        ).as_posix()
+        return pathlib.Path(self.default_templates_path(), "emptyScenes").as_posix()
 
     def recent_max(self) -> int:
         """Return the maximum number of recent projects to retrieve.

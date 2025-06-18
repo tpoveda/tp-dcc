@@ -1250,7 +1250,15 @@ def create_meta_node_by_type(type_name: str, *args: tuple, **kwargs) -> MetaBase
 
     # noinspection PyUnresolvedReferences
     class_type = MetaRegistry().get_type(type_name)
-    return class_type(*args, **kwargs) if class_type is not None else None
+    result = class_type(*args, **kwargs) if class_type is not None else None
+    if result is None:
+        logger.warning(
+            f'No metanode class found for type "{type_name}". '
+            "Ensure the type is registered in the `MetaRegistry`."
+            f"Available types: {MetaRegistry()._CACHE}"
+        )
+
+    return result
 
 
 def connected_meta_nodes(node: DGNode) -> list[MetaBase]:
