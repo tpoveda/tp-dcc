@@ -6,140 +6,140 @@
       "name": "object",
       "creator": "Tomi Poveda",
       "description": "Standard Maya node type convention, used for utility nodes or any node which doesn't have an explicit Rule",
-      "expression": "{componentName}_{side}_{section}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L","section":  "world", "type": "transform"}
+      "expression": "{moduleName}_{side}_{section}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L","section":  "world", "type": "transform"}
     },
     {
-      "name": "componentName",
+      "name": "moduleName",
       "creator": "Tomi Poveda",
-      "description": "The rule for component names which includes the side.",
-      "expression": "{componentName}_{side}",
-      "exampleFields": {"componentName":  "arm",  "side":  "L"}
+      "description": "The rule for module names which includes the side.",
+      "expression": "{moduleName}_{side}",
+      "exampleFields": {"moduleName":  "arm",  "side":  "L"}
     },
     {
       "name": "inputName",
       "creator": "Tomi Poveda",
       "description": "The expression for input node names.",
-      "expression": "{componentName}_{side}_{id}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L", "id":  "world", "type":  "input"}
+      "expression": "{moduleName}_{side}_{id}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L", "id":  "world", "type":  "input"}
     },
     {
       "name": "outputName",
       "creator": "Tomi Poveda",
       "description": "The expression for output node names.",
-      "expression": "{componentName}_{side}_{id}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L","id":  "world", "type": "output"}
+      "expression": "{moduleName}_{side}_{id}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L","id":  "world", "type": "output"}
     },
     {
       "name": "settingsName",
       "creator": "Tomi Poveda",
       "description": "The expression for Setting nodes ie. controlPanel.",
-      "expression": "{componentName}_{side}_{section}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L", "section":  "controlPanel", "type":  "settings"}
+      "expression": "{moduleName}_{side}_{section}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L", "section":  "controlPanel", "type":  "settings"}
     },
     {
       "name": "layerHrc",
       "creator": "Tomi Poveda",
-      "description": "Component Layer name.",
-      "expression": "{componentName}_{side}_{layerType}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L", "layerType": "rigLayer", "type": "hrc"}
+      "description": "Module Layer name.",
+      "expression": "{moduleName}_{side}_{layerType}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L", "layerType": "rigLayer", "type": "hrc"}
     },
     {
       "name": "layerMeta",
       "creator": "Tomi Poveda",
-      "description": "Component Layer Meta Node name.",
-      "expression": "{componentName}_{side}_{layerType}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L",   "layerType": "rigLayer", "type": "meta"}
+      "description": "Module Layer Meta Node name.",
+      "expression": "{moduleName}_{side}_{layerType}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L",   "layerType": "rigLayer", "type": "meta"}
     },
     {
-      "name": "componentHrc",
+      "name": "moduleHrc",
       "creator": "Tomi Poveda",
-      "description": "Top level Component transform name.",
-      "expression": "{componentName}_{side}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L", "type": "hrc"}
+      "description": "Top level  Module transform name.",
+      "expression": "{moduleName}_{side}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L", "type": "hrc"}
     },
     {
-      "name": "componentMeta",
+      "name": "moduleMeta",
       "creator": "Tomi Poveda",
-      "description": "Component Meta Node name.",
-      "expression": "{componentName}_{side}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L",  "type": "meta"}
+      "description": "Module Meta Node name.",
+      "expression": "{moduleName}_{side}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L",  "type": "meta"}
     },
     {
       "name": "containerName",
       "creator": "Tomi Poveda",
       "description": "modRig Asset Container name",
-      "expression": "{componentName}_{side}_{section}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L","section":  "world", "type": "container"}
+      "expression": "{moduleName}_{side}_{section}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L","section":  "world", "type": "container"}
     },
     {
       "name": "guideName",
       "creator": "Tomi Poveda",
       "description": "The expression for Guide node names.",
-      "expression": "{componentName}_{side}_{id}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L", "id":  "world", "type":  "guide"}
+      "expression": "{moduleName}_{side}_{id}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L", "id":  "world", "type":  "guide"}
     },
     {
       "name": "connectorName",
       "creator": "Tomi Poveda",
       "description": "The expression for Connector node names.",
-      "expression": "{componentName}_{side}_{id}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L", "id":  "world", "type":  "connector"}
+      "expression": "{moduleName}_{side}_{id}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L", "id":  "world", "type":  "connector"}
     },
     {
       "name": "controlName",
       "creator": "Tomi Poveda",
       "description": "The expression for Animation Control node names.",
-      "expression": "{componentName}_{side}_{id}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L", "id":  "world", "type": "control"}
+      "expression": "{moduleName}_{side}_{id}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L", "id":  "world", "type": "control"}
     },
     {
       "name": "selectionSet",
       "creator": "Tomi Poveda",
-      "description": "Component selection set name ie. controls, joints",
-      "expression": "{componentName}_{side}_{selectionSet}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L", "selectionSet": "ctrls", "type": "objectSet"}
+      "description": "Module selection set name ie. controls, joints",
+      "expression": "{moduleName}_{side}_{selectionSet}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L", "selectionSet": "ctrls", "type": "objectSet"}
     },
     {
       "name": "skinJointName",
       "creator": "Tomi Poveda",
       "description": "Deformation joint chain name.",
-      "expression": "{componentName}_{side}_{id}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L","id": "upr", "type": "joint"}
+      "expression": "{moduleName}_{side}_{id}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L","id": "upr", "type": "joint"}
     },
     {
         "name": "jointName",
         "creator": "Tomi Poveda",
         "description": "Joint Name",
-        "expression": "{componentName}_{side}_{id}_{system}_{type}",
-        "exampleFields": {"componentName":  "arm", "side": "L", "id": "upr", "system": "ik", "type": "joint"}
+        "expression": "{moduleName}_{side}_{id}_{system}_{type}",
+        "exampleFields": {"moduleName":  "arm", "side": "L", "id": "upr", "system": "ik", "type": "joint"}
     },
     {
       "name": "controlJointName",
       "creator": "Tomi Poveda",
       "description": "Control joint name.",
-      "expression": "{componentName}_{side}_{id}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L","id": "upr", "type": "controlJoint"}
+      "expression": "{moduleName}_{side}_{id}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L","id": "upr", "type": "controlJoint"}
     },
     {
       "name": "connectorsGroup",
       "creator": "Tomi Poveda",
       "description": "Transform which contains connectors.",
-      "expression": "{componentName}_{side}_{type}",
-      "exampleFields": {"componentName":  "arm", "side": "L", "type": "connectorsGroup"}
+      "expression": "{moduleName}_{side}_{type}",
+      "exampleFields": {"moduleName":  "arm", "side": "L", "type": "connectorsGroup"}
     },
     {
         "name": "ikHandle",
         "creator": "Tomi Poveda",
         "description": "Ik Handle Name",
-        "expression": "{componentName}_{side}_{section}_{type}",
-        "exampleFields": {"componentName":  "arm", "side": "L", "section": "upr", "type": "ikHandle"}
+        "expression": "{moduleName}_{side}_{section}_{type}",
+        "exampleFields": {"moduleName":  "arm", "side": "L", "section": "upr", "type": "ikHandle"}
     }
   ],
   "tokens": [
     {
       "name": "side",
-      "description": "Component Side name",
+      "description": "Module Side name",
       "table": {
         "L": "L",
         "l": "l",
@@ -159,7 +159,7 @@
     },
     {
         "name": "sideSymmetry",
-        "description": "The name for the side when the component is mirrored.",
+        "description": "The name for the side when the module is mirrored.",
         "table": {
             "L": "R",
             "l": "r",
@@ -173,13 +173,13 @@
     },
     {
         "name": "selectionSet",
-        "description": "Component and rig selection sets names",
-        "permission": [{"name":  "rig"}, {"name":  "componentDeform"}, {"name":  "componentCtrls"},
+        "description": "Module and rig selection sets names",
+        "permission": [{"name":  "rig"}, {"name":  "moduleDeform"}, {"name":  "moduleCtrls"},
         {"name":  "deform"}, {"name":  "ctrls"}],
         "table": {
             "rig": "root",
-            "componentDeform": "deform",
-            "componentCtrls": "ctrls",
+            "moduleDeform": "deform",
+            "moduleCtrls": "ctrls",
             "deform": "skeleton",
             "ctrls": "ctrls"
         }
@@ -187,7 +187,7 @@
     {
         "name": "layerType",
         "description": "The modRig Layer name which is used for both the root Transform and the Meta Node",
-        "permission": [{"name":  "modRigComponentLayer"},
+        "permission": [{"name":  "modRigModuleLayer"},
         {"name":  "modRigRigLayer"},
         {"name":  "modRigGuideLayer"},
         {"name":  "modRigSkeletonLayer"},
@@ -196,7 +196,7 @@
         {"name":  "modRigXGroupLayer"},
         {"name":  "modRigGeometryLayer"}],
         "table": {
-            "modRigComponentLayer": "componentLayer",
+            "modRigModuleLayer": "moduleLayer",
             "modRigGuideLayer": "guideLayer",
             "modRigRigLayer": "rigLayer",
             "modRigSkeletonLayer": "skeletonLayer",
@@ -218,7 +218,7 @@
     },
     {
         "name": "system",
-        "description": "The name for a system within a component ie. ik/fk",
+        "description": "The name for a system within a module ie. ik/fk",
         "permissions": [{"name":  "fk"},
                         {"name":  "ik"},
                         {"name":  "poleVector"}],
