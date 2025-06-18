@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import os
 import inspect
+from typing import Any
 from types import ModuleType
-from typing import Type, Iterable, Iterator, Any
+from collections.abc import Iterator, Iterable
 
 from loguru import logger
 from maya.api import OpenMaya
@@ -22,11 +23,29 @@ META_TAG_ATTR_NAME = "tpMetaTag"
 
 
 class MetaRegistry(metaclass=Singleton):
-    """Singleton class that handles the global registry of all available
-    metaclasses."""
+    """Manages the registration and storage of metaclasses for a specified type
+    system.
+
+    The `MetaRegistry` class is responsible for facilitating the registration
+    and retrieval of metaclasses.
+
+    It stores registered metaclasses in a centralized cache, provides methods
+    to register metaclasses from various sources (e.g., individual classes,
+    modules, packages, environment variables), and ensures unique
+    registration of metaclasses.
+
+    The class also includes functionality to verify and retrieve registered
+    metaclasses by their name.
+
+    Attributes:
+        META_ENV_VAR: Name of the environment variable that holds paths for
+            metaclasses registration.
+        _CACHE: Internal storage cache mapping registry names to
+            MetaBase-derived classes.
+    """
 
     META_ENV_VAR = "TP_DCC_META_PATHS"
-    _CACHE: dict[str, Type[MetaBase]] = {}
+    _CACHE: dict[str, type[MetaBase]] = {}
 
     def __init__(self):
         super().__init__()
@@ -37,57 +56,102 @@ class MetaRegistry(metaclass=Singleton):
             logger.error("Failed to registry meta classes", exc_info=True)
 
     @staticmethod
-    def registry_name_for_class(class_type: Type[MetaBase]) -> str:
-        """Returns the metaclass name used by the register.
+    def registry_name_for_class(class_type: type[MetaBase]) -> str:
+        """Get the registry name for the given class.
 
-        :param Type class_type: metaclass type to get name of.
-        :return: name of the metaclass.
-        :rtype: str
+        This static method retrieves the registry name associated with the
+        given class type.
+
+        If the class has an `ID` attribute, its value is returned; otherwise,
+        the class's name is returned as the default identifier.
+
+        Args:
+            class_type: The class type for which the registry name is to be
+            determined.
+
+        Returns:
+            The registry name for the provided class type.
         """
 
-        return class_type.ID or class_type.__name__
+        if hasattr(class_type, "ID") and class_type.ID:
+            return class_type.ID
+
+        return class_type.__name__
 
     @classmethod
     def is_in_registry(cls, type_name: str) -> bool:
-        """Returns whether the given type is currently available within the registry.
+        """Determine whether a given type name is already registered in the class
+        cache.
 
-        :param type_name: name of type to check.
-        :return: True if the type is already registered; False otherwise.
+        This method checks if the specified type name exists in the `_CACHE`
+        dictionary, indicating that the type has been registered.
+
+        It provides a mechanism to verify the presence of a type in the
+        registry maintained by the class.
+
+        Args:
+            type_name: The name of the type to check for in the class registry.
+
+        Returns:
+            True if the type name is in the registry, False otherwise.
         """
 
         return type_name in cls._CACHE
 
     @classmethod
-    def get_type(cls, type_name: str) -> Type[MetaBase] | None:
-        """Returns the class of the type.
+    def get_type(cls, type_name: str) -> type[MetaBase] | None:
+        """Retrieve the cached type associated with the given type name.
 
-        :param type_name: class name.
-        :return: class object for the given type name.
+        This method searches the internal cache to find a type matching the
+        provided type name.
+
+        Args:
+            type_name: The name of the type to retrieve from the cache.
+
+        Returns:
+            The cached type associated with the provided type name if it
+                exists; `None` otherwise.
         """
 
         return cls._CACHE.get(type_name)
 
     @classmethod
-    def register_meta_class(cls, class_obj: Type[MetaBase]):
-        """Registers a metaclass with the registry.
-        :param class_obj: metaclass to register.
+    def register_meta_class(cls, class_obj: type[MetaBase]):
+        """Register a Meta class to the internal cache of the system.
+
+        This method verifies if the provided class object is a subclass or an
+        instance of the base `MetaBase` class. If the verification passes and
+        the class has not been previously registered, it is added to the cache.
+
+        The registration process ensures that Meta classes remain organized and
+        accessible throughout their use in the system.
+
+        Args:
+            class_obj: The class object to be registered. This object must
+                either be a subclass or an instance of `MetaBase`.
         """
 
         if issubclass(class_obj, MetaBase) or isinstance(class_obj, MetaBase):
-            # noinspection PyTypeChecker
             registry_name = cls.registry_name_for_class(class_obj)
             if registry_name in cls._CACHE:
                 return
             logger.debug(f"Registering MetaClass -> {registry_name} | {class_obj}")
-            # noinspection PyTypeChecker
             cls._CACHE[registry_name] = class_obj
 
     @classmethod
     def register_by_package(cls, package_path: str):
-        """Registers given package path into the meta registry.
+        """Register metaclasses by iterating through a package's modules.
 
-        :param package_path: package path to register (e.g. tp.core)
-        .warning:: this function is expensive as it requires a recursive search by importing all submodules.
+        The method dynamically loads and iterates through the modules within
+        a given package path. It verifies each module for validity and skips
+        special files or duplicates.
+
+        Once the valid modules are identified, the method identifies the
+        classes defined in those modules and registers them as meta classes.
+
+        Args:
+            package_path: The path of the package whose modules are to be
+                processed and whose classes are to be registered.
         """
 
         visited_packages = set()
@@ -111,10 +175,20 @@ class MetaRegistry(metaclass=Singleton):
 
     @classmethod
     def register_by_module(cls, module: ModuleType):
-        """Registers a module by searching all class members of the module and registers any class that is an instance
-        of the MetaBase class.
+        """Register all classes from the given module within the metaclass
+        registry if they meet the required predicate.
 
-        :param module: module to register.
+        This method examines the contents of the provided module, identifies
+        class definitions, and registers them with the metaclass registry if
+        the predicate condition is satisfied.
+
+        Notes:
+            It ignores any non-modules passed to it and ensures that only
+            actual classes from the module are processed.
+
+        Args:
+            module: The module to iterate over for identifying classes and
+                registering them.
         """
 
         if not inspect.ismodule(module):
@@ -125,9 +199,20 @@ class MetaRegistry(metaclass=Singleton):
 
     @classmethod
     def register_meta_classes(cls, paths: Iterable[str]):
-        """Registers given paths within the meta registry.
+        """Register metaclasses from the given paths. Each entry in the
+        paths can either be a directory or a file.
 
-        :param paths: list of module or package paths.
+        Directories are processed to register metaclasses by their package,
+        and files are processed to register metaclasses by their module.
+
+        Notes:
+            Invalid paths, such as non-existent directories or files that do
+            not represent valid modules, are ignored.
+
+        Args:
+            paths: A collection of directory or file paths. Directories are
+                recursively processed to register metaclasses by packages,
+                while files are processed to register meta-classes by modules.
         """
 
         for path in paths:
@@ -148,10 +233,15 @@ class MetaRegistry(metaclass=Singleton):
 
     @classmethod
     def register_by_env(cls, env_name: str):
-        """Registers a set of metaclass based on the given environment variable.
+        """Register metaclasses by fetching environment variable values and
+        splitting them into paths.
 
-        :param env_name: environment variable name.
-        :raises ValueError: If environment variable with given name does not exist.
+        Args:
+            env_name: The name of the environment variable to fetch.
+
+        Raises:
+            ValueError: If the specified environment variable does not exist
+                or has no value.
         """
 
         environment_paths = os.getenv(env_name)
@@ -163,27 +253,59 @@ class MetaRegistry(metaclass=Singleton):
         cls.register_meta_classes(environment_paths)
 
     def reload(self):
-        """Reloads meta register based on MetaRegistry environment variable."""
+        """Reload the registry data by re-registering using an environment
+        variable.
+
+        This method ensures that the registry information is updated
+        dynamically based on the specified environment variable.
+
+        It relies on a meta-environment variable for the re-registration
+        process.
+
+        Raises:
+            KeyError: If the environment variable specified by
+                MetaRegistry.META_ENV_VAR is not set or cannot be accessed.
+        """
 
         self.register_by_env(MetaRegistry.META_ENV_VAR)
 
 
 class MetaFactory(type):
-    """A metaclass that manages the instantiation of classes, providing dynamic registration and retrieval based on
-    a given node.
+    """Metaclass to manage dynamic instantiation and registration of classes.
 
-    This metaclass ensures that classes are registered in MetaRegistry before instantiation and can dynamically
-    return instances of registered subclasses based on the node provided.
+    This metaclass overrides the default `__call__` method to allow dynamic
+    instantiation  of classes or their appropriate subclasses.
+
+    It evaluates whether a node or specific class type is provided and
+    determines the correct class to instantiate based on a  registration
+    mechanism.
+
+    It enables seamless integration with a class registry for the dynamic
+    management of instantiable classes.
     """
 
-    def __call__(cls: Type[MetaBase], *args, **kwargs):
-        """Overrides the __call__ method to manage instantiation based on class registration
-        and node type. Returns an instance of the appropriate class or subclass.
+    def __call__(cls: type[MetaBase], *args, **kwargs):
+        """Override the default `__call__` behavior of a class to introduce
+        customized instantiation logic.
 
-        :param cls: the class being instantiated.
-        :param args: positional arguments passed to the class constructor.
-        :param kwargs: keyword arguments passed to the class constructor.
-        :return: An instance of `cls` or a registered subclass based on the provided node.
+        It primarily checks whether the provided class is registered,
+        registers it if needed, and determines the appropriate class type for
+        the instantiation based on the provided `node`. If a specific type is
+        resolved from the registry, it delegates the instantiation to that
+        type.
+
+        Args:
+            cls: The class being called, of type `MetaBase` or its subclass.
+            *args: Positional arguments for the class instantiation.
+                The first argument can optionally be the `node`.
+            **kwargs: Keyword arguments for the class instantiation.
+                Contains `node`, which can be an instance of `DGNode`,
+                `DagNode`, `MetaBase`, `OpenMaya.MObject`, or `None`.
+
+        Returns:
+            An instance of the determined class type. If no specific type is
+            resolved, it defaults to instantiating the given `cls`.
+
         """
 
         node: DGNode | DagNode | MetaBase | OpenMaya.MObject | None = kwargs.get("node")
@@ -192,7 +314,7 @@ class MetaFactory(type):
 
         register = MetaRegistry
 
-        # if the given class is not registered, we register it
+        # If the given class is not registered, we register it.
         registry_name = MetaRegistry.registry_name_for_class(cls)
 
         if not register.is_in_registry(registry_name):
@@ -205,6 +327,7 @@ class MetaFactory(type):
         if class_type == registry_name:
             return type.__call__(cls, *args, **kwargs)
 
+        # noinspection PyUnresolvedReferences
         registered_type = MetaRegistry().get_type(class_type)
         if registered_type is None:
             return type.__call__(cls, *args, **kwargs)
@@ -213,7 +336,22 @@ class MetaFactory(type):
 
 
 class MetaBase(DGNode, metaclass=MetaFactory):
-    """Base class for meta nodes."""
+    """Base class for creating and managing metanodes in a Maya scene.
+
+    This class serves as a foundational structure for defining and working
+    with metanode instances within the Maya scene.
+
+    Metanodes are network nodes that store metadata about a scene object.
+
+    This base class provides methods for creating, initializing, connecting,
+    and managing such metanodes, as well as querying their attributes and
+    relationships.
+
+    Attributes:
+        ID: Unique identifier for the metanode. `None` if not set.
+        DEFAULT_NAME: Default name used when creating a metanode instance.
+            `None` indicates no default name is defined.
+    """
 
     ID: str | None = None
     DEFAULT_NAME: str | None = None
@@ -229,19 +367,27 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         *args,
         **kwargs,
     ):
-        """Initializes the MetaBase class.
+        """Initializes the object with the provided parameters and sets up a
+        network node if the node is not provided. It also allows locking the
+        node and initializing default settings.
 
-        :param node: node instance this meta node will reference to.
-        :param name: name of the meta node in the scene.
-        :param namespace: optional namespace for the meta node.
-        :param init_defaults: whether to initialize meta defaults.
-        :param lock: whether to lock meta node instance after building it.
-        :param mod: optional Maya modifier used to create and to lock the node if necessary.
-        :param args: positional arguments passed to the setup function.
-        :param kwargs: keyword arguments passed to the setup function.
+        Args:
+            node: An instance of `DGNode`, `DagNode`, `OpenMaya.MObject`,
+                or `None`. If `None`, a new node will be created.
+            name: A string representing the name of the node. Defaults to `None`.
+            namespace: A string specifying the namespace for the node.
+            init_defaults: A boolean indicating whether default settings
+                should be initialized.
+            lock: A boolean indicating whether the node should be locked
+                after creation.
+            mod: An instance of OpenMaya.MDGModifier used to apply
+                modifications to the node.
+            *args: Additional positional arguments for further setup or
+                extension.
+            **kwargs: Additional keyword arguments for further setup or
+                extension.
         """
 
-        # noinspection PyArgumentList
         super().__init__(mobj=node)
 
         if node is None:
@@ -268,20 +414,39 @@ class MetaBase(DGNode, metaclass=MetaFactory):
             self.setup(*args, **kwargs)
 
     def __repr__(self) -> str:
-        """Returns the string representation of the node.
+        """Return a string representation of the object for debugging purposes.
 
-        :return: string representation.
+        This method provides a concise and human-readable string format of the
+        object, combining its string representation and name. It is primarily
+        useful for debugging or logging to identify the object and its state
+        easily.
+
+        Returns:
+            A formatted string combining the object's string representation
+                and name.
         """
 
         return f"{self.as_str(name_only=True)} ({self.name()})"
 
     @classmethod
     def as_str(cls, name_only: bool = False) -> str:
-        """Returns a string representation of this metaclass path.
+        """Retrieve the class name or the fully qualified class path as a string,
+        depending on the input parameters.
 
-        :param bool name_only: whether to only return the name of metaclass.
-        :return: metaclass path representation
-        :rtype: str
+        This method allows retrieving either the name of the class alone or
+        the fully qualified class path, including the module it is defined in.
+
+        It can be useful in debugging, logging, or dynamically identifying
+        class information.
+
+        Args:
+            name_only: Determines whether to return only the class
+                name (True) or the fully qualified  class path with the
+                module (False)
+
+        Returns:
+            The class name or the fully qualified class path, depending on
+                the value of `name_only`.
         """
 
         meta_module = cls.__module__
@@ -295,12 +460,19 @@ class MetaBase(DGNode, metaclass=MetaFactory):
     def class_name_from_plug(
         node: DGNode | DagNode | MetaBase | OpenMaya.MObject,
     ) -> str:
-        """From the given Maya object or Meta clas instance, returns the associated class name which should exists on the
-        Maya node as an attribute.
+        """Extract the class name from a specific type of plug object.
 
-        :param OpenMaya.MObject or MetaBase node: node to find class name for.
-        :return: metaclass name.
-        :rtype: str
+        This method determines and returns the class name associated with
+        the given node by either accessing an attribute directly or by
+        querying the plug  associated with the node.
+
+        The input node can be of several specific types.
+
+        Args:
+            node: Input node object from which to derive the class name.
+
+        Returns:
+            The class name derived from the node's attribute or plug.
         """
 
         if isinstance(node, MetaBase):
@@ -314,13 +486,20 @@ class MetaBase(DGNode, metaclass=MetaFactory):
     def delete(
         self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True
     ) -> bool:
-        """Overrides delete function.
-        Deletes the node from the scene.
+        """Delete the current object and disconnects all child attributes
+        associated with it.
 
-        :param mod: modifier to add the delete operation into.
-        :param apply: whether to apply the modifier immediately.
-        :return: True if the node deletion was successful; False otherwise.
-        :raises RuntimeError: if deletion operation fails.
+        If a modifier is provided, the operation will use it to handle
+        disconnection and deletion tasks. Once all the child attributes are
+        successfully disconnected, the base deletion implementation is called.
+
+        Args:
+            mod: An optional modifier to manage the disconnection and
+            deletion operations. If None, the default behavior is used.
+            apply: Determines whether the modification should be applied or not.
+
+        Returns:
+            True if the object was successfully deleted; False otherwise.
         """
 
         child_plug = self.attribute(META_CHILDREN_ATTR_NAME)
@@ -330,21 +509,39 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         return super().delete(mod=mod, apply=apply)
 
     def setup(self, *args: Any, **kwargs: Any):
-        """Function that is called after the create function is called.
-        Can be used to customize the way a meta node is constructed.
+        """Represent a configuration setup for the metanode initialization.
 
-        :param args: list of positional arguments.
-        :param kwargs: dictionary of keyword arguments.
+        This serves as an entry point to initialize all the necessary
+        parameters or options for a new metanode instance.
+
+        This method acts as a flexible setup that accepts any arguments or
+        keyword arguments without enforcing strict validation.
+
+        Warnings:
+            Users need to ensure the correctness of the provided input as this
+            method doesn't directly validate or constrain the data.
+
+        Args:
+            *args: Positional arguments that can be used for configuration.
+            **kwargs: Keyword arguments intended to provide additional
+                configuration options.
         """
 
-        pass
-
     def meta_attributes(self) -> list[dict]:
-        """Return the list of default metanode attributes that should be added
-        into the metanode instance during creation.
+        """Generate metadata attributes for the current class instance.
+
+        This method constructs and returns a list of dictionaries where each
+        dictionary represents a metadata attribute associated with the current
+        class instance.
+
+        These attributes include details such as the attribute name, value,
+        type, and flags (e.g., locked, storable, writable).
+
+        The metadata is generated dynamically and tailored to the specific
+        class using its registry name.
 
         Returns:
-            List of dictionaries with attribute data.
+            A list containing dictionaries with metadata attributes.
         """
 
         class_name = MetaRegistry.registry_name_for_class(self.__class__)
@@ -394,17 +591,28 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         ]
 
     def metaclass_type(self) -> str:
-        """Returns metaclass for this meta node instance.
+        """Return the metaclass type associated with the instance.
 
-        :return: meta node instance type.
+        This function retrieves the value of the metaclass attribute
+        represented by the constant `META_CLASS_ATTR_NAME`.
+
+        Returns:
+            The value of the metaclass attribute.
         """
 
         return self.attribute(META_CLASS_ATTR_NAME).value()
 
     def is_root(self) -> bool:
-        """Returns whether this meta node instance is a root one.
+        """Determine if the current object is the root by iterating over its
+        metanode parents.
 
-        :return: True if this meta node instance is connected to a meta parent node; False otherwise.
+        The method checks if there are any metanode parents for the current
+        object. If no metanode parents are found, the object is considered a
+        root. Otherwise, it is not a root.
+
+        Returns:
+            True if the object is a root (has no metanode parents);
+            False otherwise.
         """
 
         for _ in self.iterate_meta_parents():
@@ -413,12 +621,21 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         return False
 
     def connect_to(self, attribute_name: str, node: DGNode) -> Plug:
-        """Connects given node to the message attribute with given name.
+        """Connect an attribute on the current object to the "message" plug
+        of the specified `DGNode` instance.
 
-        :param attribute_name: name of the attribute to connect from. If the attribute does not exist, it will
-            be created automatically.
-        :param node: destination node.
-        :return: destination plug.
+        The method ensures a connection between the source plug of the `DGNode`
+        and the destination plug on the current object. If the named attribute
+        already exists, it directly uses it for connection; otherwise, a new
+        attribute is created.
+
+        Args:
+            attribute_name: Name of the attribute to connect to the current
+                object.
+            node: The `DGNode` object whose "message" plug is to be connected.
+
+        Returns:
+            A reference to the destination plug that is connected.
         """
 
         node_attr_name = "message"
@@ -440,11 +657,21 @@ class MetaBase(DGNode, metaclass=MetaFactory):
 
     @staticmethod
     def connect_to_by_plug(destination_plug: Plug, node: DGNode) -> Plug:
-        """Connects given node to the message attribute of the given plug instance.
+        """Connect the given `destination_plug` to the `message` attribute
+        of the specified `node`.
 
-        :param destination_plug: target plug to connect.
-        :param node: destination node.
-        :return: destination plug.
+        This method establishes a connection from a plug of a node to the
+        input plug passed in as the destination. It operates in a static
+        context and is used to link data flows within a dependency graph.
+
+        Args:
+            destination_plug: The plug to which the `message` attribute of
+                the node will be connected.
+            node: The node whose `message` attribute is being connected
+                to the `destination_plug`.
+
+        Returns:
+            The destination plug after the connection is made.
         """
 
         source_plug = node.attribute("message")
@@ -453,10 +680,19 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         return destination_plug
 
     def meta_root(self) -> MetaBase | None:
-        """Returns the first meta parent this meta node instance is connected to.
+        """Determine the root metadata object in a hierarchical structure.
 
-        :return: first meta node parent.
-        :rtype: MetaBase or None
+        This function traverses through the hierarchy of metadata objects
+        using `iterate_meta_parents`, which returns the parent nodes of the
+        current metadata object.
+
+        The function recursively checks each parent node and its parents
+        until it identifies the top-most parent (the root element) in the
+        hierarchy.
+
+        Returns:
+            The root metadata object if it exists, or `None` if the hierarchy
+            is empty or there is no root element.
         """
 
         for current_parent in self.iterate_meta_parents(recursive=True):
@@ -467,21 +703,48 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         return None
 
     def meta_parent(self) -> MetaBase | None:
-        """Returns direct meta parent for this meta node.
+        """Return the first metanode parent from the iterable of metanode
+        parents or None if no metanode parents are present.
 
-        :return: first direct meta parent.
+        This method retrieves metanode parent objects by iterating through
+        metanode parents non-recursively.
+
+        Returns:
+            The first metanode parent object if present; None if no metanode
+            parents exist.
         """
 
         meta_parents = list(self.iterate_meta_parents(recursive=False))
         return meta_parents[0] if meta_parents else None
 
     def iterate_meta_parents(
-        self, recursive: bool = False, check_type: str | Type | None = None
+        self, recursive: bool = False, check_type: str | type | None = None
     ) -> Iterator[MetaBase]:
-        """Generator function that iterates over all meta parent nodes this node is linked to.
+        """Iterate over the meta-parents of the current object.
 
-        :param recursive: whether to find meta parents in a recursive manner.
-        :param check_type: meta node type to search for.
+        This method traverses the metanode hierarchy and yields parent metanode
+        objects based on the provided criteria.
+
+        It supports filtering by type or class name and can recursively
+        iterate through the entire hierarchy of metanode parents if desired.
+
+        Args:
+            recursive: Determines whether to recursively iterate through all
+                ancestor metanode parents in the hierarchy. If set to False,
+                only immediate metanode parents are considered.
+            check_type: A filter criterion to yield only metanode parents
+                matching the specified type or class name.
+                    - If None, yields all metanode parents.
+                    - If a type is passed, only metanode parents whose class
+                        is in the type's MRO (Method Resolution Order) are
+                        yielded.
+                    - If a string is passed, only metanode parents with a
+                        matching class name attribute are yielded.
+
+        Yields:
+            Iterates through and yields instances of `MetaBase` that satisfy
+                the filtering and traversal criteria specified by the
+                arguments.
         """
 
         is_type = inspect.isclass(check_type)
@@ -507,13 +770,29 @@ class MetaBase(DGNode, metaclass=MetaFactory):
                         yield i
 
     def meta_parents(
-        self, recursive: bool = False, check_type: str | Type | None = None
+        self, recursive: bool = False, check_type: str | type | None = None
     ) -> list[MetaBase]:
-        """Returns all meta parent nodes this node is linked to.
+        """Returns a list of meta-parents for the current instance.
 
-        :param recursive: whether to find meta parents in a recursive manner.
-        :param check_type: meta node type to search for.
-        :return: list of meta parent nodes.
+        The method collects and returns meta-parent objects associated with
+        the current instance, considering optional filters such as recursion
+        and type check.
+
+        Notes:
+            Metanode parents refer to the hierarchical parent(s) of the
+            current object based on its metadata structure.
+
+        Args:
+            recursive: Specifies whether the method should recursively fetch
+                metanode parents of the current object. If True, all parents
+                in the hierarchy are returned.
+            check_type: Specifies a type or a list of types to filter the
+                metanode parents by. Only the metanode parents matching the
+                provided type(s) will be included. If `None`, no type
+                filtering is applied.
+
+        Returns:
+            A list of meta-parent objects that match the specified criteria.
         """
 
         return list(
@@ -523,16 +802,33 @@ class MetaBase(DGNode, metaclass=MetaFactory):
     def iterate_meta_children(
         self,
         depth_limit: int = 256,
-        check_type: str | Type | None = None,
+        check_type: str | type | None = None,
         _visited: set[MetaBase] | None = None,
     ) -> Iterator[MetaBase]:
-        """Generator function that yields all children meta node instances connected to the metaChildren plug of this meta
-        node instance.
+        """Iterate through the metanode children of the current object,
+        yielding all valid children based on specified depth limit and type
+        checks.
 
-        :param depth_limit: recursive depth limit.
-        :param check_type: meta node type to search for.
-        :param _visited: internal list of visited nodes.
-        :return: iterated meta children.
+        This function traverses recursively through the hierarchical
+        structure of metanode children while ensuring no duplicate nodes are
+        visited in the iteration process.
+
+        Args:
+            depth_limit: The maximum depth to traverse through the metanode
+                children. The default is 256. If set to 0 or a negative value,
+                 further traversal stops.
+            check_type: A type or class name to filter the meta-children.
+                - If a type is provided, it checks against the class hierarchy
+                    of the child.
+                - If a string is provided, it matches against the name of the
+                    class attribute.
+                - If None, no filtering occurs.
+            _visited: A set of already visited nodes to prevent infinite
+                loops or redundant traversals.
+
+        Yields:
+            The metanode child object that satisfies the depth and type
+                constraints.
         """
 
         is_type = inspect.isclass(check_type)
@@ -566,13 +862,22 @@ class MetaBase(DGNode, metaclass=MetaFactory):
                 yield sub_child
 
     def meta_children(
-        self, depth_limit: int = 256, check_type: str | Type | None = None
+        self, depth_limit: int = 256, check_type: str | type | None = None
     ) -> list[MetaBase]:
-        """Returns all children meta node instances connected to the metaChildren plug of this meta node instance.
+        """Iterate over metanode children and returns them as a list.
 
-        :param depth_limit: recursive depth limit.
-        :param check_type: meta node type to search for.
-        :return: meta children.
+        The function explores metanode children up to a specified depth and
+        optionally filters the results by a specific type.
+
+        Args:
+            depth_limit: The maximum depth to traverse while iterating over
+                the metanode children.
+            check_type: A specific type or class to filter the metanode
+                children, or `None` to include all types.
+
+        Returns:
+            A list of metanode children matching the defined constraints by
+            `depth_limit` and `check_type`.
         """
 
         return list(
@@ -582,11 +887,26 @@ class MetaBase(DGNode, metaclass=MetaFactory):
     def iterate_children(
         self, filter_types: set | None = None, include_meta: bool = False
     ) -> Iterator[DGNode | DagNode]:
-        """Generator function that iterates over all children nodes.
+        """Iterate over child nodes connected to the current node, applying
+        optional filters to include only nodes of certain types or exclude
+        metanodes.
 
-        :param filter_types: optional lister of node filter types.
-        :param include_meta: whether to include children meta nodes.
-        :return: iterated DG/Dag nodes.
+        This method traverses the graph connections of the current node to
+        yield child nodes based on the specified filtering criteria.
+
+        The filtering can be based on specific node types and an option to
+        exclude metanodes from the iteration.
+
+        Args:
+            filter_types: A set of node types to filter child nodes. Only nodes
+                matching any of the provided types will be included.
+                Defaults to `None`, which includes all node types.
+            include_meta: A flag indicating whether metanodes should be
+                included in the iteration. If False, metanodes are excluded.
+
+        Yields:
+            Child nodes connected to the current node that satisfy the
+                specified filtering criteria.
         """
 
         filter_types = filter_types or ()
@@ -600,11 +920,20 @@ class MetaBase(DGNode, metaclass=MetaFactory):
     def find_children_by_class_type(
         self, class_type: str, depth_limit: int = 1
     ) -> list[MetaBase]:
-        """Finds all meta node children of the given type.
+        """Find and returns all children of the object that match the
+        specified class type.
 
-        :param class_type: metaclass type name.
-        :param depth_limit: recursive depth limit.
-        :return: iterable of meta node children instances found of given type.
+        This method iterates through the children of the current object up to
+        a specified depth limit and filters them based on their metaclass
+        type, returning those that match the provided `class_type`.
+
+        Args:
+            class_type: The name of the class type to match against the
+                children's metaclass type.
+            depth_limit: The maximum depth to search for matching children.
+
+        Returns:
+            A list of child objects that match the specified class type.
         """
 
         return [
@@ -616,11 +945,26 @@ class MetaBase(DGNode, metaclass=MetaFactory):
     def find_children_by_class_types(
         self, class_types: Iterable[str], depth_limit: int = 1
     ) -> list[MetaBase]:
-        """Finds all meta node children of the given types.
+        """Find and retrieves all child metadata objects whose metaclass types
+        match the specified class types up to a given depth limit in the
+        hierarchical structure.
 
-        :param class_types: metaclass type names.
-        :param depth_limit: recursive depth limit.
-        :return: iterable of meta node children instances found of given type.
+        This method searches through all child metadata objects and filters
+        them based on the provided class types. The depth of the search
+        can be restricted using the `depth_limit` parameter, allowing
+        for optimized and controlled hierarchy traversals.
+
+        Args:
+            class_types: An iterable collection of strings representing the
+                metaclass types to match during the search.
+            depth_limit: The maximum depth in the hierarchy to search
+                for child metadata objects. Defaults to 1.
+
+        Returns:
+            A list containing all child metadata objects whose metaclass
+                types match the specified class types within the given
+                depth limit.
+
         """
 
         return [
@@ -629,11 +973,19 @@ class MetaBase(DGNode, metaclass=MetaFactory):
             if child.metaclass_type() in class_types
         ]
 
-    def find_child_by_type(self, class_type: str):
-        """Finds the first child of the given type.
+    def find_child_by_type(self, class_type: str) -> list[MetaBase]:
+        """Find and return a list of child elements of a specific type.
 
-        :param class_type: metaclass type name.
-        :return: first child of the given type.
+        This method retrieves all child elements, considering only the
+        immediate children (depth limit of 1), and filters them by their
+        API type to match the specified type.
+
+        Args:
+            class_type: The type of the child elements to find, specified
+            as a string.
+
+        Returns:
+            A list of child elements matching the specified class type.
         """
 
         return [
@@ -647,10 +999,21 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         child: MetaBase,
         mod: OpenMaya.MDGModifier | OpenMaya.MDagModifier | None = None,
     ):
-        """Adds a new meta child to this meta node instance.
+        """Adds a `MetaBase` instance as a child of the current `MetaBase`
+        instance.
 
-        :param child: meta child.
-        :param mod: optional Maya modifier to use.
+        Ensures that the given `child` MetaBase instance has the current
+        instance as its parent in registry, updating its existing
+        relationships if necessary.
+
+        This function modifies the parent-child relationship structure within
+        the Meta system.
+
+        Args:
+            child: The MetaBase instance to be set as a child of the
+                current MetaBase instance.
+            mod: An optional modifier to manage Maya dependency graph
+                operations for this action.
         """
 
         child.remove_meta_parent(mod=mod)
@@ -661,11 +1024,19 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         parent: MetaBase,
         mod: OpenMaya.MDGModifier | OpenMaya.MDagModifier | None = None,
     ):
-        """Sets the parent meta node for this meta node instance and removes the previous meta parent if it is already
-        defined.
+        """Connect the current metanode to a parent metanode. This
+        establishes a hierarchical relationship, allowing the current metanode
+        to reference its parent.
 
-        :param parent: parent meta node instance.
-        :param mod: optional Maya modifier to use.
+        The method uses the given modifier to establish connections
+        between the current node's parent attribute and the parent's
+        children attribute, ensuring that it updates the parent and child
+        relationships correctly.
+
+        Args:
+            parent: The parent meta node to which this node should be connected.
+            mod: An optional Maya modifier used to manage dependency graph
+                connections. If None, default connection behavior will be used.
         """
 
         parent_plug = self.attribute(META_PARENT_ATTR_NAME)
@@ -679,13 +1050,19 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         self,
         parent: MetaBase | None = None,
         mod: OpenMaya.MDGModifier | OpenMaya.MDagModifier | None = None,
-    ) -> bool:
-        """Removes meta parent for this meta node instance.
+    ):
+        """Remove the connection between the current instance's metaparent
+        attribute and the specified parent or all connected metaparents if no
+        specific parent is provided.
 
-        :param MetaBase or None parent: optional meta parent to remove; if None, all meta parents will be removed.
-        :param OpenMaya.MDagModifier or OpenMaya.MDGModifier or None mod: optional Maya modifier to use.
-        :return: True if the remove meta parent operation was successful; False otherwise.
-        :rtype :bool
+        The modification can be handled with a provided modifier or a
+        default modifier that gets created internally.
+
+        Args:
+            parent: The specific meta parent to disconnect from.
+                If None, all connected meta parents will be removed.
+            mod: An optional modifier instance to handle the  disconnection.
+                If None, a new MDGModifier instance will be created and used.
         """
 
         modifier = mod or OpenMaya.MDGModifier()
@@ -698,12 +1075,14 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         if mod is None:
             modifier.doIt()
 
-        return True
+    def remove_all_meta_parents(self):
+        """Remove all meta parent connections and deletes related connections.
 
-    def remove_all_meta_parents(self) -> bool:
-        """Removes all meta parents for this meta node instance.
-        :return: True if the remove meta parents operation was successful; False otherwise.
-        :rtype :bool
+        This method iterates over the meta parent attribute elements and
+        disconnects all its destinations.
+
+        Additionally, it attempts to delete each element after disconnection.
+        If an element cannot be deleted, it suppresses the runtime error.
         """
 
         parent_plug = self.attribute(META_PARENT_ATTR_NAME)
@@ -715,15 +1094,25 @@ class MetaBase(DGNode, metaclass=MetaFactory):
                 except RuntimeError:
                     pass
 
-        return True
-
     def _init_meta(
         self, mod: OpenMaya.MDGModifier | OpenMaya.MDagModifier | None = None
     ) -> list[Plug]:
-        """Internal function that initializes standard attributes for the meta node.
+        """Initialize meta-attributes by creating them from a dictionary and
+        return the corresponding list of Plug objects.
 
-        :param mod: optional Maya modifier to add to.
-        :return: list of created attributes.
+        This function generates the required attributes for a specific
+        operation or entity using a dictionary representation and ensures
+        the attributes are instantiated with the appropriate modifiers if
+        provided.
+
+        Args:
+            mod: An `instance of OpenMaya.MDGModifier`,
+                `OpenMaya.MDagModifier`, `or` None. If provided, it is used
+                to apply the modifications when creating attributes.
+
+        Returns:
+            A list of created Plug objects based on the meta-attributes
+                defined in the dictionary.
         """
 
         return self.createAttributesFromDict(
@@ -732,9 +1121,15 @@ class MetaBase(DGNode, metaclass=MetaFactory):
 
 
 def iterate_scene_meta_nodes() -> Iterator[MetaBase]:
-    """Generator function that iterates over all meta nodes in the current Maya scene.
+    """Iterate through all scene metanodes and yields them as MetaBase objects.
 
-    :return: found meta node instances within current Maya scene.
+    This function traverses all dependency nodes in the scene to identify those
+    that have the specific meta-attribute defined by `META_CLASS_ATTR_NAME`.
+    It yields a `MetaBase` object for each matching node, ensuring efficient
+    and filtered access.
+
+    Yields:
+        An instance representing a metanode found in the dependency graph.
     """
 
     it = OpenMaya.MItDependencyNodes(OpenMaya.MFn.kAffect)
@@ -746,11 +1141,22 @@ def iterate_scene_meta_nodes() -> Iterator[MetaBase]:
         it.next()
 
 
-def find_meta_nodes_by_class_type(class_type: Type | str) -> list[MetaBase]:
-    """Generator function that returns all meta nodes within current scene with given meta type.
+def find_meta_nodes_by_class_type(class_type: type | str) -> list[MetaBase]:
+    """Find metanodes in the scene that match the specified class type.
 
-    :param class_type: metaclass type.
-    :return: generator of found meta nodes with given metaclass type.
+    This function iterates through all metanodes in the scene and collects
+    those whose class type matches the provided class type.
+
+    The match is determined by checking the value of the `META_CLASS_ATTR_NAME`
+    attribute against the provided class type or its  corresponding `ID` if
+    it is a class.
+
+    Args:
+        class_type: The class type to match. Can be a class (with an `ID`
+            attribute) or a string representing a class type name.
+
+    Returns:
+        A list of metanodes matching the specified class type.
     """
 
     class_type_name = str(class_type)
@@ -766,10 +1172,20 @@ def find_meta_nodes_by_class_type(class_type: Type | str) -> list[MetaBase]:
 
 
 def is_meta_node(node: DGNode) -> bool:
-    """Returns whether given node is a meta node.
+    """Determine whether a given `DGNode` is a meta node.
 
-    :param base.DGNode node: node to check.
-    :return: True if given node is a meta node ; False otherwise.
+    This function checks if the provided `DGNode` instance is a metanode.
+
+    Notes:
+        A node is considered a metanode if it is an instance of `MetaBase` or
+        a subclass thereof, or if it possesses an attribute referencing a
+        metaclass registered in the `MetaRegistry`.
+
+    Args:
+        node: The node to check for being a meta node.
+
+    Returns:
+        True if the node is identified as a metanode, False otherwise.
     """
 
     if isinstance(node, MetaBase) or issubclass(type(node), MetaBase):
@@ -786,11 +1202,20 @@ def is_meta_node(node: DGNode) -> bool:
 
 
 def is_meta_node_of_types(node: DGNode, class_types: Iterable[str]) -> bool:
-    """Returns whether given node is a meta node of given types.
+    """Determine if a given node is a metanode of specified types.
 
-    :param base.DGNode node: node to check.
-    :param class_types: list of metaclass types.
-    :return: True if given node is a meta node of given types; False otherwise.
+    This function checks whether the provided node is a metanode and verifies
+    if its metaclass type belongs to the supplied list of class types. It also
+    ensures that the metaclass type is registered in the `MetaRegistry`.
+
+    Args:
+        node: The specific DGNode instance to check.
+        class_types: An iterable collection of string class type names to
+            validate against the metaclass type of the node.
+
+    Returns:
+        True if the node is a meta node, belongs to one of the specified class
+            types, and is in the `MetaRegistry`. `False` otherwise.
     """
 
     if not is_meta_node(node):
@@ -804,23 +1229,48 @@ def is_meta_node_of_types(node: DGNode, class_types: Iterable[str]) -> bool:
 
 
 def create_meta_node_by_type(type_name: str, *args: tuple, **kwargs) -> MetaBase | None:
-    """Creates a new meta node instance within current scene and returns the type class instance from the meta registry.
+    """Create an instance of a metanode based on the provided type name by
+    retrieving the class type from a registry.
 
-    :param str type_name: metaclass type to create.
-    :param tuple args: args to pass to the class.__init__ function.
-    :return: subclass instance of MetaBase for the type.
-    :rtype: MetaBase or None
+    If the class type is found, initializes it with the optional positional
+    and keyword arguments. Returns `None` if the type name does not exist in
+    the registry.
+
+    Args:
+        type_name: The name of the type to retrieve from the meta-registry.
+        *args: Positional arguments to pass to the initializer of the
+            retrieved class.
+        **kwargs: Keyword arguments to pass to the initializer of the
+            retrieved class.
+
+    Returns:
+        An instance of the metanode corresponding to the provided type name,
+            or `None` if no class type is found for the given type name.
     """
 
+    # noinspection PyUnresolvedReferences
     class_type = MetaRegistry().get_type(type_name)
     return class_type(*args, **kwargs) if class_type is not None else None
 
 
 def connected_meta_nodes(node: DGNode) -> list[MetaBase]:
-    """Returns all the downstream connected meta nodes of the given node.
+    """Retrieve a list of metanodes connected to a given input node.
 
-    :param node: meta node Maya object to search from.
-    :return: list of downstream connected meta nodes.
+    This function identifies whether the provided node is a metanode. If it is,
+    it creates a `MetaBase` object from the node and initializes it with the
+    specified parameters.
+
+    For non-meta nodes, the function evaluates the destinations of the
+    "message" attribute in the input node to determine if the connected nodes
+    are metanodes. For every metanode detected, a corresponding `MetaBase`
+    instance is added to the resulting list.
+
+    Args:
+        node: A `DGNode` instance representing the input node to check for
+            connected metanodes.
+
+    Returns:
+        A list of `MetaBase` objects corresponding to the metanodes connected
     """
 
     if is_meta_node(node):
