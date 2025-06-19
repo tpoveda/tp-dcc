@@ -142,6 +142,11 @@ LAYER_TAGGED_NODE_ATTR = "taggedNode"
 LAYER_TAGGED_NODE_SOURCE_ATTR = "taggedNodeSource"
 LAYER_TAGGED_NODE_ID_ATTR = "taggedNodeId"
 
+# === Modules Layer MetaData Attribute Names ===
+MODULES_LAYER_MODULE_GROUPS_ATTR = "componentGroups"
+MODULES_LAYER_MODULE_GROUP_NAME_ATTR = "groupName"
+MODULES_LAYER_GROUP_MODULES_ATTR = "groupComponents"
+
 # === Module Descriptor Keys ===
 MODULE_VERSION_DESCRIPTOR_KEY = "descriptorVersion"
 MODULE_DESCRIPTION_DESCRIPTOR_KEY = "description"

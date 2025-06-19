@@ -6,9 +6,10 @@ from typing import cast
 from collections.abc import Iterator
 
 from loguru import logger
+from maya.api import OpenMaya
 
-from tp.libs.maya.wrapper import DagNode
 from tp.libs.python import helpers, profiler
+from tp.libs.maya.wrapper import DGNode, DagNode
 from tp.libs.maya.meta.base import find_meta_nodes_by_class_type
 
 from . import constants, errors
@@ -26,7 +27,7 @@ if typing.TYPE_CHECKING:
 
 class Rig:
     """Class that represents a Rig, encapsulating functionality for managing
-    the rig's components, configuration, and modules.
+    the rig's modules and configuration.
 
     This class provides methods for rig creation, modification, and management.
     It interacts with metadata and manages modules that make up the rig's
@@ -143,6 +144,66 @@ class Rig:
 
         return f"<{self.__class__.__name__}>(name={self.name()})"
 
+    def __contains__(self, item: Module) -> bool:
+        """Check if the given module is contained within the object.
+
+        This method determines whether a module with the specified name and
+        side exists.
+
+        Args:
+            item: The module to check for its presence.
+
+        Returns:
+            True if the module is contained, False otherwise.
+        """
+
+        return bool(self.module(item.name(), item.side()))
+
+    def __len__(self) -> int:
+        """Calculate the total number of modules within the current rig.
+
+        Returns:
+            The number of modules in the current rig.
+        """
+
+        return len(self.modules())
+
+    def __getattr__(self, item: str) -> typing.Any:
+        """Handles dynamic attribute access allowing to retrieve modules
+        dynamically based on structured attribute names following
+        the `<module_name>_<side>` format.
+
+        Notes:
+            Lines with underscore-prefixed attributes, single-word attributes,
+            or unrelated name formats will fall back to the default attribute
+            retrieval mechanism.
+
+        Args:
+            item: The name of the attribute being accessed. The format can
+                either represent structured module information or a
+                simple attribute name.
+
+        Returns:
+            The dynamically resolved module matching the specified attribute
+            name, or the result of the default `__getattribute__` if no valid
+            module is found.
+        """
+
+        if item.startswith("_"):
+            return super().__getattribute__(item)
+
+        splitter = item.split("_")
+        if len(splitter) < 2:
+            return super().__getattribute__(item)
+
+        module_name = "_".join(splitter[:-1])
+        side = splitter[-1]
+        found_module = self.module(module_name, side)
+        if found_module is not None:
+            return found_module
+
+        return super().__getattribute__(item)
+
     @property
     def meta(self) -> MetaRig | None:
         """The meta-node instance of the rig."""
@@ -252,7 +313,7 @@ class Rig:
         root transform of the metanode.
 
         Returns:
-            The existing or newly created components layer for the current
+            The existing or newly created modules layer for the current
                 instance.
         """
 
@@ -383,10 +444,10 @@ class Rig:
         else:
             descriptor = self.configuration.initialize_module_descriptor(module_type)
 
-        component_class = (
+        module_class = (
             self.configuration.modules_manager().find_module_class_by_type(module_type)
         )
-        if not component_class:
+        if not module_class:
             raise errors.MissingModuleType(module_type)
 
         name = name or descriptor.name
@@ -396,7 +457,7 @@ class Rig:
 
         descriptor.side = side
         descriptor.name = unique_name
-        new_module = component_class(rig=self, descriptor=descriptor)
+        new_module = module_class(rig=self, descriptor=descriptor)
         new_module.create(parent=modules_layer)
         self._modules_cache.add(new_module)
 
@@ -474,7 +535,7 @@ class Rig:
             return
 
         modules_manager = self.configuration.modules_manager()
-        for module_metanode in modules_layer.iterate_components():
+        for module_metanode in modules_layer.iterate_modules():
             try:
                 if module_metanode in visited_meta:
                     continue
@@ -492,81 +553,106 @@ class Rig:
                 raise errors.InitializeModuleError(module_metanode.name())
 
     def modules(self) -> list[Module]:
-        """Retrieve a list of all module components managed by the instance.
+        """Retrieve a list of all modules managed by the instance.
 
-        This method aggregates all module components by iterating through them
-        using the `iterate_components` method and consolidating them into a
+        This method aggregates all modules by iterating through them
+        using the `iterate_modules` method and consolidating them into a
         list.
 
         The resulting list provides an overview of all modules currently handled
         by the instance, enabling further operations or inspections.
 
         Returns:
-            A list containing all module components present within the instance.
+            A list containing all modules present within the instance.
         """
 
         return list(self.iterate_modules())
 
-    def iterate_components_by_type(self, component_type: str) -> Iterator[Component]:
-        """Generator function that yields all components of the given type name.
+    def iterate_moduls_by_type(self, module_type_name: str) -> Iterator[Module]:
+        """Iterate over modules of a specific type and yields matching modules.
 
-        :param component_type: Noddle component type name.
-        :return: iterated components of the given type.
+        Inspects all available modules and filters them by their module
+        type. For every module whose module type matches the provided type,
+        the function yields the module.
+
+        Args:
+            module_type_name: The type of the module to filter by.
+
+        Yields:
+            A module with the specified module type.
         """
 
-        for found_component in self.iterate_components():
-            if found_component.component_type == component_type:
-                yield found_component
+        for found_module in self.iterate_modules():
+            if found_module.module_type == module_type_name:
+                yield found_module
 
-    def component(self, name: str, side: str = "M") -> Component | None:
-        """Tries to find the component by name and side by first check the component cache for this rig instance and
-        after that checking the components via meta node network.
+    def module(self, name: str, side: str = "M") -> Module | None:
+        """Find and return a module instance with the specified name and side,
+        checking the cache first and then querying the module layer.
 
-        :param name: component name to find.
-        :param side: component side to find.
-        :return: found component instance.
+        Args:
+            name: The name of the module to find.
+            side: The side of the module to find.
+
+        Returns:
+            The matching `Module` instance if found; `None` otherwise.
         """
 
-        found_component: Component | None = None
-        for cached_component in list(self._components_cache):
-            if cached_component.name() == name and cached_component.side() == side:
-                found_component = cached_component
+        found_module: Module | None = None
+        for cached_module in list(self._modules_cache):
+            if cached_module.name() == name and cached_module.side() == side:
+                found_module = cached_module
                 break
-        if found_component is not None:
-            return found_component
+        if found_module is not None:
+            return found_module
 
-        components_layer = self.get_or_create_components_layer()
-        if components_layer is None:
+        modules_layer = self.get_or_create_modules_layer()
+        if modules_layer is None:
             return None
 
-        components_manager = self.configuration.components_manager()
-        for component_metanode in components_layer.iterate_components():
-            component_name = component_metanode.attribute(consts.NAME_ATTR).asString()
-            component_side = component_metanode.attribute(consts.SIDE_ATTR).asString()
-            if component_name == name and component_side == side:
-                component_instance = components_manager.from_meta_node(
-                    rig=self, meta=component_metanode
+        modules_manager = self.configuration.modules_manager()
+        for module_metanode in modules_layer.iterate_modules():
+            module_name = module_metanode.attribute(constants.NAME_ATTR).asString()
+            module_side = module_metanode.attribute(
+                constants.MODULE_SIDE_ATTR
+            ).asString()
+            if module_name == name and module_side == side:
+                module_instance = modules_manager.from_meta_node(
+                    rig=self, meta=module_metanode
                 )
-                self._components_cache.add(component_instance)
-                return component_instance
+                self._modules_cache.add(module_instance)
+                return module_instance
 
         return None
 
-    def component_from_node(self, node: DGNode | OpenMaya.MObject) -> Component | None:
-        """Returns the component for the given node if it's part of this rig.
+    def module_from_node(self, node: DGNode | OpenMaya.MObject) -> Module | None:
+        """Retrieve a module instance from a given node.
 
-        :param node: node to get the component from.
-        :return: component instance.
-        :raises NoddleMissingMetaNode: If the given node does not have a meta node.
+        This function attempts to determine the module corresponding to the
+        provided node by first resolving its metanode.
+
+        Once the metanode is retrieved, the function queries the relevant
+        attributes from the metanode to identify and return the desired module.
+
+        Args:
+            node: The node from which to resolve the module.
+
+        Raises:
+            errors.MissingMetaNode: If the metanode cannot be resolved from
+                the provided node.
+
+        Returns:
+            The resulting module instance if resolved successfully, or `None`
+                if no suitable module is determined.
         """
 
-        meta_node = component_meta_node_from_node(node)
+        meta_node = module_meta_node_from_node(node)
         if not meta_node:
-            raise errors.NoddleMissingMetaNode(node)
+            raise errors.MissingMetaNode(node)
 
-        return self.component(
-            meta_node.attribute(consts.NAME_ATTR).value(),
-            meta_node.attribute(consts.SIDE_ATTR).value(),
+        return self.module(
+            meta_node.attribute(constants.NAME_ATTR).value(),
+            meta_node.attribute(constants.MODULE_SIDE_ATTR).value(),
         )
 
 

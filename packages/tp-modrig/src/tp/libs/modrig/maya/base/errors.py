@@ -39,6 +39,16 @@ class MissingModuleType(ModRigError):
 
     MSG = "Missing modules of type: {}, from Modules manager."
 
-    def __init__(self, component_type, *args, **kwargs):
-        msg = self.MSG.format(component_type)
+    def __init__(self, module_type_name: str, *args, **kwargs):
+        msg = self.MSG.format(module_type_name)
+        super().__init__(msg, *args, **kwargs)
+
+
+class InitializeModuleError(ModRigError):
+    """Exception raised when a component fails to initialize."""
+
+    MSG = "Failed to initialize module: {}"
+
+    def __init__(self, component_name, *args, **kwargs):
+        msg = self.MSG.format(component_name)
         super().__init__(msg, *args, **kwargs)

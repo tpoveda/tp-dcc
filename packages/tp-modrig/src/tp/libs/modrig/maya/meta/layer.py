@@ -13,7 +13,7 @@ from ..base import constants
 class MetaLayer(MetaBase):
     """MetaClass implementation for a layer in the Maya scene."""
 
-    ID = constants.MODULES_LAYER_TYPE
+    ID = constants.BASE_LAYER_TYPE
 
     def meta_attributes(self) -> list[dict]:
         """Return the list of default metanode attributes that should be added
@@ -114,3 +114,31 @@ class MetaLayer(MetaBase):
         layer_transform.lock(True)
 
         return layer_transform
+
+    def show(self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True):
+        """Show the root transform if it exists.
+
+        Args:
+            mod: An optional MDGModifier object used to apply modifications.
+                If `None`, no modifier is used.
+            apply: A flag indicating whether to apply the modification
+                immediately. If set to True, the changes will be applied.
+        """
+
+        root = self.root_transform()
+        if root is not None:
+            root.show(mod=mod, apply=apply)
+
+    def hide(self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True):
+        """Hides the root transform node of the object, if it exists.
+
+        Args:
+            mod: An optional MDGModifier object used to apply modifications.
+                If `None`, no modifier is used.
+            apply: A flag indicating whether to apply the modification
+                immediately. If set to True, the changes will be applied.
+        """
+
+        root = self.root_transform()
+        if root is not None:
+            root.hide(mod=mod, apply=apply)
