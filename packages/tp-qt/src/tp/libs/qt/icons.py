@@ -7,7 +7,7 @@ from loguru import logger
 from Qt.QtCore import Qt, QSize
 from Qt.QtGui import QIcon
 
-from tp.libs.dcc import app
+from tp.core import host
 from tp.libs.python.decorators import Singleton
 
 
@@ -26,7 +26,19 @@ class IconDict(TypedDict):
 
 
 class IconsManager(metaclass=Singleton):
-    """Class that allows to register and retrieve icons."""
+    """Manages icons by caching and providing access to their paths, data, and
+    resized versions.
+
+    This class is responsible for managing icons by maintaining a centralized
+    cache that stores information about available icons. It retrieves icon
+    file data, builds a cache for optimized access, and offers various utility
+    methods for manipulating and retrieving icons by their names or paths.
+
+    Attributes:
+        _icons_cache: Cache storing information about icons including name,
+            relative directory, and sizes.
+        _icon_paths: List of directories containing icon files.
+    """
 
     _icons_cache: dict[str, dict[str, IconDict]] = {}
     _icon_paths: list[str] = []
@@ -44,10 +56,10 @@ class IconsManager(metaclass=Singleton):
         cls._icon_paths.clear()
 
         cls._icon_paths = os.getenv("TP_DCC_ICON_PATHS", "").split(os.pathsep)
-        for icon_path in cls._icon_paths:
-            if not icon_path or not os.path.exists(icon_path):
+        for _icon_path in cls._icon_paths:
+            if not _icon_path or not os.path.exists(_icon_path):
                 continue
-            for root, _, files in os.walk(icon_path):
+            for root, _, files in os.walk(_icon_path):
                 for file_name in files:
                     if not file_name.endswith(".png"):
                         continue
@@ -68,11 +80,13 @@ class IconsManager(metaclass=Singleton):
                         sizes = cls._icons_cache[name]["sizes"]
                         if size in sizes:
                             continue
+                        # noinspection PyTypedDict
                         sizes[size] = IconSizeDict(path=os.path.join(root, file_name))
                     else:
+                        # noinspection PyTypeChecker
                         cls._icons_cache[name] = {
                             "name": name,
-                            "relativeDir": root.replace(icon_path, ""),
+                            "relativeDir": root.replace(_icon_path, ""),
                             "sizes": {
                                 size: IconSizeDict(path=os.path.join(root, file_name))
                             },
@@ -80,21 +94,41 @@ class IconsManager(metaclass=Singleton):
 
     @classmethod
     def icon_path(cls, icon_name: str) -> dict[str, IconDict] | None:
-        """Returns the path to the icon with the given name.
+        """Fetch the path details for a specified icon from the cached icon
+        data.
 
-        :param icon_name: name of the icon to get the path for.
-        :return: icon path if found; None otherwise.
+        Args:
+            icon_name: The name of the icon to retrieve from the cache.
+
+        Returns:
+            The cached dictionary containing the icon details if found; `None`
+                if the icon is not present in the cache.
         """
 
         return cls._icons_cache.get(icon_name)
 
     @classmethod
     def icon_data_for_name(cls, icon_name: str, size: int = 16) -> IconSizeDict:
-        """Returns the icon data for the given icon name.
+        """Return icon data for a given icon name and size.
 
-        :param icon_name: name of the icon to get the data for.
-        :param size: size of the icon to get the data for.
-        :return: icon data for the given icon name.
+        Notes:
+            If the icon name contains an underscore with a numeric
+            suffix (e.g., "icon_16"), the size is extracted from the suffix.
+            If the specified size is not available, the method defaults to
+            retrieving the data for the largest available size of the icon.
+
+        Args:
+            icon_name: The name of the icon for which to retrieve data. If
+                the name includes a numeric suffix separated by an underscore,
+                it will be treated as the size.
+            size: The desired size of the icon. Defaults to 16 if not
+                explicitly provided or if a size cannot be determined from the
+                icon name.
+
+        Returns:
+            A dictionary containing the icon data for the specified size.
+                If no data is found for the given icon name, an empty
+                dictionary is returned.
         """
 
         if "_" in icon_name:
@@ -120,72 +154,84 @@ class IconsManager(metaclass=Singleton):
 
     @classmethod
     def icon_path_for_name(cls, icon_name: str, size: int = 16) -> str:
-        """Returns the icon path for the given icon name.
+        """Return the file path of the icon for the specified name and size.
 
-        :param icon_name: name of the icon to get the path for.
-        :param size: size of the icon to get the path for.
-        :return: icon path for the given icon name.
+        Args:
+            icon_name: The name of the icon to retrieve.
+            size: The size of the icon in pixels. Defaults to 16.
+
+        Returns:
+            The file path of the icon, or an empty string if the icon is not
+                found.
         """
 
-        icon_data = cls.icon_data_for_name(icon_name, size)
-        if not icon_data:
-            return ""
-
-        return icon_data["path"]
-
-    @staticmethod
-    def icon_path_is_from_qrc(icon_path: str) -> bool:
-        """Returns whether the given icon path is from a Qt resource file or not.
-
-        :param icon_path: icon path to check.
-        :return: whether the icon path is from a Qt resource file or not.
-        """
-
-        return icon_path.startswith((":/", "qrc:/", ":"))
+        return cls.icon_data_for_name(icon_name, size).get("path", "")
 
     @classmethod
     def resize_icon(cls, icon: QIcon, size: QSize) -> QIcon:
-        """Resizes the given icon to the given size.
-        Default scaling is done using smooth bi-linear interpolation and keep aspect
-        ratio.
+        """Resizes a given `QIcon` to the specified `QSize` while preserving
+        its aspect ratio.
 
-        :param icon: icon to resize.
-        :param size: size to resize the icon to.
-        :return: resized icon.
+        Args:
+            icon: The input QIcon to resize.
+            size: The target size for the icon.
+
+        Returns:
+            A new `QIcon` resized to the specified dimensions, or the original
+                `QIcon` if no resizing is possible.
         """
 
         if len(icon.availableSizes()) == 0:
-            return
+            return icon
 
         original_size = icon.availableSizes()[0]
         pixmap = icon.pixmap(original_size)
         pixmap = pixmap.scaled(size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
         return QIcon(pixmap)
 
     @classmethod
     def icon(cls, icon_name: str, size: int = 16) -> QIcon | None:
-        """Returns the icon with the given name.
+        """Create and returns a `QIcon` object based on the given icon name
+        and size.
 
-        :param icon_name: name of the icon to get.
-        :param size: size of the icon to get.
-        :return: QIcon with the icon data if found; None otherwise.
+        Notes:
+            It supports headless environments, returning `None` to avoid
+                issues with icon loading when a graphical user interface is
+                not present.
+
+        Args:
+            icon_name: The name or path of the icon to be loaded. This can be
+                a resource path (e.g., starting with ":/" or "qrc:/") or a
+                custom icon name.
+            size: The desired size of the icon. Defaults to 16. If the size
+                is -1, the icon will not be resized.
+
+        Returns:
+            A `QIcon` object constructed based on the provided icon name and
+                size. If the application is in headless mode, it returns
+                `None`.
         """
 
-        if app.FnApp().is_batch():
-            return
+        # In headless mode, return None to avoid loading icons.
+        if host.current_host().host.is_headless:
+            return None
 
-        if cls.icon_path_is_from_qrc(icon_name):
+        if icon_name.startswith((":/", "qrc:/", ":")):
             new_icon = QIcon(icon_name)
         else:
             icon_data = cls.icon_data_for_name(icon_name, size=size)
             new_icon = QIcon(icon_data.get("path", ""))
+
         if size != -1:
             new_icon = cls.resize_icon(new_icon, QSize(size, size))
 
         return new_icon
 
 
-icon = IconsManager().icon
-icon_data_for_name = IconsManager().icon_data_for_name
-icon_path_for_name = IconsManager().icon_path_for_name
-icon_path = IconsManager().icon_path
+# noinspection PyTypeChecker
+manager: IconsManager = IconsManager()
+icon = manager.icon
+icon_data_for_name = manager.icon_data_for_name
+icon_path_for_name = manager.icon_path_for_name
+icon_path = manager.icon_path

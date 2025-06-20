@@ -3,11 +3,11 @@ from __future__ import annotations
 import uuid
 import enum
 import weakref
-import logging
 import platform
 import webbrowser
 from typing import Type
 
+from loguru import logger
 from Qt.QtCore import (
     Qt,
     QObject,
@@ -51,6 +51,7 @@ from tp.libs import dcc
 from tp.libs.dcc import ui
 from tp.libs.python import paths
 
+from .. import icons
 from .labels import ClippedLabel
 from .overlay import OverlayWidget
 from .buttons import BaseButton, IconMenuButton
@@ -68,9 +69,6 @@ else:
 
     class DockableMixin:
         pass
-
-
-logger = logging.getLogger(__name__)
 
 
 class ContainerType(enum.Enum):
@@ -94,30 +92,30 @@ class ContainerWidget:
         pass
 
     def is_docking_container(self) -> bool:
-        """Returns whether current instance is a docking container widget.
+        """Return whether the current instance is a docking container widget.
 
         Returns:
-            bool: True if current instance is a DockingContainer instance; False
+            True if the current instance is a DockingContainer instance; False
                 otherwise.
         """
 
         return isinstance(self, DockingContainer)
 
     def is_frameless_window(self) -> bool:
-        """Returns whether current instance is a frameless window widget.
+        """Return whether the current instance is a frameless window widget.
 
         Returns:
-            bool: True if current instance is a FramelessWindow instance; False
+            True if the current instance is a FramelessWindow instance; False
                 otherwise.
         """
 
         return isinstance(self, FramelessWindowContainer)
 
     def container_type(self) -> int:
-        """Returns the type of container.
+        """Return the type of container.
 
         Returns:
-            int: The container type value from the ContainerType enum.
+            The container type value from the ContainerType enum.
         """
 
         return (
@@ -127,19 +125,20 @@ class ContainerWidget:
         )
 
     def set_widget(self, widget: QWidget):
-        """Sets container widget.
+        """Sets the container widget.
 
         Args:
-            widget: The widget to set as the container's content.
+            The widget to set as the container's content.
         """
 
         # noinspection PyUnresolvedReferences
         self.setObjectName(widget.objectName())
 
     def set_on_top(self, flag: bool):
-        """Sets whether container should stay on top.
+        """Sets whether the container should stay on top.
 
-        :param flag: True to set container on top; False otherwise.
+        Args:
+            flag: True to set container on top; False otherwise.
         """
 
         pass
@@ -332,7 +331,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         # noinspection SpellCheckingInspection
         self._logo_icon.setIcon(
             icon.colorize_icon(
-                QIcon(paths.canonical_path("../../resources/icons/tpdcc_64.png")),
+                icons.icon("tpdcc"),
                 size=size,
             )
         )
@@ -586,7 +585,7 @@ class FramelessWindow(QWidget):
             as_overlay: Whether to use overlay mode. Defaults to True.
             always_show_all_title: Whether to always show the full title.
                 Defaults to False.
-            on_top: Whether window stays on top. Defaults to False.
+            on_top: Whether the window should stay on top. Defaults to False.
             save_window_pref: Whether to save window preferences. Defaults to False.
             minimize_enabled: Whether minimization is enabled. Defaults to True.
             minimize_button: Whether to show minimize button. Defaults to False.
@@ -1501,21 +1500,11 @@ class FramelessTitleBar(QFrame):
         self.setFixedHeight(dpi.dpi_scale(self._title_bar_height))
         self.setLayout(self._main_layout)
 
-        self._close_button.set_icon(
-            QIcon(paths.canonical_path("../../resources/icons/window_close_32.png"))
-        )
-        self._minimize_button.set_icon(
-            QIcon(paths.canonical_path("../../resources/icons/window_minimize_32.png"))
-        )
-        self._maximize_button.set_icon(
-            QIcon(paths.canonical_path("../../resources/icons/window_maximize_32.png"))
-        )
-        self._maximize_button.set_icon(
-            QIcon(paths.canonical_path("../../resources/icons/window_maximize_32.png"))
-        )
-        self._help_button.set_icon(
-            QIcon(paths.canonical_path("../../resources/icons/question_32.png"))
-        )
+        self._close_button.set_icon(icons.icon("window_close"))
+        self._minimize_button.set_icon(icons.icon("window_minimize"))
+        self._maximize_button.set_icon(icons.icon("window_maximize"))
+        self._maximize_button.set_icon(icons.icon("window_maximize"))
+        self._help_button.set_icon(icons.icon("question"))
 
         # Button Setup
         for button in [
@@ -2665,7 +2654,7 @@ class SpawnerIcon(IconMenuButton):
 
         min_size = 0.55 if self._window.isMinimized() else 1
         size = uiconsts.Sizes.TitleLogoIcon * min_size
-        logo_icon = QIcon(paths.canonical_path("../../resources/icons/tpdcc_64.png"))
+        logo_icon = icons.icon("tpdcc")
 
         if flag:
             self.set_icon(

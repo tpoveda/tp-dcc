@@ -2,19 +2,16 @@ from __future__ import annotations
 
 import sys
 import traceback
-from dataclasses import dataclass
+from typing import TypedDict
 
 from loguru import logger
-from Qt.QtCore import Signal, QObject
 from Qt.QtWidgets import QWidget, QStackedWidget
 
 from tp.libs.dcc import callback
-from tp.libs.qt.widgets import window
-from tp.libs.python import decorators, plugin
+from tp.libs.plugin import Plugin, PluginsManager, PluginExecutionStats
 
 
-@dataclass
-class UiData:
+class UiData(TypedDict, total=False):
     """A data class for storing UI-related data for a tool.
 
     Attributes:
@@ -27,62 +24,68 @@ class UiData:
             Defaults to an empty string.
     tooltip : str
         The tooltip text for the UI element. Defaults to an empty string.
+    tags : list[str]
+        The tags associated with the UI element. Defaults to an empty list.
+    color : str
+        The color to be used for the UI element.
+    background_color : str
+        The background color to be used for the UI element.
+    is_checkable : bool
+        Whether the UI element is checkable. Defaults to False.
+    is_checked : bool
+        Whether the UI element is checked. Defaults to False.
+    load_on_startup : bool
+        Whether the tool should be loaded on startup. Defaults to False.
+    class_name: str
+        The class name of the tool. Defaults to an empty string.
     """
 
-    label: str = ""
-    icon: str = ""
-    tooltip: str = ""
+    label: str
+    icon: str
+    tooltip: str
+    tags: list[str]
+    color: str
+    background_color: str
+    is_checkable: bool
+    is_checked: bool
+    load_on_startup: bool
+    class_name: str
 
 
-class Tool(QObject):
+class Tool(Plugin):
     """Base class used by tp-dcc-tools framework to implement DCC tools that
     have access to tp-dcc-tools functionality.
+
+    Attributes:
+    ----------
+    id : str
+        The unique identifier for the tool. This is the ID that will be used
+        by `ToolsManager` to identify and run the tool.
+    creator: str
+        The creator of the tool.
+    tags: list[str]
+        A list of tags associated with the tool.
+    ui_data : UiData
+        The UI data associated with the tool.
     """
 
-    ID: str = ""
+    id: str = ""
+    creator: str = "Tomi Poveda"
+    tags: list[str] = []
+    ui_data: UiData = {}
 
-    closed = Signal()
-
-    def __init__(self, factory: plugin.PluginFactory | None = None):
+    def __init__(self, manager: PluginsManager | None = None):
         super(Tool, self).__init__()
 
-        self._factory = factory
-        self._stats = plugin.PluginStats(self)
+        self._manager = manager
+        self._stats = PluginExecutionStats(self)
         self._widgets: list[QWidget] = []
         self._stacked_widget: QStackedWidget | None = None
         self._closed = False
         self._callbacks = callback.FnCallback()
 
-    # noinspection PyMethodParameters
-    @decorators.classproperty
-    def id(cls) -> str:
-        """The identifier associated with the class."""
-
-        return ""
-
-    # noinspection PyMethodParameters
-    @decorators.classproperty
-    def creator(cls) -> str:
-        """The creator associated with the class."""
-
-        return "Tomi Poveda"
-
-    # noinspection PyMethodParameters
-    @decorators.classproperty
-    def ui_data(cls) -> UiData:
-        """The UI data associated with the class."""
-
-        return UiData()
-
-    # noinspection PyMethodParameters
-    @decorators.classproperty
-    def tags(cls) -> list[str]:
-        """The tags associated with the class."""
-
-        return []
-
     @property
-    def stats(self) -> plugin.PluginStats:
+    def stats(self) -> PluginExecutionStats:
         """The statistics associated with the instance."""
 
         return self._stats
@@ -94,8 +97,8 @@ class Tool(QObject):
         return self._callbacks
 
     # noinspection PyUnusedLocal
-    def execute(self, *args, **kwargs) -> window.Window:
-        """Execute the tool with the specified arguments and keyword arguments.
+    def execute(self, *args, **kwargs):
+        """Execute the tool with the specified arguments.
 
         This method executes the function with the provided arguments and
         keyword arguments.
@@ -103,71 +106,66 @@ class Tool(QObject):
         Args:
             args: Positional arguments to pass to the function.
             kwargs: Keyword arguments to pass to the function.
-
-        Returns:
-            The frameless window resulting from the function execution.
         """
 
-        kwargs["name"] = self.__class__.__name__
-        kwargs["settings_path"] = self.id.replace(".", "/") if self.id else ""
-        win = window.Window(*args, **kwargs)
-        win.closed.connect(self.closed.emit)
-        win.set_title(self.ui_data.label)
-        self._stacked_widget = QStackedWidget(parent=win)
-        win.main_layout().addWidget(self._stacked_widget)
+        # kwargs["name"] = self.__class__.__name__
+        # kwargs["settings_path"] = self.id.replace(".", "/") if self.id else ""
+        # win = window.Window(*args, **kwargs)
+        # win.closed.connect(self.closed.emit)
+        # win.set_title(self.ui_data.label)
+        # self._stacked_widget = QStackedWidget(parent=win)
+        # win.main_layout().addWidget(self._stacked_widget)
+        #
+        # self.pre_content_setup()
+        #
+        # for widget in self.contents():
+        #     self._stacked_widget.addWidget(widget)
+        #     self._widgets.append(widget)
+        #
+        # self.post_content_setup()
+        #
+        # win.show()
+        # win.closed.connect(self._run_teardown)
+        #
+        # return win
 
-        self.pre_content_setup()
+    # def widgets(self) -> list[QWidget]:
+    #     """Return a list of widgets associated with the instance.
+    #
+    #     This method returns a list of widgets associated with the instance.
+    #
+    #     Returns:
+    #     A list of widgets associated with the instance.
+    #     """
+    #
+    #     return self._widgets
 
-        for widget in self.contents():
-            self._stacked_widget.addWidget(widget)
-            self._widgets.append(widget)
+    # def pre_content_setup(self):
+    #     """Function that is called before the tool UI is created.
+    #
+    #     Notes:
+    #         Can be overridden in tool subclasses.
+    #     """
+    #
+    # # noinspection PyMethodMayBeStatic
+    # def contents(self) -> list[QWidget]:
+    #     """Function that returns tool widgets.
+    #
+    #     Returns:
+    #             List of content widgets.
+    #     """
+    #
+    #     return []
 
-        self.post_content_setup()
-
-        win.show()
-        win.closed.connect(self._run_teardown)
-
-        return win
-
-    def widgets(self) -> list[QWidget]:
-        """Return a list of widgets associated with the instance.
-
-        This method returns a list of widgets associated with the instance.
-
-        Returns:
-        A list of widgets associated with the instance.
-        """
-
-        return self._widgets
-
-    def pre_content_setup(self):
-        """Function that is called before the tool UI is created.
-
-        Notes:
-            Can be overridden in tool subclasses.
-        """
-
-    # noinspection PyMethodMayBeStatic
-    def contents(self) -> list[QWidget]:
-        """Function that returns tool widgets.
-
-        Returns:
-                List of content widgets.
-        """
-
-        return []
-
-    def post_content_setup(self):
-        """Function that is called after the tool UI is created.
-
-        Notes:
-            Can be overridden in tool subclasses.
-        """
+    # def post_content_setup(self):
+    #     """Function that is called after the tool UI is created.
+    #
+    #     Notes:
+    #         Can be overridden in tool subclasses.
+    #     """
 
     def teardown(self):
         """Function that shutdown tool."""
-
-        self._callbacks.clear()
 
     def run(self):
         """Runs the tool."""
@@ -198,6 +196,7 @@ class Tool(QObject):
             return
 
         try:
+            self._callbacks.clear()
             self.teardown()
             self._closed = True
         except RuntimeError:
