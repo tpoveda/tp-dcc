@@ -16,7 +16,14 @@ from Qt.QtWidgets import (
     QMenu,
     QGraphicsDropShadowEffect,
 )
-from Qt.QtGui import QCursor, QColor, QGuiApplication, QScreen
+from Qt.QtGui import (
+    QCursor,
+    QColor,
+    QGuiApplication,
+    QScreen,
+    QImageReader,
+    QImageWriter,
+)
 
 
 _QT_TEST_AVAILABLE = True
@@ -26,60 +33,69 @@ try:
 except ImportError:
     _QT_TEST_AVAILABLE = False
 
+_QT_SUPPORTED_EXTENSIONS: list[str] | None = None
+
 logger = logging.getLogger(__name__)
 
 
 def is_pyqt() -> bool:
-    """
-    Returns True if the current Qt binding is PyQt
-    """
+    """Returns True if the current Qt binding is PyQt"""
 
     return "PyQt" in __binding__
 
 
 def is_pyqt4() -> bool:
-    """
-    Returns True if the current Qt binding is PyQt4
-    """
+    """Returns True if the current Qt binding is PyQt4"""
 
     return __binding__ == "PyQt4"
 
 
 def is_pyqt5() -> bool:
-    """
-    Returns True if the current Qt binding is PyQt5
-    """
+    """Returns True if the current Qt binding is PyQt5"""
 
     return __binding__ == "PyQt5"
 
 
 def is_pyside() -> bool:
-    """
-    Returns True if the current Qt binding is PySide
-    """
+    """Returns True if the current Qt binding is PySide"""
 
     return __binding__ == "PySide"
 
 
 def is_pyside2() -> bool:
-    """
-    Returns True if the current Qt binding is PySide2
-    """
+    """Returns True if the current Qt binding is PySide2"""
 
     return __binding__ == "PySide2"
 
 
 def is_pyside6() -> bool:
-    """
-    Returns True if the current Qt binding is PySide6
-    """
+    """Returns True if the current Qt binding is PySide6"""
 
     return __binding__ == "PySide6"
 
 
+def get_supported_image_extensions() -> list[str]:
+    """Get a list of supported image file extensions from Qt."""
+
+    global _QT_SUPPORTED_EXTENSIONS
+    if _QT_SUPPORTED_EXTENSIONS is None:
+        read_formats = QImageReader.supportedImageFormats()
+        write_formats = QImageWriter.supportedImageFormats()
+        extensions: set[str] = set()
+        for format_bytes in read_formats:
+            format_str = format_bytes.data().decode("utf-8").lower()
+            extensions.add(format_str)
+        for format_bytes in write_formats:
+            format_str = format_bytes.data().decode("utf-8").lower()
+            extensions.add(format_str)
+
+        _QT_SUPPORTED_EXTENSIONS = sorted(list(extensions))
+
+    return _QT_SUPPORTED_EXTENSIONS
+
+
 def wrapinstance(ptr: int, base: Type[QObject] | None = None) -> QObject | None:
-    """
-    Wraps a pointer pointing to a Maya UI element to a Qt class instance.
+    """Wraps a pointer pointing to a Maya UI element to a Qt class instance.
 
     :param ptr: pointer to the Maya UI element.
     :param base: base class to wrap the pointer to.
@@ -90,16 +106,13 @@ def wrapinstance(ptr: int, base: Type[QObject] | None = None) -> QObject | None:
 
 
 def unwrapinstance(object):
-    """
-    Unwraps objects with PySide
-    """
+    """Unwraps objects with PySide"""
 
     return int(QtCompat.getCppPointer(object)[0])
 
 
 def window_offset(window: QMainWindow | QWidget):
-    """
-    Returns the window offset.
+    """Returns the window offset.
 
     :param window: window widget.
     :return: window offset.
@@ -109,8 +122,7 @@ def window_offset(window: QMainWindow | QWidget):
 
 
 def widget_center(widget: QWidget) -> QPoint:
-    """
-    Returns the center of the given widget.
+    """Returns the center of the given widget.
 
     :param widget: widget whose center we want to retrieve.
     :return: widget center.
@@ -120,8 +132,7 @@ def widget_center(widget: QWidget) -> QPoint:
 
 
 def current_screen(global_pos: QPoint | None = None) -> QScreen:
-    """
-    Returns current screen instance.
+    """Returns current screen instance.
 
     :return: current screen.
     """
@@ -131,8 +142,7 @@ def current_screen(global_pos: QPoint | None = None) -> QScreen:
 
 
 def current_screen_geometry() -> QRect:
-    """
-    Returns the current screen geometry.
+    """Returns the current screen geometry.
 
     :return: screen geometry.
     """
@@ -142,8 +152,7 @@ def current_screen_geometry() -> QRect:
 
 
 def contain_widget_in_screen(widget: QWidget, pos: QPoint | None = None) -> QPoint:
-    """
-    Contains the position of the widget within the current screen.
+    """Contains the position of the widget within the current screen.
 
     :param widget: widget to check.
     :param pos: point to check.
@@ -162,8 +171,7 @@ def contain_widget_in_screen(widget: QWidget, pos: QPoint | None = None) -> QPoi
 
 
 def update_widget_style(widget: QWidget):
-    """
-    Updates object widget style. Should be called for example when a style name changes.
+    """Updates object widget style. Should be called for example when a style name changes.
 
     :param widget: widget to update style of.
     """
@@ -172,8 +180,7 @@ def update_widget_style(widget: QWidget):
 
 
 def update_widget_sizes(widget: QWidget):
-    """
-    Updates the given widget sizes.
+    """Updates the given widget sizes.
 
     :param widget: widget to update sizes of.
     """
@@ -187,8 +194,7 @@ def update_widget_sizes(widget: QWidget):
 
 
 def set_stylesheet_object_name(widget: QWidget, name: str, update: bool = True):
-    """
-    Sets the widget to have a specific object name used by one the stylesheets.
+    """Sets the widget to have a specific object name used by one the stylesheets.
 
     :param widget: widget we want to set object name.
     :param name: stylesheet name for the widget.
@@ -201,9 +207,7 @@ def set_stylesheet_object_name(widget: QWidget, name: str, update: bool = True):
 
 
 def clear_focus_widgets():
-    """
-    Clears focus if widgets have clearFocus property.
-    """
+    """Clears focus if widgets have clearFocus property."""
 
     focus_widget = QApplication.focusWidget()
     if focus_widget and focus_widget.property("clearFocus"):
@@ -211,8 +215,7 @@ def clear_focus_widgets():
 
 
 def recursively_set_menu_actions_visibility(menu: QMenu, state: bool):
-    """
-    Recursively sets the visible state of all actions of the given menu.
+    """Recursively sets the visible state of all actions of the given menu.
 
     :param menu: menu to edit actions visibility of.
     :param state: new visibility status.
@@ -237,8 +240,7 @@ def recursively_set_menu_actions_visibility(menu: QMenu, state: bool):
 def set_shadow_effect_enabled(
     widget: QWidget, flag: bool
 ) -> QGraphicsDropShadowEffect | None:
-    """
-    Sets shadow effect for given widget.
+    """Sets shadow effect for given widget.
 
     :param widget: widget to set shadow effect for.
     :param flag: whether to enable shadow effect.
@@ -262,8 +264,7 @@ def set_shadow_effect_enabled(
 
 
 def widget_at(pos: QPoint) -> list[tuple[QWidget, QPoint]]:
-    """
-    Returns all widgets underneath the given mouse position.
+    """Returns all widgets underneath the given mouse position.
 
     :param pos: mouse cursor position.
     :return: list of all widgets under given mouse position.
@@ -292,8 +293,7 @@ def widget_at(pos: QPoint) -> list[tuple[QWidget, QPoint]]:
 def iterate_children(
     widget: QObject, skip: str | None = None, obj_class: Type | None = None
 ) -> Iterator[QWidget]:
-    """
-    Iterates over the children of the given widget.
+    """Iterates over the children of the given widget.
 
     This function iterates over the children of the given widget, optionally skipping children
     with a specific object name or belonging to a specific class.
@@ -321,8 +321,7 @@ def click_under(
     button: Qt.MouseButton = Qt.LeftButton,
     modifier: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier,
 ):
-    """
-    Clicks under the widget.
+    """Clicks under the widget.
 
     :param pos: cursor position.
     :param under: number of iterations under.
@@ -339,8 +338,7 @@ def click_under(
 
 
 def set_vertical_size_policy(widget: QWidget, policy: QSizePolicy.Policy):
-    """
-    Sets the vertical policy of the given widget.
+    """Sets the vertical policy of the given widget.
 
     :param widget: widget to set vertical policy of.
     :param policy: new policy to apply to vertical policy.
@@ -352,8 +350,7 @@ def set_vertical_size_policy(widget: QWidget, policy: QSizePolicy.Policy):
 
 
 def set_horizontal_size_policy(widget: QWidget, policy: QSizePolicy.Policy):
-    """
-    Sets the horizontal policy of the given widget.
+    """Sets the horizontal policy of the given widget.
 
     :param widget: widget to set horizontal policy of.
     :param policy: new policy to apply to horizontal policy.
