@@ -3,21 +3,22 @@ from __future__ import annotations
 import os
 import re
 import sys
-import logging
 import platform
+from typing import Any
 from pathlib import Path
+from functools import partial
 from typing import cast, Optional
 
 from maya import cmds
+from loguru import logger
 from maya import OpenMayaUI
 from maya.api import OpenMaya
 from Qt import QtCompat
-from Qt.QtWidgets import QMainWindow
+from Qt.QtCore import Signal
+from Qt.QtWidgets import QWidget, QMainWindow
 
-from tp.bootstrap.core import host
+from tp.core import host
 from tp.libs.maya.meta import base
-
-logger = logging.getLogger(__name__)
 
 
 class MayaHost(host.Host):
@@ -48,6 +49,55 @@ class MayaHost(host.Host):
 
         base.MetaRegistry()
 
+    def show_dialog(
+        self,
+        window_class: type[QWidget],
+        name: str = "",
+        show: bool = True,
+        allows_multiple: bool = False,
+        *class_args: Any,
+        **class_kwargs: Any,
+    ) -> QWidget:
+        """Shows a dialog/window of the given class.
+
+        Args:
+            window_class: The class of the dialog to show.
+            name: Name of the dialog.
+            show: Whether to show the dialog immediately or not.
+            allows_multiple: Whether to allow multiple instances of the dialog
+                with the same name.
+            class_args: Positional arguments to pass to the dialog class.
+            class_kwargs: Keyword arguments to pass to the dialog class.
+
+        Returns:
+            The created and shown dialog instance.
+        """
+
+        matching_widget_instances = self._dialogs.get(name, [])
+        if not allows_multiple:
+            for instance in matching_widget_instances:
+                logger.warning(
+                    f"Only one instance of '{instance.objectName()}' allowed. "
+                    f"Bringing it to front."
+                )
+                instance.activateWindow()
+                instance.show()
+                return instance
+
+        if "parent" not in class_kwargs:
+            class_kwargs["parent"] = self.host.qt_main_window
+
+        widget = window_class(**class_kwargs)
+        if hasattr(widget, "closed") and isinstance(widget.closed, Signal):
+            # noinspection PyUnresolvedReferences
+            widget.closed.connect(partial(self.close_dialog, name, widget))
+        self.register_dialog(name, widget)
+
+        if show:
+            widget.show()
+
+        return widget
+
     def shutdown(self):
         """Shuts down the host.
 
@@ -55,9 +105,9 @@ class MayaHost(host.Host):
         menu and shelves.
         """
 
-        logger.info("Unloading TP DCC Python pipeline, please wait ...")
+        logger.info("Unloading Maya tpDcc Python pipeline, please wait ...")
         if not self._host.is_headless:
-            pass
+            self.close_all_dialogs()
 
         cmds.flushUndo()
 

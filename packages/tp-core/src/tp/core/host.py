@@ -3,11 +3,12 @@ from __future__ import annotations
 import sys
 import typing
 import logging
+from typing import Any
 from abc import ABC, abstractmethod
 
 if typing.TYPE_CHECKING:
     from Qt.QtWidgets import QWidget, QMainWindow
-    from .manager import PackagesManager
+    from ..bootstrap.core.manager import PackagesManager
 
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ def current_host() -> Host | None:
         The current host instance or None if no host is set.
     """
 
+    # noinspection PyProtectedMember
     return Host.current() if Host._instance else None
 
 
@@ -208,6 +210,30 @@ class Host(ABC):
             if dialog != widget:
                 widgets.append(dialog)
         self._dialogs[name] = widgets
+
+    def show_dialog(
+        self,
+        window_class: type[QWidget],
+        name: str = "",
+        show: bool = True,
+        allows_multiple: bool = False,
+        *class_args: Any,
+        **class_kwargs: Any,
+    ) -> QWidget:
+        """Shows a dialog/window of the given class.
+
+        Args:
+            window_class: The class of the dialog to show.
+            name: Name of the dialog.
+            show: Whether to show the dialog immediately or not.
+            allows_multiple: Whether to allow multiple instances of the dialog
+                with the same name.
+            class_args: Positional arguments to pass to the dialog class.
+            class_kwargs: Keyword arguments to pass to the dialog class.
+
+        Returns:
+            The created and shown dialog instance.
+        """
 
     def close_dialog(self, name: str, widget: QWidget):
         """Closes a registered dialog/window.
