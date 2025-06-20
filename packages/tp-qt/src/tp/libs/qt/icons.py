@@ -40,7 +40,7 @@ class IconsManager(metaclass=Singleton):
         _icon_paths: List of directories containing icon files.
     """
 
-    _icons_cache: dict[str, dict[str, IconDict]] = {}
+    _icons_cache: dict[str, IconDict] = {}
     _icon_paths: list[str] = []
 
     def __init__(self):
@@ -84,16 +84,16 @@ class IconsManager(metaclass=Singleton):
                         sizes[size] = IconSizeDict(path=os.path.join(root, file_name))
                     else:
                         # noinspection PyTypeChecker
-                        cls._icons_cache[name] = {
-                            "name": name,
-                            "relativeDir": root.replace(_icon_path, ""),
-                            "sizes": {
+                        cls._icons_cache[name] = IconDict(
+                            name=name,
+                            relativeDir=root.replace(_icon_path, ""),
+                            sizes={
                                 size: IconSizeDict(path=os.path.join(root, file_name))
                             },
-                        }
+                        )
 
     @classmethod
-    def icon_path(cls, icon_name: str) -> dict[str, IconDict] | None:
+    def icon_path(cls, icon_name: str) -> IconDict:
         """Fetch the path details for a specified icon from the cached icon
         data.
 
@@ -141,7 +141,7 @@ class IconsManager(metaclass=Singleton):
 
         icon_data = cls._icons_cache.get(icon_name, {})
         if not icon_data:
-            return {}
+            return IconSizeDict(path="")
 
         sizes = icon_data["sizes"]
         if size not in sizes:
