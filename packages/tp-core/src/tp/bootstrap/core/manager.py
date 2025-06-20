@@ -8,11 +8,11 @@ from loguru import logger
 
 from tp.libs.python import osplatform
 
-from .host import Host
 from . import constants
 from .descriptor import PackageDescriptor
 from .resolver import Environment, PackageEntry
 from ..utils import fileio, flush
+from ...core.host import Host
 
 
 class PackagesManager:

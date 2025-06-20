@@ -7,9 +7,9 @@ import site
 
 from .core import log
 from .core import constants
-from .core.host import Host
 from .core.manager import PackagesManager
 from .utils import dcc
+from ..core.host import Host
 from ..managers.tools import ToolsManager
 
 
