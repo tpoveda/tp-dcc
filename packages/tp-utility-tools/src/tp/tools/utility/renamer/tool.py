@@ -20,21 +20,21 @@ class RenamerTool(Tool):
     ui_data = UiData(label="Renamer")
     tags = ["tp", "renamer", "tool"]
 
-    def __init__(self, *args, **kwargs):
-        self._model: RenamerModel = kwargs.pop("model")
-        self._controller: ARenamerController = kwargs.pop("controller")
-        self._view: RenamerWidget | None = None
+    # def __init__(self, *args, **kwargs):
+    #     self._model: RenamerModel = kwargs.pop("model")
+    #     self._controller: ARenamerController = kwargs.pop("controller")
+    #     self._view: RenamerWidget | None = None
+    #
+    #     super().__init__(*args, **kwargs)
 
-        super().__init__(*args, **kwargs)
-
-    def contents(self) -> list[RenamerWidget]:
-        """Overrides `contents` function to return the tool widgets.
-
-        :return: List of widgets that are part of the tool.
-        """
-
-        self._view = RenamerWidget(self._model)
-        return [self._view]
+    # def contents(self) -> list[RenamerWidget]:
+    #     """Overrides `contents` function to return the tool widgets.
+    #
+    #     :return: List of widgets that are part of the tool.
+    #     """
+    #
+    #     self._view = RenamerWidget(self._model)
+    #     return [self._view]
 
 
 def show() -> RenamerTool:

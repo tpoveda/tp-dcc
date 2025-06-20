@@ -10,6 +10,8 @@ tp-unreal:
     version: '0.1.0'
 tp-rpc:
     version: '0.1.0'
+tp-assets:
+    version: '0.1.0'
 tp-utility-tools:
     version: '0.1.0'
 tp-modrig:
