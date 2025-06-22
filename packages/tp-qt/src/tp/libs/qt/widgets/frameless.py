@@ -917,7 +917,9 @@ class FramelessWindow(QWidget):
                 self._settings.value("saveState", self._parent_container.saveState())
             )
 
-            if self._settings.value("maximized", self._parent_container.isMaximized()):
+            if self._settings.value(
+                "maximized", self._parent_container.isMaximized(), type=bool
+            ):
                 self._parent_container.showMaximized()
             else:
                 self._parent_container.resize(
