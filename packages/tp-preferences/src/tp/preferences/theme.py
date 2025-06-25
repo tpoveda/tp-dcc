@@ -2,25 +2,49 @@ from __future__ import annotations
 
 import os
 import enum
+import inspect
+from typing import Any
+from string import Template
 
 from loguru import logger
 from Qt.QtCore import QResource
 from Qt.QtWidgets import QWidget
 
+from tp.libs.qt import dpi
 from tp.libs.python import helpers
 
-from . import setup, style_file_path
-from ...qt import dpi
+RESOURCE_REGISTERED = False
 
 
-def instance() -> Theme:
-    """Returns global TNN theme instance.
+def style_file_path() -> str:
+    """Construct and return the file path for the style.qss file located in
+    the current working directory of the script.
 
     Returns:
-        The global Theme instance.
+        The absolute file path to the "style.qss" file.
     """
 
-    return Theme.instance()
+    root_path = os.path.dirname(
+        os.path.abspath(inspect.getfile(inspect.currentframe()))
+    )
+    return os.path.join(root_path, "style", "style.qss")
+
+
+def setup():
+    """Setup stylesheet."""
+
+    global RESOURCE_REGISTERED
+    if RESOURCE_REGISTERED:
+        return
+
+    root_path = os.path.dirname(
+        os.path.abspath(inspect.getfile(inspect.currentframe()))
+    )
+    icons_rcc = os.path.join(root_path, "icons.rcc")
+
+    if os.path.isfile(icons_rcc) and not RESOURCE_REGISTERED:
+        QResource.registerResource(icons_rcc)
+        RESOURCE_REGISTERED = True
 
 
 class Theme:
@@ -30,8 +54,6 @@ class Theme:
     This class manages theme colors, sizes, and styles used throughout the application.
     It provides a singleton instance for global access.
     """
-
-    _INSTANCE: Theme | None = None
 
     # noinspection SpellCheckingInspection
     class Colors:
@@ -89,9 +111,11 @@ class Theme:
         Large = "large"
         Huge = "huge"
 
-    def __init__(self):
+    def __init__(self, name: str, style_data: dict[str, Any] | None = None):
         super().__init__()
 
+        self._name = name
+        self._style_data = style_data or {}
         self._default_qss: str = ""
         self._custom_qss: str = ""
         self._registered_rcc_resources: list[str] = []
@@ -130,22 +154,6 @@ class Theme:
             color: {0};
         }}
         </style>""".format(self._primary_color)
-
-    @classmethod
-    def instance(cls) -> Theme:
-        """Returns global theme instance.
-
-        This is a singleton implementation that ensures only one theme
-        instance exists throughout the application.
-
-        Returns:
-            The global Theme instance.
-        """
-
-        if cls._INSTANCE is None:
-            cls._INSTANCE = cls()
-
-        return cls._INSTANCE
 
     @property
     def sizes(self) -> helpers.AttributeDict:
@@ -220,16 +228,18 @@ class Theme:
     def update_from_qss_file_path(
         self, qss_file_path: str, resources_rcc_file_path: str | None = None
     ):
-        """Updates current theme with the contents of the given QSS file.
+        """Update the current theme with the contents of the given QSS file.
 
         Args:
             qss_file_path: Absolute file path pointing to a valid QSS file.
-            resources_rcc_file_path: Optional RCC file to register within Qt resource system.
+            resources_rcc_file_path: Optional RCC file to register within
+                Qt resource system.
         """
 
         if not qss_file_path or not os.path.isfile(qss_file_path):
             logger.warning(
-                f"Was not possible to update theme. QSS file path is not valid: {qss_file_path}"
+                f"Was not possible to update theme. QSS file path "
+                f"is not valid: {qss_file_path}"
             )
             return
 
@@ -240,13 +250,14 @@ class Theme:
             self.register_resources_rcc_file_path(resources_rcc_file_path)
 
     def register_resources_rcc_file_path(self, resources_rcc_file_path: str) -> bool:
-        """Registers given RCC resources file path within Qt resources system.
+        """Registers the given RCC resources file path within Qt resources
+        system.
 
         Args:
             resources_rcc_file_path: Absolute file path pointing to a valid RCC file.
 
         Returns:
-            True if RCC file was registered successfully; False otherwise.
+            True if the RCC file was registered successfully; False otherwise.
         """
 
         if not resources_rcc_file_path or not os.path.isfile(resources_rcc_file_path):
@@ -271,3 +282,28 @@ class Theme:
             stylesheet_to_apply += f"\n{self._custom_qss}"
 
         widget.setStyleSheet(stylesheet_to_apply)
+
+    def stylesheet(self) -> str:
+        """Generate and return a final stylesheet string by combining default
+        and custom styles.
+
+        The method constructs a stylesheet by combining a default QSS (Qt Style
+        Sheets) with optional custom QSS provided by the user. It then performs
+        variable substitutions in the resulting stylesheet using provided style
+        data.
+
+        Returns:
+            The final stylesheet string constructed from the default and custom
+            QSS, with applied variable substitutions.
+        """
+
+        stylesheet_to_apply: str = self._default_qss
+        if self._custom_qss:
+            stylesheet_to_apply += f"\n{self._custom_qss}"
+
+        final_qss = Template(stylesheet_to_apply).safe_substitute(self._style_data)
+
+        return final_qss
+
+
+setup()

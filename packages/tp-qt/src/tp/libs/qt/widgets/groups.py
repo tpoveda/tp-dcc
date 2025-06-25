@@ -14,9 +14,10 @@ from Qt.QtWidgets import (
 )
 from Qt.QtGui import QIcon
 
+from tp.preferences.interfaces import core as core_interfaces
+
 from . import layouts, buttons
 from .. import uiconsts, dpi
-from ..style import theme
 
 
 class ButtonGroupProtocol(Protocol):
@@ -165,7 +166,7 @@ class PushButtonGroup(BaseButtonGroup):
         super().__init__(orientation=orientation, parent=parent)
 
         self._type = buttons.BaseButton.Type.Primary.value
-        self._size = theme.instance().sizes.default
+        self._size = core_interfaces.theme_interface().theme().sizes.default
 
         self._button_group.setExclusive(False)
         self.set_spacing(1)

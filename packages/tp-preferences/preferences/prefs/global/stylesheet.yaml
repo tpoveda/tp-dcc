@@ -1,0 +1,8 @@
+settings:
+  current_theme: dark
+  themes:
+    dark:
+      round_size: 3
+      frameless_round_size: 2
+      font_size_base: 9
+      font_family: "Roboto"

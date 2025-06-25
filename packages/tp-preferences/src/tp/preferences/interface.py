@@ -79,7 +79,7 @@ class PreferenceInterface:
         relative_path: str | None = None,
         root: str | None = None,
         refresh: bool = False,
-    ) -> Any:
+    ) -> SettingObject | Any:
         """Load or return the cached `SettingObject`.
 
         Args:
@@ -122,12 +122,13 @@ class PreferenceInterface:
         """Save the current settings to disk.
 
         Args:
-            indent (bool): Whether to pretty-print the YAML file.
-            sort (bool): Whether to sort keys alphabetically.
+            indent: Whether to pretty-print the YAML file.
+            sort: Whether to sort keys alphabetically.
 
         Returns:
-            str: Full path to the saved settings file.
+            Full path to the saved settings file.
         """
+
         logger.debug(f"Saving settings for `PreferenceInterface`: '{self}'")
         path = self.settings().save(indent=indent, sort=sort)
 
@@ -136,7 +137,7 @@ class PreferenceInterface:
         return path
 
     def refresh(self) -> None:
-        """Force reloading settings from disk."""
+        """Force reloading settings from the disk."""
 
         self.settings(refresh=True)
 
@@ -158,20 +159,22 @@ class PreferenceInterface:
         return True
 
     def is_valid(self) -> bool:
-        """Check if the current settings are valid (file exists).
+        """Check if the current settings are valid (a file exists).
 
         Returns:
-            True if settings are valid;False otherwise.
+            True if settings are valid; False otherwise.
         """
 
         return self.settings().is_valid()
 
     def _setup_revert(self) -> None:
-        """Internal method to set up a revert snapshot.
+        """Set up a revert snapshot.
 
         Revert settings are only created after loading and are cleared when
         saving.
         """
 
-        if not self._revert_settings:
-            self._revert_settings = copy.deepcopy(self._settings)
+        if self._revert_settings:
+            return
+
+        self._revert_settings = copy.deepcopy(self._settings)

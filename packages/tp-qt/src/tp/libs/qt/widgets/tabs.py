@@ -4,11 +4,12 @@ from Qt.QtCore import Qt, Property, Signal
 from Qt.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from Qt.QtGui import QIcon
 
+from tp.preferences.interfaces import core as core_interfaces
+
 from .dividers import Divider
 from .groups import BaseButtonGroup
 from .buttons import BaseToolButton
 from .stacks import SlidingOpacityStackedWidget
-from ..style import theme
 
 
 class UnderlineButton(BaseToolButton):
@@ -122,7 +123,7 @@ class LineTabWidget(QWidget):
     ):
         super().__init__(parent=parent)
 
-        current_theme = theme.instance()
+        current_theme = core_interfaces.theme_interface().theme()
         self.tool_button_group = UnderlineButtonGroup(tab=self)
         self._bar_layout = QHBoxLayout()
         self._bar_layout.setContentsMargins(0, 0, 0, 0)

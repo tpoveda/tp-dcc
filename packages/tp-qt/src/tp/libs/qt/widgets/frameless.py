@@ -49,14 +49,13 @@ from Qt.QtGui import (
 
 from tp.libs import dcc
 from tp.libs.dcc import ui
-from tp.libs.python import paths
+from tp.preferences.interfaces import core as core_interfaces
 
 from .. import icons
 from .labels import ClippedLabel
 from .overlay import OverlayWidget
 from .buttons import BaseButton, IconMenuButton
 from .layouts import VerticalLayout, HorizontalLayout, GridLayout
-from ..style import theme
 from .. import uiconsts, dpi, utils, icon
 
 if dcc.is_maya():
@@ -1009,9 +1008,12 @@ class FramelessWindow(QWidget):
         return self._window_resizer.resizer_width()
 
     def apply_stylesheet(self, stylesheet: str | None = None):
-        """Applies given stylesheet to the window. If not given, default stylesheet will be applied.
+        """Apply a given stylesheet to the object. If no stylesheet is
+        provided, it applies the default stylesheet.
 
-        :param stylesheet: stylesheet to apply.
+        Args:
+            stylesheet: The stylesheet string to be applied. If None, the
+                default stylesheet will be used.
         """
 
         if stylesheet:
@@ -1023,7 +1025,9 @@ class FramelessWindow(QWidget):
         """Tries to set the default stylesheet for this window."""
 
         try:
-            theme.instance().apply(self)
+            theme_interface = core_interfaces.theme_interface()
+            stylesheet = theme_interface.stylesheet()
+            self.setStyleSheet(stylesheet)
         except ImportError:
             logger.error("Error while setting default stylesheet ...")
 

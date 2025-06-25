@@ -98,7 +98,21 @@ class PreferencesManager:
             preferences_path = Path(package.root).joinpath(constants.PREFERENCES_FOLDER)
             if not preferences_path.exists():
                 continue
-            yield preferences_path
+            yield str(preferences_path)
+
+    def iterate_package_preference_paths(self):
+        """Iterate over all package preference paths.
+
+        Yields:
+            An iterator over the string paths of valid "prefs" directories
+            derived from package preference roots.
+        """
+
+        for preference_root in self.iterate_package_preference_roots():
+            preferences_path = Path(preference_root).joinpath("prefs")
+            if not preferences_path.exists():
+                continue
+            yield str(preferences_path)
 
     def root(self, name: str) -> str:
         """Get the path of a preference root.
@@ -347,7 +361,7 @@ class PreferencesManager:
 
     def _resolve_path_template(self, template_str: str, root_name: str) -> str:
         """Internal function that resolves environment-variable template
-        paths in a safe way.
+        paths safely.
 
         Args:
             template_str: A string like "$TP_DCC_ROOT/Tools/configs"
@@ -371,8 +385,8 @@ class PreferencesManager:
             raise
 
     def _resolve_interfaces(self):
-        """Internal function that resolves all interfaces classes found
-        within the different TP DCC Python packages preferences folders.
+        """Resolve all interfaces classes found within the different TP DCC
+        Python packages preferences folders.
         """
 
         for preference_folder in self.iterate_package_preference_roots():
@@ -384,14 +398,14 @@ class PreferencesManager:
             self._interfaces_manager.register_by_package(str(interfaces_folder))
 
     def _resolve_root_locations(self):
-        """Internal function that populates `_roots` with default root paths.
+        """Populate `_roots` with default root paths.
 
         This should be called once at startup to register:
         - User preferences (from env or default).
         - Project preferences (from env or config).
 
         Raises:
-            FileNotFoundError: If the preferences root config file does not
+            FileNotFoundError: If the preference root config file does not
                 exist.
         """
 
@@ -424,7 +438,7 @@ class PreferencesManager:
             self.add_root(name, str(pkg_root))
 
     def _deep_merge_dicts(self, base: dict, override: dict) -> dict:
-        """Internal function that recursively merge override into base dict.
+        """Recursively merge override into base dict.
 
         Args:
             base: Base dictionary to merge into.

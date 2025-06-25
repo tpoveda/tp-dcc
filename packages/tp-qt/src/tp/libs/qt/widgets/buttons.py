@@ -29,8 +29,9 @@ from Qt.QtGui import (
     QKeyEvent,
 )
 
+from tp.preferences.interfaces import core as core_interfaces
+
 from . import menus, labels
-from ..style import theme
 from .. import dpi, icon, color, utils as qtutils
 
 
@@ -300,8 +301,9 @@ class BaseButton(QPushButton, AbstractButton):
         self._icon_color_theme = icon_color_theme
         self._text = text
         self._type = BasePushButton.Type.Default.value
-        self._size = theme.Theme.Sizes.Default.value
-        self._size_value = theme.instance().sizes[self._size]
+        self._theme = core_interfaces.theme_interface().theme()
+        self._size = self._theme.Sizes.Default.value
+        self._size_value = self._theme.sizes[self._size]
 
         QPushButton.__init__(self)
         self.setParent(parent)
@@ -871,7 +873,7 @@ class BaseButton(QPushButton, AbstractButton):
             Current push button instance.
         """
 
-        self._set_size(theme.Theme.Sizes.Tiny.value)
+        self._set_size(self._theme.Sizes.Tiny.value)
         return self
 
     def small(self) -> BaseButton:
@@ -881,7 +883,7 @@ class BaseButton(QPushButton, AbstractButton):
             Current push button instance.
         """
 
-        self._set_size(theme.Theme.Sizes.Small.value)
+        self._set_size(self._theme.Sizes.Small.value)
         return self
 
     def medium(self) -> BaseButton:
@@ -891,7 +893,7 @@ class BaseButton(QPushButton, AbstractButton):
             Current push button instance.
         """
 
-        self._set_size(theme.Theme.Sizes.Medium.value)
+        self._set_size(self._theme.Sizes.Medium.value)
         return self
 
     def large(self) -> BaseButton:
@@ -901,7 +903,7 @@ class BaseButton(QPushButton, AbstractButton):
             Current push button instance.
         """
 
-        self._set_size(theme.Theme.Sizes.Large.value)
+        self._set_size(self._theme.Sizes.Large.value)
         return self
 
     def huge(self) -> BaseButton:
@@ -911,7 +913,7 @@ class BaseButton(QPushButton, AbstractButton):
             Current push button instance.
         """
 
-        self._set_size(theme.Theme.Sizes.Huge.value)
+        self._set_size(self._theme.Sizes.Huge.value)
         return self
 
     def set_size(self, value: int):
@@ -1038,7 +1040,7 @@ class BaseButton(QPushButton, AbstractButton):
         """
 
         self._size = value
-        self._size_value = theme.instance().sizes[self._size]
+        self._size_value = self._theme.sizes[self._size]
         self.setFixedHeight(self._size_value)
 
     type = Property(str, _get_type, _set_type)
@@ -1087,7 +1089,7 @@ class BaseToolButton(QToolButton):
         super().__init__(parent=parent)
 
         self._image: QIcon | None = None
-        self._theme = theme.instance()
+        self._theme = core_interfaces.theme_interface().theme()
 
         self.setAutoExclusive(False)
         self.setAutoRaise(True)
