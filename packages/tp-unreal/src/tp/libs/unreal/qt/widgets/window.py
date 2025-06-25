@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import unreal
 
-from tp.qt.widgets.frameless import FramelessWindow
+from tp.libs.qt.widgets.frameless import FramelessWindow
 
 
 class UnrealWindow(FramelessWindow):
-    """
-    Base class for Unreal Windows.
-    """
+    """Base class for Unreal Windows."""
 
     def __init__(self, *args, **kwargs):
         parent = kwargs.get("parent", None)
