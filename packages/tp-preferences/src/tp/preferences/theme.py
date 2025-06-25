@@ -277,11 +277,7 @@ class Theme:
             widget: Widget to apply stylesheet to.
         """
 
-        stylesheet_to_apply: str = self._default_qss
-        if self._custom_qss:
-            stylesheet_to_apply += f"\n{self._custom_qss}"
-
-        widget.setStyleSheet(stylesheet_to_apply)
+        widget.setStyleSheet(self.stylesheet())
 
     def stylesheet(self) -> str:
         """Generate and return a final stylesheet string by combining default
