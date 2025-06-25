@@ -1,0 +1,24 @@
+name: "tp-preferences"
+version: "0.1.0"
+author: "Tomi Poveda"
+authorEmail: "tpovedatd@gmail.com"
+description: "A new TP DCC package."
+displayName: "Tp-Preferences"
+commands:
+  - '{self}/scripts/tp_preferences.py'
+documentation:
+  masterDoc: "README.md"
+  sourceCodeFolder: "{self}/src"
+  sourceFolder: "{self}/docs"
+environment:
+  PYTHONPATH:
+  - "{self}"
+  - "{self}/src"
+  TP_DCC_BASE_PATHS:
+    - "{self}"
+    - "{self}/src"
+  TP_DCC_TOOLS:
+    - "{self}/src/tp/tools"
+dependencies: []
+tests:
+  - "{self}/tests"
