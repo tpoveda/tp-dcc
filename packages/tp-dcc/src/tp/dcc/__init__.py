@@ -7,6 +7,9 @@ from functools import lru_cache
 from dataclasses import dataclass
 from importlib.util import find_spec
 
+__version__ = "0.1.0"
+
+
 Standalone = "standalone"
 Maya = "maya"
 Max = "3dsmax"
@@ -154,8 +157,7 @@ class DccStandalone(DccBase):
 
 @lru_cache()
 def current_dcc() -> str:
-    """
-    Returns name of the current DCC being used.
+    """Returns name of the current DCC being used.
 
     :return: DCC being used.
     :rtype: str
@@ -207,8 +209,7 @@ def current_dcc() -> str:
 
 
 def is_standalone() -> bool:
-    """
-    Check if current environment is standalone or not.
+    """Check if current environment is standalone or not.
 
     :return: True if current environment is standalone; False otherwise.
     """
@@ -217,8 +218,7 @@ def is_standalone() -> bool:
 
 
 def is_maya() -> bool:
-    """
-    Checks if Maya is available or not.
+    """Checks if Maya is available or not.
 
     :return: True if current environment is Autodesk Maya; False otherwise.
     """
@@ -227,8 +227,7 @@ def is_maya() -> bool:
 
 
 def is_mayapy() -> bool:
-    """
-    Checks if MayaPy is available or not.
+    """Checks if MayaPy is available or not.
 
     :return: True if current environment is Autodesk MayaPy; False otherwise.
     :rtype: bool
@@ -238,8 +237,7 @@ def is_mayapy() -> bool:
 
 
 def is_max() -> bool:
-    """
-    Checks if 3ds Max is available or not.
+    """Checks if 3ds Max is available or not.
 
     :return: True if current environment is Autodesk 3ds Max; False otherwise.
     """
@@ -248,8 +246,7 @@ def is_max() -> bool:
 
 
 def is_mobu() -> bool:
-    """
-    Checks if MotionBuilder is available or not.
+    """Checks if MotionBuilder is available or not.
 
     :return: True if current environment is Autodesk MotionBuilder; False otherwise.
     """
@@ -258,8 +255,7 @@ def is_mobu() -> bool:
 
 
 def is_houdini() -> bool:
-    """
-    Checks if Houdini is available or not.
+    """Checks if Houdini is available or not.
 
     :return: True if current environment is SideFX Houdini; False otherwise.
     """
@@ -268,8 +264,7 @@ def is_houdini() -> bool:
 
 
 def is_unreal() -> bool:
-    """
-    Checks if Houdini is available or not.
+    """Checks if Houdini is available or not.
 
     :return: True if current environment is Epic Games Unreal Engine; False otherwise.
     """
@@ -278,8 +273,7 @@ def is_unreal() -> bool:
 
 
 def is_nuke() -> bool:
-    """
-    Checks if Nuke is available or not.
+    """Checks if Nuke is available or not.
 
     :return: True if current environment is Nuke; False otherwise.
     """
@@ -288,8 +282,7 @@ def is_nuke() -> bool:
 
 
 def is_blender() -> bool:
-    """
-    Checks if Blender is available or not.
+    """Checks if Blender is available or not.
 
     :return: True if current environment is Blender; False otherwise.
     """
@@ -298,8 +291,7 @@ def is_blender() -> bool:
 
 
 def is_substance_painter() -> bool:
-    """
-    Checks if Substance Painter is available or not.
+    """Checks if Substance Painter is available or not.
 
     :return: True if current environment is Adobe Substance Painter; False otherwise.
     """
@@ -308,8 +300,7 @@ def is_substance_painter() -> bool:
 
 
 def is_substance_designer() -> bool:
-    """
-    Checks if Substance Designer is available or not.
+    """Checks if Substance Designer is available or not.
 
     :return: True if current environment is Adobe Substance Painter; False otherwise.
     """
@@ -318,8 +309,7 @@ def is_substance_designer() -> bool:
 
 
 def is_fusion() -> bool:
-    """
-    Checks if Fusion is available or not.
+    """Checks if Fusion is available or not.
 
     :return: True if current environment is Fusion; False otherwise.
     """

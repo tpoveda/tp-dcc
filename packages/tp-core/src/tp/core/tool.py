@@ -7,7 +7,7 @@ from typing import TypedDict
 from loguru import logger
 from Qt.QtWidgets import QWidget, QStackedWidget
 
-from tp.libs.dcc import callback
+from tp.dcc import callback
 from tp.libs.plugin import Plugin, PluginsManager, PluginExecutionStats
 
 

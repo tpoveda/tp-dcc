@@ -1,0 +1,22 @@
+name: "tp-dcc"
+version: "0.1.0"
+author: "Tomi Poveda"
+authorEmail: "tpovedatd@gmail.com"
+description: "A package containing DCC agnostic library"
+displayName: "Tp-Dcc"
+commands:
+  - '{self}/scripts/tp_dcc.py'
+documentation:
+  masterDoc: "README.md"
+  sourceCodeFolder: "{self}/src"
+  sourceFolder: "{self}/docs"
+environment:
+  PYTHONPATH:
+  - "{self}"
+  - "{self}/src"
+  TP_DCC_BASE_PATHS:
+    - "{self}"
+    - "{self}/src"
+dependencies: []
+tests:
+  - "{self}/tests"
