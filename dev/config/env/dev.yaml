@@ -4,6 +4,8 @@ tp-core:
     version: '0.1.0'
 tp-preferences:
     version: '0.1.0'
+tp-dcc:
+    version: '0.1.0'
 tp-qt:
     version: '0.1.0'
 tp-maya:
