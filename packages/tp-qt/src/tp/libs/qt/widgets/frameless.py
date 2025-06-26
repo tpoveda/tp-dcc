@@ -36,7 +36,6 @@ from Qt.QtWidgets import (
 from Qt.QtGui import (
     QCursor,
     QColor,
-    QIcon,
     QPainter,
     QResizeEvent,
     QShowEvent,
@@ -47,8 +46,8 @@ from Qt.QtGui import (
     QPaintEvent,
 )
 
-from tp.libs import dcc
-from tp.libs.dcc import ui
+from tp import dcc
+from tp.dcc import ui
 from tp.preferences.interfaces import core as core_interfaces
 
 from .. import icons
