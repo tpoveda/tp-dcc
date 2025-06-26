@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import os
+import stat
+import timeit
+import shutil
 import typing
 from typing import cast
 from pathlib import Path
@@ -86,6 +89,12 @@ class PreferencesManager:
 
         self._resolve_interfaces()
         self._resolve_root_locations()
+
+    @property
+    def roots(self) -> dict[str, str]:
+        """The registered preference roots."""
+
+        return self._roots
 
     def iterate_package_preference_roots(self) -> Iterator[str]:
         """Iterate over all package preference roots.
@@ -200,7 +209,7 @@ class PreferencesManager:
 
         # Try to find existing setting, or create a new one
         setting = self.find_setting(relative_path, root=root)
-        setting.data.update(data)
+        setting.update(data)
 
         return setting
 
@@ -234,7 +243,7 @@ class PreferencesManager:
         )
 
         merged_data = {}
-        sources = {}
+        root_paths = {}
         first_writable_root = None
 
         search_roots = (
@@ -251,7 +260,7 @@ class PreferencesManager:
                 data = yaml.safe_load(f) or {}
 
             merged_data = self._deep_merge_dicts(merged_data, data)
-            sources[root_name] = str(full_path)
+            root_paths[root_name] = str(root_path)
 
             if (
                 first_writable_root is None
@@ -262,13 +271,13 @@ class PreferencesManager:
 
         found_setting = SettingObject(
             relative_path=relative_path,
-            sources=sources,
+            root_paths=root_paths,
             active_root=first_writable_root,
             **merged_data,
         )
 
         if name is not None:
-            settings = found_setting.get(constants.SETTINGS_DESCRIPTOR_KEY, {})
+            settings = found_setting.get(constants.SETTINGS_KEY, {})
             if name not in settings:
                 raise errors.SettingsNameDoesntExistError(
                     f"Failed to find setting '{name}' in file '{found_setting}'"
@@ -276,6 +285,122 @@ class PreferencesManager:
             return settings[name]
 
         return found_setting
+
+    def setting_from_root_path(
+        self, relative_path: str, root_path: str, extension: str | None = None
+    ) -> SettingObject:
+        """Create a SettingObject from a specific root path.
+
+        Args:
+            relative_path: Relative path to the setting file, e.g.,
+                "tools/mytool/settings".
+            root_path: The absolute path to the root directory.
+            extension: Optional file extension to use (default is '.yaml').
+
+        Returns:
+            A SettingObject instance for the specified path.
+        """
+
+        extension = extension or self._EXTENSION
+        base, ext = os.path.splitext(relative_path)
+        compare_extension = extension
+        if not compare_extension.startswith("."):
+            compare_extension = "." + extension
+        if compare_extension != ext:
+            relative_path = (
+                base + extension if extension.startswith(".") else f"{base}.{extension}"
+            )
+
+        root_name = self.root_name_for_path(root_path)
+
+        full_path = Path(root_path).joinpath(relative_path)
+        if full_path.exists():
+            with open(full_path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+                return self.create_setting(relative_path, root_name, data)
+
+        return SettingObject(relative_path=relative_path)
+
+    def package_preference_root_location(self, package_name: str) -> str:
+        """Determine the root location of the preference folder for a given
+        package.
+
+        Args:
+            package_name: The name of the package for which the preferences
+                folder root location is requested.
+
+        Returns:
+            str: The absolute path to the preferences folder of the
+            requested package.
+
+        Raises:
+            ValueError: If the package does not exist in the environment or if the
+                preferences folder is not present.
+        """
+
+        package = self._packages_manager.resolver.package_by_name(package_name)
+        if not package:
+            error_msg = (
+                f'Requested package "{package_name}" does not exist '
+                f"within the current environment."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        preference_path = Path(package.root).joinpath(constants.PREFERENCES_FOLDER)
+        if not preference_path.exists():
+            error_msg = (
+                f"Default preferences folder does not exist for "
+                f"package: {package_name} -> {preference_path}"
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        return str(preference_path)
+
+    def package_preference_location(self, package_name: str) -> str:
+        """Generate and return the preference file location for a given
+        package name.
+
+        Notes:
+            Given the root location for package preferences, this method
+            appends "prefs"  to generate the complete preference file path for
+            the specified package.
+
+        Args:
+            package_name: The name of the package for which the preference
+                file location is to be generated.
+
+        Returns:
+            The complete path to the preference file for the given
+            package name.
+        """
+
+        return str(
+            Path(self.package_preference_root_location(package_name)).joinpath("prefs")
+        )
+
+    def default_preference_settings(
+        self, package_name: str, relative_path: str
+    ) -> SettingObject | None:
+        """Generates default preference settings for a package by locating its
+        preference file and getting the associated settings object.
+        Validates the created settings object before returning it.
+
+        Args:
+            package_name: The name of the package for which the default
+                preference settings are being configured.
+            relative_path: The relative path to the location where the package
+                settings should be fetched.
+
+        Returns:
+            A valid settings object representing the package's default
+            preferences, or `None` if the object is invalid.
+        """
+
+        package_prefs_root = self.package_preference_root_location(package_name)
+        obj = self.setting_from_root_path(relative_path, package_prefs_root)
+        return obj if obj.is_valid() else None
 
     def has_interface(self, interface_id: str) -> bool:
         """Returns whether a preference interface with the given name exists.
@@ -324,6 +449,50 @@ class PreferencesManager:
         """
 
         return self._interfaces_manager.plugin_ids
+
+    def copy_preferences_to_root(self, root_name: str, force: bool = False):
+        """Copy all preference files from the package preference roots to the
+        specified root directory, creating destination directories as needed.
+
+        Notes:
+            Only files ending with the specific file extension for preferences
+            are transferred.
+
+        Args:
+            root_name: The name of the root directory where preferences should
+                be copied.
+            force: If True, overwrites existing files in the destination.
+        """
+
+        root_path = self.root(root_name)
+        for preferences_path in self.iterate_package_preference_roots():
+            preferences_root = Path(preferences_path).joinpath("prefs")
+            start_time = timeit.default_timer()
+
+            for pref_file_path in preferences_root.rglob("*"):
+                if not pref_file_path.is_file():
+                    continue
+                if not pref_file_path.name.endswith(PreferencesManager._EXTENSION):
+                    continue
+
+                relative_path = pref_file_path.relative_to(Path(preferences_path))
+                destination_path = root_path / relative_path
+
+                if force or not destination_path.exists():
+                    destination_path.parent.mkdir(parents=True, exist_ok=True)
+                    logger.debug(
+                        f"Transferring preference {pref_file_path} to "
+                        f"destination: {destination_path}"
+                    )
+
+                    shutil.copy2(str(pref_file_path), str(destination_path))
+                    # Set read permissions for user, group, and others.
+                    pref_file_path.chmod(stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
+
+            logger.debug(
+                f"Finished package preferences to: {preferences_root}, "
+                f"total Time: {timeit.default_timer() - start_time}"
+            )
 
     # noinspection PyMethodMayBeStatic
     def _ensure_extension(self, path: str, ext: str = ".yaml") -> str:

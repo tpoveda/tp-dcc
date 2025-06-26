@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import os
+import typing
 from typing import Any
 from pathlib import Path
 
 import yaml
+
+if typing.TYPE_CHECKING:
+    from .manager import PreferencesManager
 
 
 class SettingObject(dict):
@@ -13,7 +17,7 @@ class SettingObject(dict):
     def __init__(
         self,
         relative_path: str | None = None,
-        sources: dict[str, str] | None = None,
+        root_paths: dict[str, str] | None = None,
         active_root: str | None = None,
         **kwargs: Any,
     ):
@@ -21,7 +25,7 @@ class SettingObject(dict):
 
         Args:
             relative_path: The relative path to the setting file.
-            sources: A dictionary of source paths for the setting.
+            root_paths: A dictionary of root paths for the setting.
             active_root: The name of the active root.
             kwargs: Additional keyword arguments.
         """
@@ -32,7 +36,7 @@ class SettingObject(dict):
             relative_path = os.path.extsep.join((relative_path, "yaml"))
 
         kwargs["relativePath"] = relative_path
-        kwargs["sources"] = sources or {}
+        kwargs["rootPaths"] = root_paths or {}
         kwargs["activeRoot"] = active_root or ""
 
         super().__init__(**kwargs)
@@ -98,7 +102,7 @@ class SettingObject(dict):
         Returns:
             A string representation of the SettingObject.
         """
-        roots = list(self.get("sources", {}).keys())
+        roots = list(self.get("rootPaths", {}).keys())
         return (
             f"<{self.__class__.__name__} roots='{roots}' "
             f"path='{self['relativePath']}, active_root={self['activeRoot']}'>"
@@ -111,10 +115,11 @@ class SettingObject(dict):
             The root path of the setting.
         """
 
-        if not self.sources:
+        root_paths: dict[str, str] = self.get("rootPaths", {})
+        if not root_paths:
             return None
 
-        return str(next(iter(self.sources.values())))
+        return str(next(iter(root_paths.values())))
 
     def path(self) -> str:
         """Return the path of the setting.
@@ -132,7 +137,7 @@ class SettingObject(dict):
             True if the setting exists on disk, False otherwise.
         """
 
-        if not self.get("sources"):
+        if not self.get("rootPaths"):
             return False
 
         return True if self.path() and Path(self.path()).exists() else False
@@ -145,7 +150,8 @@ class SettingObject(dict):
         """
 
         key_sources = {}
-        for root_name, path in self.sources.items():
+        root_paths = self.get("rootPaths", {})
+        for root_name, path in root_paths.items():
             # noinspection PyBroadException
             try:
                 with open(path, "r", encoding="utf-8") as f:
@@ -158,24 +164,44 @@ class SettingObject(dict):
 
         return key_sources
 
-    def save(self, root_path: str) -> str:
+    def save(
+        self, root_path: str | None = None, indent: bool = True, sort: bool = False
+    ) -> str:
         """Save this setting to a specific root path (manual control).
 
         Args:
             root_path: Absolute root path to save to.
+            indent: Whether to indent the YAML file.
+            sort: Whether to sort the keys in the YAML file.
 
         Returns:
             Path to the saved file.
+
+        Raises:
+            ValueError: If the root path is not specified and not set in the
+                setting.
         """
+
+        root_path = root_path or self.root_path()
+        if not root_path:
+            raise ValueError(
+                "Root path must be specified or set in the setting before saving."
+            )
 
         file_path = Path(root_path) / self.get("relativePath", "")
         file_path.parent.mkdir(parents=True, exist_ok=True)
+        kwargs = {"sort_keys": sort}
+        if indent:
+            kwargs["indent"] = 2
+
         with open(file_path, "w", encoding="utf-8") as f:
-            yaml.safe_dump(dict(self), f, sort_keys=False)
+            yaml.safe_dump(dict(self), f, **kwargs)
 
         return str(file_path)
 
-    def save_to_active_root(self, preferences_manager) -> str | None:
+    def save_to_active_root(
+        self, preferences_manager: PreferencesManager
+    ) -> str | None:
         """Save the setting to the currently active writable root.
 
         Args:

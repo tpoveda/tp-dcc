@@ -105,7 +105,7 @@ class PreferenceInterface:
             )
 
         if name is not None:
-            settings_data = self._settings.get(constants.SETTINGS_DESCRIPTOR_KEY, {})
+            settings_data = self._settings.get(constants.SETTINGS_KEY, {})
             if name not in settings_data:
                 if fallback is not None:
                     return fallback

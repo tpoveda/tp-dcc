@@ -34,7 +34,7 @@ packages = { find = { where = ["src"], exclude = ["tests", "docs"] } }
 "tp.preferences" = ["*.json", "*.yml", "*.yaml", "*.txt", "*.md", "*.ui", "*.qss", "*.scss", "*.png", "*.svg"]
 
 [tool.setuptools.dynamic]
-version = { attr = "tp.preferences.__version__" }
+version = { attr = "tp.preferences.__version__.__version__" }
 readme = { file = ["README.md"], content-type = "text/markdown" }
 
 [tool.pytest.ini_options]
