@@ -229,9 +229,86 @@ class IconsManager(metaclass=Singleton):
         return new_icon
 
 
-# noinspection PyTypeChecker
-manager: IconsManager = IconsManager()
-icon = manager.icon
-icon_data_for_name = manager.icon_data_for_name
-icon_path_for_name = manager.icon_path_for_name
-icon_path = manager.icon_path
+# Global variable to store the manager instance
+_manager_instance: IconsManager | None = None
+
+
+def manager() -> IconsManager:
+    """Returns a unique instance of `IconsManager`, creating it only when
+    first accessed.
+
+    Returns:
+        The singleton `IconsManager` instance.
+    """
+
+    global _manager_instance
+    if _manager_instance is None:
+        _manager_instance = IconsManager()
+    return _manager_instance
+
+
+def icon(icon_name: str, size: int = 16) -> QIcon | None:
+    """Create and returns a `QIcon` object based on the given icon name and
+    size.
+
+    Args:
+        icon_name: The name or path of the icon to be loaded. This can be a
+            resource path (e.g., starting with ":/" or "qrc:/") or a custom
+            icon name.
+        size: The desired size of the icon. Defaults to 16. If the size is -1,
+            the icon will not be resized.
+
+    Returns:
+        A `QIcon` object constructed based on the provided icon name and size.
+    """
+
+    return manager().icon(icon_name, size)
+
+
+def icon_data_for_name(icon_name: str, size: int = 16) -> IconSizeDict:
+    """Return icon data for a given icon name and size.
+
+    Args:
+        icon_name: The name of the icon for which to retrieve data. If the name
+            includes a numeric suffix separated by an underscore, it will be
+            treated as the size.
+        size: The desired size of the icon. Defaults to 16 if not explicitly
+            provided or if a size cannot be determined from the icon name.
+
+    Returns:
+        A dictionary containing the icon data for the specified size. If no
+        data is found for the given icon name, an empty dictionary is returned.
+    """
+
+    """Return icon data for a given icon name and size."""
+
+    return manager().icon_data_for_name(icon_name, size)
+
+
+def icon_path_for_name(icon_name: str, size: int = 16) -> str:
+    """Return the file path of the icon for the specified name and size.
+
+    Args:
+        icon_name: The name of the icon to retrieve.
+        size: The size of the icon in pixels.
+
+    Returns:
+        The file path of the icon, or an empty string if the icon is not found.
+    """
+
+    return manager().icon_path_for_name(icon_name, size)
+
+
+def icon_path(icon_name: str) -> IconDict:
+    """Fetch the path details for a specified icon from the cached icon data.
+
+    Args:
+        icon_name: The name of the icon to retrieve from the cache.
+
+    Returns:
+        The cached dictionary containing the icon details if found; `None`
+            if the icon is not present in the cache.
+    """
+
+    return manager().icon_path(icon_name)
+
