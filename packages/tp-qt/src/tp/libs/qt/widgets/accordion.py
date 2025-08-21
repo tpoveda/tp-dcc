@@ -26,7 +26,7 @@ from Qt.QtGui import (
     QPaintEvent,
 )
 
-from tp.libs import dcc
+from tp import dcc
 
 from .. import dpi
 

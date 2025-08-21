@@ -3,13 +3,11 @@ from __future__ import annotations
 from collections import abc
 from typing import Iterator, Sequence, Any
 
-from ...python.collections import WeakRefList
+from tp.libs.python.collections import WeakRefList
 
 
 class CallbackList(abc.MutableSequence):
-    """
-    Overloads of MutableSequence used to provide callback mechanism for any list changes.
-    """
+    """Overloads of MutableSequence used to provide callback mechanism for any list changes."""
 
     __slots__ = ("__items__", "__callbacks__")
 
@@ -28,8 +26,7 @@ class CallbackList(abc.MutableSequence):
             self.extend(args[0])
 
     def __getitem__(self, index: int) -> Any:
-        """
-        Internal function that returns an indexed item.
+        """Internal function that returns an indexed item.
 
         :param int index: index to get item from.
         :return: indexed item.
@@ -39,8 +36,7 @@ class CallbackList(abc.MutableSequence):
         return self.__items__[index]
 
     def __setitem__(self, index: int, value: Any):
-        """
-        Internal function that updates an indexed item.
+        """Internal function that updates an indexed item.
 
         :param int index: index of the item to update.
         :param Any value: new item to store.
@@ -50,8 +46,7 @@ class CallbackList(abc.MutableSequence):
         self.itemAdded(index, value)
 
     def __delitem__(self, index: int):
-        """
-        Internal function that removes an indexed item.
+        """Internal function that removes an indexed item.
 
         :param int index: index of the item to delete.
         """
@@ -59,8 +54,7 @@ class CallbackList(abc.MutableSequence):
         self.pop(index)
 
     def __iter__(self) -> Iterator[Any]:
-        """
-        Internal function that returns a generator for this sequence.
+        """Internal function that returns a generator for this sequence.
 
         :return: iterated items.
         :rtype: Iterator[Any]
@@ -69,8 +63,7 @@ class CallbackList(abc.MutableSequence):
         return iter(self.__items__)
 
     def __len__(self) -> int:
-        """
-        Internal function that returns the length of this sequence.
+        """Internal function that returns the length of this sequence.
 
         :return: sequence length.
         :rtype: int
@@ -79,8 +72,7 @@ class CallbackList(abc.MutableSequence):
         return len(self.__items__)
 
     def __contains__(self, item: Any) -> bool:
-        """
-        Internal function that evaluates whether given item exists within this sequence.
+        """Internal function that evaluates whether given item exists within this sequence.
 
         :param Any item: item to check existence of.
         :return: True if item exists within sequence; False otherwise.
@@ -90,8 +82,7 @@ class CallbackList(abc.MutableSequence):
         return item in self.__items__
 
     def append(self, value: Any):
-        """
-        Appends a value to the end of the list.
+        """Appends a value to the end of the list.
 
         :param Any value: item to add into the list.
         """
@@ -100,8 +91,7 @@ class CallbackList(abc.MutableSequence):
         self.itemAdded(self.__len__() - 1, value)
 
     def append_if_unique(self, value: Any):
-        """
-        Appends an item so long it does not already exist.
+        """Appends an item so long it does not already exist.
 
         :param Any value: item to add into the list.
         """
@@ -110,8 +100,7 @@ class CallbackList(abc.MutableSequence):
             self.append(value)
 
     def insert(self, index: int, value: Any):
-        """
-        Inserts new item in the given index.
+        """Inserts new item in the given index.
 
         :param int index: index to insert item into.
         :param Any value: item to insert into the list.
@@ -121,8 +110,7 @@ class CallbackList(abc.MutableSequence):
         self.itemAdded(index, value)
 
     def extend(self, values: Sequence[Any]):
-        """
-        Appends a sequence of values to the end of this list.
+        """Appends a sequence of values to the end of this list.
 
         :param Sequence[Any] values: items to append into this list.
         """
@@ -131,8 +119,7 @@ class CallbackList(abc.MutableSequence):
             self.append(value)
 
     def move(self, index: int, value: Any):
-        """
-        Moves an index item to a different index.
+        """Moves an index item to a different index.
 
         :param int index: index to move value of.
         :param Any value: value to move indexed item to the index of.
@@ -146,8 +133,7 @@ class CallbackList(abc.MutableSequence):
 
     # noinspection PyMethodOverriding
     def index(self, value: Any) -> int:
-        """
-        Returns the index the given value is located at.
+        """Returns the index the given value is located at.
 
         :param Any value: value to check index of.
         :return: item index.
@@ -157,8 +143,7 @@ class CallbackList(abc.MutableSequence):
         return self.__items__.index(value)
 
     def remove(self, value: Any):
-        """
-        Removes a value from this list.
+        """Removes a value from this list.
 
         :param Any value: item to remove.
         """
@@ -167,8 +152,7 @@ class CallbackList(abc.MutableSequence):
 
     # noinspection PyMethodOverriding
     def pop(self, index: int) -> Any:
-        """
-        Removes the indexed item from this list and returns it.
+        """Removes the indexed item from this list and returns it.
 
         :param int index: index of the item to remove.
         :return: removed item at given index.
@@ -190,15 +174,12 @@ class CallbackList(abc.MutableSequence):
             )
 
     def clear(self):
-        """
-        Removes all items from this list.
-        """
+        """Removes all items from this list."""
 
         [self.pop(0) for _ in range(len(self))]
 
     def callback_names(self) -> list[str]:
-        """
-        Returns a list of callback names that can be used.
+        """Returns a list of callback names that can be used.
 
         :return: last of available callback names.
         :rtype: list[str]
@@ -207,8 +188,7 @@ class CallbackList(abc.MutableSequence):
         return list(self.__callbacks__.keys())
 
     def add_callback(self, name: str, func: callable):
-        """
-        Appends the given function to the given callback group.
+        """Appends the given function to the given callback group.
 
         :param str name: name of the callback group to add callback to.
         :param callable func: callback function.
@@ -219,8 +199,7 @@ class CallbackList(abc.MutableSequence):
             callbacks.append(func)
 
     def remove_callback(self, name: str, func: callable):
-        """
-        Removes the given callback from given callback group.
+        """Removes the given callback from given callback group.
 
         :param str name: name of the callback group to remove callback from.
         :param callable func: callback function.
@@ -232,8 +211,7 @@ class CallbackList(abc.MutableSequence):
 
     # noinspection PyPep8Naming
     def itemAdded(self, index: int, item: Any):
-        """
-        Function that notifies each time an item has been added.
+        """Function that notifies each time an item has been added.
 
         :param int index: index of the added item.
         :param Any item: added item.
@@ -244,8 +222,7 @@ class CallbackList(abc.MutableSequence):
 
     # noinspection PyPep8Naming
     def itemRemoved(self, item: Any):
-        """
-        Function that notifies each time an item has been removed.
+        """Function that notifies each time an item has been removed.
 
         :param Any item: removed item.
         """

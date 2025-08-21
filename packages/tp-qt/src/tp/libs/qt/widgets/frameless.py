@@ -568,6 +568,7 @@ class FramelessWindow(QWidget):
         maximize_button: bool = False,
         settings_path: str = "",
         parent: QWidget | None = None,
+        **kwargs,
     ):
         """Initialize a frameless window with the specified properties.
 

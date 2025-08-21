@@ -4,7 +4,7 @@ import logging
 
 from maya import cmds, mel
 
-from tp.python.decorators import log_arguments
+from tp.libs.python.decorators import log_arguments
 
 from . import timerange
 from ... import consts, wrapper, animation
@@ -19,8 +19,7 @@ def change_rotation_order(
     bake_every_frame: bool = False,
     timeline: bool = True,
 ):
-    """
-    Sets the rotation order of the given nodes.
+    """Sets the rotation order of the given nodes.
 
     :param nodes: nodes to set the rotation order of. If not given, current selected scene nodes are used.
     :param new_rotation_order: new rotation order number to set (from 0 to 5).
@@ -50,17 +49,13 @@ def change_rotation_order(
 
 
 def set_key_all():
-    """
-    Sets a key on all attributes, ignoring any selected Channel Box channel.
-    """
+    """Sets a key on all attributes, ignoring any selected Channel Box channel."""
 
     mel.eval("setKeyframe")
 
 
 def set_key_channel():
-    """
-    Set key on all attribute channels, but if any channel box attributes are selected, then key only those channels.
-    """
+    """Set key on all attribute channels, but if any channel box attributes are selected, then key only those channels."""
 
     selected_attributes = mel.eval("selectedChannelBoxAttributes")
     if not selected_attributes:

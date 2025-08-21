@@ -14,9 +14,7 @@ if typing.TYPE_CHECKING:
 
 
 def mixin(cls):
-    """
-    Decorator that can be added to custom widgets to automatize the creation of left/right/middle click menus.
-    """
+    """Decorator that can be added to custom widgets to automatize the creation of left/right/middle click menus."""
 
     original_init__ = cls.__init__
 
@@ -25,8 +23,7 @@ def mixin(cls):
 
     # noinspection PyIncorrectDocstring
     def get_menu(self, mouse_button=Qt.RightButton):
-        """
-        Returns the menu based on the given mouse button.
+        """Returns the menu based on the given mouse button.
 
         :param Qt.ButtonClick mouse_button: the clicked mouse button.
         :return: registered menu on that mouse button.
@@ -37,8 +34,7 @@ def mixin(cls):
 
     # noinspection PyIncorrectDocstring
     def set_menu(self, menu, action_list=None, mouse_button=Qt.RightButton):
-        """
-        Sets the left/middle/right click menu. If a model_list is given, then the menu will be  filled with that info.
+        """Sets the left/middle/right click menu. If a model_list is given, then the menu will be  filled with that info.
 
         :param QMenu menu: Qt menu to show on left/middle/right click.
         :param list(tuple(str)) action_list: list of menu modes. Eg: [('icon1', 'menuName1'), (...), ...]
@@ -52,8 +48,7 @@ def mixin(cls):
 
     # noinspection PyIncorrectDocstring
     def show_context_menu(self, mouse_button):
-        """
-        Shows the menu depending on the given mouse click.
+        """Shows the menu depending on the given mouse click.
 
         :param Qt.ButtonClick mouse_button: the mouse button menu will be assigned to.
         """
@@ -69,8 +64,7 @@ def mixin(cls):
             menu.exec_(pos)
 
     def _setup_menu_class(self, menu_vertical_offset=20):
-        """
-        Internal function that handles the setup of menu creation.
+        """Internal function that handles the setup of menu creation.
 
         :param int menu_vertical_offset: negative vertical offset of the drawn menu
         """
@@ -93,8 +87,7 @@ def mixin(cls):
         }
 
     def _add_action_list(self, actions_list, mouse_button=Qt.RightButton):
-        """
-        Internal function that resets the menu and fills its with given list of actions.
+        """Internal function that resets the menu and fills its with given list of actions.
 
         :param list(tuple(str, str)) actions_list: list of menu actions. Eg: [('icon1', 'menuName1'), (...), ...]
         :param Qt.ButtonClick mouse_button: the mouse button menu will be assigned to.
@@ -117,15 +110,12 @@ def mixin(cls):
 
 
 class BaseMenu(QMenu):
-    """
-    Extends standard QMenu.
-    """
+    """Extends standard QMenu."""
 
     mouseButtonClicked = Signal(Qt.MouseButton, QAction)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
-        """
-        Extends `mouseReleaseEvent` QMenu function.
+        """Extends `mouseReleaseEvent` QMenu function.
 
         :param event: mouse event.
         """
@@ -136,15 +126,12 @@ class BaseMenu(QMenu):
 
 
 class SearchableMenu(BaseMenu):
-    """
-    Extends BaseMenu to make it searchable.
+    """Extends BaseMenu to make it searchable.
     First action is a QLineEdit used to recursively search on all actions.
     """
 
     class SearchableTaggedAction(QAction):
-        """
-        Class that defines a searchable tag action.
-        """
+        """Class that defines a searchable tag action."""
 
         def __init__(
             self,
@@ -161,8 +148,7 @@ class SearchableMenu(BaseMenu):
 
         @property
         def tags(self) -> set[str]:
-            """
-            Getter method that returns set of searchable tags.
+            """Getter method that returns set of searchable tags.
             :return: searchable tags.
             """
 
@@ -170,8 +156,7 @@ class SearchableMenu(BaseMenu):
 
         @tags.setter
         def tags(self, new_tags: set[str]):
-            """
-            Setter method that sets searchable tags.
+            """Setter method that sets searchable tags.
 
             :param set[str] new_tags: searchable tags.
             """
@@ -179,8 +164,7 @@ class SearchableMenu(BaseMenu):
             self._tags = new_tags
 
         def has_tag(self, tag: str) -> bool:
-            """
-            Searches this instance tags. Returns True if the tag is valid or False otherwise
+            """Searches this instance tags. Returns True if the tag is valid or False otherwise
 
             :param tag: partial or full tag to search for
             """
@@ -192,8 +176,7 @@ class SearchableMenu(BaseMenu):
             return False
 
         def has_any_tag(self, tags: list[str]) -> bool:
-            """
-            Returns True if current action has some given tags; False otherwise.
+            """Returns True if current action has some given tags; False otherwise.
 
             :param tags: list of tags to check.
             """
@@ -227,17 +210,14 @@ class SearchableMenu(BaseMenu):
         self.aboutToShow.connect(self._on_about_to_show_menu)
 
     def clear(self) -> None:
-        """
-        Overrides base `clear` function.
-        """
+        """Overrides base `clear` function."""
 
         super().clear()
 
         self._init_search_edit()
 
     def showEvent(self, event: QShowEvent):
-        """
-        Overrides base `showEvent` function to set the search visible or not.
+        """Overrides base `showEvent` function to set the search visible or not.
 
         :param event: Qt show event.
         """
@@ -246,15 +226,12 @@ class SearchableMenu(BaseMenu):
             self._search_edit.setFocus()
 
     def search_visible(self) -> bool:
-        """
-        Returns whether search edit is visible.
-        """
+        """Returns whether search edit is visible."""
 
         return self._search_action.isVisible()
 
     def set_search_visible(self, flag: bool):
-        """
-        Sets the visibility of the search edit.
+        """Sets the visibility of the search edit.
 
         :param flag: True to make search visible; False otherwise.
         """
@@ -267,15 +244,13 @@ class SearchableMenu(BaseMenu):
         self._search_edit.setVisible(flag)
 
     def update_search(self, search_string: str | None = None):
-        """
-        Search all actions for a string tag.
+        """Search all actions for a string tag.
 
         :param search_string: tag names separated by spaces (for example, "elem1 elem2")
         """
 
         def _recursive_search(_menu: QMenu, _search_str: str):
-            """
-            Internal function that recursively searches for menu actions.
+            """Internal function that recursively searches for menu actions.
 
             :param _menu: menu to search actions for.
             :param _search_str: search string.
@@ -310,8 +285,7 @@ class SearchableMenu(BaseMenu):
             _menu.menuAction().setVisible(menu_vis)
 
         def _recursive_search_by_tags(_menu: QMenu, _tags: list[str]):
-            """
-            Internal function that recursively searches for menu actions.
+            """Internal function that recursively searches for menu actions.
 
             :param _menu: menu to search actions for.
             :param _tags: list of tags.
@@ -343,9 +317,7 @@ class SearchableMenu(BaseMenu):
         _recursive_search(self, tags[0])
 
     def _init_search_edit(self):
-        """
-        Internal function that adds a QLineEdit as the first action in the menu.
-        """
+        """Internal function that adds a QLineEdit as the first action in the menu."""
 
         # To avoid cyclic imports
         from . import search
@@ -363,15 +335,15 @@ class SearchableMenu(BaseMenu):
         self.addSeparator()
 
     def _on_update_search(self, search_string):
-        """
-        Internal callback function that is called when the user interacts with the search line edit.
-        """
+        """Internal callback function that is called when the user interacts with the search line edit."""
 
         self.update_search(search_string)
 
     def _on_about_to_show_menu(self):
-        """
-        Internal callback function that is called when the menu is about to be showed.
-        """
+        """Internal callback function that is called when the menu is about to be showed."""
 
         self._search_edit.clear()
+
+
+class Menu(SearchableMenu):
+    pass

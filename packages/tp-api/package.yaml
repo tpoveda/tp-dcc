@@ -1,11 +1,11 @@
-name: "tp-core"
+name: "tp-api"
 version: "0.1.0"
 author: "Tomi Poveda"
 authorEmail: "tpovedatd@gmail.com"
-description: "Package that contains core code for TP DCC framework."
-displayName: "Tp-Core"
+description: "A new TP DCC package."
+displayName: "Tp-Api"
 commands:
-  - '{self}/scripts/tp_core.py'
+  - '{self}/scripts/tp_api.py'
 documentation:
   masterDoc: "README.md"
   sourceCodeFolder: "{self}/src"
@@ -17,8 +17,6 @@ environment:
   TP_DCC_BASE_PATHS:
     - "{self}"
     - "{self}/src"
-  TP_DCC_TOOLS:
-    - "{self}/src/tp/tools/sceneinventory/tool.py"
 dependencies: []
 tests:
   - "{self}/tests"

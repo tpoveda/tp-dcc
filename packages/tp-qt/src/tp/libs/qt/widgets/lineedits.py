@@ -29,17 +29,17 @@ from Qt.QtGui import (
     QRegularExpressionValidator,
 )
 
-from .. import uiconsts, dpi, contexts, utils as qtutils
+from tp import dcc
+from tp.libs.python import paths
+
 from . import labels, menus
-from ... import dcc
-from ...python import paths
+from .. import uiconsts, dpi, contexts, utils as qtutils
 
 
 @menus.mixin
 class BaseLineEdit(QLineEdit):
     # noinspection GrazieInspection
-    """
-    A base class for LineEdit widgets.
+    """A base class for LineEdit widgets.
 
     Signals:
     textModified: Emitted when the text is modified.
@@ -68,8 +68,7 @@ class BaseLineEdit(QLineEdit):
         enable_menu: bool = False,
         parent: QWidget | None = None,
     ):
-        """
-        Initializes the BaseLineEdit.
+        """Initializes the BaseLineEdit.
 
         :param text: The initial text.
         :param placeholder: The placeholder.
@@ -151,8 +150,7 @@ class BaseLineEdit(QLineEdit):
         super().mouseReleaseEvent(event)
 
     def value(self) -> Any:
-        """
-        Returns line edit internal value.
+        """Returns line edit internal value.
 
         :return: line edit value.
         """
@@ -160,8 +158,7 @@ class BaseLineEdit(QLineEdit):
         return self._value
 
     def set_value(self, value: Any, update_text: bool = True):
-        """
-        Updates value of the line edit.
+        """Updates value of the line edit.
 
         :param value: line edit value.
         :param update_text: whether to update UI text or only internal text value.
@@ -174,9 +171,7 @@ class BaseLineEdit(QLineEdit):
                 self.setText(str(value))
 
     def set_alphanumeric_validator(self):
-        """
-        Sets validator that only accepts numbers and letters.
-        """
+        """Sets validator that only accepts numbers and letters."""
 
         validator = QRegularExpressionValidator(
             QRegularExpression("[a-zA-Z0-9]+", self)
@@ -184,16 +179,14 @@ class BaseLineEdit(QLineEdit):
         self.setValidator(validator)
 
     def _setup_validator(self):
-        """
-        Internal function that setup line edit validator.
+        """Internal function that setup line edit validator.
         It should be overridden by subclasses.
         """
 
         pass
 
     def _before_after_state(self) -> tuple[Any, Any]:
-        """
-        Internal function that returns the before and after state of the line edit.
+        """Internal function that returns the before and after state of the line edit.
 
         :return: before and after state.
         """
@@ -201,8 +194,7 @@ class BaseLineEdit(QLineEdit):
         return self._before_finished, self.value()
 
     def _on_text_edited(self, value: str):
-        """
-        Internal callback function that is called each time text is edited by the user.
+        """Internal callback function that is called each time text is edited by the user.
         Updates internal value without updating UI (UI is already updated).
 
         :param value: new line edit text.
@@ -211,8 +203,7 @@ class BaseLineEdit(QLineEdit):
         self.set_value(value, update_text=False)
 
     def _on_text_modified(self, value: str):
-        """
-        Internal callback function that is called each time text is modified by the user (on return or switching out of
+        """Internal callback function that is called each time text is modified by the user (on return or switching out of
         the text box).
 
         Updates internal value without updating UI (UI is already updated).
@@ -223,9 +214,7 @@ class BaseLineEdit(QLineEdit):
         self.set_value(value, update_text=False)
 
     def _on_editing_finished(self):
-        """
-        Internal callback function that is called when text edit if finished.
-        """
+        """Internal callback function that is called when text edit if finished."""
 
         before, after = self._before_after_state()
         if before != after and not self._enter_pressed:
@@ -235,8 +224,7 @@ class BaseLineEdit(QLineEdit):
         self._enter_pressed = False
 
     def _on_text_changed(self, text: str):
-        """
-        Internal callback function that is called each time text is changed by the user.
+        """Internal callback function that is called each time text is changed by the user.
 
         :param text: new text.
         """
@@ -247,9 +235,7 @@ class BaseLineEdit(QLineEdit):
             self._before_finished = text
 
     def _on_return_pressed(self):
-        """
-        Internal callback function that is called when return is pressed by the user.
-        """
+        """Internal callback function that is called when return is pressed by the user."""
 
         before, after = self._before_after_state()
         if before != after:
@@ -258,8 +244,7 @@ class BaseLineEdit(QLineEdit):
 
 
 class IntLineEdit(BaseLineEdit):
-    """
-    A LineEdit widget for integer input.
+    """A LineEdit widget for integer input.
 
     Inherits from BaseLineEdit.
     """
@@ -279,8 +264,7 @@ class IntLineEdit(BaseLineEdit):
         update_on_slide_tick: bool = True,
         parent: QWidget | None = None,
     ):
-        """
-        Initializes the IntLineEdit.
+        """Initializes the IntLineEdit.
 
         :param text: The initial text.
         :param placeholder: The placeholder.
@@ -317,8 +301,7 @@ class IntLineEdit(BaseLineEdit):
 
     @classmethod
     def convert_value(cls, value: Any) -> int:
-        """
-        Converts given value to a compatible integer line edit value.
+        """Converts given value to a compatible integer line edit value.
 
         :param value: value to convert.
         :return: float line edit compatible value.
@@ -337,8 +320,7 @@ class IntLineEdit(BaseLineEdit):
 
     @property
     def mouse_slider(self) -> MouseSlider:
-        """
-        Getter method that returns the mouse slider.
+        """Getter method that returns the mouse slider.
 
         :return: mouse slider.
         """
@@ -346,8 +328,7 @@ class IntLineEdit(BaseLineEdit):
         return self._mouse_slider
 
     def value(self) -> int:
-        """
-        Overrides `value` function to return the integer value of the line edit.
+        """Overrides `value` function to return the integer value of the line edit.
 
         :return: integer value of the line edit.
         """
@@ -355,8 +336,7 @@ class IntLineEdit(BaseLineEdit):
         return super().value() or 0
 
     def set_value(self, value: int, update_text: bool = True):
-        """
-        Overrides `set_value` function to set the value of the line edit.
+        """Overrides `set_value` function to set the value of the line edit.
 
         :param value: value to set.
         :param update_text: whether to update the text. Default is True.
@@ -369,17 +349,13 @@ class IntLineEdit(BaseLineEdit):
             self.blockSignals(False)
 
     def _setup_validator(self):
-        """
-        Overrides `_setup_validator` function to set the line edit validator to an integer validator.
-        """
+        """Overrides `_setup_validator` function to set the line edit validator to an integer validator."""
 
         self.setValidator(QIntValidator())
 
     # noinspection PyMethodOverriding
     def _on_text_modified(self):
-        """
-        Overrides `_on_text_modified` function to update the text to the integer value.
-        """
+        """Overrides `_on_text_modified` function to update the text to the integer value."""
 
         value = self.convert_value(self.value())
         self.blockSignals(True)
@@ -389,8 +365,7 @@ class IntLineEdit(BaseLineEdit):
 
 
 class FloatLineEdit(BaseLineEdit):
-    """
-    A LineEdit widget for float input.
+    """A LineEdit widget for float input.
 
     Inherits from BaseLineEdit.
     """
@@ -411,8 +386,7 @@ class FloatLineEdit(BaseLineEdit):
         update_on_slide_tick: bool = True,
         parent: QWidget | None = None,
     ):
-        """
-        Initializes the IntLineEdit.
+        """Initializes the IntLineEdit.
 
         :param text: The initial text.
         :param placeholder: The placeholder.
@@ -458,8 +432,7 @@ class FloatLineEdit(BaseLineEdit):
 
     @classmethod
     def convert_value(cls, value: Any) -> float:
-        """
-        Converts given value to a compatible float line edit value.
+        """Converts given value to a compatible float line edit value.
 
         :param Any value: value to convert.
         :return: float line edit compatible value.
@@ -479,8 +452,7 @@ class FloatLineEdit(BaseLineEdit):
 
     @property
     def mouse_slider(self) -> MouseSlider:
-        """
-        Getter method that returns the mouse slider.
+        """Getter method that returns the mouse slider.
 
         :return: mouse slider.
         """
@@ -489,8 +461,7 @@ class FloatLineEdit(BaseLineEdit):
 
     @property
     def rounding(self) -> int:
-        """
-        Getter method that returns the rounding value.
+        """Getter method that returns the rounding value.
 
         :return: rounding value.
         """
@@ -499,8 +470,7 @@ class FloatLineEdit(BaseLineEdit):
 
     @rounding.setter
     def rounding(self, value: int):
-        """
-        Setter method that sets the rounding value.
+        """Setter method that sets the rounding value.
 
         :param value: rounding value.
         """
@@ -508,8 +478,7 @@ class FloatLineEdit(BaseLineEdit):
         self._rounding = value
 
     def focusInEvent(self, event: QFocusEvent):
-        """
-        Overrides `focusInEvent` function to select all text when the line edit is focused.
+        """Overrides `focusInEvent` function to select all text when the line edit is focused.
 
         :param event: Qt focus event.
         """
@@ -523,8 +492,7 @@ class FloatLineEdit(BaseLineEdit):
         super().focusInEvent(event)
 
     def focusOutEvent(self, event: QFocusEvent):
-        """
-        Overrides `focusOutEvent` function to update the text to the float value when the line edit loses focus.
+        """Overrides `focusOutEvent` function to update the text to the float value when the line edit loses focus.
 
         :param event: Qt focus event.
         """
@@ -533,23 +501,18 @@ class FloatLineEdit(BaseLineEdit):
         super().focusOutEvent(event)
 
     def clearFocus(self):
-        """
-        Overrides `clearFocus` function to update the text to the float value when the line edit loses focus.
-        """
+        """Overrides `clearFocus` function to update the text to the float value when the line edit loses focus."""
 
         super().clearFocus()
         self.setText(str(round(self.value(), self._rounding)))
 
     def value(self) -> float:
-        """
-        Overrides `value` function to return the float value of the line edit.
-        """
+        """Overrides `value` function to return the float value of the line edit."""
 
         return super().value() or 0.0
 
     def set_value(self, value: float, update_text: bool = True):
-        """
-        Overrides `set_value` function to set the value of the line edit.
+        """Overrides `set_value` function to set the value of the line edit.
 
         :param value: value to set.
         :param update_text: whether to update the text. Default is True.
@@ -562,17 +525,13 @@ class FloatLineEdit(BaseLineEdit):
             self.blockSignals(False)
 
     def _setup_validator(self):
-        """
-        Overrides `_setup_validator` function to set the line edit validator to a float validator.
-        """
+        """Overrides `_setup_validator` function to set the line edit validator to a float validator."""
 
         self.setValidator(QDoubleValidator())
 
     # noinspection PyMethodOverriding
     def _on_text_modified(self):
-        """
-        Internal callback function that is called each time text is modified by the user (on return or switching out of
-        """
+        """Internal callback function that is called each time text is modified by the user (on return or switching out of"""
 
         value = self.convert_value(self.value())
         self.blockSignals(True)
@@ -581,8 +540,7 @@ class FloatLineEdit(BaseLineEdit):
         self.blockSignals(False)
 
     def _before_after_state(self) -> tuple[Any, Any]:
-        """
-        Overrides `_before_after_state` function to return the before and after state of the line edit.
+        """Overrides `_before_after_state` function to return the before and after state of the line edit.
 
         :return: before and after state.
         """
@@ -592,9 +550,7 @@ class FloatLineEdit(BaseLineEdit):
 
 
 class FolderLineEdit(BaseLineEdit):
-    """
-    Custom QLineEdit with drag and drop behaviour for files and folders
-    """
+    """Custom QLineEdit with drag and drop behaviour for files and folders"""
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent=parent)
@@ -602,8 +558,7 @@ class FolderLineEdit(BaseLineEdit):
         self.setDragEnabled(True)
 
     def dragEnterEvent(self, event: QDragEnterEvent):
-        """
-        Overrides base QLineEdit dragEnterEvent function.
+        """Overrides base QLineEdit dragEnterEvent function.
 
         :param event: Qt drag enter event.
         """
@@ -614,8 +569,7 @@ class FolderLineEdit(BaseLineEdit):
             event.acceptProposedAction()
 
     def dragMoveEvent(self, event: QDragMoveEvent):
-        """
-        Overrides base QLineEdit dragMoveEvent function.
+        """Overrides base QLineEdit dragMoveEvent function.
 
         :param event: Qt drag move event.
         """
@@ -626,8 +580,7 @@ class FolderLineEdit(BaseLineEdit):
             event.acceptProposedAction()
 
     def dropEvent(self, event: QDropEvent):
-        """
-        Overrides base QLineEdit dropEvent function.
+        """Overrides base QLineEdit dropEvent function.
 
         :param event: Qt drop event.
         """
@@ -639,9 +592,7 @@ class FolderLineEdit(BaseLineEdit):
 
 
 class FileSystemPathLineEdit(QLineEdit):
-    """
-    Custom QLineEdit that provides a file system path line edit with browse and clear actions.
-    """
+    """Custom QLineEdit that provides a file system path line edit with browse and clear actions."""
 
     class DialogType(enum.Enum):
         """Enumerator that defines available path dialog types."""
@@ -683,7 +634,7 @@ class FileSystemPathLineEdit(QLineEdit):
         )
         if path_type not in all_path_types:
             raise ValueError(
-                f'Invalid path type {path_type}. Supported path types are {", ".join(map(str, all_path_types))}'
+                f"Invalid path type {path_type}. Supported path types are {', '.join(map(str, all_path_types))}"
             )
 
         self._path_type = path_type
@@ -722,8 +673,7 @@ class FileSystemPathLineEdit(QLineEdit):
 
     @property
     def path_type(self) -> Type:
-        """
-        Getter method that returns the path type.
+        """Getter method that returns the path type.
 
         :return: path type.
         """
@@ -732,8 +682,7 @@ class FileSystemPathLineEdit(QLineEdit):
 
     @property
     def path_filter(self) -> str:
-        """
-        Getter method that returns the path filter.
+        """Getter method that returns the path filter.
 
         :return: path filter.
         """
@@ -742,8 +691,7 @@ class FileSystemPathLineEdit(QLineEdit):
 
     @path_filter.setter
     def path_filter(self, value: str):
-        """
-        Setter method that sets the path filter.
+        """Setter method that sets the path filter.
 
         :param value: path filter.
         """
@@ -752,8 +700,7 @@ class FileSystemPathLineEdit(QLineEdit):
 
     @property
     def path_description(self) -> str:
-        """
-        Getter method that returns the path description.
+        """Getter method that returns the path description.
 
         :return: path description.
         """
@@ -762,8 +709,7 @@ class FileSystemPathLineEdit(QLineEdit):
 
     @path_description.setter
     def path_description(self, value: str):
-        """
-        Setter method that sets the path description.
+        """Setter method that sets the path description.
 
         :param value: path description.
         :return:
@@ -775,8 +721,7 @@ class FileSystemPathLineEdit(QLineEdit):
 
     @property
     def validate_path(self) -> bool:
-        """
-        Getter method that returns whether to validate directory.
+        """Getter method that returns whether to validate directory.
 
         :return: whether to validate directory.
         """
@@ -785,8 +730,7 @@ class FileSystemPathLineEdit(QLineEdit):
 
     @validate_path.setter
     def validate_path(self, flag: bool):
-        """
-        Setter method that sets whether to validate directory.
+        """Setter method that sets whether to validate directory.
 
         :param flag: whether to validate directory.
         :return:
@@ -797,8 +741,7 @@ class FileSystemPathLineEdit(QLineEdit):
 
     @property
     def error_message(self) -> str:
-        """
-        Getter method that returns the error message.
+        """Getter method that returns the error message.
 
         :return: error message.
         """
@@ -806,8 +749,7 @@ class FileSystemPathLineEdit(QLineEdit):
         return self._error_message or ""
 
     def setText(self, text: str) -> None:
-        """
-        Overrides base QLineEdit setText function.
+        """Overrides base QLineEdit setText function.
 
         :param text: new text
         """
@@ -816,8 +758,7 @@ class FileSystemPathLineEdit(QLineEdit):
         super().setText(text)
 
     def has_error(self) -> bool:
-        """
-        Returns whether current path is valid.
+        """Returns whether current path is valid.
 
         :return: whether current path is valid.
         """
@@ -825,8 +766,7 @@ class FileSystemPathLineEdit(QLineEdit):
         return self._error_message is not None
 
     def _do_validate_path(self, path: str | None = None):
-        """
-        Internal function that validates given path.
+        """Internal function that validates given path.
 
         :param path: path to validate. If not given, current line edit text will be used.
         """
@@ -856,9 +796,7 @@ class FileSystemPathLineEdit(QLineEdit):
             self.setToolTip(self._path_description)
 
     def _on_browse_action_triggered(self):
-        """
-        Internal callback function that is called when Browse action is triggered by the user.
-        """
+        """Internal callback function that is called when Browse action is triggered by the user."""
 
         current_path = self.text()
         caption = f"Choose {self._path_description}"
@@ -883,15 +821,12 @@ class FileSystemPathLineEdit(QLineEdit):
             self.setText(new_path)
 
     def _on_clear_action_triggered(self):
-        """
-        Internal callback function that is called when Clear action is triggered by the user.
-        """
+        """Internal callback function that is called when Clear action is triggered by the user."""
 
         self.setText("")
 
     def _on_text_changed(self, path: str):
-        """
-        Internal callback function that is called each timeline edit text changes.
+        """Internal callback function that is called each timeline edit text changes.
         Validates path during edit.
 
         :param path: line edit text.
@@ -901,9 +836,7 @@ class FileSystemPathLineEdit(QLineEdit):
 
 
 class UpperCaseValidator(QValidator):
-    """
-    Custom Qt validator that keeps the text upper case.
-    """
+    """Custom Qt validator that keeps the text upper case."""
 
     # noinspection PyTypeChecker
     def validate(self, arg__1: str, arg__2: int) -> QValidator.State:
@@ -911,9 +844,7 @@ class UpperCaseValidator(QValidator):
 
 
 class EditableLineEditOnClick(QLineEdit):
-    """
-    Custom QLineEdit that becomes editable on click or double click.
-    """
+    """Custom QLineEdit that becomes editable on click or double click."""
 
     def __init__(
         self,
@@ -970,8 +901,7 @@ class EditableLineEditOnClick(QLineEdit):
         event.ignore()
 
     def edit_event(self, event: QMouseEvent):
-        """
-        Internal function that overrides mouse press/release event behaviour.
+        """Internal function that overrides mouse press/release event behaviour.
 
         :param event: Qt mouse event.
         """
@@ -984,8 +914,7 @@ class EditableLineEditOnClick(QLineEdit):
 
     @staticmethod
     def mouse_click_pass_through(event: QMouseEvent):
-        """
-        Internal function that overrides mouse press/release event behaviour to pass through the click.
+        """Internal function that overrides mouse press/release event behaviour to pass through the click.
 
         :param event: Qt mouse event.
         """
@@ -993,26 +922,20 @@ class EditableLineEditOnClick(QLineEdit):
         event.ignore()
 
     def _edit_finished(self):
-        """
-        Internal function that exits from the edit mode.
-        """
+        """Internal function that exits from the edit mode."""
 
         self.setReadOnly(True)
         self.setStyleSheet(self._default_style)
         self.deselect()
 
     def _on_editing_finished(self):
-        """
-        Internal callback function that is called when line edit text is changed.
-        """
+        """Internal callback function that is called when line edit text is changed."""
 
         self._edit_finished()
 
 
 class StringLineEditWidget(QWidget):
-    """
-    Base class that creates a label, a text box to edit and an optional button.
-    """
+    """Base class that creates a label, a text box to edit and an optional button."""
 
     textChanged = Signal(str)
     textModified = Signal(str)
@@ -1091,8 +1014,7 @@ class StringLineEditWidget(QWidget):
         super().update(*args, **kwargs)
 
     def value(self) -> Any:
-        """
-        Returns line edit value.
+        """Returns line edit value.
 
         :return: line edit value.
         """
@@ -1100,8 +1022,7 @@ class StringLineEditWidget(QWidget):
         return self._line_edit.value()
 
     def set_value(self, value: Any):
-        """
-        Sets line edit value.
+        """Sets line edit value.
 
         :param value: line edit value.
         """
@@ -1109,8 +1030,7 @@ class StringLineEditWidget(QWidget):
         self._line_edit.set_value(value)
 
     def set_label(self, label_text: str):
-        """
-        Sets label text.
+        """Sets label text.
 
         :param label_text: label text.
         """
@@ -1119,8 +1039,7 @@ class StringLineEditWidget(QWidget):
             self._label.setText(label_text)
 
     def set_label_fixed_width(self, width: int):
-        """
-        Sets fixed with of the label.
+        """Sets fixed with of the label.
 
         :param width: label fixed with.
         """
@@ -1136,8 +1055,7 @@ class StringLineEditWidget(QWidget):
         return self._line_edit.text()
 
     def set_text(self, value: str):
-        """
-        Sets line edit text.
+        """Sets line edit text.
 
         :param value: line edit text.
         """
@@ -1145,8 +1063,7 @@ class StringLineEditWidget(QWidget):
         self._line_edit.setText(str(value))
 
     def set_text_fixed_width(self, width: int):
-        """
-        Sets fixed with of the line edit.
+        """Sets fixed with of the line edit.
 
         :param width: line edit fixed with.
         """
@@ -1154,8 +1071,7 @@ class StringLineEditWidget(QWidget):
         self._line_edit.setFixedWidth(dpi.dpi_scale(width))
 
     def set_placeholder_text(self, placeholder_text: str):
-        """
-        Sets line edit placeholder text.
+        """Sets line edit placeholder text.
 
         :param placeholder_text: line edit placeholder text.
         """
@@ -1163,15 +1079,12 @@ class StringLineEditWidget(QWidget):
         self._line_edit.setPlaceholderText(placeholder_text)
 
     def select_all(self):
-        """
-        Selects all the text within line edit.
-        """
+        """Selects all the text within line edit."""
 
         self._line_edit.selectAll()
 
     def set_validator(self, validator: QValidator):
-        """
-        Sets line edit validator.
+        """Sets line edit validator.
 
         :param validator: line edit validator.
         """
@@ -1186,8 +1099,7 @@ class StringLineEditWidget(QWidget):
         edit_width: int | None,
         parent: QWidget | None,
     ) -> BaseLineEdit:
-        """
-        Internal function that creates the line edit used to edit text.
+        """Internal function that creates the line edit used to edit text.
 
         :param text: initial line edit text.
         :param placeholder: placeholder text.
@@ -1206,9 +1118,7 @@ class StringLineEditWidget(QWidget):
         )
 
     def _setup_signals(self):
-        """
-        Internal function that connect widgets signals.
-        """
+        """Internal function that connect widgets signals."""
 
         self._line_edit.textChanged.connect(self.textChanged.emit)
         self._line_edit.textModified.connect(self.textModified.emit)
@@ -1223,9 +1133,7 @@ class StringLineEditWidget(QWidget):
 
 
 class IntLineEditWidget(StringLineEditWidget):
-    """
-    Line edit that can display integer attributes.
-    """
+    """Line edit that can display integer attributes."""
 
     def __init__(
         self,
@@ -1272,8 +1180,7 @@ class IntLineEditWidget(StringLineEditWidget):
         )
 
     def set_min_value(self, value: int):
-        """
-        Sets line edit minimum value.
+        """Sets line edit minimum value.
 
         :param value: minimum value.
         """
@@ -1283,8 +1190,7 @@ class IntLineEditWidget(StringLineEditWidget):
         validator.setBottom(value)
 
     def set_max_value(self, value: int):
-        """
-        Sets line edit maximum value.
+        """Sets line edit maximum value.
 
         :param value: maximum value.
         """
@@ -1295,9 +1201,7 @@ class IntLineEditWidget(StringLineEditWidget):
 
 
 class FloatLineEditWidget(StringLineEditWidget):
-    """
-    Line edit that can display float attributes.
-    """
+    """Line edit that can display float attributes."""
 
     def __init__(
         self,
@@ -1348,8 +1252,7 @@ class FloatLineEditWidget(StringLineEditWidget):
         )
 
     def set_min_value(self, value: float):
-        """
-        Sets line edit minimum value.
+        """Sets line edit minimum value.
 
         :param value: minimum value.
         """
@@ -1359,8 +1262,7 @@ class FloatLineEditWidget(StringLineEditWidget):
         validator.setBottom(value)
 
     def set_max_value(self, value: float):
-        """
-        Sets line edit maximum value.
+        """Sets line edit maximum value.
 
         :param value: maximum value.
         """
@@ -1371,13 +1273,12 @@ class FloatLineEditWidget(StringLineEditWidget):
 
 
 class MouseSlider(QObject):
-    """
-    Signals:
-        tickEvent (Signal): Emitted when a tick event occurs.
-        deltaChanged (Signal): Emitted when the delta value changes.
-        sliderStarted (Signal): Emitted when the slider starts moving.
-        sliderChanged (Signal): Emitted when the slider value changes.
-        sliderFinished (Signal): Emitted when the slider stops moving.
+    """Signals:
+    tickEvent (Signal): Emitted when a tick event occurs.
+    deltaChanged (Signal): Emitted when the delta value changes.
+    sliderStarted (Signal): Emitted when the slider starts moving.
+    sliderChanged (Signal): Emitted when the slider value changes.
+    sliderFinished (Signal): Emitted when the slider stops moving.
     """
 
     tickEvent = Signal(object)
@@ -1395,8 +1296,7 @@ class MouseSlider(QObject):
         scroll_distance: float = 1.0,
         update_on_tick: bool = False,
     ):
-        """
-        Initializes the MouseSlider.
+        """Initializes the MouseSlider.
 
         :param parent_edit: The parent line edit widget.
         :param slide_distance: The distance to slide on normal drag. Defaults to 1.0.
@@ -1425,8 +1325,7 @@ class MouseSlider(QObject):
 
     @property
     def update_on_tick(self) -> bool:
-        """
-        Getter method that returns whether to update on tick events.
+        """Getter method that returns whether to update on tick events.
 
         :return: True if updates on tick events; False otherwise.
         """
@@ -1435,8 +1334,7 @@ class MouseSlider(QObject):
 
     @update_on_tick.setter
     def update_on_tick(self, flag: bool):
-        """
-        Setter method that sets whether to update on tick events.
+        """Setter method that sets whether to update on tick events.
 
         :param flag: True to update on tick events; False otherwise.
         """
@@ -1445,8 +1343,7 @@ class MouseSlider(QObject):
 
     @property
     def slide_distance(self) -> float:
-        """
-        Getter method that returns the distance to slide on normal drag.
+        """Getter method that returns the distance to slide on normal drag.
 
         :return: distance to slide on normal drag.
         """
@@ -1455,8 +1352,7 @@ class MouseSlider(QObject):
 
     @slide_distance.setter
     def slide_distance(self, value: float):
-        """
-        Setter method that sets the distance to slide on normal drag.
+        """Setter method that sets the distance to slide on normal drag.
 
         :param value: distance to slide on normal drag.
         """
@@ -1465,8 +1361,7 @@ class MouseSlider(QObject):
 
     @property
     def small_slide_distance(self) -> float:
-        """
-        Getter method that returns the distance to slide on small drag.
+        """Getter method that returns the distance to slide on small drag.
 
         :return: distance to slide on small drag.
         """
@@ -1475,8 +1370,7 @@ class MouseSlider(QObject):
 
     @small_slide_distance.setter
     def small_slide_distance(self, value: float):
-        """
-        Setter method that sets the distance to slide on small drag.
+        """Setter method that sets the distance to slide on small drag.
 
         :param value: distance to slide on small drag.
         """
@@ -1485,8 +1379,7 @@ class MouseSlider(QObject):
 
     @property
     def large_slide_distance(self) -> float:
-        """
-        Getter method that returns the distance to slide on large drag.
+        """Getter method that returns the distance to slide on large drag.
 
         :return: distance to slide on large drag.
         """
@@ -1495,8 +1388,7 @@ class MouseSlider(QObject):
 
     @large_slide_distance.setter
     def large_slide_distance(self, value: float):
-        """
-        Setter method that sets the distance to slide on large drag.
+        """Setter method that sets the distance to slide on large drag.
 
         :param value: distance to slide on large drag.
         """
@@ -1505,8 +1397,7 @@ class MouseSlider(QObject):
 
     @property
     def scroll_distance(self) -> float:
-        """
-        Getter method that returns the distance to scroll.
+        """Getter method that returns the distance to scroll.
 
         :return: distance to scroll.
         """
@@ -1515,8 +1406,7 @@ class MouseSlider(QObject):
 
     @scroll_distance.setter
     def scroll_distance(self, value: float):
-        """
-        Setter method that sets the distance to scroll.
+        """Setter method that sets the distance to scroll.
 
         :param value: distance to scroll.
         """
@@ -1524,8 +1414,7 @@ class MouseSlider(QObject):
         self._scroll_distance = value
 
     def set_enabled(self, flag: bool):
-        """
-        Sets whether slider is enabled.
+        """Sets whether slider is enabled.
 
         :param flag: True to enable the slider; False to disable it.
         """
@@ -1533,8 +1422,7 @@ class MouseSlider(QObject):
         self._enabled = flag
 
     def tick(self, delta: float):
-        """
-        Runs slider tick.
+        """Runs slider tick.
 
         :param delta: delta value.
         """
@@ -1552,17 +1440,14 @@ class MouseSlider(QObject):
             self.sliderChanged.emit(self._edit.text())
 
     def _setup_signals(self):
-        """
-        Internal function that handles the connection of the signals for this object.
-        """
+        """Internal function that handles the connection of the signals for this object."""
 
         self._edit.mouseMoved.connect(self._on_mouse_moved)
         self._edit.mousePressed.connect(self._on_mouse_pressed)
         self._edit.mouseReleased.connect(self._on_mouse_released)
 
     def _on_mouse_moved(self, event: QMouseEvent):
-        """
-        Internal callback function that is called each time mouseMoved event signal from QLineEdit is emitted.
+        """Internal callback function that is called each time mouseMoved event signal from QLineEdit is emitted.
 
         :param event: Qt mouse event.
         """
@@ -1591,8 +1476,7 @@ class MouseSlider(QObject):
                 self._prev_delta_x = self._delta_x
 
     def _on_mouse_pressed(self, event: QMouseEvent):
-        """
-        Internal callback function that is called each time mousePressed event signal from QLineEdit is emitted.
+        """Internal callback function that is called each time mousePressed event signal from QLineEdit is emitted.
 
         :param event: Qt mouse event.
         """
@@ -1606,8 +1490,7 @@ class MouseSlider(QObject):
             self.sliderStarted.emit()
 
     def _on_mouse_released(self, event: QMouseEvent):
-        """
-        Internal callback function that is called each time mouseReleased event signal from QLineEdit is emitted.
+        """Internal callback function that is called each time mouseReleased event signal from QLineEdit is emitted.
 
         :param event: Qt mouse event.
         """

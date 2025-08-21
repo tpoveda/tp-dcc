@@ -12,62 +12,14 @@ from Qt.QtCore import (
     QRegularExpression,
     QModelIndex,
     QAbstractTableModel,
-    QAbstractItemModel,
-    QAbstractProxyModel,
     QSortFilterProxyModel,
 )
 
 from . import roles
+from . import modelutils
 
 if typing.TYPE_CHECKING:
     from .data import BaseDataSourceType, ColumnDataSourceType
-
-
-def data_model_from_proxy_model(
-    proxy_model: QSortFilterProxyModel,
-) -> TableModel | None:
-    """
-    Returns the root source data model from the given model.
-    Useful when you have a stack of proxy models, and you want to retrieve the source model.
-
-    :param proxy_model: proxy model to walk.
-    :return: root data source item model.
-    """
-
-    if proxy_model is None:
-        return None
-
-    current_model = proxy_model
-    while isinstance(current_model, QAbstractProxyModel):
-        current_model = current_model.sourceModel()
-        if not current_model:
-            return None
-
-    # noinspection PyTypeChecker
-    return current_model
-
-
-def data_model_index_from_proxy_model_index(
-    model_index: QModelIndex,
-) -> tuple[QModelIndex, QAbstractItemModel]:
-    """
-    Returns the index from the root data model by walking the proxy model stack (if present).
-    If the given model index is not from a proxy model, then it will be immediately returned.
-
-    :param model_index: model index from proxy model.
-    :return: model index from root data model.
-    """
-
-    data_model = model_index.model()
-    model_index_mapped = model_index
-    while isinstance(data_model, QAbstractProxyModel):
-        # noinspection PyUnresolvedReferences
-        model_index_mapped = data_model.mapToSource(model_index_mapped)
-        if not model_index_mapped.isValid():
-            return model_index_mapped, data_model
-        data_model = model_index_mapped.model()
-
-    return model_index_mapped, data_model
 
 
 class TableModel(QAbstractTableModel):
@@ -79,8 +31,7 @@ class TableModel(QAbstractTableModel):
 
     @property
     def row_data_source(self) -> BaseDataSourceType | None:
-        """
-        Getter method that returns the row data source of the model.
+        """Getter method that returns the row data source of the model.
 
         :return: row data source of the model.
         """
@@ -89,8 +40,7 @@ class TableModel(QAbstractTableModel):
 
     @row_data_source.setter
     def row_data_source(self, value: BaseDataSourceType | None):
-        """
-        Setter method that sets the row data source of the model.
+        """Setter method that sets the row data source of the model.
 
         :param value: row data source to set.
         """
@@ -99,8 +49,7 @@ class TableModel(QAbstractTableModel):
 
     @property
     def column_data_sources(self) -> list[ColumnDataSourceType]:
-        """
-        Getter method that returns the column data sources of the model.
+        """Getter method that returns the column data sources of the model.
 
         :return: column data sources of the model.
         """
@@ -109,8 +58,7 @@ class TableModel(QAbstractTableModel):
 
     @column_data_sources.setter
     def column_data_sources(self, value: list[ColumnDataSourceType]):
-        """
-        Setter method that sets the column data sources of the model.
+        """Setter method that sets the column data sources of the model.
 
         :param value: column data sources to set.
         """
@@ -118,8 +66,7 @@ class TableModel(QAbstractTableModel):
         self._column_data_sources = value
 
     def rowCount(self, parent: QModelIndex = QModelIndex()):
-        """
-        Overrides `rowCount` method to return the number of rows of the given parent index.
+        """Overrides `rowCount` method to return the number of rows of the given parent index.
 
         :param parent: parent index to get the number of rows for.
         :return: number of rows of the given parent index.
@@ -135,8 +82,7 @@ class TableModel(QAbstractTableModel):
         return self._row_data_source.row_count()
 
     def columnCount(self, parent: QModelIndex = QModelIndex()):
-        """
-        Overrides `columnCount` method to return the number of columns of the given parent index.
+        """Overrides `columnCount` method to return the number of columns of the given parent index.
 
         :param parent: parent index to get the number of columns for.
         :return: number of columns of the given parent index.
@@ -149,8 +95,7 @@ class TableModel(QAbstractTableModel):
         return len(self._column_data_sources) + 1
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole = Qt.DisplayRole) -> Any:
-        """
-        Overrides `data` method to return the data for the given model index and role.
+        """Overrides `data` method to return the data for the given model index and role.
 
         :param index: model index to get data for.
         :param role: role to get data for.
@@ -205,8 +150,7 @@ class TableModel(QAbstractTableModel):
     def setData(
         self, index: QModelIndex, value: Any, role: Qt.ItemDataRole = Qt.EditRole
     ) -> bool:
-        """
-        Overrides `setData` method to set the data for the given model index and role.
+        """Overrides `setData` method to set the data for the given model index and role.
 
         :param index: model index to set data for.
         :param value: value to set.
@@ -247,8 +191,7 @@ class TableModel(QAbstractTableModel):
         return False
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags | Qt.ItemFlag:
-        """
-        Overrides `flags` method to return the flags for the given model index.
+        """Overrides `flags` method to return the flags for the given model index.
 
         :param index: model index to get the flags for.
         :return: flags for the given model index.
@@ -291,8 +234,7 @@ class TableModel(QAbstractTableModel):
         orientation: Qt.Orientation,
         role: Qt.ItemDataRole = Qt.DisplayRole,
     ) -> Any:
-        """
-        Overrides `headerData` method to return the header data for the given section, orientation and role.
+        """Overrides `headerData` method to return the header data for the given section, orientation and role.
 
         :param section: section to get the header data for.
         :param orientation: orientation to get the header data for.
@@ -323,8 +265,7 @@ class TableModel(QAbstractTableModel):
         return None
 
     def supportedDropActions(self) -> Qt.DropActions:
-        """
-        Overrides `supportedDropActions` method to return the supported drop actions.
+        """Overrides `supportedDropActions` method to return the supported drop actions.
 
         :return: supported drop actions.
         """
@@ -332,8 +273,7 @@ class TableModel(QAbstractTableModel):
         return Qt.CopyAction | Qt.MoveAction
 
     def mimeTypes(self) -> list[str]:
-        """
-        Overrides `mimeTypes` method to return the supported MIME types.
+        """Overrides `mimeTypes` method to return the supported MIME types.
 
         :return: supported MIME types.
         """
@@ -341,8 +281,7 @@ class TableModel(QAbstractTableModel):
         return ["application/x-datasource"]
 
     def mimeData(self, indexes: list[QModelIndex]) -> QMimeData:
-        """
-        Overrides `mimeData` method to return the MIME data for the given indexes.
+        """Overrides `mimeData` method to return the MIME data for the given indexes.
 
         :param indexes: indexes to get the MIME data for.
         :return: MIME data for the given indexes.
@@ -370,8 +309,7 @@ class TableModel(QAbstractTableModel):
         column: int,
         parent: QModelIndex,
     ) -> bool:
-        """
-        Overrides `dropMimeData` method to handle the drop MIME data action.
+        """Overrides `dropMimeData` method to handle the drop MIME data action.
 
         :param mime_data: MIME data to drop.
         :param action: drop action to handle.
@@ -418,8 +356,7 @@ class TableModel(QAbstractTableModel):
 
     # noinspection PyMethodOverriding
     def insertRow(self, row: int, parent: QModelIndex, **kwargs) -> bool:
-        """
-        Inserts a row at the given row index and parent index.
+        """Inserts a row at the given row index and parent index.
 
         :param row: row index to insert the row at.
         :param parent: parent index to insert the row at.
@@ -433,8 +370,7 @@ class TableModel(QAbstractTableModel):
     def insertRows(
         self, row: int, count: int, parent: QModelIndex = QModelIndex(), **kwargs
     ) -> bool:
-        """
-        Inserts rows at the given row index and parent index.
+        """Inserts rows at the given row index and parent index.
 
         :param row: row index to insert the rows at.
         :param count: number of rows to insert.
@@ -456,8 +392,7 @@ class TableModel(QAbstractTableModel):
     def insertColumns(
         self, column: int, count: int, parent: QModelIndex = QModelIndex()
     ) -> bool:
-        """
-        Inserts columns at the given column index and parent index.
+        """Inserts columns at the given column index and parent index.
 
         :param column: column index to insert the columns at.
         :param count: number of columns to insert.
@@ -475,8 +410,7 @@ class TableModel(QAbstractTableModel):
         return result
 
     def removeRow(self, row: int, parent: QModelIndex = QModelIndex()) -> bool:
-        """
-        Removes a row at the given row index and parent index.
+        """Removes a row at the given row index and parent index.
 
         :param row: row index to remove the row at.
         :param parent: parent index to remove the row at.
@@ -488,8 +422,7 @@ class TableModel(QAbstractTableModel):
     def removeRows(
         self, row: int, count: int, parent: QModelIndex = QModelIndex(), **kwargs
     ) -> bool:
-        """
-        Removes rows at the given row index and parent index.
+        """Removes rows at the given row index and parent index.
 
         :param row: row index to remove the rows at.
         :param count: number of rows to remove.
@@ -513,8 +446,7 @@ class TableModel(QAbstractTableModel):
 
     # noinspection PyMethodOverriding
     def removeColumn(self, column: int, parent: QModelIndex) -> bool:
-        """
-        Removes a column at the given column index and parent index.
+        """Removes a column at the given column index and parent index.
 
         :param column: column index to remove the column at.
         :param parent: parent index to remove the column at.
@@ -525,8 +457,7 @@ class TableModel(QAbstractTableModel):
 
     # noinspection PyMethodOverriding
     def removeColumns(self, column: int, count: int, parent: QModelIndex) -> bool:
-        """
-        Removes columns at the given column index and parent index.
+        """Removes columns at the given column index and parent index.
 
         :param column: column index to remove the columns at.
         :param count: number of columns to remove.
@@ -543,8 +474,7 @@ class TableModel(QAbstractTableModel):
         destination_parent: QModelIndex,
         destination_child: int,
     ) -> bool:
-        """
-        Moves a row from the source parent to the destination parent.
+        """Moves a row from the source parent to the destination parent.
 
         :param source_parent: source parent index to move the row from.
         :param source_row: source row index to move the row from.
@@ -569,8 +499,7 @@ class TableModel(QAbstractTableModel):
         destination_parent: QModelIndex,
         destination_child: int,
     ) -> bool:
-        """
-        Moves rows from the source parent to the destination parent.
+        """Moves rows from the source parent to the destination parent.
 
         :param source_parent: source parent index to move the rows from.
         :param source_row: source row index to move the rows from.
@@ -597,8 +526,7 @@ class TableModel(QAbstractTableModel):
         return True
 
     def sort(self, column: int, order: Qt.SortOrder = Qt.AscendingOrder):
-        """
-        Overrides `sort` method to sort the model by the given column and order.
+        """Overrides `sort` method to sort the model by the given column and order.
 
         :param column: column to sort by.
         :param order: order to sort by.
@@ -614,8 +542,7 @@ class TableModel(QAbstractTableModel):
         self.layoutChanged.emit()
 
     def item_from_index(self, index: QModelIndex) -> BaseDataSourceType:
-        """
-        Returns the item from the given index.
+        """Returns the item from the given index.
 
         :param index: index to get the item from.
         :return: item from the given index.
@@ -628,8 +555,7 @@ class TableModel(QAbstractTableModel):
         )
 
     def data_source(self, index: int) -> BaseDataSourceType:
-        """
-        Returns the data source for the given index.
+        """Returns the data source for the given index.
         If the index is 0, then the row data source will be returned; otherwise, the column data source will be returned.
 
         :param index: index to get the data source for.
@@ -643,8 +569,7 @@ class TableModel(QAbstractTableModel):
         )
 
     def column_data_source(self, index: int) -> ColumnDataSourceType | None:
-        """
-        Returns the column data source for the given index.
+        """Returns the column data source for the given index.
 
         :param index: index to get the column data source for.
         :return: column data source for the given index.
@@ -656,16 +581,13 @@ class TableModel(QAbstractTableModel):
         return self._column_data_sources[index - 1]
 
     def reload(self):
-        """
-        Hard reloads the model.
-        """
+        """Hard reloads the model."""
 
         self.modelReset.emit()
 
 
 class TableFilterProxyModel(QSortFilterProxyModel):
-    """
-    Custom QSortFilterProxyModel class that defines a filter proxy model for table views with
+    """Custom QSortFilterProxyModel class that defines a filter proxy model for table views with
     the following behaviour:
         - If a parent item does not match the filter, None of its children will be shown.
     """
@@ -691,7 +613,7 @@ class TableFilterProxyModel(QSortFilterProxyModel):
             return True
 
         # noinspection PyTypeChecker
-        model = data_model_from_proxy_model(self.sourceModel())
+        model = modelutils.get_source_model(self.sourceModel())
         if not model:
             return True
 
@@ -708,15 +630,14 @@ class TableFilterProxyModel(QSortFilterProxyModel):
         return False
 
     def sort(self, column: int, order: Qt.SortOrder = Qt.AscendingOrder):
-        """
-        Overrides `sort` method to sort the model by the given column and order.
+        """Overrides `sort` method to sort the model by the given column and order.
 
         :param column: column to sort by.
         :param order: order to sort by.
         """
 
         # noinspection PyTypeChecker
-        model = data_model_from_proxy_model(self.sourceModel())
+        model = modelutils.get_source_model(self.sourceModel())
         if not model:
             return
 

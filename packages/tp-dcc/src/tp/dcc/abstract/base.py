@@ -7,16 +7,15 @@ import collections.abc
 from collections import deque
 from typing import Iterator, Any
 
+from tp.libs.python import generators, decorators
+
 from . import ArrayIndexType
-from ...python import generators, decorators
 
 logger = logging.getLogger(__name__)
 
 
 class AFnBase(ABC):
-    """
-    Abstract class for all DCC context classes.
-    """
+    """Abstract class for all DCC context classes."""
 
     __slots__ = ("_object", "_queue")
     __array_index_type__ = ArrayIndexType.ZeroBased
@@ -80,8 +79,7 @@ class AFnBase(ABC):
 
     @decorators.classproperty
     def array_index_type(cls) -> int:
-        """
-        Getter that returns the array index for this context class.
+        """Getter that returns the array index for this context class.
 
         :return: array index type.
         """
@@ -89,8 +87,7 @@ class AFnBase(ABC):
         return cls.__array_index_type__
 
     def accepts_object(self, obj: Any) -> bool:
-        """
-        Returns whether this given DCC native node is supported by this context class.
+        """Returns whether this given DCC native node is supported by this context class.
 
         :param obj: DCC native node.
         :return: True if given object is supported by this context class; False otherwise.
@@ -99,8 +96,7 @@ class AFnBase(ABC):
         return True
 
     def object(self) -> Any:
-        """
-        Returns the DCC native node wrapped by this context class.
+        """Returns the DCC native node wrapped by this context class.
 
         :return: DCC native wrapped node.
         """
@@ -108,8 +104,7 @@ class AFnBase(ABC):
         return self._object
 
     def set_object(self, obj: Any):
-        """
-        Assigns given DCC native object to this context class for manipulation.
+        """Assigns given DCC native object to this context class for manipulation.
 
         :param obj: DCC native object.
         :raises RuntimeError: if something went wrong while assigning DCC native node.
@@ -119,8 +114,7 @@ class AFnBase(ABC):
         self._object = obj
 
     def try_set_object(self, obj: Any) -> bool:
-        """
-        Attempts to assign given DCC native object to this context class for manipulation.
+        """Attempts to assign given DCC native object to this context class for manipulation.
 
         :param obj: DCC native object.
         :return: True if set object operation was successful; False otherwise.
@@ -135,8 +129,7 @@ class AFnBase(ABC):
             return False
 
     def has_object(self) -> bool:
-        """
-        Returns whether this context class has an assigned object.
+        """Returns whether this context class has an assigned object.
 
         :return: True if context clas has an assigned object; False otherwise.
         ..warning:: this does not necessarily mean the object is valid!
@@ -145,15 +138,12 @@ class AFnBase(ABC):
         return self._object is not None
 
     def reset_object(self):
-        """
-        Resets the object back to its default value.
-        """
+        """Resets the object back to its default value."""
 
         self._object = None
 
     def is_valid(self) -> bool:
-        """
-        Returns whether wrapped DCC native node is valid.
+        """Returns whether wrapped DCC native node is valid.
 
         :return: True if DCC native node is valid; False otherwise.
         """
@@ -161,8 +151,7 @@ class AFnBase(ABC):
         return True
 
     def accepts_queue(self, queue: Any) -> bool:
-        """
-        Returns whether the given object can be used as a queue.
+        """Returns whether the given object can be used as a queue.
 
         :param queue: object to check.
         :return: True if given object can be used as a queue; False otherwise.
@@ -173,8 +162,7 @@ class AFnBase(ABC):
         ) and not isinstance(queue, str)
 
     def queue(self) -> deque:
-        """
-        Returns the object queue for this context class.
+        """Returns the object queue for this context class.
 
         :return: object queue.
         """
@@ -182,8 +170,7 @@ class AFnBase(ABC):
         return self._queue
 
     def set_queue(self, queue: list | Iterator):
-        """
-        Updates the object queue for this context class.
+        """Updates the object queue for this context class.
 
         :param queue: queue to set.
         :raises TypeError: if given queue type is not a sequence.
@@ -198,8 +185,7 @@ class AFnBase(ABC):
         self.next()
 
     def is_done(self) -> bool:
-        """
-        Returns whether queue is empty.
+        """Returns whether queue is empty.
 
         :return: True if queue is empty; False otherwise.
         """
@@ -207,8 +193,7 @@ class AFnBase(ABC):
         return len(self._queue) == 0 and not self.is_valid()
 
     def next(self) -> Any:
-        """
-        Attaches this context class to the next object in the queue.
+        """Attaches this context class to the next object in the queue.
 
         :return: next object in queue.
         """

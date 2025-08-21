@@ -6,15 +6,13 @@ import logging
 
 from maya import mel, cmds
 
-from tp.python import paths
+from tp.libs.python import paths
 
 logger = logging.getLogger(__name__)
 
 
 def setup() -> bool:
-    """
-    Installs modifications to the dagProcMenu script for the current session.
-    """
+    """Installs modifications to the dagProcMenu script for the current session."""
 
     try:
         dag_menu_script_path = str(
@@ -60,7 +58,7 @@ def setup() -> bool:
         fstream.write("/// END TP DCC MODS ####################\n\n")
 
     global_proc_def_regex = re.compile(
-        "^global +proc +dagMenuProc *\(*string *(\$[a-zA-Z0-9_]+), *string *(\$[a-zA-Z0-9_]+) *\)"
+        r"^global +proc +dagMenuProc *\(*string *(\$[a-zA-Z0-9_]+), *string *(\$[a-zA-Z0-9_]+) *\)"
     )
     with open(dag_menu_script_path) as f:
         dag_menu_script_line_iter = iter(f)
@@ -95,9 +93,7 @@ def setup() -> bool:
 
 
 def reset():
-    """
-    Resets the marking menu override.
-    """
+    """Resets the marking menu override."""
 
     try:
         dag_menu_script_path = str(

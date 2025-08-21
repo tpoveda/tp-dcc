@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-from tp.libs import dcc
+from tp import dcc
 
 if typing.TYPE_CHECKING:
     from .controllers.abstract import ARenamerController
@@ -10,7 +10,8 @@ if typing.TYPE_CHECKING:
 
 class RenamerControllerFactory:
     """Factory class that returns the proper renamer controller based on the
-    current DCC."""
+    current DCC.
+    """
 
     @staticmethod
     def controller() -> ARenamerController:

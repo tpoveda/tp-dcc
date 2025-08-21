@@ -29,7 +29,7 @@ class RenamerWidget(QWidget):
         self._setup_signals()
 
     def _setup_widgets(self):
-        """Internal function that setup all view widgets."""
+        """Set up all view widgets."""
 
         # Filters
         self._filters_frame = factory.collapsible_frame(
@@ -294,7 +294,7 @@ class RenamerWidget(QWidget):
         )
 
     def _setup_layouts(self):
-        """Internal function that creates all UI layouts and add all widgets to them."""
+        """Set up the layouts and add all widgets to them."""
 
         contents_layout = factory.vertical_main_layout()
         self.setLayout(contents_layout)

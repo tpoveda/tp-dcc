@@ -32,7 +32,7 @@ from Qt.QtGui import (
 from tp.preferences.interfaces import core as core_interfaces
 
 from . import menus, labels
-from .. import dpi, icon, color, utils as qtutils
+from .. import dpi, icon, icons, color, utils as qtutils
 
 
 class AbstractButton(dpi.DPIScaling):
@@ -96,7 +96,7 @@ class AbstractButton(dpi.DPIScaling):
 
     def set_icon(
         self,
-        button_icon: QIcon,
+        button_icon: str | QIcon,
         size: int | None = None,
         color_offset: float | None = None,
         scaling: list[int | float] = None,
@@ -118,6 +118,9 @@ class AbstractButton(dpi.DPIScaling):
             self._highlight_offset = color_offset
         if scaling is not None:
             self._icon_scaling = scaling
+
+        if isinstance(button_icon, str):
+            button_icon = icons.icon(button_icon) or QIcon()
 
         self._icons = [button_icon]
         self._grayscale = kwargs.pop("grayscale", False)

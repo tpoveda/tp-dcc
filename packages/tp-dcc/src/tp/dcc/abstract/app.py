@@ -5,22 +5,20 @@ import enum
 from typing import Type
 from abc import abstractmethod
 
+from tp.libs.python.decorators import classproperty
+
 from .base import AFnBase
-from ...python.decorators import classproperty
 
 
 class AFnApp(AFnBase):
-    """
-    Overloads `AFnBase` exposing functions to handle application related behaviours.
-    """
+    """Overloads `AFnBase` exposing functions to handle application related behaviours."""
 
     __extensions__: Type[enum.IntEnum] | None = None
 
     # noinspection PyPep8Naming,PyMethodParameters
     @classproperty
     def FileExtensions(cls) -> Type[enum.IntEnum]:
-        """
-        Getter method that returns the file extensions enumerator for this application.
+        """Getter method that returns the file extensions enumerator for this application.
 
         :return: file extensions enumerator.
         """
@@ -29,8 +27,7 @@ class AFnApp(AFnBase):
 
     @abstractmethod
     def extensions(self) -> tuple[enum.IntEnum]:
-        """
-        Returns a list of application file extensions.
+        """Returns a list of application file extensions.
 
         :return: application file extensions.
         """
@@ -39,8 +36,7 @@ class AFnApp(AFnBase):
 
     @abstractmethod
     def version(self) -> int | float:
-        """
-        Returns the version of the application.
+        """Returns the version of the application.
 
         :return: application version.
         """
@@ -49,8 +45,7 @@ class AFnApp(AFnBase):
 
     @abstractmethod
     def version_name(self) -> str:
-        """
-        Returns the version name of the application.
+        """Returns the version name of the application.
 
         :return: application version name.
         """
@@ -59,8 +54,7 @@ class AFnApp(AFnBase):
 
     @abstractmethod
     def is_batch(self) -> bool:
-        """
-        Returns whether the application is running in batch mode.
+        """Returns whether the application is running in batch mode.
 
         :return: True if application is running in batch mode; False otherwise.
         """
@@ -68,8 +62,7 @@ class AFnApp(AFnBase):
         pass
 
     def is_valid_extension(self, path: str) -> bool:
-        """
-        Returns whether the given path has a valid extension for the application.
+        """Returns whether the given path has a valid extension for the application.
 
         :param path: path to check.
         :return: True if the path has a valid extension; False otherwise.

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tp.libs import dcc
+from tp import dcc
 
 
 if dcc.is_unreal():

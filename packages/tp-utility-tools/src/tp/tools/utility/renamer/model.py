@@ -35,9 +35,7 @@ class RenamerModel(Model):
     makeUniqueName = Signal(events.MakeUniqueNameEvent)
 
     def initialize_properties(self) -> list[UiProperty]:
-        """Overrides `initialize_properties` to Initialize the properties associated with the instance.
-
-        This method initializes the properties associated with the instance.
+        """Initialize the properties associated with the instance.
 
         Returns:
             A list of initialized UI properties.

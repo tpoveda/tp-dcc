@@ -3,15 +3,15 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tp-qt"
+name = "tp-api"
 dynamic = ["version", "readme"]
-description = "Package that contains Qt related utility and custom widgets"
+description = "A new TP DCC package."
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
     { name = "Tomi Poveda", email = "tpovedatd@gmail.com" }
 ]
-dependencies = ["qtawesome"]
+dependencies = []
 
 [project.optional-dependencies]
 docs = [
@@ -31,10 +31,10 @@ dev = [
 packages = { find = { where = ["src"], exclude = ["tests", "docs"] } }
 
 [tool.setuptools.package-data]
-"tp.qt" = ["*.json", "*.yml", "*.yaml", "*.txt", "*.md", "*.ui", "*.qss", "*.scss", "*.png", "*.svg"]
+"tp.api" = ["*.json", "*.yml", "*.yaml", "*.txt", "*.md", "*.ui", "*.qss", "*.scss", "*.png", "*.svg"]
 
 [tool.setuptools.dynamic]
-version = { attr = "tp.libs.qt.__version__" }
+version = { attr = "tp.api.__version__" }
 readme = { file = ["README.md"], content-type = "text/markdown" }
 
 [tool.pytest.ini_options]

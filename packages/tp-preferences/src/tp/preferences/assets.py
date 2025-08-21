@@ -4,6 +4,7 @@ import typing
 from typing import Any
 
 from . import constants
+from .directory import DirectoryPath
 
 if typing.TYPE_CHECKING:
     from .interface import PreferenceInterface
@@ -103,3 +104,32 @@ class BrowserPreference(AssetPreference):
 
         if save:
             self.save_settings()
+
+    def browser_folder_paths(self) -> list[DirectoryPath]:
+        """Retrieve the browser folder paths for the specified asset folder.
+
+        Returns:
+            A list of `DirectoryPath` objects representing the browser folders
+            for the specified asset folder.
+        """
+
+        return [DirectoryPath(path) for path in self._get_browser_folders()]
+
+    def _get_browser_folder_roots(self) -> dict[str, str]:
+        """Retrieve the browser folder roots from setting file.
+
+        Returns:
+            A dictionary mapping folder identifiers to their respective paths
+            based on the configured browser folder settings.
+        """
+
+        return self.settings().get(constants.BROWSER_FOLDERS_KEY, {})
+
+    def _get_browser_folders(self) -> list[str]:
+        """Retrieve the list of browser folders for a specified asset folder.
+
+        Returns:
+            A list of folders corresponding to the specified asset folder.
+        """
+
+        return self._get_browser_folder_roots().get(self.asset_folder, [])

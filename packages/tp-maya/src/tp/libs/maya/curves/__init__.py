@@ -8,8 +8,8 @@ from typing import Iterator
 
 import maya.api.OpenMaya as OpenMaya
 
-from tp.python import helpers, jsonio, paths
-from tp.maya.om import scene, nodes, curves
+from tp.libs.python import helpers, jsonio, paths
+from tp.libs.maya.om import scene, nodes, curves
 
 CURVE_FILE_EXTENSION = "curve"
 CURVES_ENV_VAR = "TP_DCC_CURVES_PATHS"
@@ -19,8 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def update_cache(force: bool = False):
-    """
-    Function that handles the update of cached curves.
+    """Function that handles the update of cached curves.
 
     :param force: whether to force the update of the cache event if the cache is already initialized.
     """
@@ -38,16 +37,13 @@ def update_cache(force: bool = False):
 
 
 def clear_cache():
-    """
-    Clears the cache of available curves.
-    """
+    """Clears the cache of available curves."""
 
     _PATHS_CACHE.clear()
 
 
 def default_curves_library_path() -> str:
-    """
-    Returns the default curves library path.
+    """Returns the default curves library path.
 
     :return: default curves library path.
     """
@@ -56,8 +52,7 @@ def default_curves_library_path() -> str:
 
 
 def iterate_root_paths() -> Iterator[str]:
-    """
-    Generator function that iterates over all root locations defined by TP_DCC_CURVES_PATHS environment variable.
+    """Generator function that iterates over all root locations defined by TP_DCC_CURVES_PATHS environment variable.
 
     :return: iterated root paths.
     """
@@ -71,8 +66,7 @@ def iterate_root_paths() -> Iterator[str]:
 
 
 def iterate_curve_paths() -> Iterator[str]:
-    """
-    Generator function that iterates over all curve paths.
+    """Generator function that iterates over all curve paths.
 
     :return: iterated curve paths.
     """
@@ -83,8 +77,7 @@ def iterate_curve_paths() -> Iterator[str]:
 
 
 def iterate_names() -> Iterator[str]:
-    """
-    Generator function which iterates over all available curve names.
+    """Generator function which iterates over all available curve names.
 
     :return: iterated curve names.
     .info:: curves are source from all the root location specified by the CURVES_ENV_VAR environment variable.
@@ -96,8 +89,7 @@ def iterate_names() -> Iterator[str]:
 
 
 def names() -> list[str]:
-    """
-    List all the curve names available.
+    """List all the curve names available.
 
     :return:  list of curve names.
     .info:: curves are source from all the root location specified by the CURVES_ENV_VAR environment variable.
@@ -107,8 +99,7 @@ def names() -> list[str]:
 
 
 def find_curve_path_by_name(curve_name: str) -> str:
-    """
-    Returns curve path of the curve with given name
+    """Returns curve path of the curve with given name
 
     :param curve_name: name of the curve we want to retrieve path of.
     :return: curve path.
@@ -121,8 +112,7 @@ def find_curve_path_by_name(curve_name: str) -> str:
 
 
 def load_curve(curve_name: str, folder_path: str) -> dict:
-    """
-    Loads the curve with the given name and located in the given directory.
+    """Loads the curve with the given name and located in the given directory.
 
     :param curve_name: name of the curve to load.
     :param folder_path: absolute directory where the curve file is located.
@@ -136,8 +126,7 @@ def load_curve(curve_name: str, folder_path: str) -> dict:
 
 
 def load_from_lib(curve_name: str) -> dict:
-    """
-    Loads the data from the given curve name in library.
+    """Loads the data from the given curve name in library.
 
     :param curve_name: name of the curve to load data of.
     :return: curve data.
@@ -163,8 +152,7 @@ def load_from_lib(curve_name: str) -> dict:
 def load_and_create_from_lib(
     curve_name: str, parent: OpenMaya.MObject | None = None
 ) -> tuple[OpenMaya.MObject, list[OpenMaya.MObject]]:
-    """
-    Loads and creates the curve from curves library. If parent is given, shape node will be parented under it.
+    """Loads and creates the curve from curves library. If parent is given, shape node will be parented under it.
 
     :param curve_name: curve library name to load and create.
     :param parent: optional curve parent.
@@ -178,8 +166,7 @@ def load_and_create_from_lib(
 def load_and_create_from_path(
     curve_name: str, folder_path: str, parent: OpenMaya.MObject | None = None
 ) -> tuple[OpenMaya.MObject | None, list[OpenMaya.MObject]]:
-    """
-    Loads and creates the NURBS curve from the file located in the given path.
+    """Loads and creates the NURBS curve from the file located in the given path.
 
     :param curve_name: name of the curve to load and create.
     :param folder_path: absolute directory where the curve file is located.
@@ -199,8 +186,7 @@ def save_to_directory(
     save_matrix: bool = False,
     normalize: bool = True,
 ) -> tuple[dict, str]:
-    """
-    Saves the given transform node into the given directory.
+    """Saves the given transform node into the given directory.
 
     :param node: Maya object representing the transform node to save curves of.
     :param directory: absolute path where curve file will be saved.
@@ -243,8 +229,7 @@ def save_to_lib(
     save_matrix: bool = False,
     normalize: bool = True,
 ) -> tuple[dict, str]:
-    """
-    Saves the given transform node shapes into the curve library, using the first library directory defined within
+    """Saves the given transform node shapes into the curve library, using the first library directory defined within
     CURVES_ENV_VAR environment variable.
 
     :param node: Maya object representing the transform node to save curves of.
@@ -272,8 +257,7 @@ def save_to_lib(
 
 
 def rename_curve(curve_name: str, new_name: str):
-    """
-    Renames a shape from the library, using the first library directory defined within CURVES_ENV_VAR environment
+    """Renames a shape from the library, using the first library directory defined within CURVES_ENV_VAR environment
     variable.
 
     :param curve_name: name of the curve to rename.
@@ -305,8 +289,7 @@ def rename_curve(curve_name: str, new_name: str):
 
 
 def delete_curve(curve_name: str) -> bool:
-    """
-    Deletes curve with given name from library, using the first library directory defined within CURVES_ENV_VAR
+    """Deletes curve with given name from library, using the first library directory defined within CURVES_ENV_VAR
     environment variable.
 
     :param curve_name: name of the curve to delete.
@@ -326,8 +309,6 @@ def delete_curve(curve_name: str) -> bool:
 
 
 class MissingCurveFromLibrary(Exception):
-    """
-    Exception that is raised when a curve is not found in the library.
-    """
+    """Exception that is raised when a curve is not found in the library."""
 
     pass

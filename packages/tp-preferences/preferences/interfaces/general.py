@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tp.libs import dcc
+from tp import dcc
 from tp.preferences.interface import PreferenceInterface
 
 
