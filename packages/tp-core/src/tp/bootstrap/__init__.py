@@ -35,11 +35,8 @@ def init() -> PackagesManager:
     site_packages_path = (
         os.path.abspath(site_packages_path) if site_packages_path else None
     )
-    if not site_packages_path:
-        raise ValueError(
-            f"Environment variable {constants.SITE_PACKAGES_ENV_VAR} is not set."
-        )
-    site.addsitedir(os.environ["TP_DCC_PIPELINE_SITE_PACKAGES"])
+    if site_packages_path and os.path.exists(site_packages_path):
+        site.addsitedir(site_packages_path)
 
     packages_manager = PackagesManager.current()
     if packages_manager is None:
@@ -64,6 +61,11 @@ def setup_host(packages_manager: PackagesManager) -> Host:
     Raises:
         NotImplementedError: If the host application is not implemented.
     """
+
+    if dcc.is_standalone():
+        from .hosts.standalone.host import StandaloneHost
+
+        return Host.create(packages_manager, StandaloneHost, dcc.Standalone)
 
     if dcc.is_maya():
         from .hosts.maya.host import MayaHost
