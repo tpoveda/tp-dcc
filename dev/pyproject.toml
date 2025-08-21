@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "TP DCC Pipeline"
 dependencies = [
     "Qt.py==1.4.4",
+    "qtawesome==1.4.0",
     "PyYAML==6.0.2",
     "packaging==25.0",
     "pip-tools==7.4.1",
