@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import os
 import sys
 import typing
 import logging
 from typing import Any
+from typing import TypedDict
 from abc import ABC, abstractmethod
+
+from . import consts
 
 if typing.TYPE_CHECKING:
     from Qt.QtWidgets import QWidget, QMainWindow
@@ -15,6 +19,14 @@ logger = logging.getLogger(__name__)
 
 # Global host instance variable.
 _current_host: Host | None = None
+
+
+class HostContext(TypedDict):
+    """Typed dictionary for the current host context."""
+
+    project_name: str | None
+    folder_path: str | None
+    task_name: str | None
 
 
 def current_host() -> Host | None:
@@ -172,6 +184,53 @@ class Host(ABC):
         This method should be implemented by derived classes to handle the
         shutdown process of the host.
         """
+
+    # noinspection PyMethodMayBeStatic
+    def get_current_project_name(self) -> str | None:
+        """Returns the current project name.
+
+        Returns:
+            The current project name or None if not available.
+        """
+
+        return os.environ.get(consts.PROJECT_NAME_ENV_VAR, None)
+
+    # noinspection PyMethodMayBeStatic
+    def get_current_folder_path(self) -> str | None:
+        """Returns the current folder path.
+
+        Returns:
+            The current folder path or None if not available.
+        """
+
+        return os.environ.get(consts.FOLDER_PATH_ENV_VAR, None)
+
+    # noinspection PyMethodMayBeStatic
+    def get_current_task_name(self) -> str | None:
+        """Returns the current task name.
+
+        Returns:
+            The current task name or None if not available.
+        """
+
+        return os.environ.get(consts.TASK_NAME_ENV_VAR, None)
+
+    def get_current_context(self) -> HostContext:
+        """Returns the current host context.
+
+        This method should be implemented by derived classes to return the
+        current context of the host, such as project name, folder path, and
+        task name.
+
+        Returns:
+            A dictionary containing the current host context.
+        """
+
+        return HostContext(
+            project_name=self.get_current_project_name(),
+            folder_path=self.get_current_folder_path(),
+            task_name=self.get_current_task_name(),
+        )
 
     def register_dialog(self, name: str, widget: QWidget):
         """Registers a dialog/window with the host.
