@@ -165,7 +165,7 @@ class MayaHostApplication(host.HostApplication):
         """Quits the host application.
 
         Args:
-            force: Whether to force quit the application or not.
+            force: Whether to force to quit the application or not.
         """
 
         cmds.quit(force=force)
