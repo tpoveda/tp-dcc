@@ -1,4 +1,4 @@
 # This file makes this package to be a project package.
 
-user: "${HOME}/.tp-dcc"
+user: "~/.tp-dcc"
 project: "${TP_DCC_PROJECT_PACKAGE_ROOT}/configs"
