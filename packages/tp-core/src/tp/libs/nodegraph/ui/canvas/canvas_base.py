@@ -23,12 +23,12 @@ from tp.preferences.interfaces import core as core_interfaces
 class CanvasManipulationMode(IntEnum):
     """Enum representing the different manipulation modes for the canvas."""
 
-    NONE = 0
-    SELECT = 1
-    PAN = 2
-    MOVE = 3
-    ZOOM = 4
-    COPY = 5
+    Undefined = 0
+    Select = 1
+    Pan = 2
+    Move = 3
+    Zoom = 4
+    Copy = 5
 
 
 class CanvasBase(QGraphicsView):
@@ -44,12 +44,15 @@ class CanvasBase(QGraphicsView):
 
         self._minimum_scale = 0.2
         self._maximum_scale = 3.0
-        self._manipulation_mode = CanvasManipulationMode.NONE
+        self._manipulation_mode = CanvasManipulationMode.Undefined
 
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
         self.setRenderHint(QPainter.Antialiasing)
         self.setRenderHint(QPainter.TextAntialiasing)
+        self.setAttribute(Qt.WA_AlwaysShowToolTips)
+        self.setAcceptDrops(True)
 
         self.setScene(self._create_scene())
         self.centerOn(
@@ -377,15 +380,15 @@ class CanvasBase(QGraphicsView):
         # Update the cursor based on the new manipulation mode.
         if mode == CanvasManipulationMode.NONE:
             self.viewport().setCursor(Qt.ArrowCursor)
-        elif mode == CanvasManipulationMode.SELECT:
+        elif mode == CanvasManipulationMode.Select:
             self.viewport().setCursor(Qt.ArrowCursor)
-        elif mode == CanvasManipulationMode.PAN:
+        elif mode == CanvasManipulationMode.Pan:
             self.viewport().setCursor(Qt.OpenHandCursor)
-        elif mode == CanvasManipulationMode.MOVE:
+        elif mode == CanvasManipulationMode.Move:
             self.viewport().setCursor(Qt.ArrowCursor)
-        elif mode == CanvasManipulationMode.ZOOM:
+        elif mode == CanvasManipulationMode.Zoom:
             self.viewport().setCursor(Qt.SizeHorCursor)
-        elif mode == CanvasManipulationMode.COPY:
+        elif mode == CanvasManipulationMode.Copy:
             self.viewport().setCursor(Qt.ArrowCursor)
 
     def zoom(self, scale_factor: float) -> None:
