@@ -21,11 +21,11 @@ def startup(packages_manager: PackagesManager):
 
     from tp.libs.python import helpers
     from tp.preferences import manager
-    from tp.preferences.interfaces import core
+    from tp.preferences.interfaces import preferences
 
     manager.current_instance().copy_preferences_to_root("user", force=False)
 
-    theme_interface = core.theme_interface()
+    theme_interface = preferences.theme_interface()
     user_preferences = theme_interface.settings()
     user_styles = user_preferences.get("settings", {})
     default = manager.current_instance().default_preference_settings(

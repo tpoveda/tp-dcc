@@ -11,7 +11,7 @@ from Qt.QtGui import QKeySequence
 from tp.libs.python.decorators import Singleton
 
 
-class ActionType(IntEnum):
+class InputActionType(IntEnum):
     """Enum to define the type of input action."""
 
     Mouse = 1
@@ -35,7 +35,7 @@ class InputAction:
     def __init__(
         self,
         name: str = "defaultName",
-        action_type: ActionType = ActionType.Keyboard,
+        action_type: InputActionType = InputActionType.Keyboard,
         group: str = "default",
         mouse: Qt.MouseButton = Qt.NoButton,
         key: Qt.Key | None = None,
@@ -62,9 +62,9 @@ class InputAction:
             parts.append(QKeySequence(int(self.modifiers)).toString())
 
         # Mouse or Keyboard specifics.
-        if self.action_type == ActionType.Mouse:
+        if self.action_type == InputActionType.Mouse:
             parts.append(self.mouse_button.name)
-        elif self.action_type == ActionType.Keyboard and self.key is not None:
+        elif self.action_type == InputActionType.Keyboard and self.key is not None:
             parts.append(QKeySequence(int(self.key)).toString())
 
         return " ".join([p for p in parts if p])
@@ -75,11 +75,12 @@ class InputAction:
         if not isinstance(other, InputAction):
             return False
 
-        return (
-            self.name == other.name
-            and self.group == other.group
-            and self.action_type == other.action_type
-            and self.data == other.data
+        return all(
+            [
+                self.mouse_button == other.mouse_button,
+                self.key == other.key,
+                self.modifiers == other.modifiers,
+            ]
         )
 
     def __ne__(self, other: object) -> bool:
@@ -100,7 +101,7 @@ class InputAction:
         return self._group
 
     @property
-    def action_type(self) -> ActionType:
+    def action_type(self) -> InputActionType:
         """The type of action (mouse or keyboard)."""
 
         return self._action_type
@@ -167,7 +168,7 @@ class InputAction:
 
             return cls(
                 name=data["name"],
-                action_type=ActionType(data["action_type"]),
+                action_type=InputActionType(data["action_type"]),
                 group=data["group"],
                 mouse=Qt.MouseButton(int(data["mouse"])),
                 key=Qt.Key(int(data["key"])) if data.get("key") is not None else None,
@@ -299,3 +300,6 @@ class InputManager(metaclass=Singleton):
             for input_action_data in input_actions:
                 action = InputAction.from_json_data(input_action_data)
                 self.register_action(action)
+
+
+manager: InputManager = InputManager()

@@ -17,7 +17,15 @@ def startup(packages_manager: PackagesManager):
         packages_manager: The TP DCC Python pipeline packages manager instance.
     """
 
-    pass
+    try:
+        from tp.libs import nodegraph
+
+        nodegraph.startup()
+    except ImportError as e:
+        raise ImportError(
+            "Failed to import 'tp.libs.nodegraph'. "
+            "Ensure that the 'tp-core' package is installed correctly."
+        ) from e
 
 
 # noinspection PyUnusedLocal
@@ -31,4 +39,12 @@ def shutdown(packages_manager: PackagesManager):
         packages_manager: The TP DCC Python pipeline packages manager instance.
     """
 
-    pass
+    try:
+        from tp.libs import nodegraph
+
+        nodegraph.shutdown()
+    except ImportError as e:
+        raise ImportError(
+            "Failed to import 'tp.libs.nodegraph'. "
+            "Ensure that the 'tp-core' package is installed correctly."
+        ) from e

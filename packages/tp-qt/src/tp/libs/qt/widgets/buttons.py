@@ -29,7 +29,7 @@ from Qt.QtGui import (
     QKeyEvent,
 )
 
-from tp.preferences.interfaces import core as core_interfaces
+from tp.preferences.interfaces import preferences as core_interfaces
 
 from . import menus, labels
 from .. import dpi, icon, icons, color, utils as qtutils

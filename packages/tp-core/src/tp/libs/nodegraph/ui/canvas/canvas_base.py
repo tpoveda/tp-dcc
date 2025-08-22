@@ -3,7 +3,16 @@ from __future__ import annotations
 import math
 from enum import IntEnum
 
-from Qt.QtCore import Qt, QPoint, QPointF, QLineF, QRectF, QTimerEvent
+from Qt.QtCore import (
+    Qt,
+    QPoint,
+    QPointF,
+    QLineF,
+    QRectF,
+    QTimerEvent,
+    QTimer,
+    QElapsedTimer,
+)
 from Qt.QtWidgets import QWidget, QGraphicsScene, QGraphicsView
 from Qt.QtGui import (
     QCursor,
@@ -11,6 +20,7 @@ from Qt.QtGui import (
     QColor,
     QPen,
     QBrush,
+    QMouseEvent,
     QPainter,
     QWheelEvent,
     QFontDatabase,
@@ -18,6 +28,8 @@ from Qt.QtGui import (
 
 from tp.libs.math.scalar import lerp_value, range_percentage, lerp_smooth, clamp
 from tp.preferences.interfaces import core as core_interfaces
+
+from ...core.input import InputAction, InputActionType, manager as input_manager
 
 
 class CanvasManipulationMode(IntEnum):
@@ -45,6 +57,10 @@ class CanvasBase(QGraphicsView):
         self._minimum_scale = 0.2
         self._maximum_scale = 3.0
         self._manipulation_mode = CanvasManipulationMode.Undefined
+        self._mouse_press_pos = QPoint()
+        self._mouse_pos = QPoint()
+        self._last_mouse_pos = QPoint()
+        self._mouse_release_pos = QPoint()
 
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
@@ -53,6 +69,7 @@ class CanvasBase(QGraphicsView):
         self.setRenderHint(QPainter.TextAntialiasing)
         self.setAttribute(Qt.WA_AlwaysShowToolTips)
         self.setAcceptDrops(True)
+        self.setMouseTracking(True)
 
         self.setScene(self._create_scene())
         self.centerOn(
@@ -378,7 +395,7 @@ class CanvasBase(QGraphicsView):
         self._manipulation_mode = mode
 
         # Update the cursor based on the new manipulation mode.
-        if mode == CanvasManipulationMode.NONE:
+        if mode == CanvasManipulationMode.Undefined:
             self.viewport().setCursor(Qt.ArrowCursor)
         elif mode == CanvasManipulationMode.Select:
             self.viewport().setCursor(Qt.ArrowCursor)
@@ -420,22 +437,17 @@ class CanvasBase(QGraphicsView):
         if min_scale > max_scale:
             # If the configuration is inverted, swap to ensure a valid range.
             min_scale, max_scale = max_scale, min_scale
-        clamped_scale = requested_scale
-        if clamped_scale < min_scale:
-            clamped_scale = min_scale
-        elif clamped_scale > max_scale:
-            clamped_scale = max_scale
+        clamped_scale = max(min_scale, min(max_scale, requested_scale))
 
         # Convert the clamped absolute scale back into a relative factor
         # to apply.
         effective_factor = clamped_scale / current_scale
-
         # Avoid applying a transform if the effective factor is effectively 1.0.
         if abs(effective_factor - 1.0) <= 1e-6:
             return
 
         # Apply uniform scaling on both axes.
-        self.scale(scale_factor, scale_factor)
+        self.scale(effective_factor, effective_factor)
 
     def pan(self, delta: QPoint) -> None:
         """Pan the canvas by a screen-space delta, adjusted by the current zoom.
@@ -447,8 +459,8 @@ class CanvasBase(QGraphicsView):
         """
 
         # Extract raw delta components and skip if there is no movement.
-        dx = float(delta.x())
-        dy = float(delta.y())
+        dx = int(delta.x())
+        dy = int(delta.y())
         if dx == 0.0 and dy == 0.0:
             return
 
@@ -517,6 +529,64 @@ class CanvasBase(QGraphicsView):
 
         self._smooth_inertia_vel_view = velocity_view
         self._ensure_smooth_animating()
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        """Handles the mouse press event for the canvas.
+
+        Args:
+            event: The `QMouseEvent` containing the mouse position and buttons.
+        """
+
+        modifiers = event.modifiers()
+        self._mouse_press_pos = event.pos()
+        current_input_action = InputAction(
+            "temp",
+            InputActionType.Mouse,
+            "temp",
+            event.button(),
+            modifiers=modifiers,
+        )
+
+        if current_input_action in input_manager["Canvas.Pan"]:
+            self._cancel_zoom_animation()
+            self.manipulation_mode = CanvasManipulationMode.Pan
+
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        """Handles the mouse move event for the canvas.
+
+        Args:
+            event: The `QMouseEvent` containing the mouse position and buttons.
+        """
+
+        modifiers = event.modifiers()
+        self._mouse_pos = event.pos()
+        mouse_delta = QPointF(self._mouse_pos) - self._last_mouse_pos
+
+        if self._manipulation_mode == CanvasManipulationMode.Pan:
+            self.pan(mouse_delta)
+        else:
+            super().mouseMoveEvent(event)
+
+        self._last_mouse_pos = self._mouse_pos
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        """Handles the mouse release event for the canvas.
+
+        Args:
+            event: The `QMouseEvent` containing the mouse position and buttons.
+        """
+
+        super().mouseReleaseEvent(event)
+
+        modifiers = event.modifiers()
+        self._mouse_release_pos = event.pos()
+
+        # Reset the manipulation mode to undefined after releasing the mouse.
+        self.manipulation_mode = CanvasManipulationMode.Undefined
+
+        super().mouseReleaseEvent(event)
 
     # noinspection PyAttributeOutsideInit
     def wheelEvent(self, event: QWheelEvent) -> None:
@@ -587,6 +657,7 @@ class CanvasBase(QGraphicsView):
     def _initialize_smooth_interaction(self) -> None:
         """Initializes the smooth interaction settings for the canvas."""
 
+        # Configuration.
         self._mouse_wheel_zoom_rate = self._prefs.canvas_mouse_wheel_zoom_rate
         self._smooth_smoothing = float(
             max(0.0, min(1.0, self._prefs.canvas_smooth_smoothing))
@@ -598,15 +669,26 @@ class CanvasBase(QGraphicsView):
             max(1.01, self._prefs.canvas_smooth_max_step_zoom_factor)
         )
         self._smooth_tick_ms = max(4, int(self._prefs.canvas_smooth_tick_ms))
+
+        # State.
         self._smooth_timer_id: int | None = None
         current_scale = self.current_view_scale()
         self._smooth_zoom_target_scale: float = (
             current_scale if current_scale > 0.0 else 1.0
         )
+
+        # Pan easing buffer and inertial velocity (in view/screen space
+        # pixels per tick).
         self._smooth_pan_remaining_view = QPoint()
         self._smooth_inertia_vel_view = QPoint()
-        self._smooth_anchor_view: QPoint | None = None
-        self._smooth_anchor_scene: QPoint | None = None
+
+        # Zoom anchoring state.
+        self._smooth_anchor_view: QPoint | None = (
+            None  # view-space point under the cursor.
+        )
+        self._smooth_anchor_scene: QPoint | None = (
+            None  # scene-space point under the cursor.
+        )
 
     def _clamp_scale(self, value: float) -> float:
         """Clamps the given scale value to the minimum and maximum scale values
@@ -653,44 +735,37 @@ class CanvasBase(QGraphicsView):
                 changed = True
 
         # 2) Ease queued pan deltas (view space).
-        # Use QPointF-like math via the type returned by mapFromGlobal.
         pr = self._smooth_pan_remaining_view
-        if hasattr(pr, "x"):
-            px, py = pr.x(), pr.y()
-        else:
-            px = py = 0
+        px, py = pr.x(), pr.y()
         if abs(px) > 0.1 or abs(py) > 0.1:
             step_x = px * self._smooth_smoothing
             step_y = py * self._smooth_smoothing
-            step = type(self.mapFromGlobal)(int(round(step_x)), int(round(step_y)))
+            step = QPoint(int(round(step_x)), int(round(step_y)))
             if step.x() != 0 or step.y() != 0:
                 self.pan(step)
                 self._smooth_pan_remaining_view -= step
                 changed = True
             else:
-                # Snap to done if step is too small to matter
-                self._smooth_pan_remaining_view = type(self.mapFromGlobal)(0, 0)
+                # Snap to done if the step is too small to matter.
+                self._smooth_pan_remaining_view = QPoint(0, 0)
 
         # 3) Apply inertial pan velocity (decays each frame).
         vel = self._smooth_inertia_vel_view
-        if hasattr(vel, "x"):
-            vx, vy = vel.x(), vel.y()
-        else:
-            vx = vy = 0
+        vx, vy = vel.x(), vel.y()
         if abs(vx) > 0.05 or abs(vy) > 0.05:
-            step = type(self.mapFromGlobal)(int(round(vx)), int(round(vy)))
+            step = QPoint(int(round(vx)), int(round(vy)))
             if step.x() != 0 or step.y() != 0:
                 self.pan(step)
                 changed = True
-            # Decay velocity
+            # Decay velocity.
             vx *= self._smooth_friction
             vy *= self._smooth_friction
-            # Dead zone threshold to stop
+            # Dead zone threshold to stop.
             if abs(vx) < 0.05:
                 vx = 0.0
             if abs(vy) < 0.05:
                 vy = 0.0
-            self._smooth_inertia_vel_view = type(self.mapFromGlobal)(vx, vy)
+            self._smooth_inertia_vel_view = QPoint(vx, vy)
 
         # Stop animation if nothing changed.
         if not changed:
@@ -729,3 +804,12 @@ class CanvasBase(QGraphicsView):
         if self._smooth_timer_id is not None:
             self.killTimer(self._smooth_timer_id)
             self._smooth_timer_id = None
+
+    def _cancel_zoom_animation(self) -> None:
+        """Cancel any ongoing smooth zoom animation and reset the anchor."""
+
+        cur = self.current_view_scale()
+        if cur > 0.0:
+            self._smooth_zoom_target_scale = cur
+        self._smooth_anchor_view = None
+        self._smooth_anchor_scene = None

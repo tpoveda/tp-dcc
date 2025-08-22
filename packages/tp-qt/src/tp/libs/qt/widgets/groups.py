@@ -14,7 +14,7 @@ from Qt.QtWidgets import (
 )
 from Qt.QtGui import QIcon
 
-from tp.preferences.interfaces import core as core_interfaces
+from tp.preferences.interfaces import preferences as core_interfaces
 
 from . import layouts, buttons
 from .. import uiconsts, dpi

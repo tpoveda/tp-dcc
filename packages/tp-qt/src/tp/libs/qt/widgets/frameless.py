@@ -48,7 +48,7 @@ from Qt.QtGui import (
 
 from tp import dcc
 from tp.dcc import ui
-from tp.preferences.interfaces import core as core_interfaces
+from tp.preferences.interfaces import preferences as core_interfaces
 
 from .. import icons
 from .labels import ClippedLabel

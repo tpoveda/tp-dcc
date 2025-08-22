@@ -4,7 +4,7 @@ from Qt.QtCore import Qt, Property, Signal
 from Qt.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from Qt.QtGui import QIcon
 
-from tp.preferences.interfaces import core as core_interfaces
+from tp.preferences.interfaces import preferences as core_interfaces
 
 from .dividers import Divider
 from .groups import BaseButtonGroup
