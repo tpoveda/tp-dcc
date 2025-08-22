@@ -1,0 +1,13 @@
+settings:
+  canvas:
+    number_lods: 4
+    lod_switch: 3
+    background_color: "#232323"
+    grid_color: "#303030"
+    grid_color_darker: "#141414"
+    draw_grid: True
+    grid_size_small: 10
+    grid_size_large: 100
+    draw_numbers: False
+
+    canvas_lods: 4

@@ -4,12 +4,11 @@ from typing import Iterator
 
 
 def is_equal(x: float, y: float, tolerance: float = 0.000001) -> bool:
-    """
-    Checks if 2 float values are equal withing a given tolerance.
+    """Checks if 2 float values are equal withing a given tolerance.
 
-    :param x: first value to compare.
-    :param y: second value to compare.
-    :param tolerance: comparison tolerance.
+    :param x: First value to compare.
+    :param y: Second value to compare.
+    :param tolerance: Comparison tolerance.
     :return: True if both values are equal.
     """
 
@@ -22,13 +21,12 @@ def is_close(
     relative_tolerance: float = 1e-03,
     absolute_tolerance: float = 1e-03,
 ) -> bool:
-    """
-    Returns whether two given numbers are relatively close.
+    """Returns whether two given numbers are relatively close.
 
-    :param x: first value to compare.
-    :param y: second value to compare.
-    :param relative_tolerance: relative tolerance.
-    :param absolute_tolerance: absolute tolerance.
+    :param x: First value to compare.
+    :param y: Second value to compare.
+    :param relative_tolerance: Relative tolerance.
+    :param absolute_tolerance: Absolute tolerance.
     :return: True if both numbers are relatively close; False otherwise.
     """
 
@@ -38,8 +36,7 @@ def is_close(
 
 
 def lerp_value(start: int | float, end: int | float, alpha: float) -> float:
-    """
-    Linearly interpolates between two values based on a given fraction.
+    """Linearly interpolates between two values based on a given fraction.
 
     This function computes a value between `start` and `end` using the formula:
 
@@ -68,8 +65,7 @@ def lerp_value(start: int | float, end: int | float, alpha: float) -> float:
 
 
 def lerp_smooth(current: float, goal: float, weight: float = 0.1) -> float:
-    """
-    Gradually moves a value toward a goal by a weighted percentage.
+    """Gradually moves a value toward a goal by a weighted percentage.
 
     This function updates `current` so that it moves `weight` fraction closer to `goal`
     each time it is called. It is commonly used for **smooth animations**, **damped movement**,
@@ -109,8 +105,7 @@ def lerp_smooth(current: float, goal: float, weight: float = 0.1) -> float:
 
 
 def generate_linear_steps(start: float, end: float, count: int) -> Iterator[float]:
-    """
-    Generates `count` evenly spaced values between `start` and `end`.
+    """Generates `count` evenly spaced values between `start` and `end`.
 
     This function produces a sequence of `count` linearly spaced numbers between
     `start` and `end`, **including both endpoints**.
@@ -125,23 +120,14 @@ def generate_linear_steps(start: float, end: float, count: int) -> Iterator[floa
     [-10.0, -5.0, 0.0, 5.0, 10.0]
 
     >>> for value in generate_linear_steps(0.0, 1.0, 5):
-    ...     print(value)
+    ... print(value)
     0.0
     0.25
     0.5
     0.75
     1.0
-
-    :param start: The starting value.
-    :type start: float
-    :param end: The ending value.
-    :type end: float
-    :param count: The number of steps to generate (must be ≥ 2).
-    :type count: int
-    :return: A generator yielding `count` evenly spaced values from `start` to `end`.
-    :rtype:
-    :raises ValueError: If `count` is less than 2.
     """
+
     if count < 2:
         raise ValueError("count must be at least 2 to generate meaningful steps.")
 
@@ -154,13 +140,15 @@ def generate_linear_steps(start: float, end: float, count: int) -> Iterator[floa
 def range_percentage(
     min_value: int | float, max_value: int | float, value: int | float
 ) -> float:
-    """
-    Returns the percentage of the given value in the given range.
+    """Return the percentage of the given value in the given range.
 
-    :param min_value: minimum value of the range.
-    :param max_value: maximum value of the range.
-    :param value: value to get the percentage of.
-    :return: percentage of the value in the range.
+    Args:
+        min_value: Minimum value of the range.
+        max_value: Maximum value of the range.
+        value: Value to get the percentage of.
+
+    Returns:
+        Percentage of the value in the range.
     """
 
     try:
@@ -172,13 +160,15 @@ def range_percentage(
 def clamp(
     number: int | float, min_value: int | float = 0.0, max_value: int | float = 1.0
 ) -> int | float:
-    """
-    Clamps a number between two values.
+    """Clamps a number between two values.
 
-    :param number: value to clamp
-    :param min_value: maximum value of the number
-    :param max_value: minimum value of the number
-    :return: clamped value.
+    Args:
+        number: Value to clamp
+        min_value: Minimum value of the number.
+        max_value: Maximum value of the number.
+
+    Returns:
+        Clamped value.
     """
 
     return max(min(number, max_value), min_value)
