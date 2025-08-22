@@ -5,6 +5,7 @@ settings:
     background_color: "#232323"
     grid_color: "#303030"
     grid_color_darker: "#141414"
+    grid_mode: 1                         # 0: No Grid; 1: Dots; 2: Lines.
     draw_grid: True
     grid_size_small: 10
     grid_size_large: 100

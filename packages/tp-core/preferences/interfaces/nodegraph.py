@@ -46,6 +46,17 @@ class NodeGraphPreferenceInterface(PreferenceInterface):
         )
 
     @property
+    def canvas_grid_mode(self) -> int:
+        """The grid mode of the node graph canvas.
+
+        0: No grid.
+        1: Dots grid.
+        2: Lines grid.
+        """
+
+        return self.settings(name="canvas", fallback={}).get("grid_mode", 2)
+
+    @property
     def canvas_draw_grid(self) -> bool:
         """Whether to draw the grid on the node graph canvas."""
 
