@@ -9,5 +9,8 @@ settings:
     grid_size_small: 10
     grid_size_large: 100
     draw_numbers: False
-
-    canvas_lods: 4
+    mouse_wheel_zoom_rate: 0.5
+    smooth_smoothing: 0.15               # 0.15–0.25 feels refined; smaller is softer, larger is snappier.
+    smooth_friction: 0.92                # 0.85–0.92 for a modern inertial glide; lower for “heavier,” higher for “floaty.”
+    smooth_max_step_zoom_factor:  1.35   # 2–1.5 keeps high-res wheels from jumping too far in a single step.
+    smooth_tick_ms: 8                    # 6–10 ms for ultra-smooth motion on fast displays.
