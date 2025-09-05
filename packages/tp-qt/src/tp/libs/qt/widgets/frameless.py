@@ -559,7 +559,7 @@ class FramelessWindow(QWidget):
         modal: bool = False,
         init_pos: tuple[int, int] | None = None,
         title_bar_class: Type | None = None,
-        as_overlay: bool = True,
+        as_overlay: bool = False,
         always_show_all_title: bool = False,
         on_top: bool = False,
         save_window_pref: bool = False,
@@ -677,7 +677,7 @@ class FramelessWindow(QWidget):
         """Find the frameless window containing the given widget.
 
         Args:
-            widget: Widget to get frameless window from.
+            widget: Widget to get the frameless window from.
 
         Returns:
             FramelessWindow or None: The found frameless window, or None if not found.
@@ -718,7 +718,7 @@ class FramelessWindow(QWidget):
         """Get the title bar instance for this window.
 
         Returns:
-            FramelessTitleBar: The window's title bar instance.
+            The window's title bar instance.
         """
 
         return self._title_bar
@@ -728,7 +728,7 @@ class FramelessWindow(QWidget):
         """Get the name of this frameless window instance.
 
         Returns:
-            str: The window name.
+            The window name.
         """
 
         return self._name
@@ -926,7 +926,7 @@ class FramelessWindow(QWidget):
                 )
 
     def save_settings(self):
-        """Saves settings into window settings file path."""
+        """Saves settings into the window settings file path."""
 
         if not self.is_docked() and self._parent_container:
             self._settings.setValue("geometry", self._parent_container.saveGeometry())

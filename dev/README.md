@@ -20,9 +20,9 @@ The following scripts will:
 * 🔧 Create the virtual environment it if missing.
 * 📦 Install and sync requirements.
 
-
+`
 ### Development
-
+`
 ```bash
 python scripts/venv_setup.py --create --env dev
 ```
