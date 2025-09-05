@@ -276,6 +276,9 @@ class PluginsManager:
         if not is_interface_subclass:
             return
 
+        if plugin_class is interface:
+            return
+
         name = getattr(plugin_class, self._variable_name, plugin_class.__name__)
         try:
             version_str = getattr(plugin_class.metadata, "version", "0.1.0")

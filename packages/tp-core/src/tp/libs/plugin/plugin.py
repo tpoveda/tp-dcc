@@ -225,7 +225,7 @@ class PluginExecutionStats:
 
         self._start_time = timeit.default_timer()
 
-    def finish(self, traceback: str | None = None):
+    def finish(self, traceback: str | list[str] | None = None):
         """Finishes the plugin execution timer.
 
         Args:
