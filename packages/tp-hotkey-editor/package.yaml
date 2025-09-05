@@ -1,0 +1,24 @@
+name: "tp-hotkey-editor"
+version: "0.1.0"
+author: "Tomi Poveda"
+authorEmail: "tpovedatd@gmail.com"
+description: "Hotkey Editor for tp-dcc framework"
+displayName: "Tp-Hotkey-Editor"
+commands:
+  - '{self}/scripts/tp_hotkey_editor.py'
+documentation:
+  masterDoc: "README.md"
+  sourceCodeFolder: "{self}/src"
+  sourceFolder: "{self}/docs"
+environment:
+  PYTHONPATH:
+  - "{self}"
+  - "{self}/src"
+  TP_DCC_BASE_PATHS:
+    - "{self}"
+    - "{self}/src"
+  TP_DCC_TOOLS:
+    - "{self}/src/tp/tools/hotkeyeditor/tool.py"
+dependencies: []
+tests:
+  - "{self}/tests"
