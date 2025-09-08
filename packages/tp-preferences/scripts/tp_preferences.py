@@ -22,8 +22,11 @@ def startup(packages_manager: PackagesManager):
     from tp.libs.python import helpers
     from tp.preferences import manager
     from tp.preferences.interfaces import preferences
+    from tp.preferences import style
 
     manager.current_instance().copy_preferences_to_root("user", force=False)
+
+    style.setup()
 
     theme_interface = preferences.theme_interface()
     user_preferences = theme_interface.settings()
@@ -52,6 +55,10 @@ def shutdown(packages_manager: PackagesManager):
     """
 
     from tp.preferences import manager
+    from tp.preferences import style
+
+    # Teardown styles
+    style.shutdown()
 
     # Save the current preference roots.
     root_config = packages_manager.preference_roots_path()

@@ -138,7 +138,9 @@ class PreferencesManager:
         """
 
         if name not in self._roots:
-            raise errors.RootDoesNotExistError(f"Root does not exist: {name}")
+            raise errors.RootDoesNotExistError(
+                f"Root does not exist: {name}. Available roots: {list(self._roots.keys())}"
+            )
 
         return self._resolve_path(self._roots[name])
 
