@@ -1,0 +1,24 @@
+name: "tp-animation-tools"
+version: "0.1.0"
+author: "Tomi Poveda"
+authorEmail: "tpovedatd@gmail.com"
+description: "Package that contains a collection of animation tools"
+displayName: "Tp-Animation-Tools"
+commands:
+  - '{self}/scripts/tp_animation_tools.py'
+documentation:
+  masterDoc: "README.md"
+  sourceCodeFolder: "{self}/src"
+  sourceFolder: "{self}/docs"
+environment:
+  PYTHONPATH:
+  - "{self}"
+  - "{self}/src"
+  TP_DCC_BASE_PATHS:
+    - "{self}"
+    - "{self}/src"
+  TP_DCC_TOOLS:
+      - "{self}/src/tp/tools/animation/match_bake/tool.py"
+dependencies: []
+tests:
+  - "{self}/tests"
