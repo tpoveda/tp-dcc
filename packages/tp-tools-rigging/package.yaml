@@ -1,11 +1,11 @@
-name: "tp-utility-tools"
+name: "tp-rigging-tools"
 version: "0.1.0"
 author: "Tomi Poveda"
 authorEmail: "tpovedatd@gmail.com"
-description: "Package that contains a collection of DCC agnostic utility tools"
-displayName: "Tp-Utility-Tools"
+description: "Package that contains a collection of rigging tools."
+displayName: "Tp-Rigging-Tools"
 commands:
-  - '{self}/scripts/tp_utility_tools.py'
+  - '{self}/scripts/tp_rigging_tools.py'
 documentation:
   masterDoc: "README.md"
   sourceCodeFolder: "{self}/src"
@@ -18,7 +18,7 @@ environment:
     - "{self}"
     - "{self}/src"
   TP_DCC_TOOLS:
-    - "{self}/src/tp/tools/utility/renamer/tool.py"
+    - "{self}/src/tp/tools/rigging/skinningtoolbox/tool.py"
 dependencies: []
 tests:
   - "{self}/tests"

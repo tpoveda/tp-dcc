@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tp-animation-tools"
+name = "tp-tools-rigging"
 dynamic = ["version", "readme"]
-description = "Package that contains a collection of animation tools"
+description = "Package that contains a collection of rigging tools."
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
@@ -31,10 +31,10 @@ dev = [
 packages = { find = { where = ["src"], exclude = ["tests", "docs"] } }
 
 [tool.setuptools.package-data]
-"tp.animation" = ["*.json", "*.yml", "*.yaml", "*.txt", "*.md", "*.ui", "*.qss", "*.scss", "*.png", "*.svg"]
+"tp.tools.rigging" = ["*.json", "*.yml", "*.yaml", "*.txt", "*.md", "*.ui", "*.qss", "*.scss", "*.png", "*.svg"]
 
 [tool.setuptools.dynamic]
-version = { attr = "tp.animation.__version__" }
+version = { attr = "tp.tools.rigging.__version__" }
 readme = { file = ["README.md"], content-type = "text/markdown" }
 
 [tool.pytest.ini_options]

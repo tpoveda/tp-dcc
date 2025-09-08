@@ -21,29 +21,30 @@ from Qt.QtWidgets import (
     QHeaderView,
     QMenu,
 )
-from Qt.QtGui import QIcon
+from Qt.QtGui import QKeySequence, QKeyEvent
 
-from tp.libs.python import paths
+from tp.libs.qt import icons
 
 from ... import uiconsts
 from ..buttons import BaseButton
 from ..search import SearchLineEdit
 from ..comboboxes import BaseComboBox
 from ..layouts import VerticalLayout, HorizontalLayout
-from .models import (
-    TableModel,
-    TableFilterProxyModel,
-    data_model_index_from_proxy_model_index,
-)
+from .models import TableModel, TableFilterProxyModel
+from .modelutils import map_to_source_model
 
 if typing.TYPE_CHECKING:
     from .data import BaseDataSource, ColumnDataSource
 
 
 class TableView(QTableView):
-    """Custom QTableView class that defines the TableView."""
+    """Custom `QTableView` class that defines the `TableView`."""
 
     contextMenuRequested = Signal()
+    copyRequested = Signal(object)
+    pasteRequested = Signal(object)
+
+    COPY_PASTE_SUPPORTED = False
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent=parent)
@@ -62,6 +63,26 @@ class TableView(QTableView):
 
         self.customContextMenuRequested.connect(self.contextMenuRequested.emit)
 
+    def keyPressEvent(self, event: QKeyEvent):
+        """Overrides `QTableView.keyPressEvent` method to capture copy/paste events.
+
+        Args:
+            event: `QKeyEvent` with the event to process.
+        """
+
+        model = self.model()
+        if not model or not self.COPY_PASTE_SUPPORTED:
+            super().keyPressEvent(event)
+            return
+
+        selection = self.selectionModel().selectedRows()
+        if event.matches(QKeySequence.Copy):
+            self.copyRequested.emit(selection)
+        elif event.matches(QKeySequence.Paste):
+            self.pasteRequested.emit(selection)
+
+        event.accept()
+
 
 class TableViewWidget(QFrame):
     """Custom QFrame that extends QTableView functionality."""
@@ -75,7 +96,7 @@ class TableViewWidget(QFrame):
         searchable: bool = False,
         manual_reload: bool = True,
         parent: QWidget | None = None,
-    ):
+    ) -> None:
         super().__init__(parent=parent)
 
         self._model: TableModel | None = None
@@ -92,64 +113,72 @@ class TableViewWidget(QFrame):
 
     @property
     def table_view(self) -> TableView:
-        """Getter method that returns the internal TableView of the TableViewWidget.
-
-        :return: TableView with the internal TableView.
-        """
+        """The table view contained in the `TableViewWidget`."""
 
         return self._table_view
 
     def model(self) -> TableModel:
-        """Returns the model of the TableViewWidget.
+        """Return the model of the `TableViewWidget`.
 
-        :return: model used by the view.
+        Returns:
+            The model used by the view.
+
         """
 
         # noinspection PyTypeChecker
         return self._table_view.model()
 
-    def set_model(self, model: TableModel):
-        """Sets the model of the TableViewWidget.
+    def set_model(self, model: TableModel) -> None:
+        """Sets the model of the `TableViewWidget`.
 
-        :param model: sets the model used by this view.
+        Args:
+            model: `TableModel` to set as the model of the view.
         """
 
         self._model = model
+
         if self._row_data_source:
             self._row_data_source.model = model
+
         for i in iter(self._column_data_sources):
             i.model = model
+
         self._proxy_search.setSourceModel(model)
         self._proxy_search.setDynamicSortFilter(True)
 
     def selection_model(self) -> QItemSelectionModel:
-        """Returns the selection model of the TableViewWidget.
+        """Return the selection model of the `TableViewWidget`.
 
-        :return: QItemSelectionModel with the selection model of the TableViewWidget.
+        Returns:
+            `QItemSelectionModel` with the selection model of the
+                `TableViewWidget`.
         """
 
         return self._table_view.selectionModel()
 
     def selected_rows(self) -> list[int]:
-        """Returns the list of selected rows.
+        """Return the list of selected rows.
 
-        :return: selected row indexes.
+        Returns:
+            Selected row indexes.
         """
 
         return list(set([i.row() for i in self.selection_model().selectedIndexes()]))
 
     def selected_columns(self) -> list[int]:
-        """Returns the list of selected columns.
+        """Return the list of selected columns.
 
-        :return: selected column indexes.
+        Returns:
+            Selected column indexes.
         """
 
         return list(set([i.column() for i in self.selection_model().selectedColumns()]))
 
     def selected_items(self) -> list[Any]:
-        """Returns the list of selected items.
+        """Return the list of selected items.
 
-        :return: selected items.
+        Returns:
+            Selected items.
         """
 
         indices = self.selection_model().selection()
@@ -161,33 +190,34 @@ class TableViewWidget(QFrame):
     def selected_rows_indexes(self) -> list[QModelIndex]:
         """Returns the list of selected rows indices.
 
-        :return: selected row indices.
+        Returns:
+            Selected row indices.
         """
 
         selected_rows = set([i.row() for i in self.selection_model().selectedIndexes()])
         indices: list[QModelIndex] = []
         for row in selected_rows:
-            index, _ = data_model_index_from_proxy_model_index(
-                self._model.index(row, 0)
-            )
+            index, _ = map_to_source_model(self._model.index(row, 0))
             indices.append(index)
 
         return sorted(indices, key=lambda x: x.row())
 
     def selected_indexes(self) -> list[QModelIndex]:
-        """Returns the list of selected indices.
+        """Return the list of selected indices.
 
-        :return: selected indices.
+        Returns:
+            Selected indices.
         """
 
         return self._proxy_search.mapSelectionToSource(
             self.selection_model().selection()
         ).indexes()
 
-    def register_row_data_source(self, data_source: BaseDataSource):
+    def register_row_data_source(self, data_source: BaseDataSource) -> None:
         """Registers a row data source.
 
-        :param data_source: BaseDataSource with the row data source to register.
+        Args:
+            data_source: `BaseDataSource` with the row data source to register.
         """
 
         self._row_data_source = data_source
@@ -206,11 +236,16 @@ class TableViewWidget(QFrame):
         if width > 0:
             self._table_view.setColumnWidth(0, width)
 
-    def register_column_data_sources(self, data_sources: list[ColumnDataSource]):
+    def register_column_data_sources(
+        self, data_sources: list[ColumnDataSource]
+    ) -> None:
         """Registers a list of column data sources.
 
-        :param data_sources: list of column data sources to register.
-        :raises ValueError: If row data source is not assigned before columns.
+        Args:
+            data_sources: list of column data sources to register.
+
+        Raises:
+            ValueError: If the row data source is not assigned before columns.
         """
 
         if not self._row_data_source:
@@ -236,7 +271,7 @@ class TableViewWidget(QFrame):
         )
 
     def refresh(self):
-        """Refresh the items of the TableViewWidget."""
+        """Refresh the items of the `TableViewWidget`."""
 
         if self._refreshing:
             return
@@ -255,26 +290,30 @@ class TableViewWidget(QFrame):
         finally:
             self._refreshing = False
 
-    def set_searchable(self, flag: bool):
-        """Sets the searchable flag of the TableViewWidget.
+    def set_searchable(self, flag: bool) -> None:
+        """Sets the searchable flag of the `TableViewWidget`.
 
-        :param flag: bool with the flag to set.
+        Args:
+            flag: bool with the flag to set.
         """
 
         self._search_widget.setVisible(flag)
 
-    def set_allow_manual_refresh(self, flag: bool):
-        """Sets the manual refresh flag of the TableViewWidget.
+    def set_allow_manual_refresh(self, flag: bool) -> None:
+        """Sets the manual refresh flag of the `TableViewWidget`.
 
-        :param flag: bool with the flag to set.
+        Args:
+            flag: bool with the flag to set.
         """
 
         self._reload_button.setVisible(flag)
 
-    def set_drag_drop_mode(self, mode: QAbstractItemView.DragDropMode):
-        """Sets the drag and drop mode of the TableViewWidget.
+    def set_drag_drop_mode(self, mode: QAbstractItemView.DragDropMode) -> None:
+        """Sets the drag and drop mode of the `TableViewWidget`.
 
-        :param mode: drag and drop mode to set.
+        Args:
+            mode: `QAbstractItemView.DragDropMode` with the drag and drop
+                mode to set.
         """
 
         self._table_view.setDragDropMode(mode)
@@ -284,38 +323,49 @@ class TableViewWidget(QFrame):
         self._table_view.setDragDropOverwriteMode(False)
         self._table_view.setDefaultDropAction(Qt.MoveAction)
 
-    def open_persistent_editor(self, index: QModelIndex):
+    def open_persistent_editor(self, index: QModelIndex) -> None:
         """Opens the persistent editor for the given index.
 
-        :param index: QModelIndex with the index to open the persistent editor.
+        Args:
+            index: `QModelIndex` with the index to open the persistent editor.
         """
 
         self._table_view.openPersistentEditor(index)
 
-    def sort(self, column: int, order: Qt.SortOrder = Qt.AscendingOrder):
-        """Sorts the table by the given column and order.
+    def sort(self, column: int, order: Qt.SortOrder = Qt.AscendingOrder) -> None:
+        """Sort the table by the given column and order.
 
-        :param column: int with the column to sort.
-        :param order: Qt.SortOrder with the order to sort.
+        Args:
+            column: Number with the column to sort.
+            order: The `Qt.SortOrder` with the order to sort.
         """
 
         self._table_view.sortByColumn(column, order)
 
+    def toggle_column(self, column: int, state: Qt.CheckState) -> None:
+        """Toggles the visibility of the given column.
+
+        Args:
+            column: Number with the column index.
+            state: The `Qt.CheckState` with the state of the checkbox.
+        """
+
+        self._table_view.setColumnHidden(column, state == Qt.Unchecked)
+
     def _setup_widgets(self):
-        """Internal function that sets up the widgets of the TableViewWidget."""
+        """Set up the widgets of the `TableViewWidget`."""
+
         self._table_view = TableView(parent=self)
         self._proxy_search = TableFilterProxyModel(parent=self)
         self._table_view.setModel(self._proxy_search)
         self._reload_button = BaseButton(
-            button_icon=QIcon(
-                paths.canonical_path("../../../resources/icons/reload_64.png")
-            ),
+            button_icon=icons.icon("reload"),
             parent=self,
         )
         self._search_widget = ViewSearchWidget(parent=self)
 
     def _setup_layouts(self):
-        """Internal function that sets up the layouts of the widget."""
+        """Set up the layouts of the widget."""
 
         main_layout = VerticalLayout()
         main_layout.setSpacing(0)
@@ -333,7 +383,7 @@ class TableViewWidget(QFrame):
         main_layout.addWidget(self._table_view)
 
     def _setup_signals(self):
-        """Internal function that sets up the signals of the widget."""
+        """Set up the signals of the widget."""
 
         selection_model = self.selection_model()
         selection_model.selectionChanged.connect(self._on_selection_changed)
@@ -351,42 +401,50 @@ class TableViewWidget(QFrame):
         )
         self._reload_button.clicked.connect(self._on_reload_button_clicked)
 
+    # noinspection PyUnusedLocal
     def _on_selection_changed(
         self, selected: QItemSelection, deselected: QItemSelection
-    ):
-        """Internal callback function that is called when the selection changes.
+    ) -> None:
+        """Called when the selection changes.
 
-        :param selected: QItemSelection with the selected items.
-        :param deselected: QItemSelection with the deselected items.
+        Args:
+            selected: The `QItemSelection` with the selected items.
+            deselected: The `QItemSelection` with the deselected items.
         """
 
         indexes = selected.indexes()
         self.selectionChanged.emit([self._model.item_from_index(i) for i in indexes])
 
-    def _on_search_widget_column_filter_index_changed(self, index: int, text: str):
-        """Internal callback function that is called when the column filter index changes.
+    # noinspection PyUnusedLocal
+    def _on_search_widget_column_filter_index_changed(
+        self, index: int, text: str
+    ) -> None:
+        """Called when the column filter index changes.
 
-        :param index: int with the index of the column.
-        :param text: str with the text to filter.
+        Args:
+            index: int with the index of the column.
+            text: str with the text to filter.
         """
 
         self._proxy_search.setFilterKeyColumn(index)
 
     def _on_search_widget_column_visibility_index_changed(
         self, column: int, state: Qt.CheckState
-    ):
-        """Internal callback function that is called when the column visibility index changes.
+    ) -> None:
+        """Called when the column visibility index changes.
 
-        :param column: int with the column index.
-        :param state: Qt.CheckState with the state of the checkbox.
+        Args:
+            column: Number with the column index.
+            state: The `Qt.CheckState` with the state of the checkbox.
         """
 
         self._table_view.setColumnHidden(column, state == Qt.Unchecked)
 
-    def _on_table_view_context_menu_requested(self, position: QPoint):
-        """Internal callback function that is called when the custom context menu is requested.
+    def _on_table_view_context_menu_requested(self, position: QPoint) -> None:
+        """Called when the context menu is requested.
 
-        :param position: QPoint with the position of the context menu.
+        Args:
+            position: The `QPoint` with the position of the context menu.
         """
 
         menu = QMenu(parent=self)
@@ -396,14 +454,14 @@ class TableViewWidget(QFrame):
         self.contextMenuRequested.emit(selection, menu)
         menu.exec_(self._table_view.viewport().mapToGlobal(position))
 
-    def _on_reload_button_clicked(self):
-        """Internal callback function that is called when the reload button is clicked."""
+    def _on_reload_button_clicked(self) -> None:
+        """Called when the reload button is clicked."""
 
         self.refresh()
 
 
 class ViewSearchWidget(QWidget):
-    """Custom QWidget that allow to visualize column/row view (such as tables)."""
+    """Custom `QWidget` that allow to visualize column/row view (such as tables)."""
 
     columnVisibilityIndexChanged = Signal(int, int)
     columnFilterIndexChanged = Signal(int, int)
@@ -419,29 +477,32 @@ class ViewSearchWidget(QWidget):
         self._setup_layouts()
         self._setup_signals()
 
-    def set_header_visibility(self, state: bool):
-        """Sets the visibility of the header combo box.
+    def set_header_visibility(self, state: bool) -> None:
+        """Set the visibility of the header combo box.
 
-        :param state: bool with the state of the visibility.
+        Args:
+            state: A `bool` with the state of the visibility.
         """
 
         self._search_label.setVisible(state)
         self._search_header_combo.setVisible(state)
 
-    def set_header_items(self, items: list[str]):
-        """Sets the items of the header combo box.
+    def set_header_items(self, items: list[str]) -> None:
+        """Set the header items of the header combo box.
 
-        :param items: list[str] with the items to set.
+        Args:
+            items: Items to set.
         """
 
         self._search_header_combo.clear()
         for item in items:
             self._search_header_combo.addItem(item, is_checkable=False)
 
-    def set_visibility_items(self, items: list[str]):
-        """Sets the visibility items of the header combo box.
+    def set_visibility_items(self, items: list[str]) -> None:
+        """Set the visibility items of the header combo box.
 
-        :param items: list[str] with the items to set.
+        Args:
+            items: Items to set.
         """
 
         self._show_column_visibility_combo.clear()
@@ -449,7 +510,7 @@ class ViewSearchWidget(QWidget):
             self._show_column_visibility_combo.addItem(item, is_checkable=True)
 
     def _setup_widgets(self, show_column_visibility_box: bool = True):
-        """Internal function that sets up the widgets of the TableViewWidget."""
+        """Set up the widgets of the `TableViewWidget`."""
 
         self._search_label = QLabel("Search By:", parent=self)
         self._search_header_combo = BaseComboBox(parent=self)
@@ -466,7 +527,7 @@ class ViewSearchWidget(QWidget):
             )
 
     def _setup_layouts(self):
-        """Internal function that sets up the layouts of the widget."""
+        """Set up the layouts of the widget."""
 
         main_layout = HorizontalLayout()
         main_layout.setSpacing(uiconsts.SMALL_SPACING)
@@ -480,7 +541,7 @@ class ViewSearchWidget(QWidget):
         main_layout.addWidget(self._search_widget)
 
     def _setup_signals(self):
-        """Internal function that sets up the signals of the widget."""
+        """Set up the signals of the widget."""
 
         self._search_header_combo.itemSelected.connect(
             self.columnFilterIndexChanged.emit
@@ -490,10 +551,11 @@ class ViewSearchWidget(QWidget):
     def _on_show_column_visibility_combo_check_state_changed(
         self, index: int, state: bool
     ):
-        """Internal callback function that is called when the check state of the column visibility combo changes.
+        """Called when the check state of the column visibility combo changes.
 
-        :param index: int with the index of the column.
-        :param state: bool with the state of the checkbox.
+        Args:
+            index: Index of the clumn.
+            state: State of the checkbox.
         """
 
         self.columnVisibilityIndexChanged.emit(index, state)

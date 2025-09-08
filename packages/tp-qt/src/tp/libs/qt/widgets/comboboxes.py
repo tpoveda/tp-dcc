@@ -687,7 +687,7 @@ class ComboBoxSearchableWidget(ComboBoxAbstractWidget):
 
         self._box = BaseComboBox(items=items, parent=self)
         self._box.setToolTip(tooltip)
-        self._box.setFixedHeight(dpi.dpi_scale(24))
+        self._box.setFixedHeight(dpi.dpi_scale(28))
         if sort_alphabetically:
             self._box.setInsertPolicy(QComboBox.InsertAlphabetically)
             self._box.clear()

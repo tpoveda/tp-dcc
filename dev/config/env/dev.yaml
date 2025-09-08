@@ -20,9 +20,11 @@ tp-rpc:
     version: '0.1.0'
 tp-assets:
     version: '0.1.0'
-tp-utility-tools:
+tp-tools-utility:
     version: '0.1.0'
-tp-animation-tools:
+tp-tools-animation:
+    version: '0.1.0'
+tp-tools-rigging:
     version: '0.1.0'
 tp-modrig:
     version: '0.1.0'
