@@ -22,8 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseComboBox(QComboBox):
-    """
-    A base class for ComboBox widgets.
+    """A base class for ComboBox widgets.
 
     Signals:
     itemSelected (str): Emitted when an item is selected in the ComboBox.
@@ -34,8 +33,7 @@ class BaseComboBox(QComboBox):
     checkStateChanged = Signal(int, int)
 
     def __init__(self, items: list[str] | None = None, parent: QWidget | None = None):
-        """
-        Initializes the BaseComboBox.
+        """Initializes the BaseComboBox.
 
         :param items: A list of items to populate the ComboBox with. Defaults to None.
         :param parent: The parent widget. Defaults to None.
@@ -70,8 +68,7 @@ class BaseComboBox(QComboBox):
         self.view().pressed.connect(self._on_view_pressed)
 
     def setModel(self, model):
-        """
-        Overrides `setModel` method to set the model for the ComboBox.
+        """Overrides `setModel` method to set the model for the ComboBox.
 
         :param model: model to set.
         """
@@ -81,8 +78,7 @@ class BaseComboBox(QComboBox):
         self._completer.setModel(self._filter_model)
 
     def setModelColumn(self, visible_column: int):
-        """
-        Overrides `setModelColumn` method to set the column of the model to be displayed.
+        """Overrides `setModelColumn` method to set the column of the model to be displayed.
 
         :param visible_column: column to display.
         """
@@ -92,8 +88,7 @@ class BaseComboBox(QComboBox):
         super().setModelColumn(visible_column)
 
     def keyPressEvent(self, event: QKeyEvent):
-        """
-        Overrides `keyPressEvent` function to handle key press events.
+        """Overrides `keyPressEvent` function to handle key press events.
 
         This method handles key press events.
 
@@ -116,8 +111,7 @@ class BaseComboBox(QComboBox):
         user_data: Any = ...,
         is_checkable: bool = False,
     ):
-        """
-        Overrides `addItem` function to adds an item to the ComboBox.
+        """Overrides `addItem` function to adds an item to the ComboBox.
 
         This method adds an item to the ComboBox.
 
@@ -143,8 +137,7 @@ class BaseComboBox(QComboBox):
             item.setCheckState(Qt.Checked)
 
     def items(self) -> list[QStandardItem]:
-        """
-        Returns a list of checked items in the ComboBox.
+        """Returns a list of checked items in the ComboBox.
 
         :return: list of checked items.
         """
@@ -161,8 +154,7 @@ class BaseComboBox(QComboBox):
         return items
 
     def checked_items(self) -> list[QStandardItem]:
-        """
-        Returns a list of checked items in the ComboBox.
+        """Returns a list of checked items in the ComboBox.
 
         :return: list of checked items.
         """
@@ -179,8 +171,7 @@ class BaseComboBox(QComboBox):
         return items
 
     def _on_completer_activated(self, text: str):
-        """
-        Internal callback function that is called when an item is activated in the completer.
+        """Internal callback function that is called when an item is activated in the completer.
 
         :param text: The text of the activated item.
         """
@@ -193,8 +184,7 @@ class BaseComboBox(QComboBox):
         self.activated.emit(str(self.itemText(index)))
 
     def _on_view_pressed(self, index: QModelIndex):
-        """
-        Internal callback function that is called when an item is pressed in the view.
+        """Internal callback function that is called when an item is pressed in the view.
 
         :param index: The model index of the pressed item.
         """
@@ -210,9 +200,7 @@ class BaseComboBox(QComboBox):
 
 
 class NoWheelComboBox(QComboBox):
-    """
-    Extended QComboBox class that ignores wheelEvent functionality.
-    """
+    """Extended QComboBox class that ignores wheelEvent functionality."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -220,8 +208,7 @@ class NoWheelComboBox(QComboBox):
         self.setFocusPolicy(Qt.StrongFocus)
 
     def wheelEvent(self, event: QWheelEvent):
-        """
-        Overrides the wheelEvent function to ignore wheel events.
+        """Overrides the wheelEvent function to ignore wheel events.
 
         :param event: Qt wheel event.
         """
@@ -230,15 +217,13 @@ class NoWheelComboBox(QComboBox):
 
 
 class ComboBoxAbstractWidget(QWidget):
-    """
-    A base class for ComboBox widgets.
+    """A base class for ComboBox widgets.
 
     This class serves as a base for ComboBox widgets.
     """
 
     class ComboItemChangedEvent:
-        """
-        A class representing a ComboItemChanged event.
+        """A class representing a ComboItemChanged event.
 
         This class represents an event that occurs when a combo box item is changed.
         """
@@ -249,8 +234,7 @@ class ComboBoxAbstractWidget(QWidget):
             current_index: int,
             parent: ComboBoxAbstractWidget,
         ):
-            """
-            Initializes the ComboItemChangedEvent.
+            """Initializes the ComboItemChangedEvent.
 
             :param previous_index: The previous index of the combo box.
             :param current_index: The current index of the combo box.
@@ -263,8 +247,7 @@ class ComboBoxAbstractWidget(QWidget):
 
         @property
         def text(self) -> str:
-            """
-            Gets the text associated with the event.
+            """Gets the text associated with the event.
 
             This property returns the text associated with the ComboItemChanged event.
 
@@ -275,8 +258,7 @@ class ComboBoxAbstractWidget(QWidget):
 
         @property
         def prev_text(self) -> str:
-            """
-            Gets the previous text associated with the event.
+            """Gets the previous text associated with the event.
 
             This property returns the previous text associated with the ComboItemChanged event.
 
@@ -287,8 +269,7 @@ class ComboBoxAbstractWidget(QWidget):
 
         @property
         def data(self) -> Any:
-            """
-            Gets the data associated with the event.
+            """Gets the data associated with the event.
 
             This property returns the data associated with the ComboItemChanged event.
 
@@ -299,8 +280,7 @@ class ComboBoxAbstractWidget(QWidget):
 
         @property
         def prev_data(self) -> Any:
-            """
-            Gets the previous data associated with the event.
+            """Gets the previous data associated with the event.
 
             This property returns the previous data associated with the ComboItemChanged event.
 
@@ -311,8 +291,7 @@ class ComboBoxAbstractWidget(QWidget):
 
         @property
         def index(self) -> int:
-            """
-            Gets the index associated with the event.
+            """Gets the index associated with the event.
 
             This property returns the index associated with the ComboItemChanged event.
 
@@ -326,8 +305,7 @@ class ComboBoxAbstractWidget(QWidget):
     _PREV_INDEX: int | None = None
 
     def __init__(self, parent: QWidget | None = None):
-        """
-        Initializes the ComboBoxAbstractWidget.
+        """Initializes the ComboBoxAbstractWidget.
 
         :param parent: parent widget. Defaults to None.
         """
@@ -337,8 +315,7 @@ class ComboBoxAbstractWidget(QWidget):
         self._box: QComboBox | None = None
 
     def __getattr__(self, item):
-        """
-        Gets the attribute from the combo box if it exists.
+        """Gets the attribute from the combo box if it exists.
 
         This method returns the attribute from the combo box if it exists.
 
@@ -351,8 +328,7 @@ class ComboBoxAbstractWidget(QWidget):
 
     @property
     def activated(self) -> Signal:
-        """
-        Returns the activated signal of the combo box.
+        """Returns the activated signal of the combo box.
 
         :return: activated signal.
         """
@@ -361,8 +337,7 @@ class ComboBoxAbstractWidget(QWidget):
 
     @property
     def current_index_changed(self) -> Signal:
-        """
-        Returns the current index changed signal of the combo box.
+        """Returns the current index changed signal of the combo box.
 
         :return: current index changed signal.
         """
@@ -370,8 +345,7 @@ class ComboBoxAbstractWidget(QWidget):
         return self._box.currentIndexChanged
 
     def blockSignals(self, flag: bool):
-        """
-        Overrides `blockSignals` function to block or unblock signals for the combo box and label.
+        """Overrides `blockSignals` function to block or unblock signals for the combo box and label.
 
         This method blocks or unblocks signals for the combo box and label based on the flag provided.
 
@@ -384,8 +358,7 @@ class ComboBoxAbstractWidget(QWidget):
         super().blockSignals(flag)
 
     def value(self) -> str:
-        """
-        Returns the literal value of the combobox.
+        """Returns the literal value of the combobox.
 
         :return: combobox value.
         """
@@ -393,8 +366,7 @@ class ComboBoxAbstractWidget(QWidget):
         return str(self._box.currentText())
 
     def count(self) -> int:
-        """
-        Returns the total number of items within the combobox.
+        """Returns the total number of items within the combobox.
 
         :return: combobox items count.
         """
@@ -404,8 +376,7 @@ class ComboBoxAbstractWidget(QWidget):
     def add_item(
         self, item: str, sort_alphabetically: bool = False, user_data: Any = None
     ):
-        """
-        Adds an item to the combobox with the given text and containing the given user data.
+        """Adds an item to the combobox with the given text and containing the given user data.
 
         :param item: name to add to the combo box.
         :param sort_alphabetically: whether to sort the full combo box alphabetically after adding the item.
@@ -417,8 +388,7 @@ class ComboBoxAbstractWidget(QWidget):
             self._box.model().sort(0)
 
     def add_items(self, items: Sequence[str], sort_alphabetically: bool = False):
-        """
-        Adds given items to the combobox.
+        """Adds given items to the combobox.
 
         :param items: names to add to the combo box.
         :param sort_alphabetically: whether to sort the full combo box alphabetically after adding the items.
@@ -429,15 +399,12 @@ class ComboBoxAbstractWidget(QWidget):
             self._box.model().sort(0)
 
     def clear(self):
-        """
-        Clears all combobox items.
-        """
+        """Clears all combobox items."""
 
         self._box.clear()
 
     def current_index(self) -> int:
-        """
-        Returns the current item index.
+        """Returns the current item index.
 
         :return: item index.
         """
@@ -445,8 +412,7 @@ class ComboBoxAbstractWidget(QWidget):
         return int(self._box.currentIndex())
 
     def set_index(self, index: int, quiet: bool = False):
-        """
-        Sets current combo box index.
+        """Sets current combo box index.
 
         :param index: index to set.
         :param quiet: whether combo box should emit signals.
@@ -460,8 +426,7 @@ class ComboBoxAbstractWidget(QWidget):
             self._box.blockSignals(False)
 
     def item_text(self, index: int) -> str:
-        """
-        Returns the text of the combo box item located at given index.
+        """Returns the text of the combo box item located at given index.
 
         :param index: combo box item index to get text for.
         :return: item text.
@@ -470,8 +435,7 @@ class ComboBoxAbstractWidget(QWidget):
         return self._box.itemText(index)
 
     def iterate_item_texts(self) -> Iterator[str]:
-        """
-        Generator function that yields all item texts in the combobox.
+        """Generator function that yields all item texts in the combobox.
 
         :return: iterated item texts.
         """
@@ -480,8 +444,7 @@ class ComboBoxAbstractWidget(QWidget):
             yield self.item_text(i)
 
     def item_texts(self) -> list[str]:
-        """
-        Returns all item texts in the combobox.
+        """Returns all item texts in the combobox.
 
         :return: list of item texts.
         """
@@ -489,8 +452,7 @@ class ComboBoxAbstractWidget(QWidget):
         return list(self.iterate_item_texts())
 
     def set_item_text(self, index: int, text: str):
-        """
-        Sets the text of the item at given index.
+        """Sets the text of the item at given index.
 
         :param index: index of the item we want to set text of.
         :param text: item text.
@@ -499,8 +461,7 @@ class ComboBoxAbstractWidget(QWidget):
         self._box.setItemText(index, text)
 
     def current_text(self) -> str:
-        """
-        Returns the current selected item text.
+        """Returns the current selected item text.
 
         :return: current item text.
         """
@@ -510,8 +471,7 @@ class ComboBoxAbstractWidget(QWidget):
     def set_to_text(
         self, text: str, flags: Qt.MatchFlags = Qt.MatchFixedString, quiet: bool = False
     ):
-        """
-        Sets the index based on given text.
+        """Sets the index based on given text.
 
         :param text: text to search and switch the combo box to.
         :param Qt.MatchFlags flags: optional match flags.
@@ -531,8 +491,7 @@ class ComboBoxAbstractWidget(QWidget):
     def remove_item_by_text(
         self, text: str, flags: Qt.MatchFlags = Qt.MatchFixedString
     ):
-        """
-        Removes the index based on the text from the combobox.
+        """Removes the index based on the text from the combobox.
 
         :param text: text to search and delete based on given flags.
         :param flags: optional match flags.
@@ -543,8 +502,7 @@ class ComboBoxAbstractWidget(QWidget):
             self._box.removeItem(index)
 
     def item_data(self, index: int, role: Qt.ItemDataRole = Qt.UserRole) -> Any:
-        """
-        Returns the data of the combo box item located at given index and with given data role.
+        """Returns the data of the combo box item located at given index and with given data role.
 
         :param index: combo box item index to get data for.
         :param role: role of the data to get.
@@ -554,8 +512,7 @@ class ComboBoxAbstractWidget(QWidget):
         return self._box.itemData(index, role)
 
     def iterate_item_data(self) -> Iterator[Any]:
-        """
-        Generator function that yields all item data available in the combo box.
+        """Generator function that yields all item data available in the combo box.
 
         :return: iterated data.
         """
@@ -564,8 +521,7 @@ class ComboBoxAbstractWidget(QWidget):
             yield self._box.itemData(i)
 
     def current_data(self, role: Qt.ItemDataRole = Qt.UserRole) -> Any:
-        """
-        Returns the data of the current selected combo box item.
+        """Returns the data of the current selected combo box item.
 
         :param role: role of the data to get.
         :return: item data.
@@ -574,8 +530,7 @@ class ComboBoxAbstractWidget(QWidget):
         return self._box.currentData(role)
 
     def set_item_data(self, index: int, value: Any):
-        """
-        Sets the data of the item at given index.
+        """Sets the data of the item at given index.
 
         :param index: index to assign data to.
         :param value: data to assign.
@@ -584,8 +539,7 @@ class ComboBoxAbstractWidget(QWidget):
         self._box.setItemData(index, value)
 
     def set_label_fixed_width(self, width: int):
-        """
-        Sets the fixed width of the label.
+        """Sets the fixed width of the label.
 
         :param width: new label fixed width in pixels.
         """
@@ -593,8 +547,7 @@ class ComboBoxAbstractWidget(QWidget):
         self._label.setFixedWidth(dpi.dpi_scale(width))
 
     def set_combo_box_fixed_width(self, width: int):
-        """
-        Sets the fixed width of the combobox.
+        """Sets the fixed width of the combobox.
 
         :param int width: new combobox fixed width in pixels.
         """
@@ -602,9 +555,7 @@ class ComboBoxAbstractWidget(QWidget):
         self._box.setFixedWidth(dpi.dpi_scale(width))
 
     def _on_item_changed(self):
-        """
-        Callback function that is called by internal combo box when current its index changes.
-        """
+        """Callback function that is called by internal combo box when current its index changes."""
 
         event = ComboBoxAbstractWidget.ComboItemChangedEvent(
             int(self._PREV_INDEX if self._PREV_INDEX is not None else -1),
@@ -616,9 +567,7 @@ class ComboBoxAbstractWidget(QWidget):
 
 
 class ComboBoxRegularWidget(ComboBoxAbstractWidget):
-    """
-    Standard widget that contains a regular (not searchable) combo box with a label.
-    """
+    """Standard widget that contains a regular (not searchable) combo box with a label."""
 
     # noinspection SpellCheckingInspection
     def __init__(
@@ -637,8 +586,7 @@ class ComboBoxRegularWidget(ComboBoxAbstractWidget):
         support_middle_mouse_scroll: bool = True,
         parent: QWidget | None = None,
     ):
-        """
-        Initializes the ComboBoxRegularWidget.
+        """Initializes the ComboBoxRegularWidget.
 
         :param label: The text for the label. Defaults to an empty string.
         :param items: The items to be added to the combo box. Defaults to None.
@@ -697,8 +645,7 @@ class ComboBoxRegularWidget(ComboBoxAbstractWidget):
 
     @property
     def label(self) -> labels.BaseLabel:
-        """
-        Getter method that returns label associated the combobox.
+        """Getter method that returns label associated the combobox.
 
         :return: combobox label.
         """
@@ -719,8 +666,7 @@ class ComboBoxSearchableWidget(ComboBoxAbstractWidget):
         sort_alphabetically: bool = False,
         parent: QWidget | None = None,
     ):
-        """
-        Initializes the ComboBoxSearchable.
+        """Initializes the ComboBoxSearchable.
 
         :param label: The text for the label. Defaults to an empty string.
         :param items: The items to be added to the combo box. Defaults to None.
@@ -735,11 +681,13 @@ class ComboBoxSearchableWidget(ComboBoxAbstractWidget):
         super().__init__(parent=parent)
 
         main_layout = layouts.HorizontalLayout()
+        main_layout.setSpacing(2)
+        main_layout.setContentsMargins(2, 2, 2, 2)
         self.setLayout(main_layout)
 
         self._box = BaseComboBox(items=items, parent=self)
         self._box.setToolTip(tooltip)
-        self._box.setFixedHeight(dpi.dpi_scale(20))
+        self._box.setFixedHeight(dpi.dpi_scale(24))
         if sort_alphabetically:
             self._box.setInsertPolicy(QComboBox.InsertAlphabetically)
             self._box.clear()

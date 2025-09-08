@@ -6,7 +6,7 @@ from Qt.QtGui import QPixmap, QIcon, QResizeEvent, QKeyEvent
 
 from tp.libs.python import paths
 
-from .. import dpi
+from .. import dpi, icons
 from ..widgets import layouts, buttons
 
 
@@ -54,18 +54,14 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
             icon_size = 62
 
         self._clear_button = buttons.IconMenuButton(parent=self)
-        self._clear_button.setIcon(
-            QIcon(paths.canonical_path("../../resources/icons/close_64.png"))
-        )
+        self._clear_button.setIcon(icons.icon("close"))
         self._clear_button.setIconSize(QSize(icon_size - 6, icon_size - 6))
         self._clear_button.setFixedSize(QSize(icon_size, icon_size))
         self._clear_button.setFocusPolicy(Qt.NoFocus)
         self._clear_button.hide()
         self._search_button = buttons.IconMenuButton(parent=self)
         self._search_button.setAttribute(Qt.WA_TransparentForMouseEvents, True)
-        self._search_button.setIcon(
-            QIcon(paths.canonical_path("../../resources/icons/search_64.png"))
-        )
+        self._search_button.setIcon(icons.icon("search"))
         self._search_button.setIconSize(QSize(4, 4))
         self._search_button.setFixedSize(QSize(4, 4))
         self._search_button.setEnabled(True)
@@ -82,6 +78,7 @@ class SearchFindWidget(QWidget, dpi.DPIScaling):
 
         self.layout().addWidget(self._search_line)
 
+    # noinspection PyUnresolvedReferences
     def setup_signals(self):
         """Connects signals for all widget UI widgets."""
 
@@ -331,12 +328,8 @@ class SearchLineEdit(QLineEdit, dpi.DPIScaling):
 
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
-        clear_pixmap = QPixmap(
-            paths.canonical_path("../../resources/icons/close_64.png")
-        )
-        search_pixmap = QPixmap(
-            paths.canonical_path("../../resources/icons/search_64.png")
-        )
+        clear_pixmap = QPixmap(icons.icon_path("close")["sizes"][64]["path"])
+        search_pixmap = QPixmap(icons.icon_path("search")["sizes"][64]["path"])
 
         self._clear_action = self.addAction(
             QIcon(clear_pixmap), QLineEdit.TrailingPosition
@@ -346,7 +339,7 @@ class SearchLineEdit(QLineEdit, dpi.DPIScaling):
             QIcon(search_pixmap), QLineEdit.LeadingPosition
         )
 
-        self.setStyleSheet(f"border-radius: {dpi.dpi_scale(9)}px;")
+        self.setStyleSheet(f"border-radius: {dpi.dpi_scale(12)}px;")
 
         self._clear_action.triggered.connect(self.clear)
         self.textChanged.connect(self._on_text_changed)

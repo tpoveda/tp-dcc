@@ -191,7 +191,7 @@ class IconsManager(metaclass=Singleton):
         return QIcon(pixmap)
 
     @classmethod
-    def icon(cls, icon_name: str, size: int = 16) -> QIcon | None:
+    def icon(cls, icon_name: str, size: int = 24) -> QIcon | None:
         """Create and returns a `QIcon` object based on the given icon name
         and size.
 
@@ -204,7 +204,7 @@ class IconsManager(metaclass=Singleton):
             icon_name: The name or path of the icon to be loaded. This can be
                 a resource path (e.g., starting with ":/" or "qrc:/") or a
                 custom icon name.
-            size: The desired size of the icon. Defaults to 16. If the size
+            size: The desired size of the icon. Defaults to 24. If the size
                 is -1, the icon will not be resized.
 
         Returns:
@@ -247,7 +247,7 @@ def manager() -> IconsManager:
     return _manager_instance
 
 
-def icon(icon_name: str, size: int = 16) -> QIcon | None:
+def icon(icon_name: str, size: int = 24) -> QIcon | None:
     """Create and returns a `QIcon` object based on the given icon name and
     size.
 
@@ -255,7 +255,7 @@ def icon(icon_name: str, size: int = 16) -> QIcon | None:
         icon_name: The name or path of the icon to be loaded. This can be a
             resource path (e.g., starting with ":/" or "qrc:/") or a custom
             icon name.
-        size: The desired size of the icon. Defaults to 16. If the size is -1,
+        size: The desired size of the icon. Defaults to 24. If the size is -1,
             the icon will not be resized.
 
     Returns:
@@ -265,14 +265,14 @@ def icon(icon_name: str, size: int = 16) -> QIcon | None:
     return manager().icon(icon_name, size)
 
 
-def icon_data_for_name(icon_name: str, size: int = 16) -> IconSizeDict:
+def icon_data_for_name(icon_name: str, size: int = 24) -> IconSizeDict:
     """Return icon data for a given icon name and size.
 
     Args:
         icon_name: The name of the icon for which to retrieve data. If the name
             includes a numeric suffix separated by an underscore, it will be
             treated as the size.
-        size: The desired size of the icon. Defaults to 16 if not explicitly
+        size: The desired size of the icon. Defaults to 24 if not explicitly
             provided or if a size cannot be determined from the icon name.
 
     Returns:
@@ -285,7 +285,7 @@ def icon_data_for_name(icon_name: str, size: int = 16) -> IconSizeDict:
     return manager().icon_data_for_name(icon_name, size)
 
 
-def icon_path_for_name(icon_name: str, size: int = 16) -> str:
+def icon_path_for_name(icon_name: str, size: int = 24) -> str:
     """Return the file path of the icon for the specified name and size.
 
     Args:
@@ -311,4 +311,3 @@ def icon_path(icon_name: str) -> IconDict:
     """
 
     return manager().icon_path(icon_name)
-

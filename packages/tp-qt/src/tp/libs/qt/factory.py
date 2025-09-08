@@ -1184,7 +1184,7 @@ def left_aligned_button(
 def styled_button(
     text: str = "",
     button_icon: QIcon | None = None,
-    icon_size: int = 16,
+    icon_size: int = 24,
     icon_color: tuple[int, int, int] or None = None,
     overlay_icon_color: tuple[int, int, int] or None = None,
     overlay_icon: QIcon | None = None,
