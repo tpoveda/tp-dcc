@@ -22,5 +22,7 @@ tp-assets:
     version: '0.1.0'
 tp-utility-tools:
     version: '0.1.0'
+tp-animation-tools:
+    version: '0.1.0'
 tp-modrig:
     version: '0.1.0'
