@@ -42,3 +42,6 @@ CACHE_FOLDER_PATH_ENV_VAR: Final[str] = "TP_DCC_CACHE_FOLDER_PATH"
 
 # Filter for the package dependencies in the package descriptor.
 PACKAGE_DEPENDENCIES_FILTER = r"\{(.*?)\}"
+
+# Environment variable that defines if the current user is a TP DCC admin user.
+TP_DCC_ADMIN_ENV_VAR = "TP_DCC_ADMIN"

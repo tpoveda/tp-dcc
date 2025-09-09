@@ -243,3 +243,27 @@ class PackagesManager:
 
         # Remove the current packages manager instance.
         PackagesManager.set_current(None)
+
+    # noinspection PyMethodMayBeStatic
+    def is_admin(self) -> bool:
+        """Returns whether the current user has admin privileges.
+
+        Returns:
+            True if the current user has admin privileges; False otherwise.
+        """
+
+        try:
+            return bool(int(os.getenv(constants.TP_DCC_ADMIN_ENV_VAR, "0")))
+        except TypeError:
+            return False
+
+    # noinspection PyMethodMayBeStatic
+    def set_is_admin(self, flag: bool):
+        """Sets whether the current user has admin privileges.
+
+        Args:
+            flag: `True` to set the current user as admin; `False` otherwise.
+        """
+
+        logger.info(f"Setting admin flag to: {flag}")
+        os.environ[constants.TP_DCC_ADMIN_ENV_VAR] = str(int(flag))
