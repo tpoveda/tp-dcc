@@ -152,13 +152,20 @@ class PluginsManager:
 
         return self._name
 
-    def register_paths(self, paths: Sequence[str | None]):
+    def register_paths(
+        self,
+        paths: Sequence[str | None],
+        error_callback: Callable[[str], bool] | None = None,
+    ):
         """Loops recursively through the given paths discovering and
         registering all the plugins found.
 
         Args:
-            paths: list of absolute paths to search for plugins in them
+            paths: List of absolute paths to search for plugins in them
                 recursively.
+            error_callback: optional callback to be called when an error
+                happens while registering a plugin. The callback will receive
+                the error message as an argument.
         """
 
         valid_paths = [path for path in paths if path and path not in self._base_paths]
@@ -172,18 +179,23 @@ class PluginsManager:
                 continue
             visited.add(real_path)
             if os.path.isdir(real_path):
-                self.register_by_package(real_path)
+                self.register_by_package(real_path, error_callback=error_callback)
             elif os.path.isfile(real_path):
-                self.register_path(real_path)
+                self.register_path(real_path, error_callback=error_callback)
             else:
                 # Handle edge cases: broken symlinks, special files, etc.
                 self._logger.warning(f"Skipping unsupported path: {real_path}")
 
-    def register_path(self, path: str) -> ModuleType | None:
+    def register_path(
+        self, path: str, error_callback: Callable[[str], bool] | None = None
+    ) -> ModuleType | None:
         """Registers a plugin based on the given path.
 
         Args:
             path: absolute path to the plugin file to register.
+            error_callback: optional callback to be called when an error
+                happens while registering a plugin. The callback will receive
+                the error message as an argument.
 
         Returns:
             ModuleType: module that was registered if successful; None
@@ -197,13 +209,52 @@ class PluginsManager:
             dotted_path = modules.convert_to_dotted_path(path)
             if dotted_path:
                 if self._log_errors:
-                    imported_module = modules.import_module(dotted_path)
+                    try:
+                        imported_module = modules.import_module(dotted_path)
+                    except ImportError:
+                        self._logger.warning(
+                            f"Failed to import plugin as a dotted path: "
+                            f"{dotted_path}, falling back to basename...",
+                            exc_info=True,
+                        )
                 else:
                     imported_module = modules.safe_import_module(dotted_path)
+            else:
+                if self._log_errors:
+                    # noinspection PyBroadException
+                    try:
+                        imported_module = modules.import_module(path)
+                    except ImportError:
+                        self._logger.error(
+                            f"Failed to import plugin module: {path}, skipped...",
+                            exc_info=True,
+                        )
+                        return None
+                    except Exception:
+                        if error_callback is not None:
+                            if error_callback(path):
+                                raise
+                        else:
+                            raise
+
         elif modules.is_dotted_path(path):
             self._logger.debug(f'Loading plugin from dotted path: "{path}"')
             if self._log_errors:
-                imported_module = modules.import_module(path)
+                # noinspection PyBroadException
+                try:
+                    imported_module = modules.import_module(path)
+                except ImportError:
+                    self._logger.error(
+                        f"Failed to import plugin module: {path}, skipped...",
+                        exc_info=True,
+                    )
+                    return None
+                except Exception:
+                    if error_callback is not None:
+                        if error_callback(path):
+                            raise
+                    else:
+                        raise
             else:
                 imported_module = modules.safe_import_module(path)
 
@@ -229,20 +280,25 @@ class PluginsManager:
         )
         self.register_paths(paths)
 
-    def register_by_package(self, package_path: str):
+    def register_by_package(
+        self, package_path: str, error_callback: Callable[[str], bool] | None = None
+    ):
         """Loops through all the Python modules found in the given package
         path and registers all plugin classes that inherit from the manager
         plugin interfaces.
 
         Args:
-            package_path: absolute path to the package to register.
+            package_path: Absolute path to the package to register.
+            error_callback: Optional callback to be called when an error
+                happens while registering a plugin. The callback will receive
+                the error message as an argument.
         """
 
         for module_path in modules.iterate_package_modules(package_path):
             if not module_path or module_path.endswith(".pyc"):
                 continue
 
-            self.register_path(module_path)
+            self.register_path(module_path, error_callback=error_callback)
 
     def register_by_module(self, module: ModuleType):
         """Loops through all the class members defined within the given Python
