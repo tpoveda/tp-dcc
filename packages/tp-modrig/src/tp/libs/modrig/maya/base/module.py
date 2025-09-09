@@ -13,13 +13,13 @@ from tp.libs.maya.om import attributetypes
 from . import constants, errors
 from ..services import naming
 from ..meta.module import MetaModule
-from ..meta.layers import MetaModulesLayer
+from ..meta.layers import MetaGuidesLayer, MetaModulesLayer
 from ..descriptors.module import (
     load_descriptor,
-    parse_raw_descriptor,
     migrate_to_latest_version,
     ModuleDescriptor,
 )
+from ..descriptors.utils import parse_raw_descriptor
 
 if typing.TYPE_CHECKING:
     from tp.libs.naming.manager import NameManager
@@ -308,6 +308,30 @@ class Module:
         """
 
         return self._meta.root_transform() if self.exists() else None
+
+    def find_layer(self, layer_type: str) -> MetaGuidesLayer | None:
+        """Find a specific layer by its type within the module.
+
+        Args:
+            layer_type: The type of the layer to find.
+
+        Returns:
+            The found layer instance if it exists; `None` if the module
+            does not exist in the scene or if no such layer is found.
+
+        Raises:
+            ValueError: If the provided layer type is not recognized.
+        """
+
+        if layer_type not in constants.LAYER_TYPES:
+            raise ValueError(
+                f'Invalid layer type: "{layer_type}", available types: {constants.LAYER_TYPES}'
+            )
+
+        if not self.exists():
+            return None
+
+        return self._meta.layer(layer_type)
 
     @profiler.fn_timer
     def create(
@@ -943,6 +967,27 @@ class Module:
             and self._meta.attribute(constants.MODULE_HAS_GUIDE_CONTROLS_ATTR).value()
         )
 
+    def guide_layer(self) -> MetaGuidesLayer | None:
+        """Return the guide layer metanode for this module instance.
+
+        The guide layer contains all the guide elements for this module,
+        which are used during the rigging process to define the structure
+        and placement of the rig.
+
+        Returns:
+            The guide layer metanode instance if it exists; `None` if the
+            module does not exist in the scene or if no guide layer is found.
+        """
+
+        if not self.exists():
+            return None
+
+        cached = self._build_objects_cache.get(MetaGuidesLayer.ID)
+        if cached is not None:
+            return cached
+
+        return self._meta.layer(constants.GUIDE_LAYER_TYPE)
+
     @profiler.fn_timer
     def build_guides(self):
         if not self.exists():
@@ -953,6 +998,13 @@ class Module:
         if self.has_guides():
             self.guide_layer().root_transform().show()
 
+        if self.has_polished():
+            self._set_has_polished(False)
+
+        has_skeleton = self.has_skeleton()
+        if has_skeleton:
+            self._set_has_skeleton(False)
+
         self.logger.debug(f"Building guides for module: {self.name()}")
 
         self._is_building_guides = True
@@ -961,16 +1013,141 @@ class Module:
         if container is None:
             container = self.create_container()
             self._build_objects_cache["container"] = container
-        container.makeCurrent(True)
-        container.lock(False)
+        if container is not None:
+            container.makeCurrent(True)
+            container.lock(False)
 
         self.logger.debug(f"Starting guide build with namespace: {self.namespace()}")
+
+        try:
+            hierarchy_name, meta_name = naming.compose_names_for_layer(
+                self.naming_manager(),
+                self.name(),
+                self.side(),
+                constants.GUIDE_LAYER_TYPE,
+            )
+            guide_layer = self._meta.create_layer(
+                constants.GUIDE_LAYER_TYPE,
+                hierarchy_name,
+                meta_name,
+                parent=self._meta.root_transform(),
+            )
+            guide_layer.update_metadata(
+                self._descriptor.guide_layer.get(constants.METADATA_DESCRIPTOR_KEY)
+            )
+            self._build_objects_cache[MetaGuidesLayer.ID] = guide_layer
+
+            self.logger.debug("Executing `pre_setup_guides` hook...")
+            self.pre_setup_guides()
+
+            self.logger.debug("Executing `setup_guides` hook...")
+            self.setup_guides()
+
+            self.logger.debug("Executing `post_setup_guides` hook...")
+            self.post_setup_guides()
+
+        except Exception:
+            self.logger.error("Failed to setup guides", exc_info=True)
+            self._set_has_guide(False)
+            raise errors.BuildModuleGuideUnknownError(
+                f"Failed {self.name()}_{self.side()}"
+            )
+        finally:
+            if container is not None:
+                container.makeCurrent(False)
+            self._is_building_guides = False
+            self._build_objects_cache.clear()
+
+        return True
+
+    def _set_has_guide(self, state: bool):
+        """Set the state that defines whether the guides for this module
+        have been built.
+
+        Args:
+            state: The state to set.
+        """
+
+        self.logger.debug(f"Setting has guide state to: {state}")
+        has_guide_attr = self._meta.attribute(constants.MODULE_HAS_GUIDE_ATTR)
+        has_guide_attr.lock(False)
+        has_guide_attr.set(state)
+
+    def pre_setup_guide(self):
+        self.logger.debug("Running `pre_setup_guide`...")
+
+        self._setup_guide_settings()
+
+    def _setup_guide_settings(self):
+        self.logger.debug("Creating guide settings from module descriptor ...")
+        guide_layer = self.guide_layer()
+        module_settings = self.descriptor.guide_layer.settings
+        if not module_settings:
+            return
 
     def pin(self):
         pass
 
     def unpin(self):
         pass
+
+    # endregion
+
+    # region === Skeleton === #
+
+    def has_skeleton(self) -> bool:
+        """Check if the skeleton for this module has been built.
+
+        Returns:
+            `True` if the skeleton has been built; `False` otherwise.
+        """
+
+        return (
+            self.exists()
+            and self._meta.attribute(constants.MODULE_HAS_SKELETON_ATTR).value()
+        )
+
+    def _set_has_skeleton(self, state: bool) -> None:
+        """Set the state that defines whether the skeleton for this module
+        have been built.
+
+        Args:
+            state: The state to set.
+        """
+
+        self.logger.debug(f"Setting has skeleton state to: {state}")
+        has_skeleton_attr = self._meta.attribute(constants.MODULE_HAS_SKELETON_ATTR)
+        has_skeleton_attr.lock(False)
+        has_skeleton_attr.set(state)
+
+    # endregion
+
+    # region === Polish === #
+
+    def has_polished(self) -> bool:
+        """Check if the polish for this module has been built.
+
+        Returns:
+            `True` if the polish has been built; `False` otherwise.
+        """
+
+        return (
+            self.exists()
+            and self._meta.attribute(constants.MODULE_HAS_POLISHED_ATTR).value()
+        )
+
+    def _set_has_polished(self, state: bool) -> None:
+        """Set the state that defines whether the polish for this module
+        has been built.
+
+        Args:
+            state: The state to set.
+        """
+
+        self.logger.debug(f"Setting has polished state to: {state}")
+        has_polished_attr = self._meta.attribute(constants.MODULE_HAS_POLISHED_ATTR)
+        has_polished_attr.lock(False)
+        has_polished_attr.set(state)
 
     # endregion
 

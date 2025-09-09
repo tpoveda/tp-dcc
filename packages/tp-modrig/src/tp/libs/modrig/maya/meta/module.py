@@ -8,13 +8,14 @@ from maya.api import OpenMaya
 from tp.libs.maya import factory
 from tp.libs.maya.om import attributetypes
 from tp.libs.maya.wrapper import DagNode
-from tp.libs.maya.meta.base import MetaBase
+from tp.libs.maya.meta.base import MetaBase, create_meta_node_by_type
 
-from .layers import MetaLayerType, MetaGeometryLayer
+from .layers import MetaLayerType, MetaGuidesLayer, MetaGeometryLayer
 from ..base import constants
 
 
 MODULE_LAYER_TYPE_IDS: list[str] = [
+    MetaGuidesLayer.ID,
     MetaGeometryLayer.ID,
 ]
 
@@ -239,5 +240,44 @@ class MetaModule(MetaBase):
         """
 
         return cast(MetaGeometryLayer | None, self.layer(constants.GEOMETRY_LAYER_TYPE))
+
+    def create_layer(
+        self,
+        layer_type: str,
+        hierarchy_name: str,
+        meta_name: str,
+        parent: DagNode | None = None,
+    ) -> MetaLayerType | None:
+        """Create a new layer of the specified type.
+
+        Args:
+            layer_type: The type of the layer to create.
+            hierarchy_name: The name of the layer root transform node to create.
+            meta_name: The name of the metanode to create.
+            parent: The parent node under which the layer will be created. If
+                `None`, the layer will be created at the root level.
+
+        Notes:
+            If a layer of the specified type already exists, it will be
+                returned instead of creating a new one.
+
+        Returns:
+            The newly created `MetaLayer` instance.
+        """
+
+        existing_layer = self.layer(layer_type)
+        if existing_layer:
+            return existing_layer
+
+        new_layer = cast(
+            MetaLayerType, create_meta_node_by_type(layer_type, name=meta_name)
+        )
+        if not new_layer:
+            return None
+
+        new_layer.create_transform(name=hierarchy_name, parent=parent)
+        self.add_meta_child(new_layer)
+
+        return new_layer
 
     # endregion

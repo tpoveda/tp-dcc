@@ -8,6 +8,7 @@ from tp.libs.maya.om import attributetypes
 from tp.libs.maya.meta.base import MetaBase
 
 from ..base import constants
+from ..descriptors.attributes import AttributeDescriptor
 
 
 class MetaLayer(MetaBase):
@@ -75,6 +76,23 @@ class MetaLayer(MetaBase):
         )
 
         return attrs
+
+    def update_metadata(self, metadata: list[AttributeDescriptor]) -> None:
+        """Update the metanode attributes based on the provided metadata.
+
+        Args:
+            metadata: List of AttributeDescriptor instances containing the
+                metadata to update the metanode attributes.
+        """
+
+        for meta_attr in metadata:
+            if not meta_attr:
+                continue
+            attribute = self.attribute(meta_attr.name)
+            if attribute is None:
+                self.addAttribute(**meta_attr.to_dict())
+            else:
+                attribute.setFromDict(**meta_attr.to_dict())
 
     def root_transform(self) -> DagNode:
         """Retrieve the root transform node associated with the current object.

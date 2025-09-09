@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import copy
-import json
-from typing import Any
+from typing import cast, Any
 
 from ..base import constants
+from ..descriptors.layers import GuideLayerDescriptor
 
 
 class ModuleDescriptor:
@@ -34,6 +34,12 @@ class ModuleDescriptor:
         self._connections = data.get(constants.MODULE_CONNECTIONS_DESCRIPTOR_KEY, {})
         self._naming_preset: str = data.get(
             constants.MODULE_NAMING_PRESET_DESCRIPTOR_KEY, ""
+        )
+        self._guide_layer = cast(
+            GuideLayerDescriptor,
+            GuideLayerDescriptor.from_data(
+                data.get(constants.MODULE_GUIDE_LAYER_DESCRIPTOR_KEY, {})
+            ),
         )
 
     def __repr__(self) -> str:
@@ -154,6 +160,12 @@ class ModuleDescriptor:
 
         return self._version
 
+    @property
+    def guide_layer(self) -> GuideLayerDescriptor:
+        """The guide layer descriptor."""
+
+        return self._guide_layer
+
     def serialize(self, original_descriptor: ModuleDescriptor) -> dict[str, Any]:
         """Serialize the descriptor data into a dictionary format suitable for
         storage or transmission. This method ensures that all relevant fields
@@ -174,6 +186,9 @@ class ModuleDescriptor:
             constants.MODULE_PARENT_DESCRIPTOR_KEY: self.parent,
             constants.MODULE_VERSION_DESCRIPTOR_KEY: self.version,
             constants.MODULE_CONNECTIONS_DESCRIPTOR_KEY: self.connections,
+            constants.MODULE_GUIDE_LAYER_DESCRIPTOR_KEY: copy.deepcopy(
+                self.guide_layer
+            ),
         }
 
         return data
@@ -251,50 +266,3 @@ def load_descriptor(
         data=latest_data.serialize(original_descriptor),
         path=path,
     )
-
-
-def parse_raw_descriptor(descriptor_data: dict) -> dict:
-    """Parse a raw descriptor data dictionary, transforming it into a
-    structured and interpreted format.
-
-    The function processes various keys in the input data, handling them based
-    on specific rules and conditions, such as JSON decoding and splitting data
-    into components like DAG, settings, and metadata.
-
-    The parsed data is returned as a new structured dictionary.
-
-    Args:
-        descriptor_data: A dictionary containing raw descriptor data.
-            The values can potentially be JSON strings or other structured
-            data formats that need parsing.
-
-    Returns:
-        A dictionary containing the structured and interpreted descriptor data.
-    """
-
-    translated_data = {}
-
-    for k, v in descriptor_data.items():
-        if not v:
-            continue
-        if k == "info":
-            translated_data.update(json.loads(v))
-            continue
-        elif k == constants.MODULE_SPACE_SWITCH_DESCRIPTOR_KEY:
-            translated_data[constants.MODULE_SPACE_SWITCH_DESCRIPTOR_KEY] = json.loads(
-                v
-            )
-            continue
-        dag, settings, metadata = (
-            v[constants.MODULE_DAG_DESCRIPTOR_KEY] or "[]",
-            v[constants.MODULE_SETTINGS_DESCRIPTOR_KEY]
-            or ("{}" if k == constants.MODULE_RIG_LAYER_DESCRIPTOR_KEY else "[]"),
-            v[constants.MODULE_METADATA_DESCRIPTOR_KEY] or "[]",
-        )
-        translated_data[k] = {
-            constants.MODULE_DAG_DESCRIPTOR_KEY: json.loads(dag),
-            constants.MODULE_SETTINGS_DESCRIPTOR_KEY: json.loads(settings),
-            constants.MODULE_METADATA_DESCRIPTOR_KEY: json.loads(metadata),
-        }
-
-    return translated_data
