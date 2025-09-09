@@ -2,21 +2,28 @@ from __future__ import annotations
 
 import json
 import typing
-from typing import cast
+from typing import cast, Any
 from collections.abc import Iterator
+from contextlib import contextmanager
 
 from loguru import logger
 from maya.api import OpenMaya
 
 from tp.libs.python import helpers, profiler
 from tp.libs.maya.wrapper import DGNode, DagNode
-from tp.libs.maya.meta.base import find_meta_nodes_by_class_type
+from tp.libs.maya.meta.base import (
+    MetaBase,
+    find_meta_nodes_by_class_type,
+    is_meta_node,
+    connected_meta_nodes,
+)
 
 from . import constants, errors
 from .configuration import RigConfiguration
 from ..services import naming
 from ..meta.rig import MetaRig
-from ..meta.moduleslayer import MetaModulesLayer
+from ..meta.layers import MetaModulesLayer
+from .utils.module_utils import disconnect_module_context
 
 if typing.TYPE_CHECKING:
     from .module import Module
@@ -41,7 +48,9 @@ class Rig:
     """
 
     def __init__(
-        self, rig_config: RigConfiguration | None = None, meta: MetaRig | None = None
+        self,
+        rig_config: RigConfiguration | None = None,
+        meta: MetaRig | None = None,
     ):
         """Initialize a new instance of the class with optional rig
         configuration and metadata while setting up initial attributes
@@ -204,151 +213,13 @@ class Rig:
 
         return super().__getattribute__(item)
 
-    @property
-    def meta(self) -> MetaRig | None:
-        """The meta-node instance of the rig."""
-
-        return self._meta
+    # === Configuration === #
 
     @property
     def configuration(self) -> RigConfiguration:
         """The configuration of the rig."""
 
         return self._config
-
-    def version_info(self) -> dict[str, str]:
-        """Retrieve version information for the rig.
-
-        This method fetches version information stored in a specific
-        metadata attribute associated with the rig.
-
-        Returns:
-            A dictionary containing version information extracted from the
-            rig's metadata. If the metadata is missing or invalid, an empty
-            dictionary is returned.
-        """
-
-        if self._meta is None:
-            return {}
-
-        try:
-            return json.loads(
-                self._meta.attribute(constants.RIG_VERSION_INFO_ATTR).value()
-            )
-        except json.JSONDecodeError:
-            return {}
-
-    def naming_manager(self) -> NameManager:
-        """Find and return the name manager for a specific type.
-
-        This function uses the configuration property to locate the
-        appropriate name manager for the provided type "rig".
-
-        It ensures that the correct name manager is retrieved and returned
-        to the caller.
-
-        Returns:
-            The name manager instance corresponding to the type "rig".
-        """
-
-        return self.configuration.find_name_manager_for_type("rig")
-
-    def exists(self) -> bool:
-        """Determine if the underlying metadata exists.
-
-        This method checks the presence of the metadata attribute and verifies
-        if the `exists` property of the metadata is `True`.
-
-        Returns:
-            True if metadata exists and is defined, otherwise False.
-        """
-
-        return self._meta is not None and self._meta.exists()
-
-    def name(self) -> str:
-        """Return the name of the rig if it exists, otherwise returns an
-        empty string.
-
-        This method checks whether the rig exists. If it does, the method
-        retrieves the name of the rig using its metadata.
-
-        Returns:
-            The name of the rig if it exists, or an empty string if it
-                does not.
-        """
-
-        return self._meta.rig_name() if self.exists() else ""
-
-    def root_transform(self) -> DagNode | None:
-        """Retrieve the root transform of the current rig if it exists,
-        otherwise returns `None`.
-
-        This is used to access the top-level transform node associated with
-        the rig.
-
-        Returns:
-            The root transform group of the object if it exists,
-                otherwise `None`.
-        """
-
-        return self._meta.root_transform() if self._meta.exists() else None
-
-    def modules_layer(self) -> MetaModulesLayer | None:
-        """Retrieve the module layer instance from this rig by querying the
-        attached metanode.
-
-        Returns:
-            The module layer instance if the metanode exists; None otherwise.
-        """
-
-        return self._meta.modules_layer() if self._meta else None
-
-    def get_or_create_modules_layer(self) -> MetaModulesLayer:
-        """Get or create the module layer for the current instance.
-
-        If a module layer does not already exist, this method initializes a new
-        module layer with the appropriate naming and hierarchy information.
-
-        The method ensures that the module layer is properly linked to the
-        root transform of the metanode.
-
-        Returns:
-            The existing or newly created modules layer for the current
-                instance.
-        """
-
-        modules_layer = self.modules_layer()
-        if not modules_layer:
-            name_manager = self.naming_manager()
-            hierarchy_name, meta_name = naming.compose_rig_names_for_layer(
-                name_manager, self.name(), constants.MODULES_LAYER_TYPE
-            )
-            modules_layer = self._meta.create_layer(
-                constants.MODULES_LAYER_TYPE,
-                hierarchy_name=hierarchy_name,
-                meta_name=meta_name,
-                parent=self._meta.root_transform(),
-            )
-
-        return modules_layer
-
-    def cached_configuration(self) -> dict:
-        """Retrieve and cache the configuration data from a specific attribute.
-
-        Returns:
-            The parsed configuration data if available and valid, otherwise
-            an empty dictionary.
-        """
-
-        config_plug = self._meta.attribute(constants.RIG_CONFIG_ATTR)
-        try:
-            config_data = config_plug.value()
-            if config_data:
-                return json.loads(config_data)
-        except ValueError:
-            pass
-
-        return {}
 
     @profiler.fn_timer
     def save_configuration(self) -> dict:
@@ -372,6 +243,23 @@ class Rig:
             config_plug.set(json.dumps(config_data))
 
         return config_data
+
+    def naming_manager(self) -> NameManager:
+        """Find and return the name manager for a specific type.
+
+        This function uses the configuration property to locate the
+        appropriate name manager for the provided type "rig".
+
+        It ensures that the correct name manager is retrieved and returned
+        to the caller.
+
+        Returns:
+            The name manager instance corresponding to the type "rig".
+        """
+
+        return self.configuration.find_name_manager_for_type("rig")
+
+    # === Session === #
 
     @profiler.fn_timer
     def start_session(
@@ -414,6 +302,135 @@ class Rig:
 
         return self._meta
 
+    # === Meta === #
+
+    @property
+    def meta(self) -> MetaRig | None:
+        """The meta-node instance of the rig."""
+
+        return self._meta
+
+    def version_info(self) -> dict[str, str]:
+        """Retrieve version information for the rig.
+
+        This method fetches version information stored in a specific
+        metadata attribute associated with the rig.
+
+        Returns:
+            A dictionary containing version information extracted from the
+            rig's metadata. If the metadata is missing or invalid, an empty
+            dictionary is returned.
+        """
+
+        if self._meta is None:
+            return {}
+
+        try:
+            return json.loads(
+                self._meta.attribute(constants.RIG_VERSION_INFO_ATTR).value()
+            )
+        except json.JSONDecodeError:
+            return {}
+
+    def cached_configuration(self) -> dict:
+        """Retrieve and cache the configuration data from a specific attribute.
+
+        Returns:
+            The parsed configuration data if available and valid, otherwise
+            an empty dictionary.
+        """
+
+        config_plug = self._meta.attribute(constants.RIG_CONFIG_ATTR)
+        try:
+            config_data = config_plug.value()
+            if config_data:
+                return json.loads(config_data)
+        except ValueError:
+            pass
+
+        return {}
+
+    def exists(self) -> bool:
+        """Determine if the underlying metadata exists.
+
+        This method checks the presence of the metadata attribute and verifies
+        if the `exists` property of the metadata is `True`.
+
+        Returns:
+            True if metadata exists and is defined, otherwise False.
+        """
+
+        return self._meta is not None and self._meta.exists()
+
+    def name(self) -> str:
+        """Return the name of the rig if it exists, otherwise returns an
+        empty string.
+
+        This method checks whether the rig exists. If it does, the method
+        retrieves the name of the rig using its metadata.
+
+        Returns:
+            The name of the rig if it exists, or an empty string if it
+                does not.
+        """
+
+        return self._meta.rig_name() if self.exists() else ""
+
+    def root_transform(self) -> DagNode | None:
+        """Retrieve the root transform of the current rig if it exists,
+        otherwise returns `None`.
+
+        This is used to access the top-level transform node associated with
+        the rig.
+
+        Returns:
+            The root transform group of the object if it exists,
+                otherwise `None`.
+        """
+
+        return self._meta.root_transform() if self._meta.exists() else None
+
+    # === Modules === #
+
+    def modules_layer(self) -> MetaModulesLayer | None:
+        """Retrieve the module layer instance from this rig by querying the
+        attached metanode.
+
+        Returns:
+            The module layer instance if the metanode exists; None otherwise.
+        """
+
+        return self._meta.modules_layer() if self._meta else None
+
+    def get_or_create_modules_layer(self) -> MetaModulesLayer:
+        """Get or create the module layer for the current instance.
+
+        If a module layer does not already exist, this method initializes a new
+        module layer with the appropriate naming and hierarchy information.
+
+        The method ensures that the module layer is properly linked to the
+        root transform of the metanode.
+
+        Returns:
+            The existing or newly created modules layer for the current
+                instance.
+        """
+
+        modules_layer = self.modules_layer()
+        if not modules_layer:
+            name_manager = self.naming_manager()
+            hierarchy_name, meta_name = naming.compose_rig_names_for_layer(
+                name_manager, self.name(), constants.MODULES_LAYER_TYPE
+            )
+            modules_layer = self._meta.create_layer(
+                constants.MODULES_LAYER_TYPE,
+                hierarchy_name=hierarchy_name,
+                meta_name=meta_name,
+                parent=self._meta.root_transform(),
+            )
+
+        return modules_layer
+
     @profiler.fn_timer
     def create_module(
         self,
@@ -442,10 +459,10 @@ class Rig:
             name = name or descriptor.name
             side = side or descriptor.side
         else:
-            descriptor = self.configuration.initialize_module_descriptor(module_type)
+            descriptor, _ = self.configuration.initialize_module_descriptor(module_type)
 
-        module_class = (
-            self.configuration.modules_manager().find_module_class_by_type(module_type)
+        module_class = self.configuration.modules_manager().find_module_class_by_type(
+            module_type
         )
         if not module_class:
             raise errors.MissingModuleType(module_type)
@@ -496,6 +513,18 @@ class Rig:
         for found_module in self.iterate_modules():
             if not found_module.has_parent():
                 yield found_module
+
+    def root_modules(self) -> list[Module]:
+        """Retrieve a list of all root modules within the current instance.
+
+        A root module is defined as a module that does not have a parent
+        module.
+
+        Returns:
+            A list containing all root modules.
+        """
+
+        return list(self.iterate_root_modules())
 
     def iterate_modules(self) -> Iterator[Module]:
         """Iterate through and retrieves all the modules associated with the
@@ -568,7 +597,7 @@ class Rig:
 
         return list(self.iterate_modules())
 
-    def iterate_moduls_by_type(self, module_type_name: str) -> Iterator[Module]:
+    def iterate_modules_by_type(self, module_type_name: str) -> Iterator[Module]:
         """Iterate over modules of a specific type and yields matching modules.
 
         Inspects all available modules and filters them by their module
@@ -585,6 +614,22 @@ class Rig:
         for found_module in self.iterate_modules():
             if found_module.module_type == module_type_name:
                 yield found_module
+
+    def modules_by_type(self, module_type_name: str) -> list[Module]:
+        """Retrieve a list of modules with a specific type.
+
+        This method collects all modules that match the specified type by
+        iterating through the available modules and filtering them based on
+        their module type.
+
+        Args:
+            module_type_name: The type of the module to filter by.
+
+        Returns:
+            A list of modules that match the specified module type.
+        """
+
+        return list(self.iterate_modules_by_type(module_type_name))
 
     def module(self, name: str, side: str = "M") -> Module | None:
         """Find and return a module instance with the specified name and side,
@@ -648,12 +693,189 @@ class Rig:
 
         meta_node = module_meta_node_from_node(node)
         if not meta_node:
-            raise errors.MissingMetaNode(node)
+            raise errors.MissingMetaNode(
+                f'No meta node attached to node: "{node.name()}"'
+            )
 
         return self.module(
             meta_node.attribute(constants.NAME_ATTR).value(),
             meta_node.attribute(constants.MODULE_SIDE_ATTR).value(),
         )
+
+    def _build_modules(
+        self,
+        modules: list[Module],
+        child_parent_map: dict[Module, Module | None],
+        build_func_name: str,
+        **kwargs,
+    ) -> bool:
+        """Build modules in a specific order, ensuring that parent modules are
+        built before their children.
+
+        Args:
+            modules: List of modules to build.
+            child_parent_map: Mapping of modules to their parent modules.
+            build_func_name: Name of the build function to call on each module.
+            **kwargs: Additional keyword arguments to pass to the build function.
+
+        Returns:
+            `True` if all modules were built successfully; `False` otherwise.
+        """
+
+        def _construct_module_order(
+            _modules: list[Module],
+        ) -> dict[Module, Module | None]:
+            """Construct an ordered mapping of modules to their parents,
+            ensuring that parent modules are processed before their children.
+
+            Args:
+                _modules: List of modules to order.
+
+            Returns:
+                An ordered dictionary mapping each module to its parent module.
+            """
+
+            _ordered_modules: dict[Module, Module | None] = {}
+            _unsorted_modules: dict[Module, Module | None] = {
+                mod: mod.parent() for mod in _modules
+            }
+            while _unsorted_modules:
+                for _child, _parent in list(_unsorted_modules.items()):
+                    if _parent in _unsorted_modules:
+                        continue
+                    else:
+                        del _unsorted_modules[_child]
+                        _ordered_modules[_child] = _parent
+
+            return _ordered_modules
+
+        def _process_module(_module: Module, _parent_module: Module | None) -> bool:
+            """Recursively process a module and its parent, ensuring that the
+            parent is built before the child.
+
+            Args:
+                _module: The module to process.
+                _parent_module: The parent module of the module to process.
+
+            Returns:
+                True if the module was processed successfully; False otherwise.
+            """
+
+            if _parent_module is not None and _parent_module not in visited_modules:
+                _process_module(_parent_module, current_modules[_parent_module])
+
+            if _module in visited_modules:
+                return False
+
+            visited_modules.add(_module)
+
+            _parent_descriptor_id: str = _module.descriptor.parent
+            if _parent_descriptor_id:
+                logger.debug(
+                    "Module descriptor has parents defined, adding parents ..."
+                )
+                _existing_module = self.module(*_parent_descriptor_id.split(":"))
+                if _existing_module is not None:
+                    _module.set_parent(_existing_module)
+
+            try:
+                logger.debug(
+                    f"Building module: {_module} with method: {build_func_name} ..."
+                )
+                getattr(_module, build_func_name)(**kwargs)
+                return True
+            except errors.BuildModuleGuideUnknownError:
+                logger.error(f"Failed to build for: {_module}", exc_info=True)
+                return False
+
+        ordered_modules = _construct_module_order(modules)
+        current_modules = child_parent_map
+        visited_modules: set[Module] = set()
+        for child, parent_module in ordered_modules.items():
+            success = _process_module(child, parent_module)
+            if not success:
+                return False
+
+        return True
+
+    def clear_modules_cache(self):
+        """Clear the internal cache of modules."""
+
+        self._modules_cache.clear()
+
+    # === Guides === #
+
+    @profiler.fn_timer
+    def build_guides(self, modules: list[Module] | None = None):
+        self.configuration.update_from_rig(self)
+        child_parent_map: dict[Module, Module | None] = {
+            module: module.parent() for module in self.modules()
+        }
+        modules = modules or list(child_parent_map.keys())
+
+        # Build an unordered list of modules respecting parent hierarchy.
+        modules_with_parents: list[Module] = []
+        _visited: set[Module] = set()
+
+        def _add_with_parents(_module: Module):
+            if _module in _visited:
+                return
+            _parent_module = child_parent_map[_module]
+            if _parent_module is not None:
+                _add_with_parents(_parent_module)
+            modules_with_parents.append(_module)
+            _visited.add(_module)
+
+        for module in modules:
+            _add_with_parents(module)
+
+        with (
+            disconnect_module_context(modules_with_parents),
+            self.build_script_context(constants.BuildScriptFunctionType.Guide),
+        ):
+            self._build_modules(modules, child_parent_map, "build_guides")
+
+    # === Build Scripts === #
+
+    @contextmanager
+    def build_script_context(
+        self,
+        build_script_type: constants.BuildScriptFunctionType,
+        **kwargs: dict[str, Any],
+    ):
+        if not self._meta:
+            return
+
+        pre_func_name, post_func_name = constants.BUILD_SCRIPT_FUNCTION_MAPPING.get(
+            build_script_type
+        )
+        script_configuration = self.meta.build_script_config()
+
+        if pre_func_name:
+            for script in self.configuration.build_scripts:
+                if not hasattr(script, pre_func_name):
+                    continue
+                script_properties = script.properties_as_key_value()
+                logger.debug(
+                    f'Executing pre-build script: "{script.__class__.__name__}.{pre_func_name}"'
+                )
+                script_properties.update(script_configuration.get(script.id, {}))
+                script.rig = self
+                getattr(script, pre_func_name)(properties=script_properties, **kwargs)
+
+        yield
+
+        if post_func_name:
+            for script in self.configuration.build_scripts:
+                if not hasattr(script, post_func_name):
+                    continue
+                script_properties = script.properties_as_key_value()
+                logger.debug(
+                    f'Executing post-build script: "{script.__class__.__name__}.{post_func_name}"'
+                )
+                script_properties.update(script_configuration.get(script.id, {}))
+                script.rig = self
+                getattr(script, post_func_name)(properties=script_properties, **kwargs)
 
 
 def iterate_scene_rig_meta_nodes() -> Iterator[MetaRig]:
@@ -742,3 +964,150 @@ def root_rig_by_name(name: str, namespace: str | None = None) -> MetaRig | None:
                 break
 
     return found_meta_rig
+
+
+def rig_from_node(node: DGNode) -> Rig | None:
+    """Retrieve the rig instance associated with a given node.
+
+    Args:
+        node: The node from which to retrieve the rig.
+
+    Returns:
+        The associated rig instance if found; `None` otherwise.
+
+    Raises:
+        errors.MissingMetaNode: If no metanode is attached to the provided node.
+    """
+
+    meta_nodes = connected_meta_nodes(node)
+    if not meta_nodes:
+        raise errors.MissingMetaNode(f'No meta node attached to node: "{node.name()}"')
+
+    try:
+        for meta_node in meta_nodes:
+            found_rig = parent_rig(meta_node)
+            if found_rig is not None:
+                return found_rig
+        else:
+            raise AttributeError()
+    except AttributeError:
+        raise errors.MissingMetaNode("Attached meta node has no parent rig")
+
+
+def parent_rig(meta_node: MetaBase) -> Rig | None:
+    """Retrieve the parent rig instance associated with a given metanode.
+
+    Args:
+        meta_node: The metanode from which to retrieve the parent rig.
+
+    Returns:
+        The associated parents rig instance if found; `None` otherwise.
+    """
+
+    rig_meta: MetaRig | None = None
+    for meta_parent in meta_node.iterate_meta_parents():
+        root_attr = meta_parent.attribute(constants.IS_ROOT_ATTR)
+        if root_attr and root_attr.value():
+            rig_meta = cast(MetaRig, meta_parent)
+            break
+    if rig_meta is None:
+        return None
+
+    rig_instance = Rig(meta=rig_meta)
+    rig_instance.start_session()
+
+    return rig_instance
+
+
+def module_meta_node_from_node(node: DGNode) -> MetaModule | None:
+    """Retrieve the module metanode associated with a given node.
+
+    This function attempts to find the metanode corresponding to the
+    provided node. If the node is already a metanode of type `Module`,
+    it is returned directly. Otherwise, the function searches for
+    connected metanodes of type `Module` and returns the first one found.
+
+    Args:
+        node: The node from which to retrieve the module metanode.
+
+    Returns:
+        The associated module metanode if found; `None` otherwise.
+
+    Raises:
+        ValueError: If no metanode is attached to the provided node.
+    """
+
+    meta_nodes = (
+        [MetaBase(node.object())] if is_meta_node(node) else connected_meta_nodes(node)
+    )
+    meta_node = meta_nodes[0] if meta_nodes else None
+    if meta_node is None:
+        raise errors.MissingMetaNode(f'No meta node attached to node: "{node.name()}"')
+
+    if meta_node.hasAttribute(constants.MODULE_TYPE_ATTR):
+        return cast(MetaModule, meta_node)
+
+    found_meta_node: MetaModule | None = None
+    for meta_parent in meta_node.iterate_meta_parents():
+        if meta_parent.hasAttribute(constants.MODULE_TYPE_ATTR):
+            found_meta_node = cast(MetaModule, meta_parent)
+            break
+
+    return found_meta_node
+
+
+def module_from_node(node: DGNode, rig: Rig | None = None) -> Module | None:
+    """Retrieve a module instance from a given node.
+
+    This function attempts to determine the module corresponding to the
+    provided node by first resolving its metanode.
+
+    Once the metanode is retrieved, the function queries the relevant
+    attributes from the metanode to identify and return the desired module.
+
+    Args:
+        node: The node from which to resolve the module.
+        rig: Optional rig instance to use for module retrieval. If not
+            provided, the function will attempt to find the rig based on
+            the metanode's rig name and namespace.
+
+    Raises:
+        errors.MissingRigForNode: If the metanode is not attached to the
+            provided node or if the rig cannot be determined.
+
+    Returns:
+        The resulting module instance if resolved successfully, or `None`
+            if no suitable module is determined.
+    """
+
+    rig = rig if rig is not None else rig_from_node(node)
+    if rig is None:
+        raise errors.MissingRigForNode(node.fullPathName())
+
+    return rig.module_from_node(node)
+
+
+def modules_from_nodes(nodes: list[DGNode]) -> dict[Module, list[DGNode]]:
+    """Retrieve a set of module instances associated with a list of nodes.
+
+    This function iterates through the provided list of nodes, attempting
+    to resolve the corresponding module metanode for each node. If a
+    metanode is found, it initializes the appropriate module instance and
+    adds it to a set to ensure uniqueness.
+
+    Args:
+        nodes: A list of nodes from which to retrieve module instances.
+
+    Returns:
+        A list of unique module instances associated with the provided nodes.
+    """
+
+    found_modules: dict[Module, list[DGNode]] = {}
+    for node in nodes:
+        try:
+            found_module = module_from_node(node)
+        except (errors.MissingMetaNode, errors.MissingRigForNode):
+            continue
+        found_modules.setdefault(found_module, []).append(node)
+
+    return found_modules

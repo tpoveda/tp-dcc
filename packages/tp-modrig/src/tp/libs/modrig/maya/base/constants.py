@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import enum
+
 # === Environment Variable Keys ===
 MODULES_ENV_VAR_KEY = "MODRIG_COMPONENTS_PATHS"
 DESCRIPTORS_ENV_VAR_KEY = "MODRIG_DESCRIPTORS_PATHS"
@@ -15,24 +17,33 @@ GRAPH_EXTENSION = ".dgGraph"
 RIG_TYPE = "modRig"
 MODULE_TYPE = "modRigModule"
 BASE_LAYER_TYPE = "modRigLayer"
+GEOMETRY_LAYER_TYPE = "modRigGeometryLayer"
 MODULES_LAYER_TYPE = "modRigModulesLayer"
+GUIDE_LAYER_TYPE = "modRigGuideLayer"
+INPUT_LAYER_TYPE = "modRigInputLayer"
+OUTPUT_LAYER_TYPE = "modRigOutputLayer"
+SKELETON_LAYER_TYPE = "modRigSkeletonLayer"
+RIG_LAYER_TYPE = "modRigRigLayer"
 
 # === Shared MetaData Attribute Names ===
 ID_ATTR = "id"
 NAME_ATTR = "name"
 IS_MOD_RIG_ATTR = "isModRig"
 IS_ROOT_ATTR = "isRoot"
-IS_COMPONENT_ATTR = "isComponent"
+IS_MODULE_ATTR = "isComponent"
 
 # === Rig MetaData Attribute Names ===
 RIG_VERSION_INFO_ATTR = "versionInfo"
 RIG_CONFIG_ATTR = "config"
+RIG_BUILD_SCRIPT_CONFIG_ATTR = "buildScriptConfig"
 RIG_ROOT_TRANSFORM_ATTR = "rootTransform"
 RIG_CONTROL_DISPLAY_LAYER_ATTR = "controlDisplayLayer"
 RIG_ROOT_SELECTION_SET_ATTR = "rootSelectionSet"
 RIG_CONTROL_SELECTION_SET_ATTR = "controlSelectionSet"
 RIG_JOINT_SELECTION_SET_ATTR = "jointSelectionSet"
 RIG_SKELETON_SELECTION_SET_ATTR = "skeletonSelectionSet"
+RIG_GEOMETRY_SELECTION_SET_ATTR = "geometrySelectionSet"
+RIG_BLENDSHAPE_SELECTION_SET_ATTR = "blendShapeSelectionSet"
 
 # === Module MetaData Attribute Names ===
 MODULE_VERSION_ATTR = "version"
@@ -48,6 +59,24 @@ MODULE_HAS_POLISHED_ATTR = "hasPolished"
 MODULE_HAS_RIG_ATTR = "hasRig"
 MODULE_DESCRIPTOR_ATTR = "componentDescriptor"
 MODULE_GROUP_ATTR = "componentGroup"
+
+# === Guide MetaData Attribute Names ===
+IS_GUIDE_ATTR = "isGuide"
+GUIDE_SHAPE_ATTR = "guideShape"
+GUIDE_PIVOT_SHAPE_ATTR = "pivotShape"
+GUIDE_PIVOT_COLOR_ATTR = "pivotColor"
+GUIDE_SNAP_PIVOT_ATTR = "guideSnapPivot"
+GUIDE_SHAPE_PRIMARY_ATTR = "guideShapePrimary"
+GUIDE_AUTO_ALIGN_AIM_VECTOR_ATTR = "autoAlignAimVector"
+GUIDE_AUTO_ALIGN_UP_VECTOR_ATTR = "autoAlignUpVector"
+GUIDE_AUTO_ALIGN_ATTR = "autoAlign"
+GUIDE_MIRROR_ATTR = "mirror"
+GUIDE_MIRROR_BEHAVIOR_ATTR = "mirrorBehavior"
+GUIDE_MIRROR_PLANE_ATTR = "mirrorPlane"
+GUIDE_MIRROR_SCALED_ATTR = "mirrorScaled"
+GUIDE_DISPLAY_AXIS_SHAPE_ATTR = "displayAxisShape"
+GUIDE_CONNECTORS_ATTR = "guideConnectors"
+
 
 # === Module Descriptor Attribute Names ===
 DESCRIPTOR_CACHE_INFO_ATTR = f"{MODULE_DESCRIPTOR_ATTR}.DefCacheInfo"
@@ -142,12 +171,21 @@ LAYER_TAGGED_NODE_ATTR = "taggedNode"
 LAYER_TAGGED_NODE_SOURCE_ATTR = "taggedNodeSource"
 LAYER_TAGGED_NODE_ID_ATTR = "taggedNodeId"
 
+# === Geometry Layer MetaData Attribute Names ===
+GEOMETRY_LAYER_GEOMETRIES_ATTR = "geometries"
+GEOMETRY_LAYER_GEOMETRY_ATTR = "geometry"
+GEOMETRY_LAYER_CACHE_GEOMETRY_ATTR = "cache"
+
 # === Modules Layer MetaData Attribute Names ===
 MODULES_LAYER_MODULE_GROUPS_ATTR = "componentGroups"
 MODULES_LAYER_MODULE_GROUP_NAME_ATTR = "groupName"
 MODULES_LAYER_GROUP_MODULES_ATTR = "groupComponents"
 
+
 # === Module Descriptor Keys ===
+MODULE_NAME_DESCRIPTOR_KEY = "name"
+MODULE_SIDE_DESCRIPTOR_KEY = "side"
+MODULE_TYPE_DESCRIPTOR_KEY = "type"
 MODULE_VERSION_DESCRIPTOR_KEY = "descriptorVersion"
 MODULE_DESCRIPTION_DESCRIPTOR_KEY = "description"
 MODULE_PARENT_DESCRIPTOR_KEY = "parent"
@@ -168,3 +206,46 @@ DEFAULT_PRESET_NAME = "modRig"
 
 # === Names for Standard Transform Local Attributes ===
 TRANSFORM_ATTRS = ("translate", "rotate", "scale")
+
+# === Default Colors === #
+DEFAULT_GUIDE_PIVOT_COLOR = (1.0, 1.0, 0.0)
+DEFAULT_SKELETON_JOINT_COLOR = (0.0, 0.001, 0.117)
+
+# === Guide Alignment === #
+DEFAULT_AIM_VECTOR = (1.0, 0.0, 0.0)
+DEFAULT_UP_VECTOR = (0.0, 1.0, 0.0)
+
+# === Guide Types === #
+GUIDE_TYPE_NURBS_CURVE = 0
+GUIDE_TYPE_NURBS_SURFACE = 1
+
+# === Build Scripts === #
+
+
+class BuildScriptFunctionType(enum.IntEnum):
+    """Enumeration of the different types of build script functions."""
+
+    Guide = enum.auto()
+    Skeleton = enum.auto()
+    Rig = enum.auto()
+    Polish = enum.auto()
+    DeleteGuideLayer = enum.auto()
+    DeleteSkeletonLayer = enum.auto()
+    DeleteRigLayer = enum.auto()
+    DeleteModule = enum.auto()
+    DeleteModules = enum.auto()
+    DeleteRig = enum.auto()
+
+
+BUILD_SCRIPT_FUNCTION_MAPPING = {
+    BuildScriptFunctionType.Guide: ("pre_guide_build", "post_guide_build"),
+    BuildScriptFunctionType.Skeleton: ("pre_skeleton_build", "post_skeleton_build"),
+    BuildScriptFunctionType.Rig: ("pre_rig_build", "post_rig_build"),
+    BuildScriptFunctionType.Polish: ("pre_polish_build", "post_polish_build"),
+    BuildScriptFunctionType.DeleteGuideLayer: ("pre_delete_guide_layer", None),
+    BuildScriptFunctionType.DeleteSkeletonLayer: ("pre_delete_skeleton_layer", None),
+    BuildScriptFunctionType.DeleteRigLayer: ("pre_delete_rig_layer", None),
+    BuildScriptFunctionType.DeleteModule: ("pre_delete_module", None),
+    BuildScriptFunctionType.DeleteModules: ("pre_delete_modules", None),
+    BuildScriptFunctionType.DeleteRig: ("pre_delete_rig", None),
+}

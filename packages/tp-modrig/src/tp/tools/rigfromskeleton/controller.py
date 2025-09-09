@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import typing
 
+from tp.dcc.scene import FnScene
 from tp.libs.maya.om import nodes
-from tp.libs.dcc.scene import FnScene
 from tp.libs.qt.mvc import Controller
 
 if typing.TYPE_CHECKING:

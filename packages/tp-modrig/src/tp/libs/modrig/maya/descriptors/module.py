@@ -2,17 +2,22 @@ from __future__ import annotations
 
 import copy
 import json
+from typing import Any
 
 from ..base import constants
 
 
 class ModuleDescriptor:
+    """Class that describes a module data, which is used by the module setup
+    methods and is the fallback data for when the module has yet to be created
+    within the Maya scene.
+    """
+
     VERSION: str = "1.0"
 
     def __init__(
         self,
         data: dict | None = None,
-        original_descriptor: ModuleDescriptor | dict | None = None,
         path: str | None = None,
     ):
         data = data or {}
@@ -22,20 +27,13 @@ class ModuleDescriptor:
         self._name: str = data.get("name", "")
         self._side: str = data.get("side", "")
         self._type: str = data.get("type", "")
+        self._version: str = ""
         self._parent: str | None = data.get(
             constants.MODULE_PARENT_DESCRIPTOR_KEY, None
         )
         self._connections = data.get(constants.MODULE_CONNECTIONS_DESCRIPTOR_KEY, {})
         self._naming_preset: str = data.get(
             constants.MODULE_NAMING_PRESET_DESCRIPTOR_KEY, ""
-        )
-
-        self._version: str = ""
-
-        self._original_descriptor = (
-            ModuleDescriptor(original_descriptor)
-            if original_descriptor is not None
-            else {}
         )
 
     def __repr__(self) -> str:
@@ -156,6 +154,30 @@ class ModuleDescriptor:
 
         return self._version
 
+    def serialize(self, original_descriptor: ModuleDescriptor) -> dict[str, Any]:
+        """Serialize the descriptor data into a dictionary format suitable for
+        storage or transmission. This method ensures that all relevant fields
+        are included in the output dictionary.
+
+        Args:
+            original_descriptor: The original module descriptor to copy space
+                switch data from.
+
+        Returns:
+            A dictionary containing the serialized descriptor data.
+        """
+
+        data = {
+            constants.MODULE_NAME_DESCRIPTOR_KEY: self.name,
+            constants.MODULE_SIDE_DESCRIPTOR_KEY: self.side,
+            constants.MODULE_TYPE_DESCRIPTOR_KEY: self.type,
+            constants.MODULE_PARENT_DESCRIPTOR_KEY: self.parent,
+            constants.MODULE_VERSION_DESCRIPTOR_KEY: self.version,
+            constants.MODULE_CONNECTIONS_DESCRIPTOR_KEY: self.connections,
+        }
+
+        return data
+
 
 def migrate_to_latest_version(
     descriptor_data: dict | ModuleDescriptor,
@@ -215,21 +237,18 @@ def load_descriptor(
         A new instance of `ModuleDescriptor` containing the migrated
             descriptor data, a deep copy of the original descriptor, and
             the optional path.
-
     """
 
     if isinstance(descriptor_data, dict):
         latest_data = migrate_to_latest_version(descriptor_data)
         return ModuleDescriptor(
             data=latest_data,
-            original_descriptor=copy.deepcopy(original_descriptor),
             path=path,
         )
 
     latest_data = migrate_to_latest_version(descriptor_data)
     return ModuleDescriptor(
-        data=latest_data.serialize(),
-        original_descriptor=copy.deepcopy(original_descriptor),
+        data=latest_data.serialize(original_descriptor),
         path=path,
     )
 

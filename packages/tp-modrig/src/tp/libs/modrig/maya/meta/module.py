@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from typing import cast
+
+from loguru import logger
 from maya.api import OpenMaya
 
 from tp.libs.maya import factory
@@ -7,7 +10,13 @@ from tp.libs.maya.om import attributetypes
 from tp.libs.maya.wrapper import DagNode
 from tp.libs.maya.meta.base import MetaBase
 
+from .layers import MetaLayerType, MetaGeometryLayer
 from ..base import constants
+
+
+MODULE_LAYER_TYPE_IDS: list[str] = [
+    MetaGeometryLayer.ID,
+]
 
 
 class MetaModule(MetaBase):
@@ -42,7 +51,7 @@ class MetaModule(MetaBase):
                     type=attributetypes.kMFnNumericBoolean,
                 ),
                 dict(
-                    name=constants.IS_COMPONENT_ATTR,
+                    name=constants.IS_MODULE_ATTR,
                     value=True,
                     type=attributetypes.kMFnNumericBoolean,
                 ),
@@ -115,6 +124,8 @@ class MetaModule(MetaBase):
 
         return attrs
 
+    # region === Root Transform === #
+
     def root_transform(self) -> DagNode | None:
         """Retrieve the root transform node associated with the current object.
 
@@ -153,3 +164,80 @@ class MetaModule(MetaBase):
         component_transform.lock(True)
 
         return component_transform
+
+    # endregion
+
+    # region === Layers === #
+
+    def layers_by_id(self, layer_ids: list[str]) -> dict[str, MetaLayerType | None]:
+        """Retrieve layers by their IDs.
+
+        Args:
+            layer_ids: List of layer IDs to retrieve.
+
+        Returns:
+            A dictionary mapping layer IDs to their corresponding MetaLayer
+                instances.
+        """
+
+        layers_map: dict[str, MetaLayerType | None] = {
+            layer_id: None for layer_id in layer_ids
+        }
+        for meta_node in self.find_children_by_class_types(layer_ids, depth_limit=1):
+            layers_map[meta_node.id] = meta_node  # type: ignore
+
+        return layers_map
+
+    def layers(self) -> list[MetaLayerType]:
+        """Retrieve all layers associated with the module.
+
+        Returns:
+            A list of MetaLayer instances representing the layers of the module.
+        """
+
+        return cast(
+            list[MetaLayerType],
+            self.find_children_by_class_types(MODULE_LAYER_TYPE_IDS, depth_limit=1),
+        )
+
+    def layer_id_mapping(self) -> dict[str, MetaLayerType]:
+        """Retrieve a mapping of layer types to their corresponding IDs.
+
+        Returns:
+            A dictionary mapping layer types to their IDs.
+        """
+
+        return self.layers_by_id(MODULE_LAYER_TYPE_IDS)
+
+    def layer(self, layer_type: str) -> MetaLayerType | None:
+        """Retrieve a specific layer by its type.
+
+        Args:
+            layer_type: The type of the layer to retrieve.
+
+        Returns:
+            The MetaLayer instance corresponding to the specified type, or
+                `None` if not found.
+        """
+
+        meta_nodes = self.find_children_by_class_type(layer_type, depth_limit=1)
+        if not meta_nodes:
+            return None
+
+        root = cast(MetaLayerType, meta_nodes[0])
+        if root is None:
+            logger.warning(f"Missing layer connection: {layer_type}")
+            return None
+
+        return root
+
+    def geometry_layer(self) -> MetaGeometryLayer | None:
+        """Retrieve the geometry layer associated with the module.
+
+        Returns:
+            The `MetaGeometryLayer` instance if found; `None` otherwise.
+        """
+
+        return cast(MetaGeometryLayer | None, self.layer(constants.GEOMETRY_LAYER_TYPE))
+
+    # endregion

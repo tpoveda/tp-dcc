@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from typing import cast
-from collections.abc import Iterator
+import typing
+from collections.abc import Generator
 
 from tp.libs.maya.om import attributetypes
 
-from .layer import MetaLayer
-from .module import MetaModule
-from ..base import constants
+from ..layer import MetaLayer
+from ...base import constants
+
+if typing.TYPE_CHECKING:
+    from ..module import MetaModule
 
 
 class MetaModulesLayer(MetaLayer):
@@ -15,8 +17,7 @@ class MetaModulesLayer(MetaLayer):
     meta-modules in a `MetaRig`.
 
     Attributes:
-        ID: A constant identifier representing the type of this meta-layer,
-            defined in `constants.MODULES_LAYER_TYPE`.
+        ID: A constant identifier representing the type of this meta-layer.
     """
 
     ID = constants.MODULES_LAYER_TYPE
@@ -54,7 +55,9 @@ class MetaModulesLayer(MetaLayer):
 
         return attrs
 
-    def iterate_modules(self, depth_limit: int = 256) -> Iterator[MetaModule]:
+    def iterate_modules(
+        self, depth_limit: int = 256
+    ) -> Generator[MetaModule, None, None]:
         """Iterate over the meta-modules and yields them one by one if they
         have the specified attribute related to a module type.
 
@@ -72,7 +75,8 @@ class MetaModulesLayer(MetaLayer):
 
         for meta_child in self.iterate_meta_children(depth_limit):
             if meta_child.hasAttribute(constants.MODULE_TYPE_ATTR):
-                yield cast(MetaModule, meta_child)
+                # noinspection PyTypeChecker
+                yield meta_child
 
     def modules(self, depth_limit: int = 256) -> list[MetaModule]:
         """Return a list of MetaModule objects by iterating through modules

@@ -257,7 +257,7 @@ class ModulesManager(metaclass=decorators.Singleton):
 
     def initialize_module_descriptor(
         self, module_type_name: str
-    ) -> ModuleDescriptor | None:
+    ) -> tuple[ModuleDescriptor | None, ModuleDescriptor | None]:
         """Initialize the module descriptor for a given module type.
 
         This involves loading the descriptor data and module data,
@@ -268,8 +268,11 @@ class ModulesManager(metaclass=decorators.Singleton):
                 for which the module descriptor is to be initialized.
 
         Returns:
-            The loaded module descriptor if initialization is successful;
-                None otherwise.
+            A tuple containing:
+                - The loaded `ModuleDescriptor` if successful; `None` if
+                    loading failed.
+                - The original `ModuleDescriptor` if successful; `None` if
+                    loading failed.
         """
 
         descriptor_data = self.load_module_descriptor(module_type_name)
@@ -279,17 +282,21 @@ class ModulesManager(metaclass=decorators.Singleton):
                 f"Was not possible to initialize module descriptor "
                 f'for "{module_type_name}". No descriptor data found.'
             )
-            return None
+            return None, None
         if not module_data:
             logger.error(
                 f"Was not possible to initialize module descriptor "
                 f'for "{module_type_name}". No module data found.'
             )
-            return None
+            return None, None
+
+        original_descriptor_data = ModuleDescriptor(
+            descriptor_data, path=module_data["path"]
+        )
 
         return load_descriptor(
-            descriptor_data, descriptor_data, path=module_data.get("path")
-        )
+            descriptor_data, original_descriptor_data, path=module_data["path"]
+        ), original_descriptor_data
 
     def find_module_class_by_type(self, module_type_name: str) -> type[Module] | None:
         """Find and returns the module class corresponding to the given

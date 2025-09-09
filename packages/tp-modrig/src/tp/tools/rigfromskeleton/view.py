@@ -13,7 +13,7 @@ from Qt.QtWidgets import (
 )
 from Qt.QtGui import QIcon, QEnterEvent
 
-from tp.python import paths
+from tp.libs.python import paths
 from tp.qt import factory, uiconsts, contexts, dpi
 from tp.qt.widgets.viewmodel.views import TableViewWidget
 
@@ -24,9 +24,7 @@ if typing.TYPE_CHECKING:
 
 
 class RigFromSkeletonView(QWidget):
-    """
-    Main widget for the Rig from Skeleton tool.
-    """
+    """Main widget for the Rig from Skeleton tool."""
 
     def __init__(self, model: RigFromSkeletonModel, parent: QWidget | None = None):
         super().__init__(parent=parent)
@@ -39,8 +37,7 @@ class RigFromSkeletonView(QWidget):
         self._setup_signals()
 
     def enterEvent(self, event: QEnterEvent):
-        """
-        Overrides `enterEvent` method to handle the enter event.
+        """Overrides `enterEvent` method to handle the enter event.
 
         :param event: enter event to handle.
         """
@@ -49,9 +46,7 @@ class RigFromSkeletonView(QWidget):
         super().enterEvent(event)
 
     def _setup_widgets(self):
-        """
-        Internal function that setup all view widgets.
-        """
+        """Internal function that setup all view widgets."""
 
         self._auto_left_right_checkbox = factory.checkbox_widget(
             text="Auto Right Side",
@@ -205,9 +200,7 @@ class RigFromSkeletonView(QWidget):
         self._progress_bar_message_label.setVisible(False)
 
     def _setup_layouts(self):
-        """
-        Internal function that creates all UI layouts and add all widgets to them.
-        """
+        """Internal function that creates all UI layouts and add all widgets to them."""
 
         contents_layout = factory.vertical_main_layout()
         contents_layout.setSpacing(uiconsts.SMALL_SPACING)
@@ -275,9 +268,7 @@ class RigFromSkeletonView(QWidget):
         contents_layout.addWidget(self._progress_bar_message_label, Qt.AlignCenter)
 
     def _link_properties(self):
-        """
-        Internal function that link between UI widgets and tool UI properties.
-        """
+        """Internal function that link between UI widgets and tool UI properties."""
 
         self._model.link_property(self._auto_left_right_checkbox, "auto_left_right")
         self._model.link_property(
@@ -302,9 +293,7 @@ class RigFromSkeletonView(QWidget):
         self._model.link_property(self._progress_bar_message_label, "progress_message")
 
     def _setup_signals(self):
-        """
-        Internal function that connects all widget signals.
-        """
+        """Internal function that connects all widget signals."""
 
         self._model.table_model.rowsInserted.connect(self._on_table_model_rows_inserted)
         self._model.listen(
@@ -313,7 +302,7 @@ class RigFromSkeletonView(QWidget):
         self._model.listen(
             "preset_target_names", self._on_model_preset_target_names_changed
         )
-        self._model.listen('progress', self._on_model_progres_changed)
+        self._model.listen("progress", self._on_model_progres_changed)
 
         self._auto_left_right_checkbox.toggled.connect(self._on_auto_left_right_toggled)
         self._source_combo.itemChanged.connect(self._on_source_combo_item_changed)
@@ -329,8 +318,7 @@ class RigFromSkeletonView(QWidget):
         )
 
     def _on_table_model_rows_inserted(self):
-        """
-        Internal callback function that is called each time rows are inserted in the
+        """Internal callback function that is called each time rows are inserted in the
         table model.
         """
 
@@ -344,8 +332,7 @@ class RigFromSkeletonView(QWidget):
                 self._table_view_widget.open_persistent_editor(second_column_index)
 
     def _on_model_preset_source_names_changed(self, preset_source_names: list[str]):
-        """
-        Internal callback function that is called each time the preset source
+        """Internal callback function that is called each time the preset source
          names are changed.
 
         :param preset_source_names: list of preset source names.
@@ -356,8 +343,7 @@ class RigFromSkeletonView(QWidget):
             self._source_combo.add_items(preset_source_names)
 
     def _on_model_preset_target_names_changed(self, preset_target_names: list[str]):
-        """
-        Internal callback function that is called each time the preset target
+        """Internal callback function that is called each time the preset target
         names are changed.
 
         :param preset_target_names: list of preset target names.
@@ -368,8 +354,7 @@ class RigFromSkeletonView(QWidget):
             self._target_combo.add_items(preset_target_names)
 
     def _on_model_progres_changed(self, value: int):
-        """
-        Internal callback function that is called each time the progress value
+        """Internal callback function that is called each time the progress value
         is changed.
 
         :param value: progress value.
@@ -378,8 +363,7 @@ class RigFromSkeletonView(QWidget):
         QApplication.processEvents()
 
     def _on_auto_left_right_toggled(self, flag: bool):
-        """
-        Internal callback function that is called each time the auto left right
+        """Internal callback function that is called each time the auto left right
         checkbox is toggled.
 
         :param flag: flag to set.
@@ -392,24 +376,21 @@ class RigFromSkeletonView(QWidget):
         self._source_left_right_separator_on_border.setEnabled(flag)
 
     def _on_source_combo_item_changed(self):
-        """
-        Internal callback function that is called each time the source combo item
+        """Internal callback function that is called each time the source combo item
         is changed.
         """
 
         self._model.update_sources_from_active_presets()
 
     def _on_target_combo_item_changed(self):
-        """
-        Internal callback function that is called each time the target combo item
+        """Internal callback function that is called each time the target combo item
         is changed.
         """
 
         self._model.update_targets_from_active_presets()
 
     def _on_table_view_widget_selection_changed(self):
-        """
-        Internal callback function that is called each time the table view widget
+        """Internal callback function that is called each time the table view widget
         selection is changed.
         """
 
@@ -418,9 +399,7 @@ class RigFromSkeletonView(QWidget):
         )
 
     def _on_add_button_clicked(self):
-        """
-        Internal callback function that is called each time the add button is clicked.
-        """
+        """Internal callback function that is called each time the add button is clicked."""
 
         self._model.insert_item()
         self._model.update_property(
@@ -428,9 +407,7 @@ class RigFromSkeletonView(QWidget):
         )
 
     def _on_remove_button_clicked(self):
-        """
-        Internal callback function that is called each time the remove button is clicked.
-        """
+        """Internal callback function that is called each time the remove button is clicked."""
 
         self._model.remove_selected_items()
         self._model.update_property(
@@ -438,9 +415,7 @@ class RigFromSkeletonView(QWidget):
         )
 
     def _on_clear_button_clicked(self):
-        """
-        Internal callback function that is called each time the clear button is clicked.
-        """
+        """Internal callback function that is called each time the clear button is clicked."""
 
         self._model.clear_items()
         self._model.update_property(
@@ -448,8 +423,7 @@ class RigFromSkeletonView(QWidget):
         )
 
     def _on_build_from_skeleton_button_clicked(self):
-        """
-        Internal callback function that is called each time the build from skeleton
+        """Internal callback function that is called each time the build from skeleton
         button is clicked.
         """
 

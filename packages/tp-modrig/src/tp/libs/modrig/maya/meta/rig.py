@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
+import enum
 import typing
-from typing import cast
+from typing import cast, Any
 
 from loguru import logger
 from maya.api import OpenMaya
@@ -15,8 +17,18 @@ from .layer import MetaLayer
 from ..base import constants
 
 if typing.TYPE_CHECKING:
-    from .moduleslayer import MetaModulesLayer
     from tp.libs.naming.manager import NameManager
+    from .layers import MetaModulesLayer, MetaGeometryLayer
+
+
+class SelectionSetType(str, enum.Enum):
+    """Enumeration of the different selection sets available for a rig."""
+
+    Root = "root"
+    Controls = "ctrls"
+    Skeleton = "skeleton"
+    Geometry = "geometry"
+    Blendshape = "blendshape"
 
 
 class MetaRig(MetaBase):
@@ -57,6 +69,10 @@ class MetaRig(MetaBase):
                 ),
                 dict(
                     name=constants.RIG_CONFIG_ATTR,
+                    type=attributetypes.kMFnDataString,
+                ),
+                dict(
+                    name=constants.RIG_BUILD_SCRIPT_CONFIG_ATTR,
                     type=attributetypes.kMFnDataString,
                 ),
                 dict(
@@ -123,6 +139,8 @@ class MetaRig(MetaBase):
 
         return transform_node
 
+    # === Display Layer === #
+
     def display_layer(self) -> DisplayLayer:
         """Return the display layer instance attached to this rig.
 
@@ -166,6 +184,8 @@ class MetaRig(MetaBase):
         layer = self.display_layer()
         return layer.delete() if layer else False
 
+    # === Selection Sets === #
+
     def selection_sets(self) -> dict[str, ObjectSet]:
         """Return a list of all the selection sets for this rig within the
         current Maya scene.
@@ -175,12 +195,48 @@ class MetaRig(MetaBase):
         """
 
         return {
-            "root": self.sourceNodeByName(constants.RIG_ROOT_SELECTION_SET_ATTR),
-            "ctrls": self.sourceNodeByName(constants.RIG_CONTROL_SELECTION_SET_ATTR),
-            "skeleton": self.sourceNodeByName(
+            SelectionSetType.Root: self.sourceNodeByName(
+                constants.RIG_ROOT_SELECTION_SET_ATTR
+            ),
+            SelectionSetType.Controls: self.sourceNodeByName(
+                constants.RIG_CONTROL_SELECTION_SET_ATTR
+            ),
+            SelectionSetType.Skeleton: self.sourceNodeByName(
                 constants.RIG_SKELETON_SELECTION_SET_ATTR
             ),
+            SelectionSetType.Geometry: self.sourceNodeByName(
+                constants.RIG_GEOMETRY_SELECTION_SET_ATTR
+            ),
+            SelectionSetType.Blendshape: self.sourceNodeByName(
+                constants.RIG_BLENDSHAPE_SELECTION_SET_ATTR
+            ),
         }
+
+    def selection_set(self, selection_set_type: SelectionSetType) -> ObjectSet | None:
+        """Return a specific selection set by its name ID.
+
+        Args:
+            selection_set_type: The type of selection set to retrieve.
+
+        Returns:
+            The selection set instance if found; `None` otherwise.
+        """
+
+        valid_types = {
+            SelectionSetType.Root: constants.RIG_ROOT_SELECTION_SET_ATTR,
+            SelectionSetType.Controls: constants.RIG_CONTROL_SELECTION_SET_ATTR,
+            SelectionSetType.Skeleton: constants.RIG_SKELETON_SELECTION_SET_ATTR,
+            SelectionSetType.Geometry: constants.RIG_GEOMETRY_SELECTION_SET_ATTR,
+            SelectionSetType.Blendshape: constants.RIG_BLENDSHAPE_SELECTION_SET_ATTR,
+        }
+        if selection_set_type not in valid_types:
+            logger.warning(
+                f"Invalid selection set type: {selection_set_type}. "
+                f"Valid options are: {list(valid_types.keys())}"
+            )
+            return None
+
+        return self.sourceNodeByName(valid_types[selection_set_type])
 
     def create_selection_sets(self, name_manager: NameManager) -> dict[str, DGNode]:
         """Create the selection sets for this rig instance.
@@ -200,16 +256,16 @@ class MetaRig(MetaBase):
         existing_selection_sets = self.selection_sets()
         rig_name = self.name()
 
-        root = existing_selection_sets["root"]
+        root = existing_selection_sets[SelectionSetType.Root]
         if root is None:
             name = name_manager.resolve(
                 "rootSelectionSet", {"rigName": rig_name, "type": "objectSet"}
             )
             root: ObjectSet = factory.create_dg_node(name, "objectSet")
             self.connect_to(constants.RIG_ROOT_SELECTION_SET_ATTR, root)
-            existing_selection_sets["root"] = root
+            existing_selection_sets[SelectionSetType.Root] = root
 
-        if existing_selection_sets.get("ctrls", None) is None:
+        if existing_selection_sets.get(SelectionSetType.Controls, None) is None:
             name = name_manager.resolve(
                 "selectionSet",
                 {"rigName": rig_name, "selectionSet": "ctrls", "type": "objectSet"},
@@ -217,8 +273,9 @@ class MetaRig(MetaBase):
             object_set = factory.create_dg_node(name, "objectSet")
             root.addMember(object_set)
             self.connect_to(constants.RIG_CONTROL_SELECTION_SET_ATTR, object_set)
-            existing_selection_sets["ctrls"] = object_set
-        if existing_selection_sets.get("skeleton", None) is None:
+            existing_selection_sets[SelectionSetType.Controls] = object_set
+
+        if existing_selection_sets.get(SelectionSetType.Skeleton, None) is None:
             name = name_manager.resolve(
                 "selectionSet",
                 {"rigName": rig_name, "selectionSet": "skeleton", "type": "objectSet"},
@@ -226,9 +283,35 @@ class MetaRig(MetaBase):
             object_set = factory.create_dg_node(name, "objectSet")
             root.addMember(object_set)
             self.connect_to(constants.RIG_SKELETON_SELECTION_SET_ATTR, object_set)
-            existing_selection_sets["skeleton"] = object_set
+            existing_selection_sets[SelectionSetType.Skeleton] = object_set
+
+        if existing_selection_sets.get(SelectionSetType.Geometry, None) is None:
+            name = name_manager.resolve(
+                "selectionSet",
+                {"rigName": rig_name, "selectionSet": "geometry", "type": "objectSet"},
+            )
+            object_set = factory.create_dg_node(name, "objectSet")
+            root.addMember(object_set)
+            self.connect_to(constants.RIG_GEOMETRY_SELECTION_SET_ATTR, object_set)
+            existing_selection_sets[SelectionSetType.Geometry] = object_set
+
+        if existing_selection_sets.get(SelectionSetType.Blendshape, None) is None:
+            name = name_manager.resolve(
+                "selectionSet",
+                {
+                    "rigName": rig_name,
+                    "selectionSet": "blendshape",
+                    "type": "objectSet",
+                },
+            )
+            object_set = factory.create_dg_node(name, "objectSet")
+            root.addMember(object_set)
+            self.connect_to(constants.RIG_BLENDSHAPE_SELECTION_SET_ATTR, object_set)
+            existing_selection_sets[SelectionSetType.Blendshape] = object_set
 
         return existing_selection_sets
+
+    # === Layers === #
 
     def create_layer(
         self,
@@ -290,12 +373,20 @@ class MetaRig(MetaBase):
 
         return root
 
+    def geometry_layer(self) -> MetaGeometryLayer | None:
+        """Retrieve the layer that gives access to the geometry of the rig.
+
+        Returns:
+            The geometry layer instance, or `None` if it doesn't exist.
+        """
+
+        return self.layer(constants.GEOMETRY_LAYER_TYPE)
+
     def modules_layer(self) -> MetaModulesLayer | None:
         """Retrieve the layer that gives access to the modules of the rig.
 
         Returns:
-            The layer of type MODULES_LAYER_TYPE, or `None` if it doesn't
-                exist.
+            The module layer instance, or `None` if it doesn't exist.
         """
 
         return self.layer(constants.MODULES_LAYER_TYPE)
@@ -335,3 +426,24 @@ class MetaRig(MetaBase):
         self.add_meta_child(new_layer_meta)
 
         return new_layer_meta
+
+    # === Build Scripts === #
+
+    def build_script_config(self) -> dict[str, Any]:
+        """Return the build script configuration for this rig.
+
+        Returns:
+            The build script configuration as a dictionary.
+        """
+
+        config_str = self.attribute(constants.RIG_BUILD_SCRIPT_CONFIG_ATTR).value()
+        if not config_str:
+            return {}
+
+        try:
+            data = json.loads(config_str)
+        except Exception as err:
+            logger.error(f"Error evaluating rig config: {err}")
+            return {}
+
+        return data

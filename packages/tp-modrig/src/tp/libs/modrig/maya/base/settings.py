@@ -10,6 +10,8 @@ NAMING_PRESET_HIERARCHY = "namingPresetHierarchy"
 NAMING_PRESET_SAVE_PATH = "namingPresetSavePath"
 NAMING_PRESET_PATHS = "namingPresetPaths"
 COMPONENTS_PATHS_KEY = "componentsPaths"
+BUILD_SCRIPT_PATHS_KEY = "buildScriptPaths"
+BUILD_SCRIPTS_KEY = "buildScripts"
 TEMPLATES_PATHS_KEY = "templatesPaths"
 TEMPLATE_SAVE_PATH_KEY = "templateSavePath"
 GRAPH_PATHS_KEY = "graphsPaths"
@@ -41,6 +43,16 @@ class ModRigSettings(settings.YAMLSettings, metaclass=decorators.Singleton):
         """
 
         return paths.canonical_path("../library/modules")
+
+    @staticmethod
+    def default_build_scripts_path() -> str:
+        """Return the default ModRig build scripts path.
+
+        Returns:
+            The default build scripts absolute path.
+        """
+
+        return paths.canonical_path("../library/build_scripts")
 
     @staticmethod
     def default_templates_path() -> str:
@@ -153,6 +165,28 @@ class ModRigSettings(settings.YAMLSettings, metaclass=decorators.Singleton):
         return helpers.remove_dupes(
             [self.default_modules_path()] + self.user_modules_paths()
         )
+
+    def user_build_script_paths(self) -> list[str]:
+        """Return the user build script folder paths.
+
+        Returns:
+            The list of user build script folder paths.
+        """
+
+        found_paths = self.get(BUILD_SCRIPT_PATHS_KEY, [])
+        default_scripts = [self.default_build_scripts_path()]
+
+        return list(set(found_paths).union(default_scripts))
+
+    def user_build_scripts(self) -> list[str]:
+        """Return the list of build script IDs which should always be used
+        in rigs.
+
+        Returns:
+            The list of build script IDs.
+        """
+
+        return self.get(BUILD_SCRIPTS_KEY, [])
 
     def user_template_paths(self) -> list[str]:
         """Return the user template folder paths.
