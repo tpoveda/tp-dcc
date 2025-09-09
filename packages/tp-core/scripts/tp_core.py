@@ -23,8 +23,9 @@ def startup(packages_manager: PackagesManager):
         nodegraph.startup()
     except ImportError as e:
         raise ImportError(
-            "Failed to import 'tp.libs.nodegraph'. "
+            f"Failed to import 'tp.libs.nodegraph': {e}"
             "Ensure that the 'tp-core' package is installed correctly."
+
         ) from e
 
 
