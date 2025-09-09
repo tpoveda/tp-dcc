@@ -16,15 +16,17 @@ def create_dg_node(
     node_type: str,
     mod: OpenMaya.MDGModifier | None = None,
     apply: bool = True,
-):
-    """
-    Creates a dependency graph node and returns the node Maya object.
+) -> OpenMaya.MObject:
+    """Create a dependency graph node and return the node Maya object.
 
-    :param name: new name of the node.
-    :param node_type: Maya node type to create.
-    :param mod: optional Maya modifier to apply.
-    :param apply: whether to apply modifier immediately.
-    :return: newly created Maya object instance.
+    Args:
+        name: New name of the node.
+        node_type: Maya node type to create.
+        mod: Optional Maya modifier to apply.
+        apply: Whether to apply modifier immediately.
+
+    Returns:
+        Newly created Maya object instance.
     """
 
     modifier = mod or OpenMaya.MDGModifier()
@@ -43,17 +45,22 @@ def create_dag_node(
     mod: OpenMaya.MDagModifier | None = None,
     apply: bool = True,
 ) -> OpenMaya.MObject:
-    """
-    Creates a new DAG node and if a parent is specified, then parent the new node.
+    """Create a DAG node and return the node Maya object. If a parent is
+    specified, then parent the new node.
 
-    :param name: new name of the node.
-    :param node_type: Maya node type to create.
-    :param parent: optional parent node to attach the new node to.
-    :param mod: optional Maya modifier to apply.
-    :param apply: whether to apply modifier immediately.
-    :return: newly created Maya object instance.
-    :raises NameError: if the node name is invalid
-    :raises TypeError: if the node type is invalid.
+    Args:
+        name: new Name of the node.
+        node_type: Maya node type to create.
+        parent: Optional parent node to attach the new node to.
+        mod: Optional Maya modifier to
+        apply: Whether to apply modifier immediately.
+
+    Returns:
+        Newly created Maya object instance.
+
+    Raises:
+        NameError: if the node name is invalid
+        TypeError: if the node type is invalid.
     """
 
     if not helpers.is_safe_name(name):
@@ -82,14 +89,17 @@ def create_dag_node(
 def create_motion_path(
     nurbs_curve: OpenMaya.MObject, param: float, name: str, fraction_mode: bool = False
 ) -> OpenMaya.MObject:
-    """
-    Creates a motion path node that follows the given curve at the given param.
+    """Create a motion path node that follows the given curve at the given
+    param.
 
-    :param nurbs_curve: curve to attach the node to.
-    :param param: param value to attach the node to.
-    :param name: name for the motion path node.
-    :param fraction_mode: whether the motion path should use fraction mode.
-    :return: the created motion path node.
+    Args:
+        nurbs_curve: Curve to attach the node to.
+        param: Param value to attach the node to.
+        name: Name for the motion path node.
+        fraction_mode: Whether the motion path should use fraction mode.
+
+    Returns:
+        The created motion path node.
     """
 
     curve_fn = OpenMaya.MFnDependencyNode(nurbs_curve)
