@@ -425,3 +425,88 @@ class HostApplication(ABC):
         """Whether the host application is running in headless mode or not."""
 
         return False
+
+    @abstractmethod
+    def hotkey_set_exists(self, name: str) -> bool:
+        """Checks if a hotkey set with the given name exists in the host application.
+
+        Args:
+            name: The name of the hotkey set to check.
+
+        Returns:
+            True if the hotkey set exists, False otherwise.
+        """
+
+        raise NotImplementedError(
+            "The `hotkey_set_exists` method must be implemented by the host class."
+        )
+
+    @abstractmethod
+    def current_hotkey_set_name(self) -> str:
+        """Returns the name of the current hotkey set in the host application.
+
+        Returns:
+            The name of the current hotkey set.
+        """
+
+        raise NotImplementedError(
+            "The `current_hotkey_set_name` method must be implemented by the host class."
+        )
+
+    @abstractmethod
+    def set_current_hotkey_set(self, name: str) -> bool:
+        """Sets the current hotkey set in the host application.
+
+        Args:
+            name: The name of the hotkey set to set as current.
+
+        Returns:
+            `True` if the hotkey set was successfully set; `False` otherwise.
+        """
+
+        raise NotImplementedError(
+            "The `set_current_hotkey_set` method must be implemented by the host class."
+        )
+
+    @abstractmethod
+    def set_source_key_set(self, name: str, source: str) -> bool:
+        """Sets the source key set in the host application.
+
+        Args:
+            name: The name of the key set to set.
+            source: The source of the key set to set as source.
+
+        Returns:
+            `True` if the key set was successfully set; `False` otherwise.
+        """
+
+        raise NotImplementedError(
+            "The `set_source_key_set` method must be implemented by the host class."
+        )
+
+    @abstractmethod
+    def available_key_sets(self) -> list[str]:
+        """Returns a list of available key sets in the host application.
+
+        Returns:
+            A list of available key set names.
+        """
+
+        raise NotImplementedError(
+            "The `available_key_sets` method must be implemented by the host class."
+        )
+
+    @abstractmethod
+    def delete_key_set(self, name: str) -> bool:
+        """Deletes a key set with the given name from the host application.
+
+        Args:
+            name: The name of the key set to delete.
+
+        Returns:
+            `True` if the key set was successfully deleted; `False` otherwise.
+        """
+
+        raise NotImplementedError(
+            "The `delete_key_set` method must be implemented by the host class."
+        )
