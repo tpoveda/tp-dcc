@@ -7,7 +7,7 @@ from typing import Iterator, Any
 from maya.api import OpenMaya
 
 from tp.libs.python import profiler
-from tp.libs.maya.wrapper import DagNode, ContainerAsset
+from tp.libs.maya.wrapper import DagNode, Plug, ContainerAsset
 from tp.libs.maya.om import attributetypes
 
 from . import constants, errors
@@ -28,6 +28,7 @@ if typing.TYPE_CHECKING:
     from .namingpresets import Preset
     from .subsystem import BaseSubsystem
     from ..meta.rig import MetaRig
+    from ..meta.nodes import GuideNode
 
 
 class Module:
@@ -1073,17 +1074,125 @@ class Module:
         has_guide_attr.lock(False)
         has_guide_attr.set(state)
 
-    def pre_setup_guide(self):
-        self.logger.debug("Running `pre_setup_guide`...")
+    def pre_setup_guides(self):
+        self.logger.debug("Running `pre_setup_guides`...")
 
         self._setup_guide_settings()
 
-    def _setup_guide_settings(self):
-        self.logger.debug("Creating guide settings from module descriptor ...")
+        module_name = self.name()
+        side = self.side()
+        naming_manager = self.naming_manager()
         guide_layer = self.guide_layer()
+
+        self.logger.debug("Generating guides from descriptor...")
+        current_guides = {i.id(): i for i in guide_layer.iterate_guides()}
+
+        # We need to defer parenting of guides until all guides have been
+        # created or updated, otherwise we can run into issues where a guide
+        # is parented to another guide that does not yet exist.
+        post_parenting: list[tuple[GuideNode, str | None]] = []
+
+        for guide_descriptor in self.descriptor.guide_layer.iterate_guides():
+            guide_id = guide_descriptor.id
+            current_scene_guide = current_guides.get(guide_id)
+            guide_name = naming_manager.resolve(
+                "guideName",
+                {
+                    "moduleName": module_name,
+                    "side": side,
+                    "id": guide_id,
+                    "type": "guide",
+                },
+            )
+
+            if current_scene_guide is not None:
+                self.logger.debug(
+                    f"Guide already exists in scene: {guide_id}, updating ..."
+                )
+                current_scene_guide.createAttributesFromDict(
+                    {v.name: v.to_dict() for v in guide_descriptor.attributes}
+                )
+                current_scene_guide.rename(guide_name)
+                _, parent_id = current_scene_guide.guide_parent()
+                if parent_id != guide_descriptor.parent:
+                    post_parenting.append(
+                        (current_scene_guide, guide_descriptor.parent)
+                    )
+                continue
+
+            for i, srt in enumerate(guide_descriptor.srts):
+                srt.name = naming_manager.resolve(
+                    "guideName",
+                    {
+                        "moduleName": module_name,
+                        "side": side,
+                        "id": guide_id if i == 0 else f"{guide_id}{str(i).zfill(2)}",
+                        "type": "srt",
+                    },
+                )
+
+            new_guide = guide_layer.create_guide()
+
+        self.logger.debug("Completed pre-setup of guides.")
+
+    def _setup_guide_settings(self) -> None:
+        """Set up the guide settings for the module based on the module
+        descriptor.
+        """
+
+        self.logger.debug("Creating guide settings from module descriptor ...")
+
         module_settings = self.descriptor.guide_layer.settings
         if not module_settings:
             return
+
+        guide_layer = self.guide_layer()
+
+        # If there are existing settings, we need to preserve any outgoing
+        # connections before deleting the old settings node. We will
+        # reconnect them to the new settings node after it has been created.
+        outgoing_connections: dict[str, list[Plug]] = {}
+        existing_guide_settings = guide_layer.guide_settings()
+        if existing_guide_settings is not None:
+            existing_guide_settings.attribute("message").disconnectAll()
+            for attr in existing_guide_settings.iterateExtraAttributes():
+                if attr.isSource:
+                    outgoing_connections[attr.name()] = list(attr.destinations())
+            existing_guide_settings.delete()
+
+        # Create a new settings node.
+        settings_node_name = self.naming_manager().resolve(
+            "settingsName",
+            {
+                "moduleName": self.name(),
+                "side": self.side(),
+                "section": constants.GUIDE_LAYER_TYPE,
+                "type": "settings",
+            },
+        )
+        settings_node = guide_layer.create_settings_node(
+            settings_node_name, attr_name=constants.GUIDE_LAYER_TYPE
+        )
+
+        # Apply the settings from the descriptor to the new settings node.
+        modifier = OpenMaya.MDGModifier()
+        for setting in iter(module_settings):
+            if not settings_node.hasAttribute(setting.name):
+                attr = settings_node.addAttribute(**setting.to_dict())
+            else:
+                attr = settings_node.attribute(setting.name)
+                attr.setFromDict(**setting.to_dict())
+
+            # Reconnect any outgoing connections that were present on the
+            # previous settings node.
+            connections = outgoing_connections.get(setting.name, [])
+            for destination_connection in connections:
+                if not destination_connection.exists():
+                    continue
+                attr.connect(destination_connection, mod=modifier, apply=False)
+
+        # Apply all the connections at once for efficiency.
+        modifier.doIt()
 
     def pin(self):
         pass

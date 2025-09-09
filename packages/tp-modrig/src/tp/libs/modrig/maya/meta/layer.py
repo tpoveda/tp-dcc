@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Generator
+
 from maya.api import OpenMaya
 
 from tp.libs.maya import factory
@@ -7,6 +9,7 @@ from tp.libs.maya.wrapper import DagNode
 from tp.libs.maya.om import attributetypes
 from tp.libs.maya.meta.base import MetaBase
 
+from .nodes import SettingsNode
 from ..base import constants
 from ..descriptors.attributes import AttributeDescriptor
 
@@ -15,6 +18,8 @@ class MetaLayer(MetaBase):
     """MetaClass implementation for a layer in the Maya scene."""
 
     ID = constants.BASE_LAYER_TYPE
+
+    # region === Overrides === #
 
     def meta_attributes(self) -> list[dict]:
         """Return the list of default metanode attributes that should be added
@@ -77,6 +82,78 @@ class MetaLayer(MetaBase):
 
         return attrs
 
+    # endregion
+
+    # region === Settings === #
+
+    def iterate_settings_nodes(self) -> Generator[SettingsNode]:
+        """Iterate over the settings nodes and yields them one by one.
+
+        Yields:
+            Yields `SettingsNode` instances one by one.
+        """
+
+        for element in self.attribute(constants.LAYER_SETTING_NODES_ATTR):
+            source_node = element.child(0).sourceNode()
+            if source_node is None:
+                continue
+            yield SettingsNode(mobj=source_node.object())
+
+    def settings_nodes(self) -> list[SettingsNode]:
+        """Return the list of settings nodes associated with the current
+        metanode.
+
+        Returns:
+            List of `SettingsNode` instances.
+        """
+
+        return list(self.iterate_settings_nodes())
+
+    def settings_node(self, settings_id: str) -> SettingsNode | None:
+        """Return the settings node with the given ID.
+
+        Args:
+            settings_id: The ID of the settings node to retrieve.
+
+        Returns:
+            The `SettingsNode` instance with the given ID, or `None` if not
+                found.
+        """
+
+        found_settings_node: SettingsNode | None = None
+        for setting_node in self.iterate_settings_nodes():
+            if setting_node.id() == settings_id:
+                found_settings_node = setting_node
+                break
+
+        return found_settings_node
+
+    def create_settings_node(self, settings_id: str, attr_name: str) -> SettingsNode:
+        """Create a new settings node with the given ID and attribute name or
+        return the existing one if it already exists.
+
+        Args:
+            settings_id: The ID of the settings node to create or retrieve.
+            attr_name: The attribute name to associate with the settings node.
+
+        Returns:
+            The newly created or existing `SettingsNode` instance.
+        """
+
+        settings_node = self.settings_node(settings_id)
+        if settings_node is not None:
+            return settings_node
+
+        settings_node = SettingsNode()
+        settings_node.create(settings_id, id=attr_name)
+        new_element = self.attribute(constants.LAYER_SETTING_NODES_ATTR).nextAvailableDestElementPlug()
+        self.connect_to_by_plug(new_element.child(0), settings_node)
+        new_element.child(1).set(attr_name)
+        settings_node.lock(True)
+
+        return settings_node
+
+
     def update_metadata(self, metadata: list[AttributeDescriptor]) -> None:
         """Update the metanode attributes based on the provided metadata.
 
@@ -93,6 +170,10 @@ class MetaLayer(MetaBase):
                 self.addAttribute(**meta_attr.to_dict())
             else:
                 attribute.setFromDict(**meta_attr.to_dict())
+
+    # endregion
+
+    # region === Root Transform === #
 
     def root_transform(self) -> DagNode:
         """Retrieve the root transform node associated with the current object.
@@ -133,6 +214,10 @@ class MetaLayer(MetaBase):
 
         return layer_transform
 
+    # endregion
+
+    # region === Visibility === #
+
     def show(self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True):
         """Show the root transform if it exists.
 
@@ -160,3 +245,5 @@ class MetaLayer(MetaBase):
         root = self.root_transform()
         if root is not None:
             root.hide(mod=mod, apply=apply)
+
+    # endregion

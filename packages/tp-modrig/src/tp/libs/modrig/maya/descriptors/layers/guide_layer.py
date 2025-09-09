@@ -256,7 +256,16 @@ class GuideLayerDescriptor(LayerDescriptor):
 
         return bool(self.get(constants.DAG_DESCRIPTOR_KEY, []))
 
-    def iterate_guides(self, include_root: bool) -> Generator[GuideDescriptor]:
+    def iterate_guides(self, include_root: bool = True) -> Generator[GuideDescriptor]:
+        """Iterate over all guides in the layer.
+
+        Args:
+            include_root: Whether to include the root guide in the iteration.
+
+        Yields:
+            Each guide in the layer.
+        """
+
         guide_descriptors: list[GuideDescriptor] = self.get(
             constants.DAG_DESCRIPTOR_KEY, []
         )
@@ -274,7 +283,6 @@ class GuideLayerDescriptor(LayerDescriptor):
 
         Args:
             include_root: Whether to include the root guide in the count.
-                Default is True.
 
         Returns:
             The list of guides in the layer.
