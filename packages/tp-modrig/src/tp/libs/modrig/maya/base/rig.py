@@ -259,7 +259,7 @@ class Rig:
 
         return self.configuration.find_name_manager_for_type("rig")
 
-    # === Session === #
+    # === Lifecycle === #
 
     @profiler.fn_timer
     def start_session(
@@ -302,7 +302,44 @@ class Rig:
 
         return self._meta
 
-    # === Meta === #
+    @profiler.fn_timer
+    def delete(self, delete_joints: bool = True) -> bool:
+        """Delete the entire rig structure, including all associated modules
+        and the root transform.
+
+        Args:
+            delete_joints: Whether to delete joints in the skeleton layer.
+
+        Returns:
+            `True` if the deletion was successful; `False` otherwise.
+        """
+
+        self.delete_modules()
+
+        with self.build_script_context(constants.BuildScriptFunctionType.DeleteRig):
+            root = self._meta.root_transform()
+            self.delete_control_display_layer()
+            for layer in self._meta.layers():
+                if layer.id == constants.SKELETON_LAYER_TYPE:
+                    layer.delete(delete_joints=delete_joints)
+                    continue
+                layer.delete()
+            root.delete()
+            self._meta.delete()
+
+        return True
+
+    def delete_control_display_layer(self) -> bool:
+        """Delete the current control display layer for the rig.
+
+        Returns:
+            `True` if the control display layer was successfully deleted,
+                `False` otherwise.
+        """
+
+        return self._meta.delete_control_display_layer() if self.exists() else False
+
+    # region === Meta === #
 
     @property
     def meta(self) -> MetaRig | None:
@@ -390,7 +427,7 @@ class Rig:
 
         return self._meta.root_transform() if self._meta.exists() else None
 
-    # === Modules === #
+    # region === Modules === #
 
     def modules_layer(self) -> MetaModulesLayer | None:
         """Retrieve the module layer instance from this rig by querying the
@@ -798,12 +835,56 @@ class Rig:
 
         return True
 
+    @profiler.fn_timer
+    def delete_modules(self) -> None:
+        """Delete all modules associated with this rig instance."""
+
+        with self.build_script_context(constants.BuildScriptFunctionType.DeleteModules):
+            for module in self.iterate_modules():
+                module_name = module.name()
+                try:
+                    module.delete()
+                except Exception:
+                    logger.error(
+                        f"Failed to delete module: {module_name}", exc_info=True
+                    )
+
+        self._modules_cache.clear()
+
+    def delete_module(self, name: str, side: str) -> bool:
+        """Delete a specific module by name and side.
+
+        Args:
+            name: The name of the module to delete.
+            side: The side of the module to delete.
+
+        Returns:
+            True if the module was found and deleted; False otherwise.
+        """
+
+        module = self.module(name, side)
+        if not module:
+            logger.warning(f'"Module {name}:{side} not found for deletion."')
+            return False
+
+        with self.build_script_context(constants.BuildScriptFunctionType.DeleteModule):
+            self._cleanup_space_switches(module)
+            module.delete()
+            try:
+                self._modules_cache.remove(module)
+            except KeyError:
+                return False
+
+        return True
+
     def clear_modules_cache(self):
         """Clear the internal cache of modules."""
 
         self._modules_cache.clear()
 
-    # === Guides === #
+    # endregion
+
+    # region === Guides === #
 
     @profiler.fn_timer
     def build_guides(self, modules: list[Module] | None = None):

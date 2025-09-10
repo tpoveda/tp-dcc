@@ -5,13 +5,12 @@ import copy
 import typing
 import inspect
 import pathlib
-from typing import cast
-from typing import TypedDict
+from typing import cast, Type, TypedDict
 
 from loguru import logger
 
 from tp.libs.plugin import PluginsManager
-from tp.libs.python import decorators, yamlio
+from tp.libs.python import decorators, yamlio, osplatform
 
 from ..base.module import Module
 from ..base import constants, errors, settings
@@ -37,7 +36,7 @@ class RegisteredModule(TypedDict):
         descriptor_name: The name of the descriptor associated with the module.
     """
 
-    module_class: type[Module]
+    module_class: Type[Module]
     path: str
     descriptor_name: str
 
@@ -101,6 +100,12 @@ class ModulesManager(metaclass=decorators.Singleton):
         """The registered descriptors."""
 
         return self._descriptors
+
+    @property
+    def manager(self) -> PluginsManager:
+        """The plugins manager instance."""
+
+        return self._manager
 
     def refresh(self, force: bool = False) -> bool:
         """Refresh the state of the module manager by clearing its current
@@ -216,6 +221,30 @@ class ModulesManager(metaclass=decorators.Singleton):
         """
 
         return self._modules.get(module_type_name)
+
+    def module_data_by_path(self, path: str) -> tuple[str, dict | RegisteredModule]:
+        """Retrieve module data based on a given file path.
+
+        Args:
+            path: The file path to search for the associated module data.
+
+        Returns:
+            A tuple containing:
+                - The name of the module type if found; an empty string
+                    otherwise.
+                - A dictionary with the module data if found; an empty
+                    dictionary otherwise.
+        """
+
+        normalized_path = pathlib.Path(path).as_posix().rpartition(os.extsep)[0]
+        for name, module_info in self._modules.items():
+            if (
+                pathlib.Path(module_info["path"]).as_posix().rpartition(os.extsep)[0]
+                == normalized_path
+            ):
+                return name, module_info
+
+        return "", {}
 
     def load_module_descriptor(self, module_type_name: str) -> dict:
         """Load the descriptor data for a given module type name.

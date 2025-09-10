@@ -387,7 +387,7 @@ class NameManagerData:
 class PresetsManager:
     """Manager to handle the different naming presets used by ModRig."""
 
-    ENV_VAR = "MODRIG_NAME_PRESET_PATH"
+    ENV_VAR = "TP_MODRIG_NAME_PRESET_PATHS"
 
     def __init__(self):
         super().__init__()

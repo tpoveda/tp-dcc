@@ -18,7 +18,12 @@ from ..base import constants
 
 if typing.TYPE_CHECKING:
     from tp.libs.naming.manager import NameManager
-    from .layers import MetaModulesLayer, MetaGeometryLayer
+    from .layers import (
+        MetaModulesLayer,
+        MetaGeometryLayer,
+        MetaSkeletonLayer,
+        MetaLayerType,
+    )
 
 
 class SelectionSetType(str, enum.Enum):
@@ -35,6 +40,28 @@ class MetaRig(MetaBase):
     """Metaclass for a ModRig rig in Maya."""
 
     ID = constants.RIG_TYPE
+
+    def __init__(
+        self,
+        node: DGNode | DagNode | OpenMaya.MObject | None = None,
+        name: str | None = None,
+        namespace: str | None = None,
+        init_defaults: bool = True,
+        lock: bool = True,  # Force the node to be locked by default.
+        mod: OpenMaya.MDGModifier | None = None,
+        *args,
+        **kwargs,
+    ):
+        super().__init__(
+            node=node,
+            name=name,
+            namespace=namespace,
+            init_defaults=init_defaults,
+            lock=lock,
+            mod=mod,
+            *args,
+            **kwargs,
+        )
 
     def meta_attributes(self) -> list[dict]:
         """Return the list of default metanode attributes that should be added
@@ -100,6 +127,24 @@ class MetaRig(MetaBase):
 
         return attrs
 
+    def delete(
+        self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True
+    ) -> bool:
+        """Delete this rig metanode from the Maya scene.
+
+        Args:
+            mod: Optional `OpenMaya.MDGModifier` instance to use for the
+                deletion.
+            apply: Whether to apply the modifier after deletion.
+        """
+
+        root = self.root_transform()
+        if root:
+            root.lock(False)
+            root.delete()
+
+        return super().delete(mod=mod, apply=apply)
+
     def rig_name(self) -> str:
         """Return the name for the rig.
 
@@ -139,7 +184,29 @@ class MetaRig(MetaBase):
 
         return transform_node
 
-    # === Display Layer === #
+    # region === Build Script Config === #
+
+    def set_build_script_config(self, config_data: dict[str, dict[str, str]]) -> None:
+        """Set the build script configuration for this rig.
+
+        Args:
+            config_data: The build script configuration as a dictionary.
+
+        Examples:
+            {"buildScriptId": {"propertyName": "propertyValue"}}
+        """
+
+        try:
+            config_str = json.dumps(config_data)
+        except Exception as err:
+            logger.error(f"Error serializing rig config: {err}")
+            return
+
+        self.attribute(constants.RIG_BUILD_SCRIPT_CONFIG_ATTR).setValue(config_str)
+
+    # endregion
+
+    # region === Display Layer === #
 
     def display_layer(self) -> DisplayLayer:
         """Return the display layer instance attached to this rig.
@@ -174,7 +241,7 @@ class MetaRig(MetaBase):
 
         return layer
 
-    def delete_display_layer(self) -> bool:
+    def delete_control_display_layer(self) -> bool:
         """Delete the display layer attached to this rig instance.
 
         Returns:
@@ -345,7 +412,7 @@ class MetaRig(MetaBase):
 
         return self._create_layer(layer_type, hierarchy_name, meta_name, parent)
 
-    def layer(self, layer_type_name: str) -> MetaLayer | None:
+    def layer(self, layer_type_name: str) -> MetaLayerType | None:
         """Get the first `MetaLayer` object of a specific type within a given
         depth.
 
@@ -390,6 +457,32 @@ class MetaRig(MetaBase):
         """
 
         return self.layer(constants.MODULES_LAYER_TYPE)
+
+    def skeleton_layer(self) -> MetaSkeletonLayer:
+        """Retrieve the layer that gives access to the skeleton of the rig.
+
+        Returns:
+            The skeleton layer instance, or `None` if it doesn't exist.
+        """
+
+        return self.layer(constants.SKELETON_LAYER_TYPE)
+
+    def layers(self) -> list[MetaLayerType]:
+        """Return a list of all the layers associated with this rig.
+
+        Returns:
+            List of all the layers as `MetaLayer` instances.
+        """
+
+        return [
+            i
+            for i in (
+                self.geometry_layer(),
+                self.skeleton_layer(),
+                self.modules_layer(),
+            )
+            if i
+        ]
 
     def _create_layer(
         self,

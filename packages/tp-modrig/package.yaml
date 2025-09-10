@@ -19,10 +19,19 @@ environment:
     - "{self}/src"
   TP_DCC_META_PATHS:
     - "{self}/src/tp/libs/modrig/{dcc}/meta"
-  MODRIG_NAME_PRESET_PATH:
+  TP_DCC_TOOLS:
+    - "{self}/src/tp/tools/modrig/{dcc}/module_creator/tool.py"
+  TP_DCC_COMMAND_PATHS:
+    - "{self}/src/tp/libs/modrig/{dcc}/library/commands"
+  TP_MODRIG_NAME_PRESET_PATHS:
     - "{self}/src/tp/libs/modrig/naming"
-  MODULES_ENV_VAR_KEY:
+  TP_MODRIG_MODULES_PATHS:
     - "{self}/src/tp/libs/modrig/{dcc}/library/modules"
+  TP_MODRIG_MODULE_MODELS_PATHS:
+    - "{self}/src/tp/tools/modrig/{dcc}/builder/models/modules"
+  TP_MODRIG_TOOLS_PATHS:
+    - "{self}/src/tp/tools/modrig/{dcc}/builder/tools"
+
 dependencies: []
 tests:
   - "{self}/tests"

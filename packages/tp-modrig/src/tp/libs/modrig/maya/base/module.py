@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing
 import logging
 from typing import Iterator, Any
+from dataclasses import dataclass
 
 from maya.api import OpenMaya
 
@@ -31,12 +32,21 @@ if typing.TYPE_CHECKING:
     from ..meta.nodes import GuideNode
 
 
+@dataclass
+class ModuleUiData:
+    icon: str = "tpdcc"
+    display_name: str = ""
+    icon_color: str = "5EB3BA"
+
+
 class Module:
     """Base class that encapsulates a single rigging module."""
 
     id: str = ""
     documentation: str = ""
     icon_path: str = ""
+    ui_data = ModuleUiData()
+    beta_version: bool = False
     required_plugins: list[str] = []
 
     def __init__(

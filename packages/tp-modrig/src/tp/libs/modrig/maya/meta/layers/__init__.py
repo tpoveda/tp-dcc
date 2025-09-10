@@ -6,9 +6,16 @@ from ..layer import MetaLayer
 from .guide_layer import MetaGuidesLayer
 from .modules_layer import MetaModulesLayer
 from .geometry_layer import MetaGeometryLayer
+from .skeleton_layer import MetaSkeletonLayer
 
 
-MetaLayerType = Union[MetaLayer, MetaGuidesLayer, MetaModulesLayer, MetaGeometryLayer]
+MetaLayerType = Union[
+    MetaLayer,
+    MetaGuidesLayer,
+    MetaModulesLayer,
+    MetaGeometryLayer,
+    MetaSkeletonLayer,
+]
 
 __all__ = [
     "MetaLayerType",
@@ -16,4 +23,5 @@ __all__ = [
     "MetaGuidesLayer",
     "MetaModulesLayer",
     "MetaGeometryLayer",
+    "MetaSkeletonLayer",
 ]
