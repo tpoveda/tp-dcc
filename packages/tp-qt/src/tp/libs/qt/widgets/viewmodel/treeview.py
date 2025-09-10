@@ -166,9 +166,15 @@ class TreeViewWidget(QFrame):
 
     @property
     def tree_view(self) -> TreeView:
-        """Get the tree view associated with this widget."""
+        """The tree view associated with this widget."""
 
         return self._tree_view
+
+    @property
+    def toolbar_layout(self) -> HorizontalLayout:
+        """The toolbar layout associated with this widget."""
+
+        return self._toolbar_layout
 
     def set_model(self, model: TreeModel):
         """Set the source model for the tree view.
@@ -356,13 +362,13 @@ class TreeViewWidget(QFrame):
         main_layout = VerticalLayout()
         self.setLayout(main_layout)
 
-        toolbar_layout = HorizontalLayout()
-        toolbar_layout.setSpacing(0)
-        toolbar_layout.setContentsMargins(10, 6, 6, 0)
-        toolbar_layout.addWidget(self._title_label)
-        toolbar_layout.addWidget(self._search_line_edit)
+        self._toolbar_layout = HorizontalLayout()
+        self._toolbar_layout.setSpacing(5)
+        self._toolbar_layout.setContentsMargins(10, 6, 6, 0)
+        self._toolbar_layout.addWidget(self._title_label)
+        self._toolbar_layout.addWidget(self._search_line_edit)
 
-        main_layout.addLayout(toolbar_layout)
+        main_layout.addLayout(self._toolbar_layout)
         main_layout.addWidget(self._tree_view)
 
     def _setup_signals(self):

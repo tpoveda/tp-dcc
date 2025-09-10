@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+import typing
 from typing import Union, Iterator, Any
 
 from Qt.QtCore import (
@@ -18,6 +19,9 @@ from Qt.QtGui import QIcon, QColor, QFont
 from ... import dpi
 from .roles import UID_ROLE
 from .delegates import HtmlDelegate
+
+if typing.TYPE_CHECKING:
+    from .tablemodel import TableModel
 
 
 class BaseDataSource(QObject):
@@ -518,7 +522,7 @@ class BaseDataSource(QObject):
             index: An integer representing the index to check.
 
         Returns:
-            True if the index is editable; `False` otherwise.
+            `True` if the index is editable; `False` otherwise.
         """
 
         return self.is_enabled(index)

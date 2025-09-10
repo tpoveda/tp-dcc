@@ -62,7 +62,7 @@ class LeafTreeFilterProxyModel(QSortFilterProxyModel):
             model_index = model.index(row_num, self.filterKeyColumn(), source_parent)
             if not model_index.isValid():
                 return False
-            item = model.itemFromIndex(model_index)
+            item = model.item_from_index(model_index)
 
         return self._match(search_exp, item, self.filterKeyColumn())
 

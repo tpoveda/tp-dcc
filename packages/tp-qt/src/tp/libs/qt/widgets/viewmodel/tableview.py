@@ -30,7 +30,7 @@ from ..buttons import BaseButton
 from ..search import SearchLineEdit
 from ..comboboxes import BaseComboBox
 from ..layouts import VerticalLayout, HorizontalLayout
-from .models import TableModel, TableFilterProxyModel
+from .tablemodel import TableModel, TableFilterProxyModel
 from .modelutils import map_to_source_model
 
 if typing.TYPE_CHECKING:
