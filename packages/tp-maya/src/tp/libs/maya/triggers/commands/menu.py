@@ -6,13 +6,13 @@ from operator import itemgetter
 from maya import cmds
 from maya.api import OpenMaya
 
-from tp.maya import wrapper
-from tp.maya.om import attributetypes
-from tp.maya.cmds import decorators
-from tp.maya.markingmenu import errors
-from tp.maya.markingmenu.menu import MarkingMenu
-from tp.maya.markingmenu.layout import MarkingMenuLayout
-from tp.maya.markingmenu.manager import MarkingMenusManager
+from tp.libs.maya import wrapper
+from tp.libs.maya.om import attributetypes
+from tp.libs.maya.cmds import decorators
+from tp.libs.maya.markingmenu import errors
+from tp.libs.maya.markingmenu.menu import MarkingMenu
+from tp.libs.maya.markingmenu.layout import MarkingMenuLayout
+from tp.libs.maya.markingmenu.manager import MarkingMenusManager
 
 from ..node import TriggerNode
 from ..command import TriggerCommand
@@ -24,8 +24,7 @@ TOP_LEVEL_MENU_NAME = "tpTriggerMenu"
 @decorators.undo
 @block_selection_callback_decorator
 def build_trigger_menu(parent_menu: str, node_name: str) -> bool:
-    """
-    Builds and displays the trigger menu for the given node.
+    """Builds and displays the trigger menu for the given node.
 
     :param parent_menu: Maya parent menu name.
     :param node_name: node name to build the trigger menu for. This is the node that
@@ -55,8 +54,7 @@ def build_trigger_menu(parent_menu: str, node_name: str) -> bool:
 
 
 def gather_menus_from_nodes(node_name: str | None = None):
-    """
-    Returns the current selected nodes and the final composed (but not solved) trigger
+    """Returns the current selected nodes and the final composed (but not solved) trigger
     marking menu layout.
 
     :param node_name: Maya path to the scene node to find the initial trigger on.
@@ -105,8 +103,7 @@ class TriggerMenuCommand(TriggerCommand):
     COMMAND_ATTR_NAME = "tpTriggerMenuName"
 
     def attributes(self) -> list[dict]:
-        """
-        Returns a list of dictionaries that define the attributes of the trigger command.
+        """Returns a list of dictionaries that define the attributes of the trigger command.
 
         :return: list of dictionaries that define the attributes of the trigger command.
         """
@@ -121,8 +118,7 @@ class TriggerMenuCommand(TriggerCommand):
         ]
 
     def menu_id(self) -> str:
-        """
-        Return sthe internal ID of the marking menu layout.
+        """Return sthe internal ID of the marking menu layout.
 
         :return: marking menu layout ID.
         """
@@ -131,8 +127,7 @@ class TriggerMenuCommand(TriggerCommand):
         return attr.value() if attr else ""
 
     def set_menu(self, menu_id: str, mod: OpenMaya.MDGModifier | None = None):
-        """
-        Sets the menu ID of the trigger command.
+        """Sets the menu ID of the trigger command.
 
         :param menu_id: ID of the menu to set.
         :param mod: optional modifier to use to modify the node.
@@ -151,8 +146,7 @@ class TriggerMenuCommand(TriggerCommand):
             attr.lock(True)
 
     def execute(self, arguments: dict[str, Any]) -> MarkingMenuLayout:
-        """
-        Function that loads the marking menu layout for the command.
+        """Function that loads the marking menu layout for the command.
 
         :param arguments: dictionary with the arguments to execute the command.
         :return: marking menu layout instance.

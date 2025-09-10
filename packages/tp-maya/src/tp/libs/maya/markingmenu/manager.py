@@ -2,18 +2,17 @@ from __future__ import annotations
 
 import os
 
+from tp.libs.plugin import PluginsManager
+from tp.libs.python import modules, jsonio, decorators
+
 from . import errors
 from .layout import MarkingMenuLayout
 from .menu import MarkingMenu, MarkingMenuDynamic
 from .command import MarkingMenuCommand
-from ...python import modules, jsonio, decorators
-from ...plugin import PluginFactory
 
 
 class MarkingMenusManager(metaclass=decorators.Singleton):
-    """
-    Class that holds all available marking menu layout classes available.
-    """
+    """Class that holds all available marking menu layout classes available."""
 
     MENU_ENV_VAR = "TP_DCC_MARKING_MENU_PATH"
     LAYOUT_ENV_VAR = "TP_DCC_MARKING_MENU_LAYOUT_PATH"
@@ -27,21 +26,24 @@ class MarkingMenusManager(metaclass=decorators.Singleton):
 
         self._active_menus: dict[str, MarkingMenu] = {}
         self._layouts: dict[str, MarkingMenuLayout] = {}
-        self._menu_factory = PluginFactory(interface=MarkingMenuDynamic, plugin_id="ID")
-        self._command_factory = PluginFactory(
-            interface=MarkingMenuCommand, plugin_id="ID"
+        self._menu_manager = PluginsManager(
+            interfaces=[MarkingMenuDynamic], variable_name="ID"
+        )
+        self._command_manager = PluginsManager(
+            interfaces=[MarkingMenuCommand], variable_name="ID"
         )
 
         self.register_marking_menu_layouts_by_env(MarkingMenusManager.LAYOUT_ENV_VAR)
-        self._menu_factory.register_paths_from_env_var(MarkingMenusManager.MENU_ENV_VAR)
-        self._command_factory.register_paths_from_env_var(
+        self._menu_manager.register_by_environment_variable(
+            MarkingMenusManager.MENU_ENV_VAR
+        )
+        self._command_manager.register_by_environment_variable(
             MarkingMenusManager.COMMAND_ENV_VAR
         )
 
     @property
     def active_menus(self) -> dict[str, MarkingMenu]:
-        """
-        Getter that returns the active menus dictionary.
+        """Getter that returns the active menus dictionary.
 
         :return: dict[str, MarkingMenu]
         """
@@ -50,8 +52,7 @@ class MarkingMenusManager(metaclass=decorators.Singleton):
 
     @property
     def layouts(self) -> dict[str, MarkingMenuLayout]:
-        """
-        Getter that returns the layouts dictionary.
+        """Getter that returns the layouts dictionary.
 
         :return: dict[str, MarkingMenuLayout]
         """
@@ -59,29 +60,26 @@ class MarkingMenusManager(metaclass=decorators.Singleton):
         return self._layouts
 
     @property
-    def menu_factory(self) -> PluginFactory:
-        """
-        Getter that returns the menu factory.
+    def menu_factory(self) -> PluginsManager:
+        """Getter that returns the menu factory.
 
         :return: plugin factory instance.
         """
 
-        return self._menu_factory
+        return self._menu_manager
 
     @property
-    def command_factory(self) -> PluginFactory:
-        """
-        Getter that returns the command factory.
+    def command_factory(self) -> PluginsManager:
+        """Getter that returns the command factory.
 
         :return: plugin factory instance.
         """
 
-        return self._command_factory
+        return self._command_manager
 
     @classmethod
     def find_layout(cls, layout_id: str) -> MarkingMenuLayout | None:
-        """
-        Returns the layout with the given ID.
+        """Returns the layout with the given ID.
 
         :param layout_id: str, ID of the layout to get.
         :return: MarkingMenuLayout or None
@@ -90,8 +88,7 @@ class MarkingMenusManager(metaclass=decorators.Singleton):
         return cls().layouts.get(layout_id)
 
     def load_marking_menu_layout_file(self, file_path: str):
-        """
-        Loads a marking menu layout file and registers it in the manager.
+        """Loads a marking menu layout file and registers it in the manager.
 
         :param file_path: str, path to the marking menu layout file.
         :raises InvalidMarkingMenuLayoutJsonFileFormatError: If the layout file is
@@ -111,8 +108,7 @@ class MarkingMenusManager(metaclass=decorators.Singleton):
             )
 
     def register_marking_menu_layouts_by_env(self, env_var: str):
-        """
-        Recursively registers all marking menu layout files with the extension
+        """Recursively registers all marking menu layout files with the extension
         '.mmlayout' and loads the JSON data with a layout instance, then adds it to
         the layouts cache.
 
@@ -131,21 +127,19 @@ class MarkingMenusManager(metaclass=decorators.Singleton):
                 self.load_marking_menu_layout_file(path)
 
     def has_menu(self, menu_id: str) -> bool:
-        """
-        Returns whether a menu with the given ID exists or not.
+        """Returns whether a menu with the given ID exists or not.
 
         :param menu_id: str, ID of the menu to check for.
         :return: bool
         """
 
         return (
-            menu_id not in self._menu_factory.identifiers()
+            menu_id not in self._menu_manager.identifiers()
             or menu_id not in self._layouts
         )
 
     def menu_type(self, menu_id: str) -> int:
-        """
-        Returns the type of the menu with the given ID.
+        """Returns the type of the menu with the given ID.
 
         :param menu_id: str, ID of the menu to get the type for.
         :return: int
@@ -153,6 +147,6 @@ class MarkingMenusManager(metaclass=decorators.Singleton):
 
         return (
             MarkingMenusManager.DYNAMIC_LAYOUT_TYPE
-            if self._menu_factory.get_plugin_from_id(menu_id) is not None
+            if self._menu_manager.get_plugin_from_id(menu_id) is not None
             else MarkingMenusManager.STATIC_LAYOUT_TYPE
         )

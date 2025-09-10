@@ -32,9 +32,7 @@ TP_CONSTRAINT_NODES_INDEX = 5
 
 
 class Constraint:
-    """
-    Base class to create constraints.
-    """
+    """Base class to create constraints."""
 
     ID: str = ""
     CONSTRAINT_TARGET_INDEX: int | None = None
@@ -59,8 +57,7 @@ class Constraint:
 
     @property
     def plug_element(self) -> Plug:
-        """
-        Getter method that returns the constraint plug element.
+        """Getter method that returns the constraint plug element.
 
         :return:
         """
@@ -69,8 +66,7 @@ class Constraint:
 
     @property
     def constraint_node(self) -> DGNode:
-        """
-        Getter method that returns the constraint node.
+        """Getter method that returns the constraint node.
 
         :return: constraint node.
         """
@@ -79,8 +75,7 @@ class Constraint:
 
     @abstractmethod
     def build(self, drivers: dict, **constraint_kwargs: dict[str, Any]) -> list[DGNode]:
-        """
-        Builds the constraint with given keyword arguments.
+        """Builds the constraint with given keyword arguments.
 
         :param drivers: dictionary containing the targets nodes to be driven by the constraint.
         :param constraint_kwargs: constraint keyword arguments.
@@ -90,8 +85,7 @@ class Constraint:
         raise NotImplementedError("Build method must be implemented in subclasses")
 
     def driven(self) -> DagNode | None:
-        """
-        Returns constraint driven node.
+        """Returns constraint driven node.
 
         :return: driven node.
         """
@@ -99,8 +93,7 @@ class Constraint:
         return self._driven
 
     def set_driven(self, node: DagNode, plug_element: Plug):
-        """
-        Sets the driven node for the constraint.
+        """Sets the driven node for the constraint.
 
         :param base.DagNode node: driven node.
         :param plug_element: plug element
@@ -110,8 +103,7 @@ class Constraint:
         self._plug_element = plug_element
 
     def iterate_drivers(self) -> Iterator[tuple[str, DagNode]]:
-        """
-        Generator function that iterates over all driver nodes of the constraint.
+        """Generator function that iterates over all driver nodes of the constraint.
 
         :return: iterated driver nodes.
         """
@@ -128,8 +120,7 @@ class Constraint:
                 yield label, source_node
 
     def drivers(self) -> list[tuple[str, DagNode]]:
-        """
-        Returns all driver nodes of the constraint.
+        """Returns all driver nodes of the constraint.
 
         :return: list of driver nodes.
         """
@@ -137,8 +128,7 @@ class Constraint:
         return list(self.iterate_drivers())
 
     def iterate_utility_nodes(self) -> Iterator[DGNode]:
-        """
-        Generator function that iterates over all the constraint utility nodes.
+        """Generator function that iterates over all the constraint utility nodes.
 
         :return: iterated utility nodes.
         """
@@ -156,8 +146,7 @@ class Constraint:
             yield util_node
 
     def utility_nodes(self) -> list[DGNode]:
-        """
-        Returns all utility nodes of the constraint.
+        """Returns all utility nodes of the constraint.
 
         :return: list of utility nodes.
         """
@@ -165,8 +154,7 @@ class Constraint:
         return list(self.iterate_utility_nodes())
 
     def has_target(self, node: DagNode) -> bool:
-        """
-        Returns whether this constraint is affecting the given target.
+        """Returns whether this constraint is affecting the given target.
 
         :param node: node to check.
         :return: True if given node is being affected by this constraint; False otherwise.
@@ -179,8 +167,7 @@ class Constraint:
         return False
 
     def has_target_label(self, label: str) -> bool:
-        """
-        Returns whether this constraint is affecting a target with given label.
+        """Returns whether this constraint is affecting a target with given label.
 
         :param label: target label to check.
         :return: True if given target label is being affected by this constraint; False otherwise.
@@ -196,8 +183,7 @@ class Constraint:
         return False
 
     def controller_attr_name(self) -> str:
-        """
-        Returns the attribute name which controls this constraint.
+        """Returns the attribute name which controls this constraint.
 
         :return: controller attribute name.
         """
@@ -208,8 +194,7 @@ class Constraint:
         return self._plug_element.child(TP_CONSTRAINT_CONTROL_ATTR_NAME_INDEX).value()
 
     def controller(self) -> dict:
-        """
-        Returns the controller data.
+        """Returns the controller data.
 
         :return: controller data.
         """
@@ -230,8 +215,7 @@ class Constraint:
         }
 
     def serialize(self) -> dict:
-        """
-        Serializes this constraint into a dictionary.
+        """Serializes this constraint into a dictionary.
 
         :return: serialized constraint.
         """
@@ -272,8 +256,7 @@ class Constraint:
         }
 
     def add_utility_node(self, node: DGNode):
-        """
-        Adds a utility node to the constraint.
+        """Adds a utility node to the constraint.
 
         :param node: utility node to add.
         """
@@ -287,8 +270,7 @@ class Constraint:
         node.message.connect(element)
 
     def add_utility_nodes(self, nodes_to_add: list[DGNode]):
-        """
-        Adds a list of utility nodes to the constraint.
+        """Adds a list of utility nodes to the constraint.
 
         :param nodes_to_add: list of utility nodes to add.
         """
@@ -305,8 +287,7 @@ class Constraint:
     def delete(
         self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True
     ) -> bool:
-        """
-        Deletes constraint.
+        """Deletes constraint.
 
         :param mod: optional modifier to add to.
         :param apply: whether to immediately apply the operation.
@@ -351,17 +332,14 @@ class Constraint:
 
 
 class ParentConstraint(Constraint):
-    """
-    Parent constraint class.
-    """
+    """Parent constraint class."""
 
     ID = "parent"
     CONSTRAINT_TARGET_INDEX = 1
     CONSTRAINT_FN = "parentConstraint"
 
     def build(self, drivers: dict, **constraint_kwargs: dict[str, Any]) -> list[DGNode]:
-        """
-        Builds the constraint with given keyword arguments.
+        """Builds the constraint with given keyword arguments.
 
         :param drivers: dictionary containing the targets nodes to be driven by the constraint.
         :param constraint_kwargs: constraint keyword arguments.
@@ -497,8 +475,7 @@ class ParentConstraint(Constraint):
         target_nodes: list[DagNode],
         constraint_kwargs: dict[str, Any],
     ):
-        """
-        Function that is called before the constraint is created.
+        """Function that is called before the constraint is created.
 
         :param DagNode driven: constraint driven node.
         :param target_nodes: list of target nodes.
@@ -514,8 +491,7 @@ class ParentConstraint(Constraint):
         constraint: DagNode,
         constraint_kwargs: dict[str, Any],
     ):
-        """
-        Function that is called after the constraint is created.
+        """Function that is called after the constraint is created.
 
         :param driven: constraint driven node.
         :param target_nodes: list of target nodes.
@@ -527,9 +503,7 @@ class ParentConstraint(Constraint):
 
 
 class PointConstraint(ParentConstraint):
-    """
-    Point constraint class.
-    """
+    """Point constraint class."""
 
     ID = "point"
     CONSTRAINT_TARGET_INDEX = 4
@@ -541,8 +515,7 @@ class PointConstraint(ParentConstraint):
         target_nodes: list[DagNode],
         constraint_kwargs: dict[str, Any],
     ):
-        """
-        Function that is called before the constraint is created.
+        """Function that is called before the constraint is created.
 
         :param DagNode driven: constraint driven node.
         :param target_nodes: list of target nodes.
@@ -566,8 +539,7 @@ class PointConstraint(ParentConstraint):
         constraint: DagNode,
         constraint_kwargs: dict[str, Any],
     ):
-        """
-        Function that is called after the constraint is created.
+        """Function that is called after the constraint is created.
 
         :param driven: constraint driven node.
         :param target_nodes: list of target nodes.
@@ -580,9 +552,7 @@ class PointConstraint(ParentConstraint):
 
 
 class OrientConstraint(ParentConstraint):
-    """
-    Orient constraint class.
-    """
+    """Orient constraint class."""
 
     ID = "orient"
     CONSTRAINT_TARGET_INDEX = 4
@@ -590,9 +560,7 @@ class OrientConstraint(ParentConstraint):
 
 
 class ScaleConstraint(ParentConstraint):
-    """
-    Scale constraint class.
-    """
+    """Scale constraint class."""
 
     ID = "scale"
     CONSTRAINT_TARGET_INDEX = 2
@@ -600,9 +568,7 @@ class ScaleConstraint(ParentConstraint):
 
 
 class AimConstraint(ParentConstraint):
-    """
-    Aim constraint class.
-    """
+    """Aim constraint class."""
 
     ID = "aim"
     CONSTRAINT_TARGET_INDEX = 4
@@ -610,9 +576,7 @@ class AimConstraint(ParentConstraint):
 
 
 class MatrixConstraint(Constraint):
-    """
-    Matrix constraint class.
-    """
+    """Matrix constraint class."""
 
     ID = "matrix"
 
@@ -622,8 +586,7 @@ class MatrixConstraint(Constraint):
         decompose: bool = False,
         **constraint_kwargs: dict[str, Any],
     ) -> list[DGNode]:
-        """
-        Builds the constraint with given keyword arguments.
+        """Builds the constraint with given keyword arguments.
 
         :param drivers: dictionary containing the targets nodes to be driven by the constraint.
         :param decompose: whether to decompose the matrix.
@@ -649,8 +612,7 @@ class MatrixConstraint(Constraint):
         track: bool = True,
         **constraint_kwargs: dict[str, Any],
     ) -> list[DGNode]:
-        """
-        Internal function that creates an offset parent matrix constraint.
+        """Internal function that creates an offset parent matrix constraint.
 
         :param constraint_id: constraint type.
         :param driven: constraint driven node.
@@ -716,8 +678,7 @@ class MatrixConstraint(Constraint):
         track: bool = True,
         **constraint_kwargs: dict[str, Any],
     ) -> list[DGNode]:
-        """
-        Internal function that creates a matrix constraint.
+        """Internal function that creates a matrix constraint.
 
         :param constraint_id: constraint type.
         :param driven: constraint driven node.
@@ -728,8 +689,7 @@ class MatrixConstraint(Constraint):
         """
 
         def _compose_joint_matrix_rotation_graph() -> list[DGNode]:
-            """
-            Internal function that creates a joint matrix rotation graph.
+            """Internal function that creates a joint matrix rotation graph.
 
             :return: list of created nodes.
             """
@@ -773,8 +733,7 @@ class MatrixConstraint(Constraint):
             return _extras
 
         def _compose_joint_matrix_translate_scale_graph() -> list[DGNode]:
-            """
-            Internal function that creates a joint matrix translation/rotation graph.
+            """Internal function that creates a joint matrix translation/rotation graph.
 
             :return: list of created nodes.
             """
@@ -881,8 +840,7 @@ def create_constraint_factory(
     constraint_meta_plug: Plug,
     track: bool = True,
 ) -> Constraint:
-    """
-    Factory function that allows to create different Constraint classes based on given type.
+    """Factory function that allows to create different Constraint classes based on given type.
 
     :param constraint_type: type of the attribute to create.
     :param driven_node: node to drive.
@@ -905,8 +863,7 @@ def create_constraint_factory(
 
 
 def iterate_constraints(node: DagNode) -> Iterator[Constraint]:
-    """
-    Generator function that iterates over all attached constraints by iterating over the compound array attribute
+    """Generator function that iterates over all attached constraints by iterating over the compound array attribute
     called "constraints".
 
     :param node: node to iterate.
@@ -924,8 +881,7 @@ def iterate_constraints(node: DagNode) -> Iterator[Constraint]:
 
 
 def find_constraint(node: DagNode, constraint_type: str) -> Constraint | None:
-    """
-    Finds a constraint of given type attached to the given node.
+    """Finds a constraint of given type attached to the given node.
 
     :param node: node to search for attached constraints.
     :param constraint_type: constraint type to search for.
@@ -944,8 +900,7 @@ def find_constraint(node: DagNode, constraint_type: str) -> Constraint | None:
 
 
 def has_constraint(node: DagNode) -> bool:
-    """
-    Returns whether this node is constrained by another.
+    """Returns whether this node is constrained by another.
 
     :param node: node to search for attached constraints.
     :return: True if node is attached to a constraint; False otherwise.
@@ -958,8 +913,7 @@ def has_constraint(node: DagNode) -> bool:
 
 
 def add_constraint_attribute(node: DagNode) -> Plug:
-    """
-    Creates and returns the "constraints" compound attribute, which is used to store all incoming constraints no
+    """Creates and returns the "constraints" compound attribute, which is used to store all incoming constraints no
     matter how they are created. If the attribute already exists, it will be returned.
 
     :param node: node to create compound attribute in.
@@ -1018,8 +972,7 @@ def build_constraint(
     track: bool = True,
     **kwargs,
 ) -> tuple[Constraint, list[DGNode]]:
-    """
-    Builds a space switching ready constraint. Supported constraints are:
+    """Builds a space switching ready constraint. Supported constraints are:
         - Parent Constraint.
         - Point Constraint.
         - Orient Constraint.
@@ -1028,7 +981,7 @@ def build_constraint(
 
     .. code-block:: python
 
-        from tp.maya import factory, spaceswitch
+        from tp.libs.maya import factory, spaceswitch
 
         targets = []
         for n in ("locator1", "locator2", "locator3"):
@@ -1066,9 +1019,9 @@ def build_constraint(
     :return: containing the constraint instance and the constraint extra nodes.
     """
 
-    assert (
-        constraint_type in CONSTRAINT_TYPES
-    ), f"Constraint of type: {constraint_type} is not supported"
+    assert constraint_type in CONSTRAINT_TYPES, (
+        f"Constraint of type: {constraint_type} is not supported"
+    )
 
     constraint_attr: Plug | None = None
     if track:
@@ -1096,8 +1049,7 @@ def build_constraint(
 def delete_constraints(
     constrained_nodes: list[DagNode], mod: OpenMaya.MDagModifier | None = None
 ) -> OpenMaya.MDagModifier:
-    """
-    Deletes all the constraints of the given nodes.
+    """Deletes all the constraints of the given nodes.
 
     :param constrained_nodes: nodes we want to delete constraints of.
     :param mod: optional modifier to add to.
@@ -1125,8 +1077,7 @@ def add_constraint_map(
     meta_element_plug: Plug | None,
     kwargs_map: dict | None = None,
 ) -> Plug:
-    """
-    Adds a mapping of drivers and utilities to the constraint compound array attribute.
+    """Adds a mapping of drivers and utilities to the constraint compound array attribute.
 
     :param drivers: list of driver nodes.
     :param driven: driven node.
@@ -1188,8 +1139,7 @@ def add_constraint_map(
 def delete_constraint_map_attribute(
     node: DGNode, mod: OpenMaya.MDGModifier | None = None
 ) -> OpenMaya.MDGModifier:
-    """
-    Removes the constraint metadata if it is present on given node.
+    """Removes the constraint metadata if it is present on given node.
 
     :param node: node to remove metadata from.
     :param mod: optional modifier to add to.
@@ -1227,8 +1177,7 @@ def delete_constraint_map_attribute(
 
 
 def serialize_constraints(node: DagNode) -> list[dict]:
-    """
-    Serializes all constraints of the given node.
+    """Serializes all constraints of the given node.
 
     :param node: node to serialize constraints from.
     :return: serialized constraints.

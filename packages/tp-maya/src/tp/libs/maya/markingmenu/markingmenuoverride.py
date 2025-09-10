@@ -48,7 +48,7 @@ def setup() -> bool:
         fstream.write("\n/// TP DCC MODS ########################\n")
         fstream.write("\tsetParent -m $parent;\n")
         fstream.write("\tmenuItem -d 1;\n")
-        fstream.write('\tpython("from tp.maya import triggers");\n')
+        fstream.write('\tpython("from tp.libs.maya import triggers");\n')
         fstream.write(
             """\tint $killState = python("triggers.build_trigger_menu('"+{}+"', '"+{}+"')");\n""".format(
                 parent_var_str, _object_var_str

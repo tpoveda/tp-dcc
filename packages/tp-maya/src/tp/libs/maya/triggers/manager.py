@@ -4,36 +4,33 @@ import typing
 from typing import Type
 
 from maya.api import OpenMaya
+from tp.libs.plugin import PluginsManager
+from tp.libs.python.decorators import Singleton
 
 from . import constants, errors
 from .node import TriggerNode
 from .command import TriggerCommand
-from ... import plugin
-from ...python.decorators import Singleton
 
 if typing.TYPE_CHECKING:
     from ..wrapper import DGNode
 
 
 class TriggersManager(metaclass=Singleton):
-    """
-    Singleton class that manages all trigger commands.
-    """
+    """Singleton class that manages all trigger commands."""
 
     TRIGGER_ENV_VAR = constants.TRIGGER_ENV_VAR
 
     def __init__(self):
         super().__init__()
 
-        self._plugin_factory = plugin.PluginFactory(
-            interface=TriggerCommand, plugin_id="ID", name="triggersManager"
+        self._manager = PluginsManager(
+            interfaces=[TriggerCommand], variable_name="ID", name="triggersManager"
         )
-        self._plugin_factory.register_paths_from_env_var(self.TRIGGER_ENV_VAR)
+        self._manager.register_by_environment_variable(self.TRIGGER_ENV_VAR)
 
     @classmethod
     def command_from_node(cls, node: DGNode) -> Type[TriggerCommand] | None:
-        """
-        Returns a trigger command from a node.
+        """Returns a trigger command from a node.
 
         :param node: node to get the command from.
         :return: trigger command class instance.
@@ -53,8 +50,7 @@ class TriggersManager(metaclass=Singleton):
         command_name: str,
         modifier: OpenMaya.MDGModifier | None = None,
     ):
-        """
-        Creates a trigger from a node.
+        """Creates a trigger from a node.
 
         :param node: DGNode, node to create the trigger from.
         :param command_name: str, name of the command to create.
@@ -75,30 +71,22 @@ class TriggersManager(metaclass=Singleton):
         return trigger_node
 
     @property
-    def plugin_factory(self) -> plugin.PluginFactory:
-        """
-        Returns the plugin factory instance.
+    def plugins_manager(self) -> PluginsManager:
+        """The plugin manager instance."""
 
-        :return: PluginFactory, plugin factory instance.
-        """
-
-        return self._plugin_factory
+        return self._manager
 
     def commands(self) -> dict[str, Type[TriggerCommand]]:
-        """
-        Returns all trigger commands.
+        """Returns all trigger commands.
 
         :return: dictionary with all trigger commands.
         """
 
         # noinspection PyUnresolvedReferences
-        return {
-            plugin_class.ID: plugin for plugin_class in self._plugin_factory.plugins()
-        }
+        return {plugin_class.ID: plugin for plugin_class in self._manager.plugins()}
 
     def command_types(self) -> list[str]:
-        """
-        Returns all trigger command types.
+        """Returns all trigger command types.
 
         :return: list of trigger command types.
         """
@@ -106,11 +94,10 @@ class TriggersManager(metaclass=Singleton):
         return list(self.commands().keys())
 
     def command(self, command_name: str) -> Type[TriggerCommand]:
-        """
-        Returns a trigger command by name.
+        """Returns a trigger command by name.
 
         :param command_name: str, name of the command to return.
         :return: TriggerCommand, trigger command instance.
         """
 
-        return self._plugin_factory.get_plugin_from_id(command_name)
+        return self._manager.get_plugin_from_id(command_name)
