@@ -540,8 +540,6 @@ class BaseButton(QPushButton, AbstractButton):
         action_icon: QIcon | str | None = None,
         data: Any = None,
         icon_text: str | None = None,
-        icon_color: tuple[int, int, int] | None = None,
-        icon_size=16,
         tooltip: str | None = None,
     ) -> QAction | None:
         """Adds a new menu item through an action.
@@ -557,8 +555,6 @@ class BaseButton(QPushButton, AbstractButton):
             action_icon: Icon for the menu item.
             data: Custom data to store within the action.
             icon_text: Text for the icon.
-            icon_color: Color of the menu item in 0-255 range.
-            icon_size: Size of the icon.
             tooltip: New menu item tooltip.
 
         Returns:
