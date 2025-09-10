@@ -16,7 +16,8 @@ from Qt.QtWidgets import (
     QProgressBar,
 )
 
-from ..python import helpers, collections
+from tp.libs.python import helpers, collections
+
 from .widgets import (
     comboboxes,
     checkboxes,
@@ -32,10 +33,9 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class UiProperty:
-    """
-    A data class for storing property information for a UI element.
+    """A data class for storing property information for a UI element.
 
-    Attributes
+    Attributes:
     ----------
     name : str
         The name of the property.
@@ -53,10 +53,9 @@ class UiProperty:
 
 @dataclass
 class UiPropertyGetSet:
-    """
-    A data class for storing getter and setter information for a UI property.
+    """A data class for storing getter and setter information for a UI property.
 
-    Attributes
+    Attributes:
     ----------
     getter : str
         The name of the getter method for the property.
@@ -71,10 +70,9 @@ class UiPropertyGetSet:
 # noinspection SpellCheckingInspection
 @dataclass
 class UiPropertyWidgetUpdate:
-    """
-    A data class for storing information related to updating UI property widgets.
+    """A data class for storing information related to updating UI property widgets.
 
-    Attributes
+    Attributes:
     ----------
     save_signal : str
         The name of the signal used to save changes in the UI property widget.
@@ -127,8 +125,7 @@ class WidgetManager:
         self._register_default_widgets()
 
     def register_widget_update(self, widget_type: Type, update: UiPropertyWidgetUpdate):
-        """
-        Register a new widget type with its associated UiPropertyWidgetUpdate configuration.
+        """Register a new widget type with its associated UiPropertyWidgetUpdate configuration.
         Avoids duplicate registrations.
 
         :param widget_type: The widget class/type to register.
@@ -150,8 +147,7 @@ class WidgetManager:
         )
 
     def get_widget_update(self, widget_type: Type) -> UiPropertyWidgetUpdate:
-        """
-        Retrieve the UiPropertyWidgetUpdate configuration for a given widget type.
+        """Retrieve the UiPropertyWidgetUpdate configuration for a given widget type.
 
         :param widget_type: The widget class/type to look up.
         :return: The UiPropertyWidgetUpdate for the widget type if registered.
@@ -182,8 +178,7 @@ class WidgetManager:
         )
 
     def unregister_widget(self, widget_type: Type):
-        """
-        Unregister a widget type if it is registered.
+        """Unregister a widget type if it is registered.
 
         :param widget_type: The widget class/type to remove from registration.
         :raises WidgetNotRegisteredError: If the widget type is not registered.
@@ -201,8 +196,7 @@ class WidgetManager:
         logger.debug(f"Unregistered widget type: {widget_type.__name__}")
 
     def iterate_registered_widgets(self) -> Iterator[Type]:
-        """
-        Provides an iterator over all registered widget types.
+        """Provides an iterator over all registered widget types.
 
         :return: An iterator over the registered widget types.
         """
@@ -210,8 +204,7 @@ class WidgetManager:
         return iter(self._widget_updates.keys())
 
     def registered_widgets(self) -> list[Type]:
-        """
-        Returns a list of all registered widget types.
+        """Returns a list of all registered widget types.
 
         :return: A list of all registered widget types.
         """
@@ -219,9 +212,7 @@ class WidgetManager:
         return list(self._widget_updates.keys())
 
     def _register_default_widgets(self):
-        """
-        Registers a set of default widget types and their associated configurations.
-        """
+        """Registers a set of default widget types and their associated configurations."""
 
         default_widgets: dict[Type, UiPropertyWidgetUpdate] = {
             QCheckBox: UiPropertyWidgetUpdate(
@@ -300,9 +291,7 @@ class WidgetManager:
 
 
 class Model(QObject):
-    """
-    Class that exposes functions to store data and handles data updates automatically when UI is changed.
-    """
+    """Class that exposes functions to store data and handles data updates automatically when UI is changed."""
 
     def __init__(self):
         super().__init__()
@@ -315,8 +304,7 @@ class Model(QObject):
 
     @property
     def properties(self) -> helpers.ObjectDict:
-        """
-        Gets the properties associated with the instance.
+        """Gets the properties associated with the instance.
 
         This property returns the properties associated with the instance.
         """
@@ -325,8 +313,7 @@ class Model(QObject):
 
     @staticmethod
     def widget_property_name(widget: QWidget) -> str:
-        """
-        Returns the property name associated with the given widget.
+        """Returns the property name associated with the given widget.
 
         This static method returns the property name associated with the given widget.
 
@@ -338,8 +325,7 @@ class Model(QObject):
 
     # noinspection PyMethodMayBeStatic
     def initialize_properties(self) -> list[UiProperty]:
-        """
-        Initializes the properties associated with the instance.
+        """Initializes the properties associated with the instance.
 
         This method initializes the properties associated with the instance.
 
@@ -351,8 +337,7 @@ class Model(QObject):
     def setup_properties(
         self, properties: list[UiProperty] | None = None
     ) -> helpers.ObjectDict:
-        """
-        Sets up the properties associated with the instance.
+        """Sets up the properties associated with the instance.
 
         This method sets up the properties associated with the instance.
 
@@ -370,8 +355,7 @@ class Model(QObject):
         return tool_properties
 
     def link_property(self, widget: QWidget, ui_property_name: str) -> bool:
-        """
-        Links a property to a widget.
+        """Links a property to a widget.
 
         This method links a property to a widget.
 
@@ -408,8 +392,7 @@ class Model(QObject):
     def iterate_linkable_properties(
         self, widget: QObject
     ) -> Iterator[tuple[str, QWidget]]:
-        """
-        Iterates over linkable properties for the given widget.
+        """Iterates over linkable properties for the given widget.
 
         This method iterates over linkable properties for the given widget.
 
@@ -430,8 +413,7 @@ class Model(QObject):
                 yield grandchild
 
     def property_widgets(self) -> list[QWidget]:
-        """
-        Returns a list of property widgets associated with the instance.
+        """Returns a list of property widgets associated with the instance.
 
         This method returns a list of property widgets associated with the instance.
 
@@ -441,8 +423,7 @@ class Model(QObject):
         return [widget for widget in self._widgets]
 
     def reset_properties(self, update_widgets: bool = True):
-        """
-        Resets the properties associated with the instance.
+        """Resets the properties associated with the instance.
 
         This method resets the properties associated with the instance.
 
@@ -457,8 +438,7 @@ class Model(QObject):
             self.update_widgets_from_properties()
 
     def widgets_linked_to_property(self, property_name: str) -> list[QWidget]:
-        """
-        Returns a list of widgets linked to the specified property.
+        """Returns a list of widgets linked to the specified property.
 
         This method returns a list of widgets that are linked to the specified property.
 
@@ -476,8 +456,7 @@ class Model(QObject):
         return found_widgets
 
     def update_widget(self, widget: QWidget):
-        """
-        Update given widget based on its linked UI property value.
+        """Update given widget based on its linked UI property value.
 
         :param qt.QWidget widget: widget to update.
         """
@@ -505,8 +484,7 @@ class Model(QObject):
             logger.warning(f"Unsupported widget: {widget}. Property: {widget_name}")
 
     def update_widget_from_property(self, ui_property_name: str):
-        """
-        Updates the widget associated with the specified UI property.
+        """Updates the widget associated with the specified UI property.
 
         This method updates the widget associated with the specified UI property.
 
@@ -524,9 +502,7 @@ class Model(QObject):
         self._block_save = False
 
     def update_widgets_from_properties(self):
-        """
-        Updates all widgets to current linked property internal value.
-        """
+        """Updates all widgets to current linked property internal value."""
 
         # self.block_callbacks(True)
         self._block_save = True
@@ -545,8 +521,7 @@ class Model(QObject):
                 listener(self.properties[property_name].value)
 
     def widget_values(self, widget: QWidget) -> dict[str, UiProperty]:
-        """
-        Gets the values of properties associated with the specified widget.
+        """Gets the values of properties associated with the specified widget.
 
         This method retrieves the values of properties associated with the specified widget.
 
@@ -579,9 +554,7 @@ class Model(QObject):
         return {}
 
     def save_properties(self):
-        """
-        Saves the properties from the widget into the internal UI attributes.
-        """
+        """Saves the properties from the widget into the internal UI attributes."""
 
         if self._block_save:
             return
@@ -598,8 +571,7 @@ class Model(QObject):
                         listener(v)
 
     def update_property(self, ui_property_name: str, value: Any):
-        """
-        Updates the value of the specified UI property.
+        """Updates the value of the specified UI property.
 
         This method updates the value of the specified UI property.
 
@@ -617,8 +589,7 @@ class Model(QObject):
             listener(value)
 
     def listen(self, ui_property_name: str, listener: callable):
-        """
-        Registers a listener for changes to the specified UI property.
+        """Registers a listener for changes to the specified UI property.
 
         This method registers a listener function to be called whenever the specified UI property changes.
 
