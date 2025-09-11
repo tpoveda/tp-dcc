@@ -13,6 +13,37 @@ QMainWindow
   background-color: $matte-black-color;
   color: $primary-text-color;
   font-family: $font-family;
+
+  // Dock/central area separators
+  &::separator {
+    background-color: $jet-color;            // subtle base
+    border: 1px solid $verified-black-color; // blends with dark UI
+    border-radius: 3px;                       // modern rounded grip
+  }
+
+  // Hover feedback
+  &::separator:hover {
+    background-color: $blue-diamond-color;    // accent on hover
+    border-color: $blue-diamond-color;
+  }
+
+  // Orientation-specific sizing and spacing
+  &::separator:vertical {
+    width: 6px;
+  }
+
+  &::separator:horizontal {
+    height: 6px;
+  }
+
+  // Slightly enlarge on hover to improve grab-ability
+  &::separator:hover:vertical {
+    width: 8px;
+  }
+  &::separator:hover:horizontal {
+    height: 8px;
+  }
+
 }
 
 #centralwidget
@@ -611,7 +642,15 @@ QDockWidget
   border-radius: $round-size;
 
   titlebar-close-icon: url(:/icons/cross.svg);
-  titlebar-normal-icon: url();
+  titlebar-normal-icon: url(:/icons/triangle-down.svg);
+
+  &::title
+  {
+    background-color: $tricorn-black-color;
+    padding: 3px;
+    border: 1px solid $verified-black-color;
+    border-bottom: 0px;
+  }
 
   &::close-button
   {
@@ -625,7 +664,22 @@ QDockWidget
       image: url(:/icons/cross-white.svg);
     }
   }
+
+  &::float-button
+  {
+    image: url(:/icons/triangle-down.svg);
+    background: none;
+    border: none;
+    icon-size: 5px;
+
+    &:hover
+    {
+      image: url(:/icons/triangle-down-white.svg);
+    }
+  }
 }
+
+
 
 QToolBox::tab
 {

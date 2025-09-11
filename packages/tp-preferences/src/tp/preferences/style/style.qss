@@ -17,6 +17,27 @@ QMainWindow {
   color: #d9d9d9;
   font-family: "Roboto"; }
 
+QMainWindow::separator {
+  background-color: #353535;
+  border: 1px solid #242424;
+  border-radius: 3px; }
+
+QMainWindow::separator:hover {
+  background-color: #0664c3;
+  border-color: #0664c3; }
+
+QMainWindow::separator:vertical {
+  width: 6px; }
+
+QMainWindow::separator:horizontal {
+  height: 6px; }
+
+QMainWindow::separator:hover:vertical {
+  width: 8px; }
+
+QMainWindow::separator:hover:horizontal {
+  height: 8px; }
+
 #centralwidget {
   background-color: #151515; }
 
@@ -415,7 +436,13 @@ QDockWidget {
   color: #c0c0c0;
   border-radius: 3px;
   titlebar-close-icon: url(:/icons/cross.svg);
-  titlebar-normal-icon: url(); }
+  titlebar-normal-icon: url(:/icons/triangle-down.svg); }
+
+QDockWidget::title {
+  background-color: #2f2f2f;
+  padding: 3px;
+  border: 1px solid #242424;
+  border-bottom: 0px; }
 
 QDockWidget::close-button {
   image: url(:/icons/cross.svg);
@@ -425,6 +452,15 @@ QDockWidget::close-button {
 
 QDockWidget::close-button:hover {
   image: url(:/icons/cross-white.svg); }
+
+QDockWidget::float-button {
+  image: url(:/icons/triangle-down.svg);
+  background: none;
+  border: none;
+  icon-size: 5px; }
+
+QDockWidget::float-button:hover {
+  image: url(:/icons/triangle-down-white.svg); }
 
 QToolBox::tab {
   background-color: #2f2f2f;
@@ -454,3 +490,61 @@ HorizontalLine {
   background-color: #3a3a3a;
   margin-left: 3px;
   margin-right: 3px; }
+
+/* tp/qt/widgets/labels.py */
+BaseLabel {
+  /*padding: 2px;*/
+  background-color: transparent;
+  /*font-size: @font_size_base@unit;*/
+  color: #d9d9d9;
+  /*font-weight: 400;*/ }
+
+BaseLabel[theme_level="1"] {
+  font-size: 24.39pt pt;
+  font-weight: 500;
+  color: #ffffff; }
+
+BaseLabel[theme_level="2"] {
+  font-size: 19.08pt pt;
+  font-weight: 500;
+  color: #ffffff; }
+
+BaseLabel[theme_level="3"] {
+  font-size: 15.39pt pt;
+  font-weight: 500;
+  color: #ffffff; }
+
+BaseLabel[theme_level="4"] {
+  font-size: 12.69pt pt;
+  font-weight: 500;
+  color: #ffffff; }
+
+BaseLabel[theme_underline=true] {
+  text-decoration: underline; }
+
+BaseLabel[theme_delete=true] {
+  text-decoration: line-through; }
+
+BaseLabel[theme_strong=true] {
+  font-weight: bold; }
+
+BaseLabel[theme_code=true] {
+  background-color: #494949;
+  border: 1px solid #1e1e1e; }
+
+BaseLabel[theme_mark=true] {
+  background-color: rgba(250, 173, 20, 75%); }
+
+BaseLabel[theme_type=danger] {
+  color: #a3040d; }
+
+BaseLabel[theme_type=warning] {
+  color: #a06b02; }
+
+BaseLabel[theme_type=secondary] {
+  color: #a6a6a6; }
+
+BaseLabel:disabled {
+  color: #737373;
+  /*border: 2px dashed @disable_color;*/
+  /*background-color: @background_in_color;*/ }

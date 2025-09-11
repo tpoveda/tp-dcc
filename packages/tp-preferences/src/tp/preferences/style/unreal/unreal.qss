@@ -7,6 +7,21 @@ QMainWindow {
   background-color: #151515;
   color: #d9d9d9;
   font-family: "Roboto"; }
+  QMainWindow::separator {
+    background-color: #353535;
+    border: 1px solid #242424;
+    border-radius: 3px; }
+  QMainWindow::separator:hover {
+    background-color: #0664c3;
+    border-color: #0664c3; }
+  QMainWindow::separator:vertical {
+    width: 6px; }
+  QMainWindow::separator:horizontal {
+    height: 6px; }
+  QMainWindow::separator:hover:vertical {
+    width: 8px; }
+  QMainWindow::separator:hover:horizontal {
+    height: 8px; }
 
 #centralwidget {
   background-color: #151515; }
@@ -351,7 +366,12 @@ QDockWidget {
   color: #c0c0c0;
   border-radius: 3px;
   titlebar-close-icon: url(:/icons/cross.svg);
-  titlebar-normal-icon: url(); }
+  titlebar-normal-icon: url(:/icons/triangle-down.svg); }
+  QDockWidget::title {
+    background-color: #2f2f2f;
+    padding: 3px;
+    border: 1px solid #242424;
+    border-bottom: 0px; }
   QDockWidget::close-button {
     image: url(:/icons/cross.svg);
     background: none;
@@ -359,6 +379,13 @@ QDockWidget {
     icon-size: 5px; }
     QDockWidget::close-button:hover {
       image: url(:/icons/cross-white.svg); }
+  QDockWidget::float-button {
+    image: url(:/icons/triangle-down.svg);
+    background: none;
+    border: none;
+    icon-size: 5px; }
+    QDockWidget::float-button:hover {
+      image: url(:/icons/triangle-down-white.svg); }
 
 QToolBox::tab {
   background-color: #2f2f2f;

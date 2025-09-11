@@ -15,3 +15,61 @@ HorizontalLine {
   background-color: #3a3a3a;
   margin-left: 3px;
   margin-right: 3px; }
+
+/* tp/qt/widgets/labels.py */
+BaseLabel {
+  /*padding: 2px;*/
+  background-color: transparent;
+  /*font-size: @font_size_base@unit;*/
+  color: #d9d9d9;
+  /*font-weight: 400;*/ }
+
+BaseLabel[theme_level="1"] {
+  font-size: 24.39pt pt;
+  font-weight: 500;
+  color: #ffffff; }
+
+BaseLabel[theme_level="2"] {
+  font-size: 19.08pt pt;
+  font-weight: 500;
+  color: #ffffff; }
+
+BaseLabel[theme_level="3"] {
+  font-size: 15.39pt pt;
+  font-weight: 500;
+  color: #ffffff; }
+
+BaseLabel[theme_level="4"] {
+  font-size: 12.69pt pt;
+  font-weight: 500;
+  color: #ffffff; }
+
+BaseLabel[theme_underline=true] {
+  text-decoration: underline; }
+
+BaseLabel[theme_delete=true] {
+  text-decoration: line-through; }
+
+BaseLabel[theme_strong=true] {
+  font-weight: bold; }
+
+BaseLabel[theme_code=true] {
+  background-color: #494949;
+  border: 1px solid #1e1e1e; }
+
+BaseLabel[theme_mark=true] {
+  background-color: rgba(250, 173, 20, 0.75); }
+
+BaseLabel[theme_type=danger] {
+  color: #a3040d; }
+
+BaseLabel[theme_type=warning] {
+  color: #a06b02; }
+
+BaseLabel[theme_type=secondary] {
+  color: #a6a6a6; }
+
+BaseLabel:disabled {
+  color: #737373;
+  /*border: 2px dashed @disable_color;*/
+  /*background-color: @background_in_color;*/ }
