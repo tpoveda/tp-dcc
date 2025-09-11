@@ -18,7 +18,8 @@ environment:
     - "{self}"
     - "{self}/src"
   TP_DCC_TOOLS:
-    - "{self}/src/tp/tools/rigging/skinningtoolbox/tool.py"
+    - "{self}/src/tp/tools/rigging/skinning_toolbox/tool.py"
+    - "{self}/src/tp/tools/rigging/controls_creator/tool.py"
 dependencies: []
 tests:
   - "{self}/tests"
