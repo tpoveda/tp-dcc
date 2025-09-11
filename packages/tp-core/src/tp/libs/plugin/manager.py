@@ -4,6 +4,7 @@ import os
 import json
 import logging
 import inspect
+from pathlib import Path
 from types import ModuleType
 from typing import cast, Any
 from collections.abc import Callable, Sequence
@@ -168,7 +169,11 @@ class PluginsManager:
                 the error message as an argument.
         """
 
-        valid_paths = [path for path in paths if path and path not in self._base_paths]
+        valid_paths = [
+            Path(path).as_posix()
+            for path in paths
+            if path and path not in self._base_paths
+        ]
         visited: set[str] = set()
         self._base_paths.extend(valid_paths)
         for path in paths:
@@ -184,7 +189,7 @@ class PluginsManager:
                 self.register_path(real_path, error_callback=error_callback)
             else:
                 # Handle edge cases: broken symlinks, special files, etc.
-                self._logger.warning(f"Skipping unsupported path: {real_path}")
+                self._logger.debug(f"Skipping non existing path: {real_path}")
 
     def register_path(
         self, path: str, error_callback: Callable[[str], bool] | None = None
@@ -609,6 +614,14 @@ class PluginsManager:
         """Unloads all the loaded plugins."""
 
         self._loaded_plugins.clear()
+
+    def clear(self):
+        """Clears all registered and loaded plugins, as well as paths and callbacks."""
+
+        self._plugins.clear()
+        self._loaded_plugins.clear()
+        self._base_paths.clear()
+        self._load_callbacks.clear()
 
     def on_plugin_loaded(self, callback: Callable[[Plugin], None]):
         """Registers a callback to be called when a plugin is loaded by the
