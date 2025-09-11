@@ -301,6 +301,8 @@ class TreeViewWidget(QFrame):
 
         # noinspection PyTypeChecker
         source_model: TreeModel = modelutils.get_source_model(self._model)
+        if source_model is None:
+            return []
 
         return list(map(source_model.item_from_index, source_model_indices))
 
@@ -360,11 +362,13 @@ class TreeViewWidget(QFrame):
         """Set up the layouts for the tree view widget."""
 
         main_layout = VerticalLayout()
+        main_layout.setSpacing(2)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(main_layout)
 
         self._toolbar_layout = HorizontalLayout()
-        self._toolbar_layout.setSpacing(5)
-        self._toolbar_layout.setContentsMargins(10, 6, 6, 0)
+        self._toolbar_layout.setSpacing(2)
+        self._toolbar_layout.setContentsMargins(5, 2, 2, 0)
         self._toolbar_layout.addWidget(self._title_label)
         self._toolbar_layout.addWidget(self._search_line_edit)
 
@@ -442,6 +446,9 @@ class TreeViewWidget(QFrame):
         selection = self.selected_items()
         # noinspection PyTypeChecker
         source_model: TreeModel = modelutils.get_source_model(self._model)
+        if source_model is None:
+            return
+
         if source_model.root() is not None:
             source_model.root().context_menu(selection, menu)
         self.contextMenuRequested.emit(selection, menu)
