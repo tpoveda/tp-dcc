@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Type, Iterator
+from typing import Type, Any
+from collections.abc import Generator
 
 from . import dpi
 
@@ -15,6 +16,9 @@ from Qt.QtWidgets import (
     QWidget,
     QMenu,
     QGraphicsDropShadowEffect,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QTreeWidgetItemIterator,
 )
 from Qt.QtGui import (
     QCursor,
@@ -39,43 +43,72 @@ logger = logging.getLogger(__name__)
 
 
 def is_pyqt() -> bool:
-    """Returns True if the current Qt binding is PyQt"""
+    """Return whether the current Qt binding is PyQt.
+
+    Returns:
+        `True` if the current Qt binding is PyQt; `False` otherwise.
+    """
 
     return "PyQt" in __binding__
 
 
 def is_pyqt4() -> bool:
-    """Returns True if the current Qt binding is PyQt4"""
+    """Return whether the current Qt binding is PyQt4.
+
+    Returns:
+        `True` if the current Qt binding is PyQt4; `False` otherwise.
+    """
 
     return __binding__ == "PyQt4"
 
 
 def is_pyqt5() -> bool:
-    """Returns True if the current Qt binding is PyQt5"""
+    """Return whether the current Qt binding is PyQt5.
+
+    Returns:
+        `True` if the current Qt binding is PyQt5; `False` otherwise.
+    """
 
     return __binding__ == "PyQt5"
 
 
 def is_pyside() -> bool:
-    """Returns True if the current Qt binding is PySide"""
+    """Return whether the current Qt binding is PySide.
+
+    Returns:
+        `True` if the current Qt binding is PySide; `False` otherwise.
+    """
 
     return __binding__ == "PySide"
 
 
 def is_pyside2() -> bool:
-    """Returns True if the current Qt binding is PySide2"""
+    """Return whether the current Qt binding is PySide2.
+
+    Returns:
+        `True` if the current Qt binding is PySide2; `False` otherwise.
+    """
 
     return __binding__ == "PySide2"
 
 
 def is_pyside6() -> bool:
-    """Returns True if the current Qt binding is PySide6"""
+    """Return whether the current Qt binding is PySide6.
+
+
+    Returns:
+        `True` if the current Qt binding is PySide6; `False` otherwise.
+    """
 
     return __binding__ == "PySide6"
 
 
 def get_supported_image_extensions() -> list[str]:
-    """Get a list of supported image file extensions from Qt."""
+    """Get a list of supported image file extensions from Qt.
+
+    Returns:
+        List of supported image file extensions.
+    """
 
     global _QT_SUPPORTED_EXTENSIONS
     if _QT_SUPPORTED_EXTENSIONS is None:
@@ -94,47 +127,70 @@ def get_supported_image_extensions() -> list[str]:
     return _QT_SUPPORTED_EXTENSIONS
 
 
+# noinspection SpellCheckingInspection
 def wrapinstance(ptr: int, base: Type[QObject] | None = None) -> QObject | None:
-    """Wraps a pointer pointing to a Maya UI element to a Qt class instance.
+    """Wrap a pointer pointing to a Maya UI element to a Qt class instance.
 
-    :param ptr: pointer to the Maya UI element.
-    :param base: base class to wrap the pointer to.
-    :return: wrapped Qt class instance.
+    Args:
+        ptr: Pointer to the Maya UI element.
+        base: Base class to wrap the pointer to.
+
+    Returns:
+        Wrapped Qt class instance.
     """
 
     return QtCompat.wrapInstance(int(ptr), base)
 
 
-def unwrapinstance(object):
-    """Unwraps objects with PySide"""
+# noinspection SpellCheckingInspection
+def unwrapinstance(qobj: QObject) -> int:
+    """Unwraps objects with PySide.
 
-    return int(QtCompat.getCppPointer(object)[0])
+    Args:
+        qobj: QObject to unwrap.
+
+    Returns:
+        Pointer to the `QObject`.
+    """
+
+    return int(QtCompat.getCppPointer(qobj)[0])
 
 
-def window_offset(window: QMainWindow | QWidget):
-    """Returns the window offset.
+def window_offset(window: QMainWindow | QWidget) -> QPoint:
+    """Return the window offset relative to the screen.
 
-    :param window: window widget.
-    :return: window offset.
+    Args:
+        window: Window to get the offset of.
+
+    Returns:
+        Window offset.
     """
 
     return window.pos() - window.mapToGlobal(QPoint(0, 0))
 
 
 def widget_center(widget: QWidget) -> QPoint:
-    """Returns the center of the given widget.
+    """Return the center of the given widget.
 
-    :param widget: widget whose center we want to retrieve.
-    :return: widget center.
+    Args:
+        widget: Widget to get the center of.
+
+    Returns:
+        The center point of the widget.
     """
 
     return QPoint(int(widget.width() * 0.5), int(widget.height() * 0.5))
 
 
 def current_screen(global_pos: QPoint | None = None) -> QScreen:
-    """Returns current screen instance.
+    """Return the current screen instance.
 
-    :return: current screen.
+    Args:
+        global_pos: global position to check the screen at. If `None`, uses
+            the current cursor position.
+
+    Returns:
+        The current screen instance.
     """
 
     global_pos = global_pos if global_pos is not None else QCursor.pos()
@@ -142,9 +198,10 @@ def current_screen(global_pos: QPoint | None = None) -> QScreen:
 
 
 def current_screen_geometry() -> QRect:
-    """Returns the current screen geometry.
+    """Return the current screen geometry.
 
-    :return: screen geometry.
+    Returns:
+        Screen geometry.
     """
 
     screen = current_screen()
@@ -152,11 +209,20 @@ def current_screen_geometry() -> QRect:
 
 
 def contain_widget_in_screen(widget: QWidget, pos: QPoint | None = None) -> QPoint:
-    """Contains the position of the widget within the current screen.
+    """Return a position that contains the given widget within the current
+    screen.
 
-    :param widget: widget to check.
-    :param pos: point to check.
-    :return: widget position within widget.
+    Notes:
+        The position is adjusted so that the widget is fully visible within the
+        screen boundaries.
+
+    Args:
+        widget: widget to contain within the screen.
+        pos: position to check containment at. If `None`, uses the widget's
+            current global position.
+
+    Returns:
+        A position that contains the widget within the current screen.
     """
 
     if not pos:
@@ -170,19 +236,24 @@ def contain_widget_in_screen(widget: QWidget, pos: QPoint | None = None) -> QPoi
     return pos
 
 
-def update_widget_style(widget: QWidget):
-    """Updates object widget style. Should be called for example when a style name changes.
+def update_widget_style(widget: QWidget) -> None:
+    """Update object widget style.
 
-    :param widget: widget to update style of.
+    Notes:
+        - Should be called when a style name changes.
+
+    Args:
+        widget: widget to update the style of.
     """
 
     widget.setStyle(widget.style())
 
 
-def update_widget_sizes(widget: QWidget):
-    """Updates the given widget sizes.
+def update_widget_sizes(widget: QWidget) -> None:
+    """Update the given widget sizes.
 
-    :param widget: widget to update sizes of.
+    Args:
+        widget: Widget to update sizes of.
     """
 
     if not widget:
@@ -193,12 +264,14 @@ def update_widget_sizes(widget: QWidget):
         widget_layout.activate()
 
 
-def set_stylesheet_object_name(widget: QWidget, name: str, update: bool = True):
-    """Sets the widget to have a specific object name used by one the stylesheets.
+def set_stylesheet_object_name(widget: QWidget, name: str, update: bool = True) -> None:
+    """Set the widget to have a specific object name used by one the stylesheet.
 
-    :param widget: widget we want to set object name.
-    :param name: stylesheet name for the widget.
-    :param update: whether to force the update the style of the widget after setting up the stylesheet object name.
+    Args:
+        widget: The widget we want to set object name.
+        name: The stylesheet name for the widget.
+        update: Whether to force the update the style of the widget after
+            setting up the stylesheet object
     """
 
     widget.setObjectName(name)
@@ -214,11 +287,12 @@ def clear_focus_widgets():
         focus_widget.clearFocus()
 
 
-def recursively_set_menu_actions_visibility(menu: QMenu, state: bool):
+def recursively_set_menu_actions_visibility(menu: QMenu, state: bool) -> None:
     """Recursively sets the visible state of all actions of the given menu.
 
-    :param menu: menu to edit actions visibility of.
-    :param state: new visibility status.
+    Args:
+        menu: Menu to edit actions visibility of.
+        state: New visibility status.
     """
 
     for action in menu.actions():
@@ -240,10 +314,14 @@ def recursively_set_menu_actions_visibility(menu: QMenu, state: bool):
 def set_shadow_effect_enabled(
     widget: QWidget, flag: bool
 ) -> QGraphicsDropShadowEffect | None:
-    """Sets shadow effect for given widget.
+    """Set shadow effect for given widget.
 
-    :param widget: widget to set shadow effect for.
-    :param flag: whether to enable shadow effect.
+    Args:
+        widget: Widget to set the shadow effect for.
+        flag: Whether to enable shadow effect.
+
+    Returns:
+        The shadow effect instance if enabled, `None` otherwise.
     """
 
     shadow_effect = None
@@ -264,10 +342,13 @@ def set_shadow_effect_enabled(
 
 
 def widget_at(pos: QPoint) -> list[tuple[QWidget, QPoint]]:
-    """Returns all widgets underneath the given mouse position.
+    """Return all widgets underneath the given mouse position.
 
-    :param pos: mouse cursor position.
-    :return: list of all widgets under given mouse position.
+    Args:
+        pos: Mouse cursor position.
+
+    Returns:
+        List of all widgets under the given mouse position.
     """
 
     found_widgets: list[tuple[QWidget, QPoint]] = []
@@ -276,14 +357,14 @@ def widget_at(pos: QPoint) -> list[tuple[QWidget, QPoint]]:
     widgets_statuses: list[tuple[QWidget, bool]] = []
     while _widget_at:
         found_widgets.append((_widget_at, _widget_at.mapFromGlobal(pos)))
-        # make widget invisible to further enquiries
+        # Make the widget invisible to further enquiries.
         widgets_statuses.append(
             (_widget_at, _widget_at.testAttribute(Qt.WA_TransparentForMouseEvents))
         )
         _widget_at.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         _widget_at = QApplication.widgetAt(pos)
 
-    # restore attribute
+    # Restore attribute.
     for widget in widgets_statuses:
         widget[0].setAttribute(Qt.WA_TransparentForMouseEvents, widget[1])
 
@@ -292,16 +373,20 @@ def widget_at(pos: QPoint) -> list[tuple[QWidget, QPoint]]:
 
 def iterate_children(
     widget: QObject, skip: str | None = None, obj_class: Type | None = None
-) -> Iterator[QWidget]:
-    """Iterates over the children of the given widget.
+) -> Generator[QObject]:
+    """Iterate over the children of the given widget.
 
-    This function iterates over the children of the given widget, optionally skipping children
-    with a specific object name or belonging to a specific class.
+    This function iterates over the children of the given widget, optionally
+    skipping children with a specific object name or belonging to a specific
+    class.
 
-    :param widget: The widget whose children to iterate over.
-    :param skip: Optional. The object name of children to skip. Defaults to None.
-    :param obj_class: Optional. The class of children to include. Defaults to None.
-    :return: An iterator of QWidget instances representing the children.
+    Args:
+        widget: The widget whose children are to iterate over.
+        skip: Optional. The object name of children to skip. Defaults to None.
+        obj_class: Optional. The class of children to include. Defaults to None.
+
+    Yields:
+        An iterator of QWidget instances representing the children.
     """
 
     for child in widget.children():
@@ -310,7 +395,6 @@ def iterate_children(
             continue
         if obj_class is not None and not isinstance(child, obj_class):
             continue
-        # noinspection PyTypeChecker
         for grand_child in iterate_children(widget=child, skip=skip):
             yield grand_child
 
@@ -320,13 +404,14 @@ def click_under(
     under: int = 1,
     button: Qt.MouseButton = Qt.LeftButton,
     modifier: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier,
-):
-    """Clicks under the widget.
+) -> None:
+    """Click under the provided widget.
 
-    :param pos: cursor position.
-    :param under: number of iterations under.
-    :param button: button to simulate click with.
-    :param modifier: modifier to simulate click with.
+    Args:
+        pos: Global position to click at.
+        under: Number of iterations under.
+        button: Button to simulate click with.
+        modifier: Modifier to simulate click with.
     """
 
     if not _QT_TEST_AVAILABLE:
@@ -337,11 +422,12 @@ def click_under(
     QtTest.QTest.mouseClick(widgets[under][0], button, modifier, widgets[under][1])
 
 
-def set_vertical_size_policy(widget: QWidget, policy: QSizePolicy.Policy):
-    """Sets the vertical policy of the given widget.
+def set_vertical_size_policy(widget: QWidget, policy: QSizePolicy.Policy) -> None:
+    """Set the vertical policy of the given widget.
 
-    :param widget: widget to set vertical policy of.
-    :param policy: new policy to apply to vertical policy.
+    Args:
+        widget: The widget to set a vertical policy of.
+        policy: The new policy to apply to vertical policy.
     """
 
     size_policy = widget.sizePolicy()
@@ -349,13 +435,35 @@ def set_vertical_size_policy(widget: QWidget, policy: QSizePolicy.Policy):
     widget.setSizePolicy(size_policy)
 
 
-def set_horizontal_size_policy(widget: QWidget, policy: QSizePolicy.Policy):
-    """Sets the horizontal policy of the given widget.
+def set_horizontal_size_policy(widget: QWidget, policy: QSizePolicy.Policy) -> None:
+    """Set the horizontal policy of the given widget.
 
-    :param widget: widget to set horizontal policy of.
-    :param policy: new policy to apply to horizontal policy.
+    Args:
+        widget: The widget to set a horizontal policy of.
+        policy: The new policy to apply to horizontal policy.
     """
 
     size_policy = widget.sizePolicy()
     size_policy.setHorizontalPolicy(policy)
     widget.setSizePolicy(size_policy)
+
+
+def safe_tree_widget_iterator(
+    tree_widget: QTreeWidget,
+    flags: QTreeWidgetItemIterator.IteratorFlag
+    | QTreeWidgetItemIterator.IteratorFlags = QTreeWidgetItemIterator.All,
+) -> Generator[QTreeWidgetItem, Any, None]:
+    """Return a safe tree widget iterator for the given item.
+
+    Args:
+        tree_widget: The tree widget to create an iterator for.
+        flags: The iterator flags to use.
+
+    Returns:
+        A safe tree widget item iterator.
+    """
+
+    iterator = QTreeWidgetItemIterator(tree_widget, flags=flags)
+    while iterator.value():
+        yield iterator.value()
+        iterator += 1
