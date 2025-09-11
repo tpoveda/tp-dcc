@@ -17,6 +17,7 @@ from .dpi import (
 from .icons import icon, icon_path
 from .icon import colorize_icon, colorize_layered_icon
 from .contexts import block_signals
+from .utils import safe_tree_widget_iterator
 
 __all__ = [
     "uiconsts",
@@ -36,4 +37,5 @@ __all__ = [
     "colorize_icon",
     "colorize_layered_icon",
     "block_signals",
+    "safe_tree_widget_iterator",
 ]
