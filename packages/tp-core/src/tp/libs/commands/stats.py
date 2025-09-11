@@ -7,7 +7,7 @@ import typing
 import inspect
 import platform
 
-from .. import dcc
+from tp import dcc
 
 if typing.TYPE_CHECKING:
     from .command import AbstractCommand

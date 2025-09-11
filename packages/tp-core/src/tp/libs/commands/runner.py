@@ -8,8 +8,8 @@ from typing import cast, Type, Any
 
 from loguru import logger
 
-from .. import dcc
-from ..plugin import PluginsManager
+from tp import dcc
+from tp.libs.plugin import PluginsManager
 
 from .stats import CommandStats
 from .errors import UserCancelError

@@ -72,8 +72,9 @@ class CommandData:
 class AbstractCommand(ABC):
     """Abstract command metaclass interface."""
 
-    # Whether the command is enabled or not.
-    is_enabled = True
+    id: str | None = None
+    is_enabled: bool = True
+    is_undoable: bool = False
 
     def __init__(self, stats: CommandStats | None = None):
         """Args:
@@ -88,17 +89,6 @@ class AbstractCommand(ABC):
         self._return_status: CommandReturnStatus = CommandReturnStatus.Success
 
         self.initialize()
-
-    @property
-    @abstractmethod
-    def id(self) -> str:
-        """The command ID."""
-
-    @property
-    def is_undoable(self) -> bool:
-        """Whether the command is undoable or not."""
-
-        return False
 
     @property
     def stats(self) -> CommandStats | None:
@@ -250,7 +240,7 @@ class AbstractCommand(ABC):
         return True
 
     # noinspection PyMethodMayBeStatic
-    def resolve_arguments(self, arguments: dict) -> dict | None:
+    def resolve_arguments(self, arguments: dict[str, Any]) -> dict[str, Any] | None:
         """Function that is called before running the command.
 
         Notes:

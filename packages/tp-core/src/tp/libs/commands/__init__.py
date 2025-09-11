@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from tp.libs import dcc
+from tp import dcc
 
-from .command import CommandData
+from .command import CommandData  # noqa F401
 from .runner import execute, CommandRunner  # noqa F401
 
 if dcc.is_maya():
