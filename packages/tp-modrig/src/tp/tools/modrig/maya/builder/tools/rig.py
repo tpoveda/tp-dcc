@@ -8,7 +8,7 @@ from ..core.tool import ModRigTool, ModRigToolUiData
 
 
 class CreateRigTool(ModRigTool):
-    id = "rig.create"
+    id = "createRig"
     ui_data = ModRigToolUiData(
         icon="add",
         label="Create Rig Instance",

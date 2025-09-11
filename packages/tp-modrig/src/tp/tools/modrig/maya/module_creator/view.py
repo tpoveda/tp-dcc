@@ -10,12 +10,15 @@ from Qt.QtWidgets import (
     QWidget,
     QMainWindow,
     QDockWidget,
-    QPushButton,
     QMessageBox,
 )
 
 from tp.libs import qt
-from tp.libs.qt.widgets import OverlayLoadingWidget
+from tp.libs.qt.widgets import (
+    Divider,
+    OverlayLoadingWidget,
+    SlidingOpacityStackedWidget,
+)
 from tp.tools.modrig.maya.builder.plugins.editors.modules_library import (
     ModulesLibraryWidget,
 )
@@ -40,12 +43,21 @@ class ModuleCreatorView(QWidget):
         """Set up the widgets for the view."""
 
         self._main_window = QMainWindow()
-        test = QPushButton("Test", self)
-        self._main_window.setCentralWidget(test)
-        self._main_widget = QWidget(parent=self)
-        self._main_window.setCentralWidget(self._main_widget)
+        self._stack = SlidingOpacityStackedWidget(parent=self)
+        self._main_window.setCentralWidget(self._stack)
 
+        self._no_active_label = (
+            qt.factory.label(
+                "No Active Rig/Module", alignment=Qt.AlignCenter, parent=self
+            )
+            .h1()
+            .strong()
+        )
+        self._editors_widget = QWidget(parent=self)
         self._rig_box = RigBoxWidget(parent=self)
+
+        self._stack.addWidget(self._no_active_label)
+        self._stack.addWidget(self._editors_widget)
 
         self._modules_library = ModulesLibraryWidget(
             modules_manager=self._model.modules_manager, parent=self
@@ -66,10 +78,11 @@ class ModuleCreatorView(QWidget):
         main_layout = qt.factory.vertical_layout()
         self.setLayout(main_layout)
 
-        main_widget_layout = qt.factory.vertical_layout()
-        self._main_widget.setLayout(main_widget_layout)
-        main_widget_layout.addWidget(self._rig_box)
-        main_widget_layout.addStretch()
+        editors_layout = qt.factory.vertical_layout()
+        self._editors_widget.setLayout(editors_layout)
+        editors_layout.addWidget(self._rig_box)
+        editors_layout.addWidget(Divider(parent=self))
+        editors_layout.addStretch()
 
         main_layout.addWidget(self._main_window)
 
@@ -82,7 +95,9 @@ class ModuleCreatorView(QWidget):
         self._rig_box.rigSelected.connect(self._model.set_current_rig_by_name)
         self._rig_box.addRigClicked.connect(self._model.add_rig)
         self._rig_box.deleteRigClicked.connect(self._on_rig_box_delete_rig_clicked)
-        self._modules_library.moduleItemDoubleClicked.connect(self._model.add_module)
+        self._modules_library.moduleItemDoubleClicked.connect(
+            self._model.add_module_to_current_rig
+        )
 
     # region === Loading ===
 

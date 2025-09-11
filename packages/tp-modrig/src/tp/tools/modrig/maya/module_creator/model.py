@@ -3,6 +3,7 @@ from __future__ import annotations
 from loguru import logger
 from Qt.QtCore import Signal
 
+from tp.libs.modrig.maya.descriptors import ModuleDescriptor
 from tp.libs.qt import Model, UiProperty
 from tp.libs.modrig.maya.api import RigConfiguration, ModulesManager
 from tp.tools.modrig.maya.builder.models.rig import RigModel
@@ -137,8 +138,16 @@ class ModuleCreatorModel(Model):
 
         self.update_property("current_rig", found_rig_model)
 
-    def add_rig(self) -> RigModel | None:
-        """Add a new rig to the scene."""
+    def add_rig(self, set_current: bool = True) -> RigModel | None:
+        """Add a new rig to the scene.
+
+        Args:
+            set_current: Whether to set the newly created rig as the current
+                one.
+
+        Returns:
+            The newly created rig model instance, or `None` if the rig could
+        """
 
         event = events.AddRigEvent()
         self.addRig.emit(event)
@@ -152,13 +161,21 @@ class ModuleCreatorModel(Model):
         rig_models.append(rig_model)
         self.update_property("rigs", rig_models)
 
-        self.update_property("current_rig", rig_model)
+        if set_current:
+            self.update_property("current_rig", rig_model)
 
         self.rigAdded.emit()
 
         return rig_model
 
     def delete_current_rig(self) -> bool:
+        """Delete the current rig model instance and its associated rig from
+        the scene.
+
+        Returns:
+            `True` if the rig was deleted successfully; `False` otherwise.
+        """
+
         current_rig = self.current_rig
         if current_rig is None:
             logger.warning("No current rig to delete")
@@ -182,11 +199,42 @@ class ModuleCreatorModel(Model):
 
         return True
 
-    def add_module(self, module_id: str):
+    def add_module_to_current_rig(
+        self,
+        module_id: str,
+        name: str | None = None,
+        side: str | None = None,
+        descriptor: ModuleDescriptor | None = None,
+    ):
+        """Add a new module to the current rig.
+
+        Args:
+            module_id: ID of the module to add.
+            name: Optional name for the new module. If not provided, a default
+                name will be generated.
+            side: Optional side for the new module.
+            descriptor: Optional module descriptor to use. If not provided, the
+                module descriptor will be looked up using the provided module ID.
+
+        Notes:
+            - If no current rig exists, a new one will be created.
+        """
+
         if not self.current_rig_exists():
             self.add_rig()
 
-        # event = events.AddModuleEvent(
-        #     module_id=module_id, rig_model=self.property("current_rig")
-        # )
-        # self.addModule.emit(event)
+        module_model, module_type = self.modules_models_manager.find_module_model(
+            module_id
+        )
+        if not module_model:
+            logger.error(f"Module model with id '{module_id}' not found")
+            return
+
+        event = events.AddModuleEvent(
+            rig=self.current_rig.rig,
+            module_id=module_type,
+            name=name,
+            side=side,
+            descriptor=descriptor,
+        )
+        self.addModule.emit(event)

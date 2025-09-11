@@ -11,10 +11,10 @@ from tp.libs.modrig.maya import api
 class CreateRigCommand(Command):
     """Command that creates a new rig instance in the scene."""
 
-    _rig: api.Rig | None = None
-
     id = "modrig.rig.create"
     is_undoable = False
+
+    _rig: api.Rig | None = None
 
     def resolve_arguments(self, arguments: dict[str, Any]) -> dict[str, Any] | None:
         """Function that is called before running the command.

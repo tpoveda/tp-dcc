@@ -83,14 +83,23 @@ class ModuleCreatorController(Controller):
         event.rigs = list(api.iterate_scene_rigs())
 
     def add_rig(self, event: events.AddRigEvent):
-        event.rig = self.execute_tool("rig.create", args={"name": event.name})
+        event.rig = self.execute_tool("createRig", args={"name": event.name})
 
     def add_module(self, event: events.AddModuleEvent):
-        print("Adding module ...", event.module_id)
+        self.execute_tool(
+            "createModule",
+            args={
+                "rig": event.rig,
+                "module_id": event.module_id,
+                "name": event.name,
+                "side": event.side,
+                "descriptor": event.descriptor,
+            },
+        )
 
     @profiler.fn_timer
     def execute_tool(self, tool_id: str, args: dict[str, Any] | None = None) -> Any:
-        ids = tool_id.split(":")
+        ids = tool_id.split(".")
         variant_id: str | None = None
         if len(ids) > 1:
             tool_id = ids[0]
