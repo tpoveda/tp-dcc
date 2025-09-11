@@ -6,7 +6,9 @@ from .viewmodel.treemodel import TreeModel
 from .viewmodel.tableview import TableViewWidget
 from .viewmodel.treeview import TreeViewWidget
 from .viewmodel.data import BaseDataSource, ColumnDataSource
+from .dividers import Divider, LabelDivider
 from .buttons import IconMenuButton
+from .stacks import SlidingOpacityStackedWidget
 from .overlay import OverlayWidget, OverlayLoadingWidget
 
 __all__ = [
@@ -17,7 +19,10 @@ __all__ = [
     "TreeViewWidget",
     "BaseDataSource",
     "ColumnDataSource",
+    "Divider",
+    "LabelDivider",
     "IconMenuButton",
+    "SlidingOpacityStackedWidget",
     "OverlayWidget",
     "OverlayLoadingWidget",
 ]

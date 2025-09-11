@@ -231,7 +231,7 @@ def label(
     properties: list[tuple[str, Any]] | None = None,
     parent: QWidget | None = None,
 ) -> BaseLabel:
-    """Creates a new label widget.
+    """Create a new label widget.
 
     Args:
         text: Label text content.
