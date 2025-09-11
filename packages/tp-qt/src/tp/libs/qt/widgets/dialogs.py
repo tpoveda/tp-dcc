@@ -6,11 +6,11 @@ from Qt.QtCore import Qt
 from Qt.QtWidgets import QApplication, QWidget, QDialog
 from Qt.QtGui import QIcon, QGuiApplication
 
+from .. import utils
+
 
 class BaseDialog(QDialog):
-    """
-    Extends base `QDialog` class.
-    """
+    """Extends base `QDialog` class."""
 
     def __init__(
         self,
@@ -22,8 +22,7 @@ class BaseDialog(QDialog):
         transparent: bool = False,
         parent: QWidget | None = None,
     ):
-        """
-        Initialize a new instance of the class.
+        """Initialize a new instance of the class.
 
         :param title: The title of the dialog. Default is an empty string.
         :param width: The width of the dialog. Default is 600.
@@ -59,24 +58,18 @@ class BaseDialog(QDialog):
         self.resize(width, height)
 
     def center(self, to_cursor: bool = True):
-        """
-        Move the dialog to the center of the current window.
+        """Move the dialog to the center of the current window.
 
         :param bool to_cursor: whether to center dialog to screen or cursor.
         """
 
         frame_geo = self.frameGeometry()
-        if to_cursor:
-            screen = QGuiApplication().screenAt(QApplication.desktop().cursor().pos())
-            center_point = screen.availableGeometry().center()
-        else:
-            center_point = QGuiApplication.primaryScreen().availableGeometry().center()
+        center_point = utils.current_screen().geometry().center()
         frame_geo.moveCenter(center_point)
         self.move(frame_geo.topLeft())
 
     def fill_to_parent(self, margins: Tuple[int, int, int, int] = (0, 0, 0, 0)):
-        """
-        Fills size to parent.
+        """Fills size to parent.
 
         :param Tuple[int, int, int, int] margins: optional left-top-right-bottom margins.
         """
@@ -89,9 +82,7 @@ class BaseDialog(QDialog):
         )
 
     def toggle_maximized(self):
-        """
-        Toggles maximized window state.
-        """
+        """Toggles maximized window state."""
 
         self.showNormal() if self.windowState() and Qt.WindowMaximized else self.showMaximized()
 
