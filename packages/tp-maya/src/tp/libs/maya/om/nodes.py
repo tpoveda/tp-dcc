@@ -327,7 +327,8 @@ def iterate_shapes(
 
 
 def shapes(
-    mobj: OpenMaya.MObject | OpenMaya.MDagPath, filter_types: list[str] | None = None
+    mobj: OpenMaya.MObject | OpenMaya.MDagPath,
+    filter_types: list[str | int] | None = None,
 ) -> list[OpenMaya.MDagPath]:
     """Returns all the given shape DAG paths directly below the given DAG path as a list.
 

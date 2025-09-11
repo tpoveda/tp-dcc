@@ -8,7 +8,7 @@ from maya.api import OpenMaya
 
 from tp.libs.math import scalar
 
-from . import factory, nodes, plugs, mathlib
+from . import factory, nodes, plugs, mathlib, dagutils
 
 SHAPE_INFO = {
     "cvs": (),
@@ -182,7 +182,7 @@ def serialize_transform_curve(
 
     space = space or OpenMaya.MSpace.kObject
     shapes = nodes.shapes(
-        OpenMaya.MFnDagNode(node).getPath(), filter_types=OpenMaya.MFn.kNurbsCurve
+        OpenMaya.MFnDagNode(node).getPath(), filter_types=[OpenMaya.MFn.kNurbsCurve]
     )
     data = {}
     for shape in shapes:
@@ -210,7 +210,7 @@ def serialize_transform_curve(
 # noinspection PyTypeChecker
 def create_curve_shape(
     curve_data: dict,
-    parent: OpenMaya.MObject | None = None,
+    parent: OpenMaya.MObject | str | None = None,
     space: int | OpenMaya.MSpace | None = None,
     curve_size: float = 1.0,
     translate_offset: tuple[float, float, float] = (0.0, 0.0, 0.0),
@@ -240,13 +240,11 @@ def create_curve_shape(
     """
 
     parent_inverse_matrix = OpenMaya.MMatrix()
-    if parent is None:
-        parent = OpenMaya.MObject.kNullObj
-    else:
-        if isinstance(parent, str):
-            parent = nodes.mobject(parent)
-        if parent != OpenMaya.MObject.kNullObj:
-            parent_inverse_matrix = nodes.world_inverse_matrix(parent)
+    parent = parent if parent is not None else OpenMaya.MObject.kNullObj
+    if isinstance(parent, str):
+        parent = nodes.mobject(parent)
+    if parent != OpenMaya.MObject.kNullObj:
+        parent_inverse_matrix = nodes.world_inverse_matrix(parent)
 
     translate_offset = CurveCV(translate_offset)
     scale = CurveCV(scale_offset)
@@ -322,7 +320,7 @@ def create_curve_shape(
                 created_curves.append(child_name)
                 all_shapes.extend(new_shapes)
                 created_parents[child_name] = child_parent
-                nodes.set_parent(new_curve.parent(0), to_parent)
+                dagutils.set_parent(new_curve.parent(0), to_parent)
 
     return parent, all_shapes
 
@@ -416,12 +414,12 @@ def attach_node_to_curve_at_param(
         plugs.connect_vector_plugs(
             motion_path_fn.findPlug("rotate", False),
             node_fn.findPlug("rotate", False),
-            (True, True, True),
+            [True, True, True],
         )
     plugs.connect_vector_plugs(
         motion_path_fn.findPlug("allCoordinates", False),
         node_fn.findPlug("translate", False),
-        (True, True, True),
+        [True, True, True],
     )
 
     plugs.connect_plugs(
@@ -482,7 +480,7 @@ def generate_transforms_along_curve(
 def iterate_curve_points(
     curve_shape_dag_path: OpenMaya.MDagPath,
     count: int,
-    space: OpenMaya.MSpace = OpenMaya.MSpace.kObject,
+    space: OpenMaya.MSpace | int = OpenMaya.MSpace.kObject,
 ) -> Iterator[tuple[OpenMaya.MVector, OpenMaya.MVector, OpenMaya.MVector]]:
     """Generator function that iterates the position, normal and tangent for the curve
     with the given point count.
@@ -498,8 +496,8 @@ def iterate_curve_points(
     distance = length / float(count - 1)
     current = 0.001
     max_param = curve_fn.findParamFromLength(length)
-    default_normal = [1.0, 0.0, 0.0]
-    default_tangent = [0.0, 1.0, 0.0]
+    default_normal = OpenMaya.MVector([1.0, 0.0, 0.0])
+    default_tangent = OpenMaya.MVector([0.0, 1.0, 0.0])
     for i in range(count):
         param = curve_fn.findParamFromLength(current)
         # Maya fails to calculate the normal when the para is the max param, so we
