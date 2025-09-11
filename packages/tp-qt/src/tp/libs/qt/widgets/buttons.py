@@ -32,12 +32,16 @@ from Qt.QtGui import (
 from tp.preferences.interfaces import preferences as core_interfaces
 
 from . import menus, labels
-from .. import dpi, icon, icons, color, utils as qtutils
+from .. import dpi, icons, color, utils as qtutils
+from ..icon import colorize_icon, colorize_layered_icon
 
 
-class AbstractButton(dpi.DPIScaling):
+from Qt.QtWidgets import QAbstractButton
+
+
+class AbstractButton(QAbstractButton):
     """Abstract class for all custom Qt buttons.
-    Adds the ability to change button icon based on button press status.
+    Adds the ability to change the button icon based on button press status.
     """
 
     _idle_icon: QIcon | None = None
@@ -45,12 +49,11 @@ class AbstractButton(dpi.DPIScaling):
     _hover_icon: QIcon | None = None
     _highlight_offset = 40
     _icons: list[QIcon] = []
-    _icon_colors = (128, 128, 128)
+    # _icon_colors = (128, 128, 128)
+    _icon_colors: tuple[int, int, int] | None = None
     _icon_scaling: list[float] = []
 
-    def __init__(self):
-        super().__init__()
-
+    def __init__(self, *args, **kwargs):
         self._grayscale: bool = False
         self._tint_composition: QPainter.CompositionMode | None = None
 
@@ -156,7 +159,9 @@ class AbstractButton(dpi.DPIScaling):
             self.update_icons()
 
     def set_icon_color(
-        self, colors: QColor | tuple[int, int, int], update: bool = True
+        self,
+        colors: QColor | tuple[int, int, int] | tuple[float, float, float],
+        update: bool = True,
     ):
         """Set the color of the icon.
 
@@ -181,11 +186,21 @@ class AbstractButton(dpi.DPIScaling):
         if not self._icons:
             return
 
-        self._idle_icon = icon.colorize_layered_icon(
-            icons=self._icons, scaling=self._icon_scaling
+        self._idle_icon = colorize_layered_icon(
+            icons=self._icons,
+            size=self.iconSize().width(),
+            scaling=self._icon_scaling,
+            tint_composition=self._tint_composition,
+            colors=self._icon_colors,
+            grayscale=self._grayscale,
         )
-        self._hover_icon = icon.colorize_layered_icon(
-            icons=self._icons, scaling=self._icon_scaling
+        self._hover_icon = colorize_layered_icon(
+            icons=self._icons,
+            size=self.iconSize().width(),
+            scaling=self._icon_scaling,
+            tint_composition=self._tint_composition,
+            tint_color=(255, 255, 255, self._highlight_offset),
+            grayscale=self._grayscale,
         )
 
         # noinspection PyUnresolvedReferences
@@ -308,7 +323,8 @@ class BaseButton(QPushButton, AbstractButton):
         self._size = self._theme.Sizes.Default.value
         self._size_value = self._theme.sizes[self._size]
 
-        QPushButton.__init__(self)
+        super(BaseButton, self).__init__(icon=self._idle_icon, text=text, parent=parent)
+
         self.setParent(parent)
         if self._idle_icon:
             self.setIcon(self._idle_icon)
@@ -373,6 +389,11 @@ class BaseButton(QPushButton, AbstractButton):
     @double_click_interval.setter
     def double_click_interval(self, interval: int = 150):
         self._double_click_interval = interval
+
+    # def enterEvent(self, event: QEvent):
+    #
+    #     if self._hover_icon is not None and self.isEnabled():
+    #         self.setIcon(self._hover_icon)
 
     def mousePressEvent(self, event: QMouseEvent):
         """Overrides mousePressEvent function.
@@ -1106,7 +1127,7 @@ class BaseToolButton(QToolButton):
         if self._image:
             accent_color = self._theme.primary_color
             self.setIcon(
-                icon.colorize_icon(self._image, color=color.from_string(accent_color))
+                colorize_icon(self._image, color=color.from_string(accent_color))
             )
         return super().enterEvent(arg__1)
 
@@ -1225,9 +1246,7 @@ class BaseToolButton(QToolButton):
             accent_color = self._theme.primary_color
             if self.isCheckable() and self.isChecked():
                 self.setIcon(
-                    icon.colorize_icon(
-                        self._image, color=color.from_string(accent_color)
-                    )
+                    colorize_icon(self._image, color=color.from_string(accent_color))
                 )
             else:
                 self.setIcon(self._image)
@@ -1292,7 +1311,7 @@ class IconMenuButton(BaseButton):
         )
 
         self._tint_color = tint_color
-        self._icon_color = button_color or (255, 255, 255)
+        self._icon_color = button_color
         self._current_text = menu_name
         self._switch_icon = switch_icon_on_click
 
@@ -1658,13 +1677,13 @@ class ShadowedButton(BaseButton):
             pressed_color += pressed_color
 
         new_size = self._icon_size.width()
-        self._icon_pixmap = icon.colorize_layered_icon(
+        self._icon_pixmap = colorize_layered_icon(
             self._icon_names, colors=colors, scaling=scaling
         ).pixmap(QSize(new_size, new_size))
-        self._icon_hovered_pixmap = icon.colorize_layered_icon(
+        self._icon_hovered_pixmap = colorize_layered_icon(
             self._icon_names, colors=hover_color, scaling=scaling
         ).pixmap(QSize(new_size, new_size))
-        self._icon_pressed_pixmap = icon.colorize_layered_icon(
+        self._icon_pressed_pixmap = colorize_layered_icon(
             self._icon_names, colors=pressed_color, scaling=scaling
         ).pixmap(QSize(new_size, new_size))
 
