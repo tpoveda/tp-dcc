@@ -15,8 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def check_node(node: str | OpenMaya.MObject) -> bool:
-    """
-    Checks if a node is a valid node and raise and exception if the node is not valid.
+    """Checks if a node is a valid node and raise and exception if the node is not valid.
 
     :param node: name of the node to be checked or MObject to be checked.
     :return: True if the given node is valid.
@@ -32,8 +31,7 @@ def check_node(node: str | OpenMaya.MObject) -> bool:
 
 
 def is_dag_node(mobj: OpenMaya.MObject) -> bool:
-    """
-    Checks if an MObject is a DAG node.
+    """Checks if an MObject is a DAG node.
 
     :param mobj: Maya object to check.
     :return: True if the MObject is a DAG node or False otherwise.
@@ -43,8 +41,7 @@ def is_dag_node(mobj: OpenMaya.MObject) -> bool:
 
 
 def is_shape(mobj: OpenMaya.MObject) -> bool:
-    """
-    Returns whether the given node is a valid shape node.
+    """Returns whether the given node is a valid shape node.
 
     :param mobj: object to check as a shape node.
     :return: True if the given node is a valid shape node; False otherwise.
@@ -54,8 +51,7 @@ def is_shape(mobj: OpenMaya.MObject) -> bool:
 
 
 def is_valid_mobject(mobj: OpenMaya.MObject) -> bool:
-    """
-    Returns whether given node is a valid MObject.
+    """Returns whether given node is a valid MObject.
 
     :param mobj: Maya object to check.
     :return: True if given Maya object is valid; False otherwise.
@@ -66,8 +62,7 @@ def is_valid_mobject(mobj: OpenMaya.MObject) -> bool:
 
 
 def mobject_by_name(node_name: str) -> OpenMaya.MObject | None:
-    """
-    Returns an MObject from the given node name.
+    """Returns an MObject from the given node name.
 
     :param node_name: name of the node to get.
     :return: Maya object instance from give name.
@@ -93,8 +88,7 @@ def mobject_by_name(node_name: str) -> OpenMaya.MObject | None:
 def mobject_by_uuid(
     uuid: OpenMaya.MUuid,
 ) -> OpenMaya.MObject | list[OpenMaya.MObject] | None:
-    """
-    Returns an MObject from the given UUID.
+    """Returns an MObject from the given UUID.
     If multiples nodes are found with the same UUID, a list will be returned.
 
     :param uuid: UUID to get object for.
@@ -112,8 +106,7 @@ def mobject_by_uuid(
 
 
 def mobject_by_handle(handle: OpenMaya.MObjectHandle) -> OpenMaya.MObject:
-    """
-    Returns an MObject from given MObjectHandle.
+    """Returns an MObject from given MObjectHandle.
 
     :param handle: Maya object handle.
     :return: Maya object instance from given handle.
@@ -123,8 +116,7 @@ def mobject_by_handle(handle: OpenMaya.MObjectHandle) -> OpenMaya.MObject:
 
 
 def mobject_by_dag_path(dag_path: OpenMaya.MDagPath) -> OpenMaya.MObject:
-    """
-    Returns an MObject from given MDagPath.
+    """Returns an MObject from given MDagPath.
 
     :param dag_path: DAG path instance.
     :return: Maya object instance from given dag path.
@@ -145,8 +137,7 @@ def mobject(
     value: str | OpenMaya.MObject | OpenMaya.MObjectHandle | OpenMaya.MDagPath,
     validate_node: bool = False,
 ) -> OpenMaya.MObject | None:
-    """
-    Returns an MObject for the input scene object.
+    """Returns an MObject for the input scene object.
 
     :param value: Maya node to get MObject for.
     :param validate_node: whether validate node.
@@ -173,8 +164,7 @@ def mobject(
 def name(
     mobj: OpenMaya.MObject, partial_name: bool = False, include_namespace: bool = True
 ) -> str:
-    """
-    Returns full or partial name for a given MObject (which must be valid).
+    """Returns full or partial name for a given MObject (which must be valid).
 
     :param mobj: Maya object we want to retrieve name of
     :param partial_name: whether to return full path or partial name of the Maya object
@@ -197,8 +187,7 @@ def name(
 
 
 def names_from_mobjs(mobjs: list[OpenMaya.MObject]) -> list[str]:
-    """
-    Returns names of the given list of Maya object handles.
+    """Returns names of the given list of Maya object handles.
 
     :param mobjs: list of Maya objects to retrieve names of.
     :return: list of names.
@@ -215,8 +204,7 @@ def names_from_mobjs(mobjs: list[OpenMaya.MObject]) -> list[str]:
 
 
 def set_names(nodes: list[OpenMaya.MObject], names: list[str]):
-    """
-    Renames given list of nodes with the given list of names.
+    """Renames given list of nodes with the given list of names.
 
     :param nodes: list of Maya objects to rename.
     :param names: list of new names.
@@ -236,8 +224,7 @@ def rename(
     mod: OpenMaya.MDagModifier | None = None,
     apply: bool = True,
 ) -> OpenMaya.MDagModifier:
-    """
-    Renames given MObject dependency node with the new given name.
+    """Renames given MObject dependency node with the new given name.
 
     :param mobj: Maya object to rename.
     :param new_name: new Maya object name.
@@ -246,7 +233,7 @@ def rename(
     :return: renamed Maya object.
     """
 
-    if not is_safe_name(name):
+    if not is_safe_name(new_name):
         raise NameError(f'"{new_name}" is not a valid name')
 
     dag_mod = mod or OpenMaya.MDagModifier()
@@ -259,8 +246,7 @@ def rename(
 
 # noinspection SpellCheckingInspection
 def mdag_path(mobj: OpenMaya.MObject) -> OpenMaya.MDagPath:
-    """
-    Takes an object name as a string and returns its MDAGPath.
+    """Takes an object name as a string and returns its MDAGPath.
 
     :param mobj: Maya object instance to get DAG path of.
     :return: DAG Path.
@@ -273,8 +259,7 @@ def mdag_path(mobj: OpenMaya.MObject) -> OpenMaya.MDagPath:
 
 
 def depend_node(mobj: OpenMaya.MObject) -> OpenMaya.MFnDependencyNode:
-    """
-    Returns the dependency node instance of the given node.
+    """Returns the dependency node instance of the given node.
 
     :param mobj: Maya object instance to get depend node instance of.
     :return: dependency node instance.
@@ -286,8 +271,7 @@ def depend_node(mobj: OpenMaya.MObject) -> OpenMaya.MFnDependencyNode:
 
 
 def plug(mobj: OpenMaya.MObject, plug_name: str) -> OpenMaya.MPlug:
-    """
-    Returns the plug of given Maya object with given name.
+    """Returns the plug of given Maya object with given name.
 
     :param mobj: Maya object to get plug of.
     :param plug_name: name of the plug to get.
@@ -301,8 +285,7 @@ def plug(mobj: OpenMaya.MObject, plug_name: str) -> OpenMaya.MPlug:
 
 
 def shape(node: OpenMaya.MObject) -> OpenMaya.MObject:
-    """
-    Returns the shape node of given node.
+    """Returns the shape node of given node.
 
     :param node: Maya object to get shape of.
     :return: Maya shape object.
@@ -327,8 +310,7 @@ def shape(node: OpenMaya.MObject) -> OpenMaya.MObject:
 def iterate_shapes(
     mobj: OpenMaya.MObject | OpenMaya.MDagPath, filter_types: list[str] | None = None
 ) -> Iterator[OpenMaya.MDagPath]:
-    """
-    Generator function that returns all the given shape DAG paths directly below the given DAG path.
+    """Generator function that returns all the given shape DAG paths directly below the given DAG path.
 
     :param mobj: Maya object or dag path to search shapes of.
     :param filter_types: list of filter shapes for teh shapes to return.
@@ -347,8 +329,7 @@ def iterate_shapes(
 def shapes(
     mobj: OpenMaya.MObject | OpenMaya.MDagPath, filter_types: list[str] | None = None
 ) -> list[OpenMaya.MDagPath]:
-    """
-    Returns all the given shape DAG paths directly below the given DAG path as a list.
+    """Returns all the given shape DAG paths directly below the given DAG path as a list.
 
     :param mobj: Maya object to search shapes of
     :param filter_types: list of filter shapes for teh shapes to return
@@ -359,8 +340,7 @@ def shapes(
 
 
 def shape_at_index(dag_path: OpenMaya.MDagPath, index: int) -> OpenMaya.MDagPath | None:
-    """
-    Finds and returns the shape Dag Path under the given path for the given index.
+    """Finds and returns the shape Dag Path under the given path for the given index.
 
     :param dag_path: dag path to get shape index of.
     :param index: shape index.
@@ -376,8 +356,7 @@ def shape_at_index(dag_path: OpenMaya.MDagPath, index: int) -> OpenMaya.MDagPath
 def iterate_nodes_by_uuid(
     *uuids: str | OpenMaya.MUuid | Iterable[str | OpenMaya.MUuid],
 ) -> Iterator[OpenMaya.MObject]:
-    """
-    Generator function that yields dependency nodes with the given UUID.
+    """Generator function that yields dependency nodes with the given UUID.
 
     :param uuids: node uuids to iterate nodes from.
     :return: list of nodes.
@@ -392,8 +371,7 @@ def iterate_nodes_by_uuid(
 
 
 def node_color_data(mobj: OpenMaya.MObject) -> dict:
-    """
-    Returns the color data in the given Maya node.
+    """Returns the color data in the given Maya node.
 
     :param mobj: Maya object to get color data of.
     :return: dictionary containing node color data.
@@ -421,8 +399,7 @@ def set_outliner_color(
     color: OpenMaya.MColor | Iterable[float, float, float],
     mod: OpenMaya.MDGModifier | None = None,
 ):
-    """
-    Sets the outliner color of the given Maya object.
+    """Sets the outliner color of the given Maya object.
 
     :param mobj: Maya object to set outliner color of.
     :param color: RGB color to set to outliner item.
@@ -454,8 +431,7 @@ def set_node_color(
     use_outliner_color: bool = False,
     mod: OpenMaya.MDGModifier | None = None,
 ) -> OpenMaya.MDGModifier:
-    """
-    Sets the given Maya object its override color. MObject can represent an object or a shape.
+    """Sets the given Maya object its override color. MObject can represent an object or a shape.
 
     :param mobj: Maya object we want to change color of.
     :param color: RGB color to set.
@@ -495,8 +471,7 @@ def translation(
     space: OpenMaya.MSpace | None = None,
     scene_units: bool = False,
 ) -> OpenMaya.MVector:
-    """
-    Returns the translation for the given Maya object.
+    """Returns the translation for the given Maya object.
 
     :param mobj: Maya object to get translation of.
     :param space: coordinate system to use.
@@ -521,8 +496,7 @@ def set_translation(
     space: OpenMaya.MSpace | None = None,
     scene_units: bool = False,
 ):
-    """
-    Sets the translation for the given Maya object.
+    """Sets the translation for the given Maya object.
 
     :param mobj: Maya object to set translation of.
     :param position: translation to set.
@@ -541,8 +515,7 @@ def rotation(
     space: OpenMaya.MSpace | None = None,
     as_quaternion: bool = False,
 ) -> OpenMaya.MEulerRotation | OpenMaya.MQuaternion:
-    """
-    Returns the rotation for the given Maya object.
+    """Returns the rotation for the given Maya object.
 
     :param mobj: Maya object to get rotation of.
     :param space: coordinate system to use.
@@ -561,8 +534,7 @@ def set_rotation(
     new_rotation: OpenMaya.MEulerRotation | OpenMaya.MQuaternion,
     space: OpenMaya.MSpace | None = None,
 ):
-    """
-    Sets the rotation for the given Maya object.
+    """Sets the rotation for the given Maya object.
 
     :param mobj: Maya object to set rotation of.
     :param new_rotation: rotation to set.
@@ -583,8 +555,7 @@ def set_rotation(
 def matrix(
     mobj: OpenMaya.MObject, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
 ) -> OpenMaya.MMatrix:
-    """
-    Returns local matrix of the given MObject pointing to DAG node.
+    """Returns local matrix of the given MObject pointing to DAG node.
 
     :param mobj: Maya object of the DAG node we want to retrieve world matrix of.
     :param ctx: MDGContext to use.
@@ -601,8 +572,7 @@ def set_matrix(
     new_matrix: OpenMaya.MMatrix,
     space: OpenMaya.MSpace = OpenMaya.MSpace.kTransform,
 ):
-    """
-    Sets the object matrix using MTransform.
+    """Sets the object matrix using MTransform.
 
     :param mobj: Maya object to modify.
     :param new_matrix: Matrix to set.
@@ -618,8 +588,7 @@ def set_matrix(
 
 
 def world_matrix_plug(mobj: OpenMaya.MObject) -> OpenMaya.MPlug:
-    """
-    Returns the MPlug pointing worldMatrix of the given MObject pointing a DAG node.
+    """Returns the MPlug pointing worldMatrix of the given MObject pointing a DAG node.
 
     :param mobj: Maya object of the DAG node we want to retrieve world matrix plug of.
     :return: world matrix plug instance.
@@ -632,8 +601,7 @@ def world_matrix_plug(mobj: OpenMaya.MObject) -> OpenMaya.MPlug:
 def world_matrix(
     mobj: OpenMaya.MObject, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
 ) -> OpenMaya.MMatrix:
-    """
-    Returns world matrix of the given MObject pointing to DAG node.
+    """Returns world matrix of the given MObject pointing to DAG node.
 
     :param mobj: Maya object of the DAG node we want to retrieve world matrix of.
     :param ctx: MDGContext to use.
@@ -646,8 +614,7 @@ def world_matrix(
 def world_inverse_matrix(
     mobj: OpenMaya.MObject, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
 ) -> OpenMaya.MMatrix:
-    """
-    Returns world inverse matrix of the given Maya object.
+    """Returns world inverse matrix of the given Maya object.
 
     :param mobj: Maya object of the DAG node we want to retrieve world inverse matrix of.
     :param ctx: MDGContext to use.
@@ -665,8 +632,7 @@ def world_inverse_matrix(
 def parent_matrix(
     mobj: OpenMaya.MObject, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
 ) -> OpenMaya.MMatrix:
-    """
-    Returns the parent matrix of the given Maya object.
+    """Returns the parent matrix of the given Maya object.
 
     :param mobj: Maya object of the DAG node we want to retrieve parent matrix of.
     :param ctx: MDGContext to use.
@@ -682,8 +648,7 @@ def parent_matrix(
 
 
 def parent_inverse_matrix_plug(mobj: OpenMaya.MObject) -> OpenMaya.MPlug:
-    """
-    Returns parent inverse matrix MPlug of the given Maya object.
+    """Returns parent inverse matrix MPlug of the given Maya object.
 
     :param mobj: Maya object of the DAG node we want to retrieve parent inverse matrix plug of.
     :return: parent inverse matrix plug instance.
@@ -698,8 +663,7 @@ def parent_inverse_matrix_plug(mobj: OpenMaya.MObject) -> OpenMaya.MPlug:
 def parent_inverse_matrix(
     mobj: OpenMaya.MObject, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
 ) -> OpenMaya.MMatrix:
-    """
-    Returns the parent inverse matrix of the given Maya object.
+    """Returns the parent inverse matrix of the given Maya object.
 
     :param mobj: Maya object of the DAG node we want to retrieve parent inverse matrix of.
     :param ctx: MDGContext to use.
@@ -717,8 +681,7 @@ def offset_matrix(
     space: OpenMaya.MSpace | None = None,
     ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal,
 ) -> OpenMaya.MMatrix:
-    """
-    Returns the offset matrix between the given two objects.
+    """Returns the offset matrix between the given two objects.
 
     :param start_mobj: start transform Maya object.
     :param end_mobj: end transform Maya object.
@@ -757,8 +720,7 @@ def decompose_transform_matrix(
     rotation_order: int,
     space: OpenMaya.MSpace | None = None,
 ) -> tuple[OpenMaya.MVector, OpenMaya.MVector, OpenMaya.MVector]:
-    """
-    Returns decomposed translation, rotation and scale of the given Maya matrix.
+    """Returns decomposed translation, rotation and scale of the given Maya matrix.
 
     :param target_matrix: maya transform matrix to decompose.
     :param rotation_order: rotation order getting transform matrix of.
@@ -783,8 +745,7 @@ def decompose_transform_matrix(
 
 # noinspection PyShadowingNames
 def has_attribute(mobj: OpenMaya.MObject, attribute_name: str) -> bool:
-    """
-    Returns whether given Maya object has given attribute added to it.
+    """Returns whether given Maya object has given attribute added to it.
 
     :param mobj: Maya object to check search attribute in.
     :param attribute_name: name of the attribute to check.
@@ -808,8 +769,7 @@ def add_attribute(
     mod: OpenMaya.MDGModifier | None = None,
     **kwargs,
 ) -> OpenMaya.MFnAttribute:
-    """
-    Adds a new attribute to the given Maya object.
+    """Adds a new attribute to the given Maya object.
 
     :param mobj: node to add attribute to.
     :param long_name: attribute long name.
@@ -997,8 +957,7 @@ def add_compound_attribute(
     mod: OpenMaya.MDGModifier | None = None,
     **kwargs,
 ) -> OpenMaya.MFnAttribute:
-    """
-    Adds a new compound attribute to the given Maya object.
+    """Adds a new compound attribute to the given Maya object.
 
     :param mobj: node to add compound attribute to.
     :param long_name: compound attribute long name.
@@ -1071,8 +1030,7 @@ def add_compound_attribute(
 def add_proxy_attribute(
     mobj: OpenMaya.MObject, source_plug: OpenMaya.MPlug, **kwargs
 ) -> OpenMaya.MFnAttribute:
-    """
-    Adds a new proxy attribute into the given node.
+    """Adds a new proxy attribute into the given node.
 
     :param mobj: Maya object to add proxy attribute into.
     :param source_plug: source proxy plug.
@@ -1108,8 +1066,7 @@ def iterate_attributes(
     skip: list[str] | None = None,
     include_attributes: list[str] | None = None,
 ) -> Iterator[OpenMaya.MPlug]:
-    """
-    Generator function to iterate over all plugs of a given Maya object.
+    """Generator function to iterate over all plugs of a given Maya object.
 
     :param mobj: Maya object to iterate.
     :param skip: list of attributes to skip.
@@ -1147,8 +1104,7 @@ def iterate_extra_attributes(
     filtered_types: list[str] | None = None,
     include_attributes: list[str] | None = None,
 ) -> Iterator[OpenMaya.MPlug]:
-    """
-    Generator function to iterate over all extra plugs of a given Maya object.
+    """Generator function to iterate over all extra plugs of a given Maya object.
 
     :param mobj: Maya object to iterate.
     :param skip: list of attributes to skip.
@@ -1191,8 +1147,7 @@ def iterate_extra_attributes(
 def iterate_connections(
     node: OpenMaya.MObject, source: bool = True, destination: bool = True
 ) -> Iterator[tuple[OpenMaya.MPlug, OpenMaya.MPlug]]:
-    """
-    Returns a generator function containing a tuple of Maya plugs.
+    """Returns a generator function containing a tuple of Maya plugs.
 
     :param node: Maya node to search.
     :param source: if True, all upstream connections are returned.
@@ -1213,8 +1168,7 @@ def iterate_connections(
 def set_lock_state_on_attributes(
     mobj: OpenMaya.MObject, attributes: Iterable[str], state: bool = True
 ) -> bool:
-    """
-    Locks and unlocks the given attributes.
+    """Locks and unlocks the given attributes.
 
     :param mobj: node whose attributes we want to lock/unlock.
     :param attributes: list of attributes names to lock/unlock.
@@ -1239,8 +1193,7 @@ def set_lock_state_on_attributes(
 def show_hide_attributes(
     mobj: OpenMaya.MObject, attributes: list[str], state: bool = False
 ) -> bool:
-    """
-    Shows or hides given attributes in the channel box.
+    """Shows or hides given attributes in the channel box.
 
     :param mobj: node whose attributes we want to show/hide.
     :param attributes: list of attributes names to lock/unlock
@@ -1267,8 +1220,7 @@ def serialize_node(
     use_short_names: bool = False,
     include_namespace: bool = True,
 ) -> dict:
-    """
-    Function that converts given OpenMaya.MObject into a serialized dictionary.
+    """Function that converts given OpenMaya.MObject into a serialized dictionary.
     This function iterates through all attributes, serializing any extra attribute found and any default value that
     has not changed (defaultValue) and not connected or is an array attribute will be skipped.
 
@@ -1411,8 +1363,7 @@ def serialize_nodes(
     skip_attributes: list[str] | None = None,
     include_connections: bool = True,
 ) -> Iterator[tuple[OpenMaya.MObject, dict]]:
-    """
-    Serializes given Maya objects.
+    """Serializes given Maya objects.
 
     :param nodes: Maya objects to serialize.
     :param skip_attributes: list of attributes names to skip serialization of.
@@ -1435,8 +1386,7 @@ def serialize_nodes(
 
 
 def serialize_selected_nodes(skip_attributes=None, include_connections=None):
-    """
-    Serializes selected Maya objects.
+    """Serializes selected Maya objects.
 
     :param list(str) skip_attributes: list of attributes names to skip serialization of.
     :param bool include_connections: whether to find and serialize all connections where the destination is this
@@ -1458,8 +1408,7 @@ def serialize_selected_nodes(skip_attributes=None, include_connections=None):
 def deserialize_node(
     data, parent: OpenMaya.MObject | None = None, include_attributes: bool = True
 ) -> tuple[OpenMaya.MObject | None, list[OpenMaya.MPlug]]:
-    """
-    Deserializes given data and creates a new node based on that data.
+    """Deserializes given data and creates a new node based on that data.
 
     :param data: serialized node data.
     :param parent: the parent of the newly created node.
@@ -1591,8 +1540,7 @@ def deserialize_node(
 def deserialize_nodes(
     nodes_data: list[dict],
 ) -> list[tuple[OpenMaya.MObject | None, list[OpenMaya.MPlug]]]:
-    """
-    Deserializes given nodes based on given data
+    """Deserializes given nodes based on given data
 
     :param nodes_data: list of serialized node data.
     :return: newly created nodes.
@@ -1608,8 +1556,6 @@ def deserialize_nodes(
 
 
 class AttributeAlreadyExistsError(Exception):
-    """
-    Exception that is raised when an attribute already exists.
-    """
+    """Exception that is raised when an attribute already exists."""
 
     pass

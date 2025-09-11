@@ -3,9 +3,11 @@ from __future__ import annotations
 import os
 import glob
 import pathlib
-import logging
-from typing import Iterator
+from typing import Any
+from enum import IntEnum, auto
+from collections.abc import Generator
 
+from loguru import logger
 import maya.api.OpenMaya as OpenMaya
 
 from tp.libs.python import helpers, jsonio, paths
@@ -15,14 +17,29 @@ CURVE_FILE_EXTENSION = "curve"
 CURVES_ENV_VAR = "TP_DCC_CURVES_PATHS"
 _PATHS_CACHE: dict[str, dict] = {}
 
-logger = logging.getLogger(__name__)
+
+class ShapeType(IntEnum):
+    """Enumeration of shape types."""
+
+    Curve = auto()
+    Surface = auto()
 
 
-def update_cache(force: bool = False):
-    """Function that handles the update of cached curves.
+class MissingCurveFromLibrary(Exception):
+    """Exception that is raised when a curve is not found in the library."""
 
-    :param force: whether to force the update of the cache event if the cache is already initialized.
+    pass
+
+
+def update_cache(force: bool = False) -> None:
+    """Handle the update of cached curves.
+
+    Args:
+        force: Whether to force the update of the cache event if the cache is
+            already initialized.
     """
+
+    global _PATHS_CACHE
 
     if _PATHS_CACHE and not force:
         return
@@ -36,25 +53,30 @@ def update_cache(force: bool = False):
             }
 
 
-def clear_cache():
+def clear_cache() -> None:
     """Clears the cache of available curves."""
+
+    global _PATHS_CACHE
 
     _PATHS_CACHE.clear()
 
 
 def default_curves_library_path() -> str:
-    """Returns the default curves library path.
+    """Return the default curves library path.
 
-    :return: default curves library path.
+    Returns:
+        The default curves library path.
     """
 
     return paths.canonical_path("./library")
 
 
-def iterate_root_paths() -> Iterator[str]:
-    """Generator function that iterates over all root locations defined by TP_DCC_CURVES_PATHS environment variable.
+def iterate_root_paths() -> Generator[str]:
+    """Iterate over all root locations defined by `TP_DCC_CURVES_PATHS`
+    environment variable.
 
-    :return: iterated root paths.
+    Yields:
+        Root paths.
     """
 
     for root in [default_curves_library_path()] + os.environ.get(
@@ -65,10 +87,22 @@ def iterate_root_paths() -> Iterator[str]:
         yield root
 
 
-def iterate_curve_paths() -> Iterator[str]:
-    """Generator function that iterates over all curve paths.
+def root_paths() -> list[str]:
+    """Returns a list of all root locations defined by `TP_DCC_CURVES_PATHS`
+    environment variable.
 
-    :return: iterated curve paths.
+    Returns:
+        List of root paths.
+    """
+
+    return list(iterate_root_paths())
+
+
+def iterate_curve_paths() -> Generator[str]:
+    """Iterate over all curve paths.
+
+    Yields:
+        Curve paths.
     """
 
     update_cache()
@@ -76,11 +110,25 @@ def iterate_curve_paths() -> Iterator[str]:
         yield curve_info["path"]
 
 
-def iterate_names() -> Iterator[str]:
-    """Generator function which iterates over all available curve names.
+def curve_paths() -> list[str]:
+    """Returns a list of all curve paths.
 
-    :return: iterated curve names.
-    .info:: curves are source from all the root location specified by the CURVES_ENV_VAR environment variable.
+    Returns:
+        List of curve paths.
+    """
+
+    return list(iterate_curve_paths())
+
+
+def iterate_names() -> Generator[str]:
+    """Iterate over all available curve names.
+
+    Notes:
+        - Curves are sourced from all the root locations specified by the
+            CURVES_ENV_VAR environment variable.
+
+    Yields:
+        Curve names.
     """
 
     update_cache()
@@ -89,34 +137,46 @@ def iterate_names() -> Iterator[str]:
 
 
 def names() -> list[str]:
-    """List all the curve names available.
+    """Returns a list of all available curve names.
 
-    :return:  list of curve names.
-    .info:: curves are source from all the root location specified by the CURVES_ENV_VAR environment variable.
+    Notes:
+        - Curves are sourced from all the root locations specified by the
+            CURVES_ENV_VAR environment variable.
+
+    Returns:
+        List of curve names.
     """
 
     return list(iterate_names())
 
 
-def find_curve_path_by_name(curve_name: str) -> str:
-    """Returns curve path of the curve with given name
+def find_curve_path_by_name(curve_name: str) -> str | None:
+    """Return the curve path of the curve with the given name.
 
-    :param curve_name: name of the curve we want to retrieve path of.
-    :return: curve path.
+    Args:
+        curve_name: Name of the curve we want to retrieve path of.
+
+    Returns:
+        Curve path.
     """
 
     update_cache()
 
-    if _PATHS_CACHE:
-        return _PATHS_CACHE.get(curve_name, dict()).get("path", "")
+    if not _PATHS_CACHE:
+        return None
+
+    return _PATHS_CACHE.get(curve_name, dict()).get("path", "")
 
 
 def load_curve(curve_name: str, folder_path: str) -> dict:
-    """Loads the curve with the given name and located in the given directory.
+    """Load the curve with the given name and located in the given directory.
 
-    :param curve_name: name of the curve to load.
-    :param folder_path: absolute directory where the curve file is located.
-    :return: loaded curve data.
+    Args:
+        curve_name: Name of the curve to load.
+        folder_path: Absolute directory where the curve file is located.
+
+    Returns:
+        Loaded curve data.
     """
 
     curve_path = pathlib.Path(
@@ -125,12 +185,18 @@ def load_curve(curve_name: str, folder_path: str) -> dict:
     return jsonio.read_file(curve_path)
 
 
-def load_from_lib(curve_name: str) -> dict:
-    """Loads the data from the given curve name in library.
+def load_from_lib(curve_name: str) -> dict[str, Any]:
+    """Load the data from the given curve name in the library.
 
-    :param curve_name: name of the curve to load data of.
-    :return: curve data.
-    :raises MissingCurveFromLibrary: if the given curve name does not exist in the library of curves.
+    Args:
+        curve_name: Name of the curve to load data of.
+
+    Returns:
+        Curve data.
+
+    Raises:
+        MissingCurveFromLibrary: If the given curve name does not exist in the
+            library of curves.
     """
 
     update_cache()
@@ -150,32 +216,54 @@ def load_from_lib(curve_name: str) -> dict:
 
 
 def load_and_create_from_lib(
-    curve_name: str, parent: OpenMaya.MObject | None = None
+    curve_name: str,
+    parent: OpenMaya.MObject | None = None,
+    shape_type: ShapeType = ShapeType.Curve,
+    mod: OpenMaya.MDGModifier | None = None,
 ) -> tuple[OpenMaya.MObject, list[OpenMaya.MObject]]:
-    """Loads and creates the curve from curves library. If parent is given, shape node will be parented under it.
+    """Load and create the curve from the curve library. If a parent is
+    given, the shape node will be parented under it.
 
-    :param curve_name: curve library name to load and create.
-    :param parent: optional curve parent.
-    :return: tuple with the MObject of the parent and a list representing the MObjects of the created shapes.
+    Args:
+        curve_name: Curve library name to load and create.
+        parent: Optional curve parent.
+        shape_type: Type of shape to create.
+        mod: Optional MDGModifier to use to create the curve.
+
+    Returns:
+        Tuple with the MObject of the parent and a list representing the
+            MObjects of the created shapes.
     """
 
     new_data = load_from_lib(curve_name)
-    return curves.create_curve_shape(new_data, parent=parent)
+
+    if shape_type == ShapeType.Curve:
+        return curves.create_curve_shape(new_data, parent=parent, mod=mod)
+
+    return curves.create_curve_surface(new_data, parent=parent, mod=mod)
 
 
 def load_and_create_from_path(
     curve_name: str, folder_path: str, parent: OpenMaya.MObject | None = None
 ) -> tuple[OpenMaya.MObject | None, list[OpenMaya.MObject]]:
-    """Loads and creates the NURBS curve from the file located in the given path.
+    """Load and create the NURBS curve from the file located in the given path.
 
-    :param curve_name: name of the curve to load and create.
-    :param folder_path: absolute directory where the curve file is located.
-    :param parent: optional parent for the NURBS curve to parent under.
-    :return: tuple containing the MObject of the parent and a list of MObjects representing the created shapes.
+    Args:
+        curve_name: Name of the curve to load and create.
+        folder_path: Absolute directory where the curve file is located.
+        parent: Optional parent for the NURBS curve to parent under.
+
+    Returns:
+        Tuple containing the MObject of the parent and a list of MObjects
+            representing the created shapes.
     """
 
     curve_data = load_curve(curve_name, folder_path)
-    return curves.create_curve_shape(curve_data, parent=parent)
+    shape_type = ShapeType(curve_data.get("shapeType", ShapeType.Curve))
+    if shape_type == ShapeType.Curve:
+        return curves.create_curve_shape(curve_data, parent=parent)
+
+    return curves.create_curve_surface(curve_data, parent=parent)
 
 
 def save_to_directory(
@@ -185,17 +273,28 @@ def save_to_directory(
     override: bool = True,
     save_matrix: bool = False,
     normalize: bool = True,
+    shape_type: ShapeType = ShapeType.Curve,
 ) -> tuple[dict, str]:
-    """Saves the given transform node into the given directory.
+    """Save the given transform node into the given directory.
 
-    :param node: Maya object representing the transform node to save curves of.
-    :param directory: absolute path where curve file will be saved.
-    :param or None name: name of the file to create. If not given, the name of the node will be used.
-    :param override: whether to force override the library shape if it already exists.
-    :param save_matrix: whether to save matrix information.
-    :param normalize: whether to normalize curve data, so it fits in first Maya grid quadrant.
-    :return: tuple containing the save curve data and the save path.
-    :raises ValueError: if we try to save a curve that already exists and override argument is False
+    Args:
+        node: Maya object representing the transform node to save curves of.
+        directory: absolute path where curve file will be saved.
+        name: name of the file to create. If not given, the name of the node
+            will be used.
+        override: whether to force override the library shape if it already
+            exists.
+        save_matrix: whether to save matrix information.
+        normalize: whether to normalize curve data, so it fits in first Maya
+            grid-quadrant.
+        shape_type: Type of shape to save.
+
+    Returns:
+        Tuple containing the save curve data and the save path.
+
+    Raises:
+        ValueError: if we try to save a curve that already exists and override
+            argument is `False`
     """
 
     name = name or nodes.name(node, partial_name=True, include_namespace=False)
@@ -209,7 +308,11 @@ def save_to_directory(
             f'Curve with name "{name}" already exists in the curves library!'
         )
 
-    data = curves.serialize_transform_curve(node, normalize=normalize)
+    if shape_type == ShapeType.Curve:
+        data = curves.serialize_transform_curve(node, normalize=normalize)
+    else:
+        data = curves.serialize_transform_surface(node, normalize=normalize)
+
     if not save_matrix:
         for curves_shape in data:
             data[curves_shape].pop("matrix", None)
@@ -228,20 +331,33 @@ def save_to_lib(
     override: bool = True,
     save_matrix: bool = False,
     normalize: bool = True,
+    shape_type: ShapeType = ShapeType.Curve,
 ) -> tuple[dict, str]:
-    """Saves the given transform node shapes into the curve library, using the first library directory defined within
-    CURVES_ENV_VAR environment variable.
+    """Save the given transform node shapes into the curve library, using the
+    first library directory defined within the `CURVES_ENV_VAR` environment
+    variable.
 
-    :param node: Maya object representing the transform node to save curves of.
-    :param name: name of the file to create. If not given, the name of the node will be used.
-    :param override: whether to force override the library shape if it already exists.
-    :param save_matrix: whether to save matrix information.
-    :param normalize: whether to normalize curve data, so it fits in first Maya grid quadrant.
-    :return: tuple containing the save curve data and the save path.
-    :raises ValueError: if no node to save curves from is given.
+    Args:
+        node: Maya object representing the transform node to save curves of.
+        name: name of the file to create. If not given, the name of the node
+            will be used.
+        override: whether to force override the library shape if it already
+            exists.
+        save_matrix: whether to save matrix information.
+        normalize: whether to normalize curve data, so it fits in first Maya
+            grid-quadrant.
+        shape_type: Type of shape to save.
+
+    Returns:
+        Tuple containing the save curve data and the save path.
+
+    Raises:
+        ValueError: if no node to save curves from is given.
     """
 
-    node = node or helpers.first_in_list(scene.selected_nodes(OpenMaya.MFn.kTransform))
+    node = node or helpers.first_in_list(
+        scene.selected_nodes(filter_to_apply=[OpenMaya.MFn.kTransform])
+    )
     if not node:
         raise ValueError("No node to save curves")
     directory = os.environ.get(CURVES_ENV_VAR, "").split(os.pathsep)[0]
@@ -253,16 +369,20 @@ def save_to_lib(
         override=override,
         save_matrix=save_matrix,
         normalize=normalize,
+        shape_type=shape_type,
     )
 
 
-def rename_curve(curve_name: str, new_name: str):
-    """Renames a shape from the library, using the first library directory defined within CURVES_ENV_VAR environment
-    variable.
+def rename_curve(curve_name: str, new_name: str) -> str:
+    """Rename a shape from the library, using the first library directory
+    defined within the `CURVES_ENV_VAR` environment variable.
 
-    :param curve_name: name of the curve to rename.
-    :param new_name: new curve name.
-    :return: new curve path.
+    Args:
+        curve_name: name of the curve to rename.
+        new_name: new curve name.
+
+    Returns:
+        New curve path.
     """
 
     curve_path = find_curve_path_by_name(curve_name)
@@ -285,15 +405,20 @@ def rename_curve(curve_name: str, new_name: str):
     _PATHS_CACHE[new_name] = old_data
     del _PATHS_CACHE[curve_name]
 
+    logger.info(f'Successfully renamed curve "{curve_path}" to "{new_path}"')
+
     return new_path
 
 
 def delete_curve(curve_name: str) -> bool:
-    """Deletes curve with given name from library, using the first library directory defined within CURVES_ENV_VAR
-    environment variable.
+    """Delete the curve with given name from the library, using the first
+    library directory defined within the `CURVES_ENV_VAR` environment variable.
 
-    :param curve_name: name of the curve to delete.
-    :return: True if the delete curve operation was successful; False otherwise.
+    Args:
+        curve_name: name of the curve to delete.
+
+    Returns:
+        `True` if the delete curve operation was successful; `False` otherwise.
     """
 
     curve_path = find_curve_path_by_name(curve_name)
@@ -302,13 +427,8 @@ def delete_curve(curve_name: str) -> bool:
         return False
 
     os.remove(curve_path)
+
     if curve_name in _PATHS_CACHE:
         del _PATHS_CACHE[curve_name]
 
     return True
-
-
-class MissingCurveFromLibrary(Exception):
-    """Exception that is raised when a curve is not found in the library."""
-
-    pass

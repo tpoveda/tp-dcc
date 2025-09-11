@@ -6,8 +6,8 @@ from typing import Iterator
 from maya import cmds
 from maya.api import OpenMaya
 
+from tp.libs.math import scalar
 
-from ...math import scalar
 from . import factory, nodes, plugs, mathlib
 
 SHAPE_INFO = {
@@ -43,9 +43,7 @@ SHAPE_INFO = {
 
 # noinspection PyCallingNonCallable,PyArgumentList
 class CurveCV(list):
-    """
-    Base class used to represent curve CVs
-    """
+    """Base class used to represent curve CVs"""
 
     # noinspection PyPep8Naming
     def ControlVWrapper(self):
@@ -99,8 +97,7 @@ class CurveCV(list):
         }
 
     def reorder(self, order):
-        """
-        With a given order sequence CVs will be reordered (for axis order purposes)
+        """With a given order sequence CVs will be reordered (for axis order purposes)
         :param order: list(int)
         """
 
@@ -114,15 +111,18 @@ def get_curve_data(
     normalize: bool = True,
     parent: str | OpenMaya.MObject | None = None,
 ) -> dict:
-    """
-    Returns curve data from the given shape node.
+    """Return the curve data from the given shape node.
 
-    :param curve_shape: node that represents nurbs curve shape
-    :param space: MSpace, coordinate space to query the point data
-    :param color_data: whether to include curve data.
-    :param normalize: whether to normalize curve data, so it fits in first Maya grid quadrant.
-    :param parent: optional parent for the curve.
-    :return: curve data as a dictionary.
+    Args:
+        curve_shape: name or MObject that represents nurbs curve shape
+        space: MSpace, coordinate space to query the point data
+        color_data: whether to include curve data.
+        normalize: whether to normalize curve data, so it fits in first
+            Maya grid-quadrant.
+        parent: optional parent for the curve.
+
+    Returns:
+        Curve data as a dictionary.
     """
 
     if isinstance(curve_shape, str):
@@ -171,8 +171,7 @@ def serialize_transform_curve(
     color_data: bool = True,
     normalize: bool = True,
 ) -> dict:
-    """
-    Serializes given transform shapes curve data and returns a dictionary with that data.
+    """Serializes given transform shapes curve data and returns a dictionary with that data.
 
     :param node: object that represents the transform above the nurbsCurve shapes we want to serialize.
     :param space: coordinate space to query the point data.
@@ -219,21 +218,25 @@ def create_curve_shape(
     axis_order: str = "XYZ",
     color: tuple[float, float, float] | None = None,
     mirror: bool | None = None,
+    mod: OpenMaya.MDGModifier | None = None,
 ) -> tuple[OpenMaya.MObject, list[OpenMaya.MObject]]:
-    """
-    Creates a NURBS curve based on the given curve data.
+    """Create a NURBS curve based on the given curve data.
 
-    :param curve_data: data, {"shapeName": {"cvs": [], "knots":[], "degree": int, "form": int, "matrix": []}}
-    :param parent: transform that takes ownership of the curve shapes.
-        If not parent is given a new transform will be created.
-    :param space: coordinate space to set the point data.
-    :param curve_size: global curve size offset.
-    :param translate_offset: translate offset for the curve.
-    :param scale_offset: scale offset for the curve.
-    :param axis_order: axis order for the curve.
-    :param color: curve color.
-    :param mirror: whether curve should be mirrored.
-    :return: tuple containing the parent MObject and the list of MObject shapes
+    Args:
+        curve_data: data, {"shapeName": {"cvs": [], "knots":[], "degree": int, "form": int, "matrix": []}}
+        parent: Transform that takes ownership of the curve shapes.
+            If no parent is given, a new transform will be created.
+        space: Coordinate space to set the point data.
+        curve_size: Global curve size offset.
+        translate_offset: Translate offset for the curve.
+        scale_offset: Scale offset for the curve.
+        axis_order: Axis order for the curve.
+        color: Curve color.
+        mirror: Whether the curve should be mirrored.
+        mod: optional DGModifier to use to create the nodes.
+
+    Returns:
+        Tuple containing the parent MObject and the list of MObject shapes
     """
 
     parent_inverse_matrix = OpenMaya.MMatrix()
@@ -264,8 +267,8 @@ def create_curve_shape(
     created_parents: dict[str, OpenMaya.MObject] = {}
 
     # If parent already has a shape with the same name we delete it
-    # TODO: We should compare the bounding boxes of the parent shape and the new one and scale it to fit new bounding
-    # TODO: box to the old one
+    # TODO: We should compare the bounding boxes of the parent shape and the
+    #  new one and scale it to fit new bounding box to the old one.
     parent_shapes = []
     if parent and parent != OpenMaya.MObject.kNullObj:
         parent_shapes = nodes.shapes(OpenMaya.MFnDagNode(parent).getPath())
@@ -331,8 +334,7 @@ def create_curve_from_points(
     shape_dict: dict | None = None,
     parent: OpenMaya.MObject | None = None,
 ) -> tuple[OpenMaya.MObject, tuple[OpenMaya.MObject]]:
-    """
-    Creates a new curve from the given points and the given data curve info
+    """Creates a new curve from the given points and the given data curve info
     :param str name: name of the curve to create.
     :param points: list of points for the curve.
     :param shape_dict: optional shape data.
@@ -368,8 +370,7 @@ def create_curve_from_points(
 def iterate_curve_params(
     nurbs_curve_dag_path: OpenMaya.MDagPath, count: int, initial_offset: float = 0.1
 ) -> Iterator[float]:
-    """
-    Generator function that iterates the curve CVs and attaches transform nodes to
+    """Generator function that iterates the curve CVs and attaches transform nodes to
     the curve using a motion path.
 
     :param nurbs_curve_dag_path: path to the curve to attach the transforms to.
@@ -395,8 +396,7 @@ def attach_node_to_curve_at_param(
     rotate: bool = True,
     fraction_mode: bool = False,
 ) -> OpenMaya.MObject:
-    """
-    Attaches the given node to the curve using a motion path node.
+    """Attaches the given node to the curve using a motion path node.
 
     :param nurbs_curve: curve to attach the node to.
     :param node: node to attach to the curve.
@@ -445,8 +445,7 @@ def generate_transforms_along_curve(
     node_type: str = "transform",
     initial_offset: float = 0.1,
 ) -> Iterator[tuple[OpenMaya.MObject, OpenMaya.MObject]]:
-    """
-    Generator function that iterates the curve CVs and attaches transform nodes to
+    """Generator function that iterates the curve CVs and attaches transform nodes to
     the curve using a motion path.
 
     :param nurbs_curve_dag_path: path to the curve to attach the transforms to.
@@ -485,8 +484,7 @@ def iterate_curve_points(
     count: int,
     space: OpenMaya.MSpace = OpenMaya.MSpace.kObject,
 ) -> Iterator[tuple[OpenMaya.MVector, OpenMaya.MVector, OpenMaya.MVector]]:
-    """
-    Generator function that iterates the position, normal and tangent for the curve
+    """Generator function that iterates the position, normal and tangent for the curve
     with the given point count.
 
     :param curve_shape_dag_path: Nurbs curve DAG path to use.
@@ -529,8 +527,7 @@ def iterate_rotations_along_curve(
     up_vector: OpenMaya.MVector,
     world_up_vector: OpenMaya.MVector,
 ) -> Iterator[tuple[OpenMaya.MVector, OpenMaya.MQuaternion]]:
-    """
-    Generator function that iterates the position and rotation along the curve
+    """Generator function that iterates the position and rotation along the curve
     incrementally based on the given joint count.
 
     :param curve_shape_dag_path: Nurbs curve DAG path to use.
@@ -577,21 +574,23 @@ def _create_curve(
     parent: OpenMaya.MObject,
     parent_inverse_matrix: OpenMaya.MMatrix,
 ) -> tuple[str, OpenMaya.MObject, list[OpenMaya.MObject], OpenMaya.MFnNurbsCurve]:
-    """
-    Internal function that creates a curve shape based on the given data.
+    """Creates a curve shape based on the given data.
 
-    :param shape_name: name of the shape to create.
-    :param shape_data: dictionary with the shape data.
-    :param space: which space to use for the curve.
-    :param curve_size: size of the curve.
-    :param translate_offset: offset to apply to the curve.
-    :param scale: scale to apply to the curve.
-    :param order: axis order for the curve.
-    :param color: color to apply to the curve.
-    :param mirror: whether to mirror the curve.
-    :param parent: parent object for the curve.
-    :param parent_inverse_matrix: parent inverse matrix.
-    :return: tuple with the shape name, parent, new shapes, and the curve object.
+    Args:
+        shape_name: Name of the shape to create.
+        shape_data: Dictionary with the shape data.
+        space: which space to use for the curve.
+        curve_size: Size of the curve.
+        translate_offset: Offset to apply to the curve.
+        scale: Scale to apply to the curve.
+        order: Axis order for the curve.
+        color: Color to apply to the curve.
+        mirror: Whether to mirror the curve.
+        parent: Parent object for the curve.
+        parent_inverse_matrix: Parent inverse matrix.
+
+    Returns:
+        Tuple with the shape name, parent, new shapes, and the curve object.
     """
 
     new_curve = OpenMaya.MFnNurbsCurve()

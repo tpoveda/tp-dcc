@@ -1364,7 +1364,7 @@ class DagNode(DGNode):
 
     def setTranslation(
         self,
-        translation: OpenMaya.MVector | Iterable[float, float, float],
+        translation: OpenMaya.MVector | tuple[float, float, float] | list[float],
         space: OpenMaya.MSpace | int | None = None,
         scene_units: bool = False,
     ):
@@ -1403,10 +1403,11 @@ class DagNode(DGNode):
         self,
         rotation: OpenMaya.MQuaternion
         | OpenMaya.MEulerRotation
-        | Iterable[float, float, float],
-        space: OpenMaya.MSpace | None = None,
+        | tuple[float, float, float, float]
+        | list[float],
+        space: OpenMaya.MSpace | int | None = None,
     ):
-        """Sets the translation component of this node.
+        """Sets the rotation component of this node.
 
         :param tuple or list or OpenMaya.MEulerAngle or OpenMaya.MQuaternion rotation: rotation to set.
         :param int space: space to work.
