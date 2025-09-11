@@ -9,7 +9,7 @@ QMainWindow {
   font-family: "Roboto"; }
   QMainWindow::separator {
     background-color: #353535;
-    border: 1px solid #242424;
+    border: 1px solid #232323;
     border-radius: 2px; }
   QMainWindow::separator:hover {
     background-color: #0664c3;
@@ -30,9 +30,6 @@ QWidget {
   background-color: #151515;
   color: #d9d9d9;
   font-family: "Roboto"; }
-
-QFrame {
-  background-color: #242424; }
 
 QGroupBox {
   padding-top: 20px;
@@ -325,7 +322,7 @@ QTabBar {
     background-color: transparent;
     padding: 5px;
     margin-right: 2px;
-    border: 1px solid #242424;
+    border: 1px solid #232323;
     border-bottom: 0px;
     border-top-left-radius: 3px;
     border-top-right-radius: 3px; }
@@ -340,9 +337,9 @@ QTabBar {
     QTabBar::tab:left, QTabBar::tab:right {
       min-height: 60px; }
     QTabBar::tab:hover {
-      background-color: #242424; }
+      background-color: #232323; }
     QTabBar::tab:selected {
-      background-color: #242424;
+      background-color: #232323;
       border-top: 1px solid #0070e0; }
   QTabBar::indicator {
     width: 5px;
@@ -357,7 +354,7 @@ QTabBar {
 QTabWidget {
   border: none; }
   QTabWidget:pane {
-    border: 1px solid #242424;
+    border: 1px solid #232323;
     border-radius: 3px; }
 
 QDockWidget {
@@ -370,7 +367,7 @@ QDockWidget {
   QDockWidget::title {
     background-color: #2f2f2f;
     padding: 3px;
-    border: 1px solid #242424;
+    border: 1px solid #232323;
     border-bottom: 0px; }
   QDockWidget::close-button {
     image: url(:/icons/cross.svg);

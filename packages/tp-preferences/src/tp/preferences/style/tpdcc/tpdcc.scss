@@ -1,10 +1,25 @@
 @import "../definitions";
 
+/* tp/qt/widgets/buttons.py */
+
+BaseButton {
+    background-color: transparent;
+    border: 0 solid transparent;
+
+  &:hover {
+    background-color: transparent;
+  }
+}
+
 /* tp/qt/widgets/frameless.py */
 FramelessTitleBar
 {
   border-radius: $frameless-round-size $frameless-round-size 0 0;
   background-color: $dynamic-black-color;
+
+  QPushButton {
+    background-color: $dynamic-black-color;
+  }
 }
 
 /* tp/qt/widgets/dividers.py */
@@ -26,84 +41,156 @@ HorizontalLine
 
 /* tp/qt/widgets/labels.py */
 
-BaseLabel
-{
-    /*padding: 2px;*/
-    background-color: transparent;
-    /*font-size: @font_size_base@unit;*/
-    color: $primary-text-color;
-    /*font-weight: 400;*/
-}
+BaseLabel {
+  background-color: transparent;
+  color: $primary-text-color;
 
-BaseLabel[theme_level="1"]
-{
+  &[theme_level="1"] {
     font-size: $h1-size;
     font-weight: 500;
-    color: $title_color;
-}
-BaseLabel[theme_level="2"]
-{
+    color: $title-color;
+  }
+
+  &[theme_level="2"] {
     font-size: $h2-size;
     font-weight: 500;
-    color: $title_color;
-}
-BaseLabel[theme_level="3"]
-{
+    color: $title-color;
+  }
+
+  &[theme_level="3"] {
     font-size: $h3-size;
     font-weight: 500;
-    color: $title_color;
-}
-BaseLabel[theme_level="4"]
-{
+    color: $title-color;
+  }
+
+  &[theme_level="4"] {
     font-size: $h4-size;
     font-weight: 500;
-    color: $title_color;
-}
+    color: $title-color;
+  }
 
-BaseLabel[theme_underline=true]
-{
+  &[theme_underline=true] {
     text-decoration: underline;
-}
+  }
 
-BaseLabel[theme_delete=true]
-{
+  &[theme_delete=true] {
     text-decoration: line-through;
-}
+  }
 
-BaseLabel[theme_strong=true]
-{
+  &[theme_strong=true] {
     font-weight: bold;
-}
+  }
 
-BaseLabel[theme_code=true]
-{
+  &[theme_code=true] {
     background-color: $background-out-color;
     border: 1px solid $border-color;
-}
+  }
 
-BaseLabel[theme_mark=true]
-{
+  &[theme_mark=true] {
     background-color: $warning1-color;
-}
+  }
 
-BaseLabel[theme_type=danger]
-{
+  &[theme_type=danger] {
     color: $error6-color;
-}
+  }
 
-BaseLabel[theme_type=warning]
-{
+  &[theme_type=warning] {
     color: $warning6-color;
-}
+  }
 
-BaseLabel[theme_type=secondary]
-{
+  &[theme_type=secondary] {
     color: $secondary-text-color;
+  }
+
+  &:disabled {
+    color: $disable-color;
+  }
 }
 
-BaseLabel:disabled
+
+/* tp/qt/widgets/stacks.py */
+StackHiderWidget {
+    background-color: $background-color;
+    border-radius: 1px;
+
+      &#selected {
+        border-color: transparent $primary-color transparent transparent;
+  }
+}
+
+StackItem {
+  #title {
+    background-color: $stack-item-background-color;
+
+    &:hover {
+      border: 0px solid transparent;
+      background-color: $hover-background-color;
+    }
+  }
+
+  .QToolButton {
+    background-color: transparent;
+    border-color: transparent;
+  }
+}
+
+StackTitleFrame {
+  &::lineEdit {
+    background-color: transparent;
+    font-weight: bold;
+    color: $stack-title-color;
+    font-family: "Roboto";
+
+    &#disabled {
+      color: $stack-title-disabled-color;
+    }
+  }
+}
+
+LineClickEdit {
+  font-weight: bold;
+  color: $stack-title-color;
+  font-family: "Roboto";
+}
+
+/* tp/tools/hub/widgets/toolpanel/base.py */
+
+BaseToolPanelWidget {
+    font-weight: bold;
+    color: $stack-title-color;
+    font-family: 'Roboto'
+}
+
+ToolsetToolBar{
+    background-color: transparent;
+}
+
+/* tp/tools/hub/widgets/toolpanelstree.py */
+
+ToolPanelWidgetTreeItem QPushButton,
 {
-    color:$disable-color;
-    /*border: 2px dashed @disable_color;*/
-    /*background-color: @background_in_color;*/
+    padding: 3px;
+    border: 0 solid transparent;
+    background-color: transparent;
+    border-radius: 1px;
+}
+
+
+/* tp/qt/widgets/groupedtreewidget.py */
+
+ItemWidgetLabel {
+    padding: 2px 0px;
+    font-size: $font-size-base;
+}
+
+/* tp/qt/widgets/flowtoolbar.py */
+
+FlowToolBar {
+  background-color: $dynamic-black-color;
+
+  QPushButton {
+    padding: 3px;
+    border: 0 solid transparent;
+    border-radius: 1px;
+  }
 }

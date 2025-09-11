@@ -58,11 +58,11 @@ QWidget
   font-family: $font-family;
 }
 
-QFrame
-{
-  background-color: $verified-black-color;
-  //border-style: transparent;    with this we lone HLine, VLine display
-}
+//QFrame
+//{
+//  background-color: $verified-black-color;
+//  //border-style: transparent;    with this we lone HLine, VLine display
+//}
 
 QGroupBox
 {

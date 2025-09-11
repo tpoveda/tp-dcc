@@ -1,7 +1,16 @@
+/* tp/qt/widgets/buttons.py */
+BaseButton {
+  background-color: transparent;
+  border: 0 solid transparent; }
+  BaseButton:hover {
+    background-color: transparent; }
+
 /* tp/qt/widgets/frameless.py */
 FramelessTitleBar {
   border-radius: 2px 2px 0 0;
   background-color: #1e1e1e; }
+  FramelessTitleBar QPushButton {
+    background-color: #1e1e1e; }
 
 /* tp/qt/widgets/dividers.py */
 LabelDivider {
@@ -18,58 +27,99 @@ HorizontalLine {
 
 /* tp/qt/widgets/labels.py */
 BaseLabel {
-  /*padding: 2px;*/
   background-color: transparent;
-  /*font-size: @font_size_base@unit;*/
-  color: #d9d9d9;
-  /*font-weight: 400;*/ }
+  color: #d9d9d9; }
+  BaseLabel[theme_level="1"] {
+    font-size: 24.39pt pt;
+    font-weight: 500;
+    color: #ffffff; }
+  BaseLabel[theme_level="2"] {
+    font-size: 19.08pt pt;
+    font-weight: 500;
+    color: #ffffff; }
+  BaseLabel[theme_level="3"] {
+    font-size: 15.39pt pt;
+    font-weight: 500;
+    color: #ffffff; }
+  BaseLabel[theme_level="4"] {
+    font-size: 12.69pt pt;
+    font-weight: 500;
+    color: #ffffff; }
+  BaseLabel[theme_underline=true] {
+    text-decoration: underline; }
+  BaseLabel[theme_delete=true] {
+    text-decoration: line-through; }
+  BaseLabel[theme_strong=true] {
+    font-weight: bold; }
+  BaseLabel[theme_code=true] {
+    background-color: #494949;
+    border: 1px solid #1e1e1e; }
+  BaseLabel[theme_mark=true] {
+    background-color: rgba(250, 173, 20, 0.75); }
+  BaseLabel[theme_type=danger] {
+    color: #a3040d; }
+  BaseLabel[theme_type=warning] {
+    color: #a06b02; }
+  BaseLabel[theme_type=secondary] {
+    color: #a6a6a6; }
+  BaseLabel:disabled {
+    color: #737373; }
 
-BaseLabel[theme_level="1"] {
-  font-size: 24.39pt pt;
-  font-weight: 500;
-  color: #ffffff; }
+/* tp/qt/widgets/stacks.py */
+StackHiderWidget {
+  background-color: #323232;
+  border-radius: 1px; }
+  StackHiderWidget#selected {
+    border-color: transparent #0070e0 transparent transparent; }
 
-BaseLabel[theme_level="2"] {
-  font-size: 19.08pt pt;
-  font-weight: 500;
-  color: #ffffff; }
+StackItem #title {
+  background-color: #232323; }
+  StackItem #title:hover {
+    border: 0px solid transparent;
+    background-color: #252525; }
 
-BaseLabel[theme_level="3"] {
-  font-size: 15.39pt pt;
-  font-weight: 500;
-  color: #ffffff; }
+StackItem .QToolButton {
+  background-color: transparent;
+  border-color: transparent; }
 
-BaseLabel[theme_level="4"] {
-  font-size: 12.69pt pt;
-  font-weight: 500;
-  color: #ffffff; }
+StackTitleFrame::lineEdit {
+  background-color: transparent;
+  font-weight: bold;
+  color: #a6a6a6;
+  font-family: "Roboto"; }
+  StackTitleFrame::lineEdit#disabled {
+    color: #8f8f8f; }
 
-BaseLabel[theme_underline=true] {
-  text-decoration: underline; }
+LineClickEdit {
+  font-weight: bold;
+  color: #a6a6a6;
+  font-family: "Roboto"; }
 
-BaseLabel[theme_delete=true] {
-  text-decoration: line-through; }
+/* tp/tools/hub/widgets/toolpanel/base.py */
+BaseToolPanelWidget {
+  font-weight: bold;
+  color: #a6a6a6;
+  font-family: 'Roboto'; }
 
-BaseLabel[theme_strong=true] {
-  font-weight: bold; }
+ToolsetToolBar {
+  background-color: transparent; }
 
-BaseLabel[theme_code=true] {
-  background-color: #494949;
-  border: 1px solid #1e1e1e; }
+/* tp/tools/hub/widgets/toolpanelstree.py */
+ToolPanelWidgetTreeItem QPushButton {
+  padding: 3px;
+  border: 0 solid transparent;
+  background-color: transparent;
+  border-radius: 1px; }
 
-BaseLabel[theme_mark=true] {
-  background-color: rgba(250, 173, 20, 0.75); }
+/* tp/qt/widgets/groupedtreewidget.py */
+ItemWidgetLabel {
+  padding: 2px 0px;
+  font-size: 9pt; }
 
-BaseLabel[theme_type=danger] {
-  color: #a3040d; }
-
-BaseLabel[theme_type=warning] {
-  color: #a06b02; }
-
-BaseLabel[theme_type=secondary] {
-  color: #a6a6a6; }
-
-BaseLabel:disabled {
-  color: #737373;
-  /*border: 2px dashed @disable_color;*/
-  /*background-color: @background_in_color;*/ }
+/* tp/qt/widgets/flowtoolbar.py */
+FlowToolBar {
+  background-color: #1e1e1e; }
+  FlowToolBar QPushButton {
+    padding: 3px;
+    border: 0 solid transparent;
+    border-radius: 1px; }

@@ -19,7 +19,7 @@ QMainWindow {
 
 QMainWindow::separator {
   background-color: #353535;
-  border: 1px solid #242424;
+  border: 1px solid #232323;
   border-radius: 2px; }
 
 QMainWindow::separator:hover {
@@ -45,9 +45,6 @@ QWidget {
   background-color: #151515;
   color: #d9d9d9;
   font-family: "Roboto"; }
-
-QFrame {
-  background-color: #242424; }
 
 QGroupBox {
   padding-top: 20px;
@@ -384,7 +381,7 @@ QTabBar::tab {
   background-color: transparent;
   padding: 5px;
   margin-right: 2px;
-  border: 1px solid #242424;
+  border: 1px solid #232323;
   border-bottom: 0px;
   border-top-left-radius: 3px;
   border-top-right-radius: 3px; }
@@ -404,10 +401,10 @@ QTabBar::tab:left, QTabBar::tab:right {
   min-height: 60px; }
 
 QTabBar::tab:hover {
-  background-color: #242424; }
+  background-color: #232323; }
 
 QTabBar::tab:selected {
-  background-color: #242424;
+  background-color: #232323;
   border-top: 1px solid #0070e0; }
 
 QTabBar::indicator {
@@ -427,7 +424,7 @@ QTabWidget {
   border: none; }
 
 QTabWidget:pane {
-  border: 1px solid #242424;
+  border: 1px solid #232323;
   border-radius: 3px; }
 
 QDockWidget {
@@ -441,7 +438,7 @@ QDockWidget {
 QDockWidget::title {
   background-color: #2f2f2f;
   padding: 3px;
-  border: 1px solid #242424;
+  border: 1px solid #232323;
   border-bottom: 0px; }
 
 QDockWidget::close-button {
@@ -473,9 +470,20 @@ QToolBox::tab {
 QToolBox::tab:selected {
   image: url(:/icons/triangle-down.svg); }
 
+/* tp/qt/widgets/buttons.py */
+BaseButton {
+  background-color: transparent;
+  border: 0 solid transparent; }
+
+BaseButton:hover {
+  background-color: transparent; }
+
 /* tp/qt/widgets/frameless.py */
 FramelessTitleBar {
   border-radius: 2px 2px 0 0;
+  background-color: #1e1e1e; }
+
+FramelessTitleBar QPushButton {
   background-color: #1e1e1e; }
 
 /* tp/qt/widgets/dividers.py */
@@ -493,11 +501,8 @@ HorizontalLine {
 
 /* tp/qt/widgets/labels.py */
 BaseLabel {
-  /*padding: 2px;*/
   background-color: transparent;
-  /*font-size: @font_size_base@unit;*/
-  color: #d9d9d9;
-  /*font-weight: 400;*/ }
+  color: #d9d9d9; }
 
 BaseLabel[theme_level="1"] {
   font-size: 24.39pt pt;
@@ -545,6 +550,67 @@ BaseLabel[theme_type=secondary] {
   color: #a6a6a6; }
 
 BaseLabel:disabled {
-  color: #737373;
-  /*border: 2px dashed @disable_color;*/
-  /*background-color: @background_in_color;*/ }
+  color: #737373; }
+
+/* tp/qt/widgets/stacks.py */
+StackHiderWidget {
+  background-color: #323232;
+  border-radius: 1px; }
+
+StackHiderWidget#selected {
+  border-color: transparent #0070e0 transparent transparent; }
+
+StackItem #title {
+  background-color: #232323; }
+
+StackItem #title:hover {
+  border: 0px solid transparent;
+  background-color: #252525; }
+
+StackItem .QToolButton {
+  background-color: transparent;
+  border-color: transparent; }
+
+StackTitleFrame::lineEdit {
+  background-color: transparent;
+  font-weight: bold;
+  color: #a6a6a6;
+  font-family: "Roboto"; }
+
+StackTitleFrame::lineEdit#disabled {
+  color: #8f8f8f; }
+
+LineClickEdit {
+  font-weight: bold;
+  color: #a6a6a6;
+  font-family: "Roboto"; }
+
+/* tp/tools/hub/widgets/toolpanel/base.py */
+BaseToolPanelWidget {
+  font-weight: bold;
+  color: #a6a6a6;
+  font-family: 'Roboto'; }
+
+ToolsetToolBar {
+  background-color: transparent; }
+
+/* tp/tools/hub/widgets/toolpanelstree.py */
+ToolPanelWidgetTreeItem QPushButton {
+  padding: 3px;
+  border: 0 solid transparent;
+  background-color: transparent;
+  border-radius: 1px; }
+
+/* tp/qt/widgets/groupedtreewidget.py */
+ItemWidgetLabel {
+  padding: 2px 0px;
+  font-size: 9pt; }
+
+/* tp/qt/widgets/flowtoolbar.py */
+FlowToolBar {
+  background-color: #1e1e1e; }
+
+FlowToolBar QPushButton {
+  padding: 3px;
+  border: 0 solid transparent;
+  border-radius: 1px; }
