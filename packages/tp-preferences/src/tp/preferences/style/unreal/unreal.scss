@@ -18,7 +18,7 @@ QMainWindow
   &::separator {
     background-color: $jet-color;            // subtle base
     border: 1px solid $verified-black-color; // blends with dark UI
-    border-radius: 3px;                       // modern rounded grip
+    border-radius: 2px;                       // modern rounded grip
   }
 
   // Hover feedback
@@ -29,19 +29,19 @@ QMainWindow
 
   // Orientation-specific sizing and spacing
   &::separator:vertical {
-    width: 6px;
+    width: 4px;
   }
 
   &::separator:horizontal {
-    height: 6px;
+    height: 4px;
   }
 
   // Slightly enlarge on hover to improve grab-ability
   &::separator:hover:vertical {
-    width: 8px;
+    width: 5px;
   }
   &::separator:hover:horizontal {
-    height: 8px;
+    height: 5px;
   }
 
 }

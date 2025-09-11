@@ -20,23 +20,23 @@ QMainWindow {
 QMainWindow::separator {
   background-color: #353535;
   border: 1px solid #242424;
-  border-radius: 3px; }
+  border-radius: 2px; }
 
 QMainWindow::separator:hover {
   background-color: #0664c3;
   border-color: #0664c3; }
 
 QMainWindow::separator:vertical {
-  width: 6px; }
+  width: 4px; }
 
 QMainWindow::separator:horizontal {
-  height: 6px; }
+  height: 4px; }
 
 QMainWindow::separator:hover:vertical {
-  width: 8px; }
+  width: 5px; }
 
 QMainWindow::separator:hover:horizontal {
-  height: 8px; }
+  height: 5px; }
 
 #centralwidget {
   background-color: #151515; }
@@ -408,7 +408,7 @@ QTabBar::tab:hover {
 
 QTabBar::tab:selected {
   background-color: #242424;
-  border-top: 1px solid #bea064; }
+  border-top: 1px solid #0070e0; }
 
 QTabBar::indicator {
   width: 5px;

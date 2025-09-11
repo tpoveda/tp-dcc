@@ -1365,7 +1365,7 @@ class DagNode(DGNode):
     def setTranslation(
         self,
         translation: OpenMaya.MVector | Iterable[float, float, float],
-        space: OpenMaya.MSpace | None = None,
+        space: OpenMaya.MSpace | int | None = None,
         scene_units: bool = False,
     ):
         """Sets the translation component of this node.
