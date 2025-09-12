@@ -594,6 +594,10 @@ class FramelessWindow(QWidget):
 
         super().__init__()
 
+        # If no name is provided, generate a unique name using the class
+        # name and a UUID.
+        name = name or title or self.__class__.__name__ + str(uuid.uuid4())
+
         FramelessWindow.delete_instances(name or title)
 
         self.__class__._INSTANCES.append(weakref.proxy(self))
