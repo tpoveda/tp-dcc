@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import NamedTuple, Type
+from typing import NamedTuple, Type, TypedDict, Unpack
 
 from Qt.QtCore import Qt, Signal, QObject, QPoint, QModelIndex
 from Qt.QtWidgets import QApplication
@@ -30,6 +30,79 @@ class MouseSlideEvent(NamedTuple):
     dy: int
     index: QModelIndex
     modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers
+
+
+class SliderSettings(TypedDict, total=False):
+    """Settings dictionary for MouseDragSlider."""
+
+    # Behavior.
+    direction: Direction
+    threshold: int
+    step: int
+    pixel_range: int | None
+
+    # Mouse/keyboard.
+    mouse_button: Qt.MouseButton
+    slow_modifier: Qt.KeyboardModifier
+    fast_modifier: Qt.KeyboardModifier
+
+    # Value types & clamps.
+    num_type: Type[int | float]
+    min_value: float | None
+    max_value: float | None
+    min_value_xy: tuple[float | None, float | None]
+    max_value_xy: tuple[float | None, float | None]
+
+    # Speeds (scalar + per-axis overrides).
+    speed: float
+    slow_speed: float
+    fast_speed: float
+    speed_xy: tuple[float | None, float | None]
+    slow_speed_xy: tuple[float | None, float | None]
+    fast_speed_xy: tuple[float | None, float | None]
+
+
+DEFAULT_SETTINGS: SliderSettings = {
+    "direction": Direction.DirectionalClamp,
+    "threshold": 3,
+    "step": 10,
+    "pixel_range": None,
+    "mouse_button": Qt.MiddleButton,
+    "slow_modifier": Qt.ControlModifier,
+    "fast_modifier": Qt.ShiftModifier,
+    "num_type": float,
+    "min_value": None,
+    "max_value": None,
+    "min_value_xy": (None, None),
+    "max_value_xy": (None, None),
+    "slow_speed": 0.01,
+    "speed": 0.1,
+    "fast_speed": 1.0,
+    "slow_speed_xy": (None, None),
+    "speed_xy": (None, None),
+    "fast_speed_xy": (None, None),
+}
+
+
+def _pair2(
+    v: tuple[float | None, float | None] | None,
+    fallback: tuple[float | None, float | None],
+) -> tuple[float | None, float | None]:
+    """Normalize to a 2-tuple, falling back element-wise.
+
+    Args:
+        v: The input value.
+        fallback: The fallback value.
+    """
+
+    if v is None:
+        return fallback[0], fallback[1]
+    x = v[0] if len(v) > 0 else None
+    y = v[1] if len(v) > 1 else None
+    return (
+        x if x is not None else fallback[0],
+        y if y is not None else fallback[1],
+    )
 
 
 class MouseDragSlider(QObject):
@@ -81,24 +154,7 @@ class MouseDragSlider(QObject):
         self,
         parent: QObject,
         directions: Direction = Direction.DirectionalClamp,
-        *,
-        min_value: float | None = None,
-        max_value: float | None = None,
-        num_type: Type[int | float] = float,
-        step: int = 10,
-        pixel_range: int | None = None,
-        slow_speed: float = 0.01,
-        speed: float = 0.1,
-        fast_speed: float = 1.0,
-        slow_speed_xy: tuple[float | None, float | None] = (None, None),
-        speed_xy: tuple[float | None, float | None] = (None, None),
-        fast_speed_xy: tuple[float | None, float | None] = (None, None),
-        min_value_xy: tuple[float | None, float | None] = (None, None),
-        max_value_xy: tuple[float | None, float | None] = (None, None),
-        mouse_button: Qt.MouseButton = Qt.MiddleButton,
-        threshold: int = 3,
-        slow_modifier: Qt.KeyboardModifier = Qt.ControlModifier,
-        fast_modifier: Qt.KeyboardModifier = Qt.ShiftModifier,
+        **settings: Unpack[SliderSettings],
     ) -> None:
         super().__init__(parent=parent)
 
@@ -112,94 +168,195 @@ class MouseDragSlider(QObject):
         self._modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers = Qt.NoModifier
         self._index: QModelIndex | None = None
 
+        self._settings: SliderSettings = {}
+
         # Config
-        self.set_settings(
-            directions=directions,
-            min_value=min_value,
-            max_value=max_value,
-            num_type=num_type,
-            step=step,
-            pixel_range=pixel_range,
-            slow_speed=slow_speed,
-            speed=speed,
-            fast_speed=fast_speed,
-            slow_speed_xy=slow_speed_xy,
-            speed_xy=speed_xy,
-            fast_speed_xy=fast_speed_xy,
-            min_value_xy=min_value_xy,
-            max_value_xy=max_value_xy,
-            mouse_button=mouse_button,
-            threshold=threshold,
-            slow_modifier=slow_modifier,
-            fast_modifier=fast_modifier,
-        )
+        self.set_settings(**settings)
 
     # region === Settings === #
 
-    # noinspection PyAttributeOutsideInit
-    def set_settings(
-        self,
-        *,
-        directions: Direction = Direction.DirectionalClamp,
-        min_value: float | None = None,
-        max_value: float | None = None,
-        num_type=float,
-        step: int = 10,
-        pixel_range: int | None = None,
-        threshold: int = 3,
-        mouse_button: Qt.MouseButton = Qt.MiddleButton,
-        slow_modifier: Qt.KeyboardModifier = Qt.ControlModifier,
-        fast_modifier: Qt.KeyboardModifier = Qt.ShiftModifier,
-        slow_speed: float = 0.01,
-        speed: float = 0.1,
-        fast_speed: float = 1.0,
-        slow_speed_xy: tuple[float | None, float | None] = (None, None),
-        speed_xy: tuple[float | None, float | None] = (None, None),
-        fast_speed_xy: tuple[float | None, float | None] = (None, None),
-        min_value_xy: tuple[float | None, float | None] = (None, None),
-        max_value_xy: tuple[float | None, float | None] = (None, None),
-    ) -> None:
+    def set_settings(self, **settings: Unpack[SliderSettings]) -> None:
         """Apply settings. Safe to call at runtime."""
-        self._threshold = threshold
-        self._min_value = min_value
-        self._max_value = max_value
-        self._min_value_x = (
-            min_value_xy[0] if min_value_xy[0] is not None else min_value
-        )
-        self._max_value_x = (
-            max_value_xy[0] if max_value_xy[0] is not None else max_value
-        )
-        self._min_value_y = (
-            min_value_xy[1] if min_value_xy[1] is not None else min_value
-        )
-        self._max_value_y = (
-            max_value_xy[1] if max_value_xy[1] is not None else max_value
-        )
-        self._direction = directions
-        self._mouse_button = mouse_button
-        self._pixel_range = pixel_range
-        self._step = step
-        self._num_type = num_type
 
-        # Speeds (XY overrides fall back to scalar variants).
-        self._slow_speed_x = (
-            slow_speed_xy[0] if slow_speed_xy[0] is not None else slow_speed
-        )
-        self._normal_speed_x = speed_xy[0] if speed_xy[0] is not None else speed
-        self._fast_speed_x = (
-            fast_speed_xy[0] if fast_speed_xy[0] is not None else fast_speed
-        )
+        self._settings = {**DEFAULT_SETTINGS, **settings}
 
-        self._slow_speed_y = (
-            slow_speed_xy[1] if slow_speed_xy[1] is not None else slow_speed
-        )
-        self._normal_speed_y = speed_xy[1] if speed_xy[1] is not None else speed
-        self._fast_speed_y = (
-            fast_speed_xy[1] if fast_speed_xy[1] is not None else fast_speed
-        )
+    @property
+    def direction(self) -> Direction:
+        """The current direction mode."""
 
-        self._fast_modifier = fast_modifier
-        self._slow_modifier = slow_modifier
+        return self._settings["direction"]
+
+    @property
+    def threshold(self) -> int:
+        """The movement threshold in pixels before dragging starts."""
+
+        return self._settings["threshold"]
+
+    @property
+    def step(self) -> int:
+        """The pixel step for snapping."""
+
+        return self._settings["step"]
+
+    @property
+    def pixel_range(self) -> int | None:
+        """The pixel range for clamping the drag position."""
+
+        return self._settings["pixel_range"]
+
+    @property
+    def mouse_button(self) -> Qt.MouseButton:
+        """The mouse button to use for dragging."""
+
+        return self._settings["mouse_button"]
+
+    @property
+    def slow_modifier(self) -> Qt.KeyboardModifier:
+        """The keyboard modifier for slow speed."""
+
+        return self._settings["slow_modifier"]
+
+    @property
+    def fast_modifier(self) -> Qt.KeyboardModifier:
+        """The keyboard modifier for fast speed."""
+
+        return self._settings["fast_modifier"]
+
+    @property
+    def num_type(self) -> Type[int | float]:
+        """The numeric type for emitted values."""
+
+        return self._settings["num_type"]
+
+    @property
+    def min_value(self) -> float | None:
+        """The minimum value for both axes."""
+
+        return self._settings["min_value"]
+
+    @property
+    def max_value(self) -> float | None:
+        """The maximum value for both axes."""
+
+        return self._settings["max_value"]
+
+    @property
+    def min_value_xy(self) -> tuple[float | None, float | None]:
+        """The minimum values for X and Y."""
+
+        return self._settings["min_value_xy"]
+
+    @property
+    def max_value_xy(self) -> tuple[float | None, float | None]:
+        """The maximum values for X and Y."""
+
+        return self._settings["max_value_xy"]
+
+    @property
+    def min_value_x(self) -> float | None:
+        """The minimum X value."""
+
+        return _pair2(
+            self._settings["min_value_xy"], (self._settings["min_value"], None)
+        )[0]
+
+    @property
+    def max_value_x(self) -> float | None:
+        """The maximum X value."""
+
+        return _pair2(
+            self._settings["max_value_xy"], (self._settings["max_value"], None)
+        )[0]
+
+    @property
+    def min_value_y(self) -> float | None:
+        """The minimum Y value."""
+
+        return _pair2(
+            self._settings["min_value_xy"], (None, self._settings["min_value"])
+        )[1]
+
+    @property
+    def max_value_y(self) -> float | None:
+        """The maximum Y value."""
+
+        return _pair2(
+            self._settings["max_value_xy"], (None, self._settings["max_value"])
+        )[1]
+
+    @property
+    def speed(self) -> float:
+        """The normal speed scalar."""
+
+        return self._settings["speed"]
+
+    @property
+    def speed_x(self) -> float:
+        """The normal speed for X."""
+
+        return _pair2(self._settings["speed_xy"], (self._settings["speed"], None))[0]
+
+    @property
+    def speed_y(self) -> float:
+        """The normal speed for Y."""
+
+        return _pair2(self._settings["speed_xy"], (None, self._settings["speed"]))[1]
+
+    @property
+    def slow_speed(self) -> float:
+        """The slow speed scalar."""
+
+        return self._settings["slow_speed"]
+
+    @property
+    def slow_speed_xy(self) -> tuple[float | None, float | None]:
+        """The slow speed for X and Y."""
+
+        return self._settings["slow_speed_xy"]
+
+    @property
+    def slow_speed_x(self) -> float:
+        """The slow speed for X."""
+
+        return _pair2(
+            self._settings["slow_speed_xy"], (self._settings["slow_speed"], None)
+        )[0]
+
+    @property
+    def slow_speed_y(self) -> float:
+        """The slow speed for Y."""
+
+        return _pair2(
+            self._settings["slow_speed_xy"], (None, self._settings["slow_speed"])
+        )[1]
+
+    @property
+    def fast_speed(self) -> float:
+        """The fast speed scalar."""
+
+        return self._settings["fast_speed"]
+
+    @property
+    def fast_speed_xy(self) -> tuple[float | None, float | None]:
+        """The fast speed for X and Y."""
+
+        return self._settings["fast_speed_xy"]
+
+    @property
+    def fast_speed_x(self) -> float:
+        """The fast speed for X."""
+
+        return _pair2(
+            self._settings["fast_speed_xy"], (self._settings["fast_speed"], None)
+        )[0]
+
+    @property
+    def fast_speed_y(self) -> float:
+        """The fast speed for Y."""
+
+        return _pair2(
+            self._settings["fast_speed_xy"], (None, self._settings["fast_speed"])
+        )[1]
 
     # endregion
 
@@ -212,7 +369,7 @@ class MouseDragSlider(QObject):
             event: Forwarded mouse event.
         """
 
-        if (event.button() & self._mouse_button) != self._mouse_button:
+        if (event.button() & self.mouse_button) != self.mouse_button:
             return
 
         index = self.parent().indexAt(event.pos())  # type: ignore[attr-defined]
@@ -253,7 +410,7 @@ class MouseDragSlider(QObject):
             event: Forwarded mouse event.
         .
         """
-        if (event.button() & self._mouse_button) != self._mouse_button:
+        if (event.button() & self.mouse_button) != self.mouse_button:
             return
 
         if self._pressed_pos is not None:
@@ -273,8 +430,8 @@ class MouseDragSlider(QObject):
         """Update the current keyboard modifiers state."""
 
         kb = QApplication.keyboardModifiers()
-        self._fast = kb == self._fast_modifier
-        self._slow = kb == self._slow_modifier
+        self._fast = kb == self.fast_modifier
+        self._slow = kb == self.slow_modifier
         self._modifiers = kb
 
     def _calculate_direction(self, delta: QPoint) -> Direction | None:
@@ -288,7 +445,7 @@ class MouseDragSlider(QObject):
         """
 
         if (
-            self._rough_distance(delta) <= self._threshold
+            self._rough_distance(delta) <= self.threshold
             or self._current_direction is not None
         ):
             return None
@@ -296,22 +453,22 @@ class MouseDragSlider(QObject):
         abs_x = abs(delta.x())
         abs_y = abs(delta.y())
 
-        if self._direction == Direction.DirectionalClamp:
+        if self.direction == Direction.DirectionalClamp:
             if abs_x >= abs_y:
                 self.parent().setCursor(QtCore.Qt.SizeHorCursor)  # type: ignore[attr-defined]
                 return Direction.Horizontal
             self.parent().setCursor(QtCore.Qt.SizeVerCursor)  # type: ignore[attr-defined]
             return Direction.Vertical
 
-        if self._direction == Direction.Horizontal:
+        if self.direction == Direction.Horizontal:
             self.parent().setCursor(QtCore.Qt.SizeHorCursor)  # type: ignore[attr-defined]
             return Direction.Horizontal
 
-        if self._direction == Direction.Vertical:
+        if self.direction == Direction.Vertical:
             self.parent().setCursor(QtCore.Qt.SizeVerCursor)  # type: ignore[attr-defined]
             return Direction.Vertical
 
-        if self._direction == Direction.Both:
+        if self.direction == Direction.Both:
             self.parent().setCursor(QtCore.Qt.SizeAllCursor)  # type: ignore[attr-defined]
             return Direction.Horizontal if abs_x >= abs_y else Direction.Vertical
 
@@ -329,7 +486,7 @@ class MouseDragSlider(QObject):
         if self._current_direction is None:
             return
 
-        step = dpi.dpi_scale(self._step)
+        step = dpi.dpi_scale(self.step)
         # Snap to step and clamp by pixelRange.
         pos_x = self._clamp_pos(int(delta.x() * (1.0 / step)) * step)
         # Convert from Qt to Cartesian Y (invert), then snap/clamp.
@@ -347,7 +504,7 @@ class MouseDragSlider(QObject):
         val_y = self._clamp_value_y(val_y)
 
         payload = MouseSlideEvent(
-            value=(self._num_type(val_x), self._num_type(val_y)),
+            value=(self.num_type(val_x), self.num_type(val_y)),
             direction=self._current_direction,
             x=pos_x,
             y=pos_y,
@@ -370,10 +527,10 @@ class MouseDragSlider(QObject):
             The clamped X value.
         """
 
-        if self._min_value_x is not None:
-            x = max(self._min_value_x, x)
-        if self._max_value_x is not None:
-            x = min(self._max_value_x, x)
+        if self.min_value_x is not None:
+            x = max(self.min_value_x, x)
+        if self.max_value_x is not None:
+            x = min(self.max_value_x, x)
         return x
 
     def _clamp_value_y(self, y: float) -> float:
@@ -386,10 +543,10 @@ class MouseDragSlider(QObject):
             The clamped Y value.
         """
 
-        if self._min_value_y is not None:
-            y = max(self._min_value_y, y)
-        if self._max_value_y is not None:
-            y = min(self._max_value_y, y)
+        if self.min_value_y is not None:
+            y = max(self.min_value_y, y)
+        if self.max_value_y is not None:
+            y = min(self.max_value_y, y)
         return y
 
     def _clamp_pos(self, pos: int) -> int:
@@ -402,8 +559,8 @@ class MouseDragSlider(QObject):
             The clamped position.
         """
 
-        if self._pixel_range is not None:
-            pr = dpi.dpi_scale(self._pixel_range)
+        if self.pixel_range is not None:
+            pr = dpi.dpi_scale(self.pixel_range)
             pos = min(max(-pr, pos), pr)
         return pos
 
@@ -418,19 +575,19 @@ class MouseDragSlider(QObject):
             The converted numeric value.
         """
 
-        step = dpi.dpi_scale(self._step)
+        step = dpi.dpi_scale(self.step)
 
         if direction in (Direction.Horizontal, Direction.Both):
             speed = (
-                self._fast_speed_x
+                self.fast_speed_x
                 if self._fast
-                else (self._slow_speed_x if self._slow else self._normal_speed_x)
+                else (self.slow_speed_x if self._slow else self.speed_x)
             )
         else:
             speed = (
-                self._fast_speed_y
+                self.fast_speed_y
                 if self._fast
-                else (self._slow_speed_y if self._slow else self._normal_speed_y)
+                else (self.slow_speed_y if self._slow else self.speed_y)
             )
 
         # keep value invariant w.r.t. `step` choice.
