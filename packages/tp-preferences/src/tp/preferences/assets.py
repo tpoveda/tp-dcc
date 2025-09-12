@@ -108,6 +108,10 @@ class BrowserPreference(AssetPreference):
 
         return [DirectoryPath(path) for path in self._get_browser_folders()]
 
+    def refresh_asset_folders(self, set_active: bool = True, save: bool = True) -> None:
+
+        print('Refreshing asset folders ...')
+
     def _get_browser_folder_roots(self) -> dict[str, str]:
         """Retrieve the browser folder roots from setting file.
 
