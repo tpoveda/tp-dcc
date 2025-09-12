@@ -4,7 +4,7 @@ import typing
 from dataclasses import dataclass, field
 
 if typing.TYPE_CHECKING:
-    from tp.libs.modrig.maya.api import Rig, Module
+    from tp.libs.modrig.maya.api import Rig, ModuleDescriptor
     from tp.tools.modrig.maya.builder.models import RigModel
 
 
@@ -27,7 +27,9 @@ class AddRigEvent:
 
 
 @dataclass
-class OpenModuleEvent:
+class AddModuleEvent:
     rig: Rig
     module_id: str
-    module: Module | None = None
+    name: str | None = None
+    side: str | None = None
+    descriptor: ModuleDescriptor | None = None

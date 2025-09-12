@@ -185,7 +185,7 @@ class MetaModule(MetaBase):
             layer_id: None for layer_id in layer_ids
         }
         for meta_node in self.find_children_by_class_types(layer_ids, depth_limit=1):
-            layers_map[meta_node.id] = meta_node  # type: ignore
+            layers_map[meta_node.ID] = meta_node  # type: ignore
 
         return layers_map
 

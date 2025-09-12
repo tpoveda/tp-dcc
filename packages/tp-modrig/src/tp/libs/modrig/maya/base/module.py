@@ -1051,11 +1051,11 @@ class Module:
             self.logger.debug("Executing `pre_setup_guides` hook...")
             self.pre_setup_guides()
 
-            self.logger.debug("Executing `setup_guides` hook...")
-            self.setup_guides()
-
-            self.logger.debug("Executing `post_setup_guides` hook...")
-            self.post_setup_guides()
+            # self.logger.debug("Executing `setup_guides` hook...")
+            # self.setup_guides()
+            #
+            # self.logger.debug("Executing `post_setup_guides` hook...")
+            # self.post_setup_guides()
 
         except Exception:
             self.logger.error("Failed to setup guides", exc_info=True)

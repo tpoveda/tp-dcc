@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from typing import Unpack
 from collections.abc import Generator
 
 from tp.libs.maya.wrapper import Plug
 from tp.libs.maya.om import attributetypes
 
 from ..layer import MetaLayer
-from ..nodes import GuideNode, SettingsNode
+from ..nodes import GuideNode, SettingsNode, CreateGuideParams
 from ...base import constants
 
 
@@ -364,14 +365,17 @@ class MetaGuidesLayer(MetaLayer):
         )
 
     # noinspection PyShadowingBuiltins
-    def create_guide(self, id: str = "", parent: str | None = None):
-        parent = self.root_transform() if parent is None else self.guide(parent)
+    def create_guide(self, **params: Unpack[CreateGuideParams]):
+        parent = params.get("parent")
+        params["parent"] = (
+            self.root_transform() if parent is None else self.guide(parent)
+        )
 
         guide = GuideNode()
-        guide.create(parent=parent)
+        guide.create(**params)
         self.add_child_guide(guide)
 
-        guide_plug = self.guide_plug_by_id(id)
+        guide_plug = self.guide_plug_by_id(params["id"])
         if guide_plug is None:
             return guide
 

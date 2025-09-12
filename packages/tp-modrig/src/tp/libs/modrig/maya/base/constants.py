@@ -76,6 +76,7 @@ IS_GUIDE_ATTR = "isGuide"
 GUIDE_SHAPE_ATTR = "guideShape"
 GUIDE_PIVOT_SHAPE_ATTR = "pivotShape"
 GUIDE_PIVOT_COLOR_ATTR = "pivotColor"
+GUIDE_PIVOT_SHAPE_TYPE_ATTR = "pivotShapeType"
 GUIDE_SNAP_PIVOT_ATTR = "guideSnapPivot"
 GUIDE_SHAPE_PRIMARY_ATTR = "guideShapePrimary"
 GUIDE_AUTO_ALIGN_AIM_VECTOR_ATTR = "autoAlignAimVector"
@@ -87,6 +88,7 @@ GUIDE_MIRROR_PLANE_ATTR = "mirrorPlane"
 GUIDE_MIRROR_SCALED_ATTR = "mirrorScaled"
 GUIDE_DISPLAY_AXIS_SHAPE_ATTR = "displayAxisShape"
 GUIDE_CONNECTORS_ATTR = "guideConnectors"
+GUIDE_MIRROR_BEHAVIOR_TYPES = ["Behavior", "Relative", "Scale"]
 
 
 # === Module Descriptor Attribute Names ===

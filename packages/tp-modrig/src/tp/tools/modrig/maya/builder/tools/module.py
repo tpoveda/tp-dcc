@@ -22,6 +22,7 @@ class CreateModuleTool(ModRigTool):
         name: str | None = None,
         side: str | None = None,
         descriptor: ModuleDescriptor | None = None,
+        build_guides: bool = True,
     ) -> api.Module | None:
         """Creates a new module in the current rig.
 
@@ -33,6 +34,7 @@ class CreateModuleTool(ModRigTool):
             descriptor: Optional module descriptor to use for the creation
                 of the module. If `None`, the module descriptor will be looked
                 up using the specified module ID.
+            build_guides: Whether to build guides after creating the module.
 
         Returns:
             Created module instance.
@@ -55,7 +57,7 @@ class CreateModuleTool(ModRigTool):
                     "descriptor": descriptor,
                 }
             ],
-            build_guides=True,
+            build_guides=build_guides,
         )
 
         return modules[0] if modules else None

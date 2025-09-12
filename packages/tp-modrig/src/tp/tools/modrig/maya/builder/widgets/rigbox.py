@@ -28,14 +28,14 @@ class RigBoxWidget(QWidget):
     def disable_edit_buttons(self) -> None:
         """Disables the edit buttons."""
 
-        self._rename_button.setEnabled(False)
-        self._delete_button.setEnabled(False)
+        self._rename_rig_button.setEnabled(False)
+        self._delete_rig_button.setEnabled(False)
 
     def enable_edit_buttons(self) -> None:
         """Enables the edit buttons."""
 
-        self._rename_button.setEnabled(True)
-        self._delete_button.setEnabled(True)
+        self._rename_rig_button.setEnabled(True)
+        self._delete_rig_button.setEnabled(True)
 
     def set_rigs(self, rig_names: list[str]) -> None:
         """Sets the available rigs in the combo box.
@@ -64,19 +64,19 @@ class RigBoxWidget(QWidget):
         self._rig_combo = QComboBox(parent=self)
         self._rig_combo.setMinimumWidth(qt.dpi_scale(150))
 
-        self._create_button = qt.factory.styled_button(
+        self._create_rig_button = qt.factory.styled_button(
             button_icon=qt.icon("plus_circle"),
             style=qt.uiconsts.ButtonStyles.TransparentBackground,
             tooltip="Create New Rig",
             theme_updates=False,
         )
-        self._rename_button = qt.factory.styled_button(
+        self._rename_rig_button = qt.factory.styled_button(
             button_icon=qt.icon("pencil"),
             style=qt.uiconsts.ButtonStyles.TransparentBackground,
             tooltip="Rename Rig",
             theme_updates=False,
         )
-        self._delete_button = qt.factory.styled_button(
+        self._delete_rig_button = qt.factory.styled_button(
             button_icon=qt.icon("cancel_circle"),
             style=qt.uiconsts.ButtonStyles.TransparentBackground,
             tooltip="Delete Rig",
@@ -92,18 +92,24 @@ class RigBoxWidget(QWidget):
         self.setLayout(main_layout)
 
         main_layout.addWidget(self._rig_combo)
-        main_layout.addWidget(self._create_button)
-        main_layout.addWidget(self._rename_button)
-        main_layout.addWidget(self._delete_button)
+        main_layout.addWidget(self._create_rig_button)
+        main_layout.addWidget(self._rename_rig_button)
+        main_layout.addWidget(self._delete_rig_button)
         main_layout.setStretchFactor(self._rig_combo, 5)
 
     def _setup_signals(self) -> None:
         """Set up the signals for the widget."""
 
         self._rig_combo.currentTextChanged.connect(self.rigSelected.emit)
-        self._create_button.leftClicked.connect(self._on_add_rig_button_left_clicked)
-        self._rename_button.leftClicked.connect(self._on_rename_rig_button_left_clicked)
-        self._delete_button.leftClicked.connect(self._on_delete_rig_button_left_clicked)
+        self._create_rig_button.leftClicked.connect(
+            self._on_add_rig_button_left_clicked
+        )
+        self._rename_rig_button.leftClicked.connect(
+            self._on_rename_rig_button_left_clicked
+        )
+        self._delete_rig_button.leftClicked.connect(
+            self._on_delete_rig_button_left_clicked
+        )
 
     def _on_add_rig_button_left_clicked(self) -> None:
         """Callback called when the add rig button is clicked."""

@@ -10,19 +10,19 @@ from Qt.QtWidgets import (
     QWidget,
     QMainWindow,
     QDockWidget,
-    QTabWidget,
+    QMessageBox,
 )
 
 from tp.libs import qt
 from tp.libs.qt.widgets import (
+    Divider,
     OverlayLoadingWidget,
     SlidingOpacityStackedWidget,
 )
 from tp.tools.modrig.maya.builder.plugins.editors.modules_library import (
     ModulesLibraryWidget,
 )
-
-from .widgets import BaseEditorWidget, GuidesEditorWidget
+from tp.tools.modrig.maya.builder.widgets.rigbox import RigBoxWidget
 
 if typing.TYPE_CHECKING:
     from .model import ModuleCreatorModel
@@ -54,12 +54,7 @@ class ModuleCreatorView(QWidget):
             .strong()
         )
         self._editors_widget = QWidget(parent=self)
-        self._editors_tab = QTabWidget(parent=self)
-        self._base_editor = BaseEditorWidget(parent=self)
-        self._guides_editor = GuidesEditorWidget(model=self._model, parent=self)
-        self._editors_tab.addTab(self._base_editor, "Base")
-        self._editors_tab.addTab(self._guides_editor, "Guides")
-        self._editors_tab.setCurrentWidget(self._guides_editor)
+        self._rig_box = RigBoxWidget(parent=self)
 
         self._stack.addWidget(self._no_active_label)
         self._stack.addWidget(self._editors_widget)
@@ -85,17 +80,21 @@ class ModuleCreatorView(QWidget):
 
         editors_layout = qt.factory.vertical_layout()
         self._editors_widget.setLayout(editors_layout)
-        editors_layout.addWidget(self._editors_tab)
+        editors_layout.addWidget(self._rig_box)
+        editors_layout.addWidget(Divider(parent=self))
+        editors_layout.addStretch()
 
         main_layout.addWidget(self._main_window)
 
     def _setup_signals(self):
         """Set up the signals for the view."""
 
-        self._model.listen("current_module", self._on_model_current_module_changed)
-        self._model.listen("editor_mode", self._on_model_editor_mode_changed)
+        self._model.listen("rigs", self._on_model_rigs_changed)
+        self._model.listen("current_rig", self._on_model_current_rig_changed)
 
-        self._editors_tab.currentChanged.connect(self._model.set_editor_mode)
+        self._rig_box.rigSelected.connect(self._model.set_current_rig_by_name)
+        self._rig_box.addRigClicked.connect(self._model.add_rig)
+        self._rig_box.deleteRigClicked.connect(self._on_rig_box_delete_rig_clicked)
         self._modules_library.moduleItemDoubleClicked.connect(self._model.open_module)
 
     # region === Loading ===
@@ -139,25 +138,53 @@ class ModuleCreatorView(QWidget):
 
     # region  === Model Callbacks === #
 
-    def _on_model_current_module_changed(self, module_model: RigModel | None) -> None:
-        """Callback when the current module in the model changes.
+    @loading_decorator
+    def _on_model_rigs_changed(self, rigs: list[RigModel]) -> None:
+        """Callback function called when the rigs in the model change.
 
         Args:
-            module_model: The new current module model.
+            rigs: The new list of rig models.
         """
 
-        if module_model is None:
-            self._stack.setCurrentIndex(0)
+        with qt.block_signals(self._rig_box, children=True):
+            self._rig_box.set_rigs([rig.name for rig in rigs])
+
+    def _on_model_current_rig_changed(self, current_rig: RigModel | None) -> None:
+        """Callback function called when the current rig in the model changes.
+
+        Args:
+            current_rig: The new current rig model, or `None` if no rig is
+                selected.
+        """
+
+        if current_rig is None:
+            self._rig_box.disable_edit_buttons()
         else:
-            self._stack.setCurrentIndex(1)
+            self._rig_box.enable_edit_buttons()
 
-    def _on_model_editor_mode_changed(self, mode: int) -> None:
-        """Callback when the editor mode in the model changes.
-
-        Args:
-            mode: The new editor mode.
-        """
-
-        self._editors_tab.setCurrentIndex(mode)
+            with qt.block_signals(self._rig_box, children=True):
+                self._rig_box.set_current_rig(current_rig.name)
 
     # endregion
+
+    # === UI Callbacks === #
+
+    def _on_rig_box_delete_rig_clicked(self):
+        current_rig = self._model.current_rig
+        if current_rig is None:
+            return
+
+        result = QMessageBox.question(
+            self,
+            f'Delete "{current_rig.name}?"',
+            f'Are you sure you want to delete "{current_rig.name}" rig?',
+            buttons=QMessageBox.Yes | QMessageBox.Cancel,
+        )
+        if result != QMessageBox.Yes:
+            return
+
+        try:
+            self.show_loading_widget()
+            self._model.delete_current_rig()
+        finally:
+            self.hide_loading_widget()

@@ -80,46 +80,25 @@ class ModuleCreatorController(Controller):
 
     @staticmethod
     def refresh_from_scene(event: events.RefreshFromSceneEvent) -> None:
-        """Refreshes the model from the current scene state.
-
-        Args:
-            event: RefreshFromSceneEvent instance.
-        """
-
         event.rigs = list(api.iterate_scene_rigs())
 
-    def add_rig(self, event: events.AddRigEvent) -> None:
-        """Creates a new rig in the scene.
-
-        Args:
-            event: AddRigEvent instance.
-        """
-
+    def add_rig(self, event: events.AddRigEvent):
         event.rig = self.execute_tool("createRig", args={"name": event.name})
 
     def add_module(self, event: events.OpenModuleEvent):
-        event.module = self.execute_tool(
+        self.execute_tool(
             "createModule",
             args={
                 "rig": event.rig,
                 "module_id": event.module_id,
-                "build_guides": False,
+                "name": event.name,
+                "side": event.side,
+                "descriptor": event.descriptor,
             },
         )
 
     @profiler.fn_timer
     def execute_tool(self, tool_id: str, args: dict[str, Any] | None = None) -> Any:
-        """Executes the specified tool with the given arguments.
-
-        Args:
-            tool_id: ID of the tool to execute.
-            args: Dictionary of arguments to pass to the tool's execute method.
-
-        Returns:
-            The result of the tool's execute method, or `None` if the tool
-            could not be found or executed.
-        """
-
         ids = tool_id.split(".")
         variant_id: str | None = None
         if len(ids) > 1:

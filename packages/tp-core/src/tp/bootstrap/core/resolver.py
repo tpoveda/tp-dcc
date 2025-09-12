@@ -413,6 +413,7 @@ class Environment:
         """
 
         import tp
+
         reload(tp)
 
     def _resolve_environment_config_path(self) -> Path:
@@ -449,7 +450,7 @@ class Environment:
             )
             return candidate_path
 
-        # 3. Fallback to default file
+        # 3. Fallback to the default file
         default_path = Path(self._packages_manager.config_path) / "env" / "dev.yaml"
         logger.debug(f"Loading package environment configuration from: {default_path}")
         return default_path
