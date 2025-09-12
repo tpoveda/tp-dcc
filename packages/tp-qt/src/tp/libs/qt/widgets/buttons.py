@@ -524,7 +524,7 @@ class BaseButton(QPushButton, AbstractButton):
     ) -> BaseMenuButtonMenu:
         """Overrides base menu function.
 
-        Gets menu depending on the mouse button pressed.
+        Gets the menu depending on the mouse button pressed.
 
         Args:
             mouse_menu: Mouse button.
