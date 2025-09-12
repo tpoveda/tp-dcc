@@ -236,6 +236,19 @@ def contain_widget_in_screen(widget: QWidget, pos: QPoint | None = None) -> QPoi
     return pos
 
 
+def screen_from_widget(widget: QWidget) -> QScreen:
+    """Return the screen instance that contains the given widget.
+
+    Args:
+        widget: Widget to get the screen from.
+
+    Returns:
+        The screen instance that contains the given widget.
+    """
+
+    return QApplication.screenAt(widget.mapToGlobal(widget.pos()))
+
+
 def update_widget_style(widget: QWidget) -> None:
     """Update object widget style.
 

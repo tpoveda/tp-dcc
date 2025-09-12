@@ -5,8 +5,9 @@ from typing import Type
 from collections.abc import Generator
 
 from loguru import logger
-from Qt.QtCore import Qt
+from Qt.QtCore import Qt, QTimer
 from Qt.QtWidgets import (
+    QApplication,
     QWidget,
     QLabel,
     QTreeWidget,
@@ -197,6 +198,39 @@ class GroupedTreeWidget(QTreeWidget):
                 tree_item.setFlags(self._group_flags)
             elif item_type == GroupedTreeWidget.GroupedTreeItemType.Widget:
                 tree_item.setFlags(self._item_widget_flags)
+
+    # endregion
+
+    # region === Update === #
+
+    def update_tree_widget(self, delay: bool = False) -> None:
+        """Update the tree widget so the row heights are recalculated.
+
+        Notes:
+            - This method is a workaround for a Qt issue where the row heights
+                are not recalculated when the widget is resized or when the
+                contents are changed. This can lead to items cut off or not
+                fully visible.
+
+        Args:
+            delay: Whether to delay the update to the next event loop iteration.
+        """
+
+        def _delay_process() -> None:
+            QApplication.processEvents()
+            self.update_tree_widget(delay=False)
+
+        self.setUpdatesEnabled(False)
+        try:
+            if delay:
+                QTimer.singleShot(0, _delay_process)
+                return
+
+            self.insertTopLevelItem(0, QTreeWidgetItem())
+            self.takeTopLevelItem(0)
+
+        finally:
+            self.setUpdatesEnabled(True)
 
     # endregion
 
