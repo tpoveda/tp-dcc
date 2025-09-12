@@ -55,10 +55,14 @@ from .labels import ClippedLabel
 from .overlay import OverlayWidget
 from .buttons import BaseButton, IconMenuButton
 from .layouts import VerticalLayout, HorizontalLayout, GridLayout
-from .. import uiconsts, dpi, utils, icon
+from .. import uiconsts, dpi, utils
+from ..icon import colorize_icon
+
 
 if dcc.is_maya():
     from maya import cmds, OpenMayaUI
+
+    # noinspection PyUnresolvedReferences
     from maya.app.general import mayaMixin
     from tp.libs.maya.cmds.ui import docking
 
@@ -86,7 +90,7 @@ class ContainerWidget:
     window system, providing common functionality and interfaces.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         pass
 
     def is_docking_container(self) -> bool:
@@ -122,7 +126,7 @@ class ContainerWidget:
             else ContainerType.Docking.value
         )
 
-    def set_widget(self, widget: QWidget):
+    def set_widget(self, widget: QWidget) -> None:
         """Sets the container widget.
 
         Args:
@@ -132,7 +136,7 @@ class ContainerWidget:
         # noinspection PyUnresolvedReferences
         self.setObjectName(widget.objectName())
 
-    def set_on_top(self, flag: bool):
+    def set_on_top(self, flag: bool) -> None:
         """Sets whether the container should stay on top.
 
         Args:
@@ -157,7 +161,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         show_dock_tabs: bool = True,
         *args,
         **kwargs,
-    ):
+    ) -> None:
         """Initialize a docking container widget.
 
         Args:
@@ -241,18 +245,18 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         if not self._detaching:
             return
 
-        # Use detach counter to workaround issue where detaching would prematurely run
-        # the undock command.
+        # Use the detach counter to workaround issue where detaching would
+        # prematurely run the undock command.
         self._detach_counter += 1
         new_size = QSize(self._container_size.width(), self._orig_widget_size.height())
         self.setFixedSize(new_size)
 
-        # Check detach event twice before undocking because sometimes when you drag off the window does not stay on
-        # the mouse.
+        # Check the detach event twice before undocking because sometimes
+        # when you drag off the window does not stay on the mouse.
         if self._detach_counter == 2:
             self.undock()
 
-    def set_widget(self, widget: FramelessWindow):
+    def set_widget(self, widget: FramelessWindow) -> None:
         """Overrides base FramelessWindow set_widget function.
 
         Args:
@@ -266,7 +270,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         self.setMinimumWidth(0)
         self.setMinimumHeight(0)
 
-    def move_to_mouse(self):
+    def move_to_mouse(self) -> None:
         """Moves current dock widget to the current mouse cursor position.
 
         Positions the dock widget at the current mouse position with appropriate
@@ -286,7 +290,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         window.move(pos)
         window.setWindowOpacity(0.8)
 
-    def undock(self):
+    def undock(self) -> None:
         """Undocks container widget.
 
         Detaches the container from its docked position and converts it to a
@@ -310,12 +314,12 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         self._main_widget.undocked.emit()
         self._workspace_control = None
 
-    def delete_control(self):
+    def delete_control(self) -> None:
         """Deletes workspace control."""
 
         ui.FnUi().delete_ui(self._workspace_control_name)
 
-    def _setup_ui(self):
+    def _setup_ui(self) -> None:
         """Internal function that initializes docking widget UI.
 
         Sets up the logo icon and layout for the docking container.
@@ -327,12 +331,7 @@ class DockingContainer(DockableMixin, QWidget, ContainerWidget):
         ui_layout.addWidget(self._logo_icon)
         self.setLayout(ui_layout)
         # noinspection SpellCheckingInspection
-        self._logo_icon.setIcon(
-            icon.colorize_icon(
-                icons.icon("tpdcc"),
-                size=size,
-            )
-        )
+        self._logo_icon.setIcon(colorize_icon(icons.icon("tpdcc"), size=size))
         self._logo_icon.setIconSize(dpi.size_by_dpi(QSize(size, size)))
         self._logo_icon.clicked.connect(self.close)
         self._win = self.window()
@@ -354,7 +353,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         save_window_pref: bool = True,
         on_top: bool = False,
         parent: QWidget | None = None,
-    ):
+    ) -> None:
         """Initialize a new frameless window container.
 
         Args:
@@ -390,7 +389,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         """Get the frameless window contained within this container.
 
         Returns:
-            FramelessWindow: The frameless window instance.
+            The frameless window instance.
         """
 
         # noinspection PyTypeChecker
@@ -407,7 +406,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
 
         self.closed.emit()
 
-    def set_widget(self, widget: FramelessWindow):
+    def set_widget(self, widget: FramelessWindow) -> None:
         """Set the window's central widget.
 
         Args:
@@ -421,7 +420,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         if not platform.system().lower() == "darwin":
             self._set_new_object_name(widget)
 
-    def set_on_top(self, flag: bool):
+    def set_on_top(self, flag: bool) -> None:
         """Sets whether container should stay on top.
 
         Args:
@@ -459,8 +458,8 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
 
         return True
 
-    def set_transparency(self, flag: bool):
-        """Enable or disable window transparency effect.
+    def set_transparency(self, flag: bool) -> None:
+        """Enable or disable the window transparency effect.
 
         Args:
             flag: True to enable window transparency; False otherwise.
@@ -475,7 +474,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         window.setAttribute(Qt.WA_TranslucentBackground, flag)
         window.repaint()
 
-    def save_window_pref(self):
+    def save_window_pref(self) -> None:
         """Save window preferences for size and position.
 
         Forces the window to automatically be parented to the DCC main window
@@ -487,7 +486,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
 
         self.setProperty("saveWindowPref", True)
 
-    def _setup_size(self, width: int, height: int):
+    def _setup_size(self, width: int, height: int) -> None:
         """Initialize the frameless window size.
 
         Args:
@@ -502,7 +501,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
                 height = dpi.dpi_scale(self.size().height())
             self.resize(width, height)
 
-    def _setup_ui(self):
+    def _setup_ui(self) -> None:
         """Initialize the frameless window UI.
 
         Sets up window flags, attributes, and layout settings for the frameless
@@ -522,7 +521,7 @@ class FramelessWindowContainer(QMainWindow, ContainerWidget):
         self.setWindowFlags(self._default_window_flags)
         self.layout().setContentsMargins(0, 0, 0, 0)
 
-    def _set_new_object_name(self, widget: QWidget):
+    def _set_new_object_name(self, widget: QWidget) -> None:
         """Update this instance's object name based on the given widget.
 
         Args:
@@ -569,7 +568,7 @@ class FramelessWindow(QWidget):
         settings_path: str = "",
         parent: QWidget | None = None,
         **kwargs,
-    ):
+    ) -> None:
         """Initialize a frameless window with the specified properties.
 
         Args:
@@ -665,7 +664,7 @@ class FramelessWindow(QWidget):
         self.setup_layouts(self.main_layout())
         self.setup_signals()
 
-        self.set_title_style(FramelessTitleBar.TitleStyle.THIN)
+        self.set_title_style(FramelessTitleBar.TitleStyle.DEFAULT)
 
         self.load_settings()
 
@@ -692,7 +691,7 @@ class FramelessWindow(QWidget):
         return None
 
     @classmethod
-    def delete_instances(cls, name: str | None = None):
+    def delete_instances(cls, name: str | None = None) -> None:
         """Delete frameless window instances.
 
         Args:
@@ -734,7 +733,7 @@ class FramelessWindow(QWidget):
         return self._name
 
     @name.setter
-    def name(self, value: str):
+    def name(self, value: str) -> None:
         """Set the name of this frameless window instance.
 
         Args:
@@ -748,7 +747,7 @@ class FramelessWindow(QWidget):
         """Get the title of this frameless window instance.
 
         Returns:
-            str: The window title.
+            The window title.
         """
 
         return self._title
@@ -758,7 +757,7 @@ class FramelessWindow(QWidget):
         """Get the parent container instance containing this frameless window.
 
         Returns:
-            DockingContainer or FramelessWindowContainer: The parent container.
+            The parent container.
         """
 
         return self._parent_container
@@ -768,7 +767,7 @@ class FramelessWindow(QWidget):
         """Get the layout for the frameless window title.
 
         Returns:
-            QHBoxLayout: The title layout.
+            The title layout.
         """
 
         return self._title_bar.contents_layout
@@ -778,7 +777,7 @@ class FramelessWindow(QWidget):
         """Get the layout for the frameless window corners.
 
         Returns:
-            QHBoxLayout: The corner contents layout.
+            The corner contents layout.
         """
 
         return self._title_bar.corner_contents_layout
@@ -788,7 +787,7 @@ class FramelessWindow(QWidget):
         """Get the docked signal associated with the title bar logo button.
 
         Returns:
-            Signal: The docked signal.
+            The docked signal.
         """
 
         return self._title_bar.logo_button.docked
@@ -798,7 +797,7 @@ class FramelessWindow(QWidget):
         """Get the undocked signal associated with the title bar logo button.
 
         Returns:
-            Signal: The undocked signal.
+            The undocked signal.
         """
 
         return self._title_bar.logo_button.undocked
@@ -811,7 +810,7 @@ class FramelessWindow(QWidget):
     # def windowResizedFinished(self) -> Signal:
     #     return self._window_resizer.resizeFinished
 
-    def setup_widgets(self):
+    def setup_widgets(self) -> None:
         """Set up custom widgets for the window.
 
         This method can be overridden in subclasses to add custom widgets to the
@@ -831,7 +830,7 @@ class FramelessWindow(QWidget):
 
         pass
 
-    def setup_signals(self):
+    def setup_signals(self) -> None:
         """Set up widget signals.
 
         This method can be overridden in subclasses to set up custom signal
@@ -859,15 +858,17 @@ class FramelessWindow(QWidget):
 
         return result
 
-    def hide(self):
-        """Overrides base hide function to hide parent container."""
+    def hide(self) -> None:
+        """Overrides base hide function to hide the parent container."""
 
         if self._parent_container:
             self._parent_container.hide()
         return super().hide()
 
     def move(self, *args, **kwargs) -> None:
-        """Overrides move function to move window and offset the resizers if they are visible."""
+        """Overrides move function to move window and offset the resizer if
+        they are visible.
+        """
 
         arg1 = args[0]
         if isinstance(arg1, QPoint) and self._window_resizer.is_visible():
@@ -901,8 +902,10 @@ class FramelessWindow(QWidget):
 
         return super().keyPressEvent(event)
 
-    def load_settings(self):
-        """Load settings located within window settings file path (if it exists)."""
+    def load_settings(self) -> None:
+        """Load settings located within the window settings file
+        path (if it exists).
+        """
 
         position = QPoint(*(self._init_pos or ()))
         init_pos = position or self._settings.value("pos")
@@ -925,7 +928,7 @@ class FramelessWindow(QWidget):
                     self._settings.value("size", self._parent_container.size())
                 )
 
-    def save_settings(self):
+    def save_settings(self) -> None:
         """Saves settings into the window settings file path."""
 
         if not self.is_docked() and self._parent_container:
@@ -1370,7 +1373,9 @@ class FramelessTitleLabel(ClippedLabel):
 
 
 class FramelessTitleBar(QFrame):
-    """Title bar for frameless window that allows to click-drag this windget to move the window widget."""
+    """Title bar for the frameless window that allows to click-drag this
+    widget to move the window widget.
+    """
 
     doubleClicked = Signal()
     moving = Signal(object, object)
@@ -1384,17 +1389,17 @@ class FramelessTitleBar(QFrame):
         show_title: bool = True,
         always_show_all: bool = False,
         parent: FramelessWindow | None = None,
-    ):
+    ) -> None:
         super().__init__(parent)
+        """Initialize a new instance of the class.
+        
+        Args:
+            show_title: Determine whether the title should be shown. 
+            always_show_all: Determine whether all items should always be shown. 
+            parent: The parent window, if any.
         """
-        Initialize a new instance of the class.
 
-        :param show_title: Determines whether the title should be shown. Default is True.
-        :param always_show_all: Determines whether all items should always be shown. Default is False.
-        :param parent: The parent window, if any. Default is None, indicating no parent.
-        """
-
-        self._title_bar_height = 30
+        self._title_bar_height = 40
         self._pressed_at = None
         self._frameless_window = parent
         self._mouse_pos = None
@@ -1714,7 +1719,7 @@ class FramelessTitleBar(QFrame):
             self._maximize_button.setFixedSize(dpi.size_by_dpi(QSize(24, 24)))
             self._maximize_button.setIconSize(dpi.size_by_dpi(QSize(24, 24)))
             self._close_button.setFixedSize(dpi.size_by_dpi(QSize(24, 24)))
-            self._close_button.setIconSize(dpi.size_by_dpi(QSize(16, 16)))
+            self._close_button.setIconSize(dpi.size_by_dpi(QSize(24, 24)))
             self._window_buttons_layout.setSpacing(6)
             if self._frameless_window.HELP_URL:
                 self._help_button.show()
@@ -2722,19 +2727,22 @@ class SpawnerIcon(IconMenuButton):
 
     @staticmethod
     def _update_layout_direction():
-        """Internal function that is necessary for workspace control actLikeMayaUIElement
+        """Internal method that is necessary for workspace control actLikeMayaUIElement
         correctly show drag handles.
         """
 
         pass
 
     def _setup_logo_button(self):
-        """Internal function that initializes logo button."""
+        """Initialize the logo button."""
 
         size = uiconsts.Sizes.TitleLogoIcon
         self.setIconSize(QSize(size, size))
         self.setFixedSize(
-            QSize(size + uiconsts.Sizes.Margin / 2, size + uiconsts.Sizes.Margin / 2)
+            QSize(
+                int(size + uiconsts.Sizes.Margin / 2),
+                int(size + uiconsts.Sizes.Margin / 2),
+            )
         )
         # self._tooltip_action = self.addAction('Toggle Tooltips', checkable=True, connect=self._on_toggle_tooltips)
         self.menu_align = Qt.AlignLeft

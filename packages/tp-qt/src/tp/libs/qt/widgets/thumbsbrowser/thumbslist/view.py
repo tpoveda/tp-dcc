@@ -30,10 +30,11 @@ class ThumbnailsListViewDelegate(QStyledItemDelegate):
 
 
 class ThumbsListView(ListView):
-    contextMenuRequested = Signal(list, object)
-
     _DEFAULT_ICON_SIZE = QSize(256, 256)
     _MAX_THREAD_COUNT = 200
+
+    stateChanged = Signal()
+    contextMenuRequested = Signal(list, object)
 
     def __init__(
         self,
@@ -44,7 +45,7 @@ class ThumbsListView(ListView):
     ):
         super().__init__(parent=parent)
 
-        self._default_icon_size = icon_size or self._DEFAULT_ICON_SIZE
+        self._current_icon_size = QSize(icon_size or self._DEFAULT_ICON_SIZE)
         self._default_column_count = 4
         self._column_count = self._default_column_count
         self._uniform_icons = uniform_icons
@@ -77,9 +78,39 @@ class ThumbsListView(ListView):
         self.setAcceptDrops(False)
         self.setUpdatesEnabled(True)
         self.verticalScrollBar().setSingleStep(5)
-        self.setIconSize(self._default_icon_size)
+        self.setIconSize(self._current_icon_size)
 
         self._setup_signals()
 
     def _setup_signals(self):
-        """Set up the the signals of the list view."""
+        """Set up the signals of the list view."""
+
+        vertical_scroll_bar = self.verticalScrollBar()
+        vertical_scroll_bar.valueChanged.connect(self._pagination_load_next_items)
+        vertical_scroll_bar.rangeChanged.connect(self._pagination_load_next_items)
+        vertical_scroll_bar.sliderReleased.connect(self.stateChanged.emit)
+        self.clicked.connect(self.stateChanged.emit)
+        self.activated.connect(self.stateChanged.emit)
+        self.entered.connect(self.stateChanged.emit)
+
+    # region === Visuals === #
+
+    def setIconSize(self, size: QSize) -> None:
+        """Set the icon size of the thumbnails.
+
+        Args:
+            size: The new icon size.
+        """
+
+        self._current_icon_size = size
+        super().setIconSize(size)
+
+
+    # endregion
+
+    # region === Navigation === #
+
+    def _pagination_load_next_items(self):
+        pass
+
+    # endregion

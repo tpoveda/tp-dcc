@@ -1378,10 +1378,10 @@ class IconMenuButton(BaseButton):
         for i, action in enumerate(self.actions(mouse_menu)):
             if action.text() == name:
                 self._current_text = action.text()
-                # if self._switch_icon:
-                #     icon_name = action.iconText()
-                #     action_icon = resources.icon(icon_name)
-                #     self.set_icon(action_icon, colors=self._icon_color)
+                if self._switch_icon:
+                    icon_name = action.iconText()
+                    action_icon = icons.icon(icon_name)
+                    self.set_icon(action_icon, colors=self._icon_color)
                 break
 
     def action_connect_list(

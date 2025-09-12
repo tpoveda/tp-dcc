@@ -47,9 +47,7 @@ BUTTON_WIDTH_REGULAR_LARGE = 180
 
 
 class Sizes:
-    """
-    Class that contains default sizes that can be used within UIs.
-    """
+    """Class that contains default sizes that can be used within UIs."""
 
     Tiny = 18
     Small = 24
@@ -72,7 +70,7 @@ class Sizes:
     RowSeparator = 1
     Width = 640
     Height = 480
-    TitleLogoIcon = 12
+    TitleLogoIcon = 24
     FramelessVerticalPadding = 12
     FramelessHorizontalPadding = 10
     WindowSizePadding = 6
@@ -80,9 +78,7 @@ class Sizes:
 
 
 class ButtonStyles:
-    """
-    Class that contains available button styles.
-    """
+    """Class that contains available button styles."""
 
     Default = 0  # default BaseButton with optional text or an icon.
     TransparentBackground = 1  # default BaseButton with a transparent background.

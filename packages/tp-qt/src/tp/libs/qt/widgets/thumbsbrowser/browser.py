@@ -1,19 +1,23 @@
 from __future__ import annotations
 
 import typing
+from typing import Iterable
 
-from Qt.QtCore import Signal, QSize
+from Qt.QtCore import Qt, Signal, QSize
 from Qt.QtWidgets import QWidget
+from Qt.QtGui import QIcon
 
 from tp.preferences.interfaces.preferences import theme_interface
 
 from .thumbslist.view import ThumbsListView
 from .thumbslist.widgets.infowindow import InfoEmbeddedWindow
-from ..buttons import BasePushButton
+from ..buttons import BasePushButton, IconMenuButton
 from ..layouts import VerticalLayout, HorizontalLayout
-from ... import uiconsts, dpi
+from ..search import SearchLineEdit
+from ... import uiconsts, dpi, icons
 
 if typing.TYPE_CHECKING:
+    from tp.preferences.theme import Theme
     from .thumbslist.model import ThumbsListModel
 
 
@@ -29,10 +33,11 @@ class ThumbBrowser(QWidget):
         uniform_icons: bool = False,
         item_name: str = "",
         apply_text: str = "Apply",
+        apply_icon: QIcon | None = None,
         create_text: str = "New",
         select_directories_active: bool = False,
         parent: QWidget | None = None,
-    ):
+    ) -> None:
         """Initialize the ThumbBrowser widget.
 
         Args:
@@ -53,6 +58,7 @@ class ThumbBrowser(QWidget):
         self._uniform_icons = uniform_icons
         self._item_name = item_name
         self._apply_text = apply_text
+        self._apply_icon = apply_icon or icons.icon("checkmark")
         self._create_text = create_text
         self._saved_height: int | None = None
 
@@ -69,53 +75,15 @@ class ThumbBrowser(QWidget):
         if icon_size is not None:
             self.set_icon_size(icon_size)
 
+    # region === Setup === #
+
     @property
     def thumbs_list_view(self) -> ThumbBrowserListView:
         """The browser lists view widget."""
 
         return self._thumb_widget
 
-    def setFixedHeight(self, height: int, save: bool = False):
-        """Sets a fixed height for an object and optionally saves the height.
-
-        Args:
-            height: The fixed height to be applied to the object.
-            save: Whether to save the height value. Defaults to False.
-        """
-
-        super().setFixedHeight(height)
-
-        if save:
-            self._saved_height = height
-
-    def set_model(self, model: ThumbsListModel):
-        """Set the model for the thumb list view.
-
-        Args:
-            model: The model to be set for the thumb list view.
-        """
-
-        self._thumb_widget.setModel(model)
-
-    def set_columns(self, columns: int):
-        """Set the number of columns for the thumb list view.
-
-        Args:
-            columns: The number of columns to be set.
-        """
-
-        # self._thumb_widget.set_columns(columns)
-
-    def set_icon_size(self, icon_size: QSize):
-        """Set the icon size for the thumb list view.
-
-        Args:
-            icon_size: The size of the icons to be set.
-        """
-
-        # self._thumb_widget.set_icon_size(icon_size)
-
-    def _setup_widgets(self):
+    def _setup_widgets(self) -> None:
         """Set up the widgets for this widget."""
 
         self._thumb_widget = ThumbBrowserListView(
@@ -125,7 +93,7 @@ class ThumbBrowser(QWidget):
             parent=self._thumb_widget, margins=(0, 0, 0, uiconsts.SMALL_PADDING)
         )
 
-    def _setup_layouts(self):
+    def _setup_layouts(self) -> None:
         """Set up the layouts for this widget."""
 
         main_layout = VerticalLayout()
@@ -147,20 +115,108 @@ class ThumbBrowser(QWidget):
         self._folder_popup_button = BasePushButton(parent=self)
         self._folder_popup_button.setToolTip("Folder")
         self._folder_popup_button.set_icon("folder")
-        self._folder_popup_button.setStyleSheet("background-color: transparent;")
+
+        self._search_widget = ThumbSearchWidget(parent=self)
+
+        self._info_button = BasePushButton(parent=self)
+        self._info_button.setToolTip("Thumbnail information and add metadata")
+        self._info_button.set_icon("info_circle")
 
         top_layout.addWidget(self._folder_popup_button)
+        top_layout.addWidget(self._search_widget)
+        top_layout.addWidget(self._info_button)
 
         return top_layout
 
-    def _setup_signals(self):
+    def _setup_signals(self) -> None:
         """Set up the signals for this widget."""
 
         self._folder_popup_button.leftClicked.connect(
             self._on_folder_popup_button_clicked
         )
 
-    def _on_folder_popup_button_clicked(self):
+    def set_model(self, model: ThumbsListModel) -> None:
+        """Set the model for the thumb list view.
+
+        Args:
+            model: The model to be set for the thumb list view.
+        """
+
+        self._thumb_widget.setModel(model)
+
+    # endregion
+
+    # region === Visuals === #
+
+    def set_columns(self, columns: int) -> None:
+        """Set the number of columns for the thumb list view.
+
+        Args:
+            columns: The number of columns to be set.
+        """
+
+        # self._thumb_widget.set_columns(columns)
+
+    def icon_size(self) -> QSize:
+        """Get the icon size for the thumb list view.
+
+        Returns:
+            The size of the icons.
+        """
+
+        return self._thumb_widget.iconSize()
+
+    def set_icon_size(self, icon_size: QSize):
+        """Set the icon size for the thumb list view.
+
+        Args:
+            icon_size: The size of the icons to be set.
+        """
+
+        self._thumb_widget.setIconSize(icon_size)
+
+    # region === Filtering === #
+
+    def set_persistent_filter(self, text: str, tags: Iterable[str]) -> None:
+        """Set a persistent filter for the items in the thumb list view.
+
+        Args:
+            text: The text to filter the items by.
+            tags: The tags to filter the items by.
+        """
+
+        self._thumb_widget.set_persistent_filter(text, tags)
+
+    def filter(self, text, tags: Iterable[str] | None = None) -> None:
+        """Filter the items in the thumb list view.
+
+        Args:
+            text: The text to filter the items by.
+            tags: The tags to filter the items by.
+        """
+
+        self._thumb_widget.filter(text, tags)
+
+    # endregion
+
+    # region === Saving/Restoring State === #
+
+    def setFixedHeight(self, height: int, save: bool = False) -> None:
+        """Sets a fixed height for an object and optionally saves the height.
+
+        Args:
+            height: The fixed height to be applied to the object.
+            save: Whether to save the height value. Defaults to False.
+        """
+
+        super().setFixedHeight(height)
+
+        if save:
+            self._saved_height = height
+
+    # endregion
+
+    def _on_folder_popup_button_clicked(self) -> None:
         """Handle the folder popup button click event."""
 
         print("Hello World")
@@ -173,8 +229,8 @@ class ThumbBrowserListView(ThumbsListView):
 class ThumbSearchWidget(QWidget):
     searchChanged = Signal(object, object)
 
-    def __init__(self, theme_pref, parent: QWidget | None = None):
-        """Initialize the ThumbSearchWidget.
+    def __init__(self, parent: QWidget | None = None) -> None:
+        """Initialize the `ThumbSearchWidget`.
 
         Args:
             parent: The parent widget.
@@ -184,11 +240,64 @@ class ThumbSearchWidget(QWidget):
 
         self._setup_widgets()
         self._setup_layouts()
+        self._setup_signals()
+
+        # self.setFixedHeight(dpi.dpi_scale(24))
+
+    # region === Setup === #
 
     def _setup_widgets(self):
         """Set up the widgets for the search widget."""
 
-        pass
+        self._filter_menu = IconMenuButton(switch_icon_on_click=True, parent=self)
+        self._filter_menu.setToolTip("Search filter by meta data")
+        self._filter_menu.addAction(
+            "Name And Tags",
+            action_icon=icons.icon("filter"),
+            icon_text="filter",
+            data=["filename", "tags"],
+        )
+        self._filter_menu.addAction(
+            "File Name",
+            action_icon=icons.icon("file"),
+            icon_text="file",
+            data="filename",
+        )
+        self._filter_menu.addAction(
+            "Description",
+            action_icon=icons.icon("info_popup"),
+            icon_text="info_popup",
+            data="description",
+        )
+        self._filter_menu.addAction(
+            "Tags",
+            action_icon=icons.icon("tag"),
+            icon_text="tag",
+            data="tags",
+        )
+        self._filter_menu.addAction(
+            "Creators",
+            action_icon=icons.icon("user"),
+            icon_text="user",
+            data="creators",
+        )
+        self._filter_menu.addAction(
+            "Websites",
+            action_icon=icons.icon("web"),
+            icon_text="web",
+            data="websites",
+        )
+        self._filter_menu.addAction(
+            "All",
+            action_icon=icons.icon("check_all"),
+            icon_text="check_all",
+            data=["filename", "description", "tags", "creators", "websites"],
+        )
+        self._filter_menu.set_menu_name("Name And Tags")
+        self._filter_menu.menu_align = Qt.AlignLeft
+
+        self._search_line_edit = SearchLineEdit(parent=self)
+        self._search_line_edit.setPlaceholderText("Search...")
 
     def _setup_layouts(self):
         """Set up the layouts for the search widget."""
@@ -197,3 +306,21 @@ class ThumbSearchWidget(QWidget):
         main_layout.setSpacing(2)
         main_layout.setContentsMargins(2, 2, 2, 2)
         self.setLayout(main_layout)
+
+        main_layout.addWidget(self._filter_menu)
+        main_layout.addWidget(self._search_line_edit)
+
+    def _setup_signals(self):
+        """Set up the signals for the search widget."""
+
+        self._search_line_edit.textChanged.connect(self._on_search_text_changed)
+
+    # endregion
+
+    # region === Callbacks === #
+
+    def _on_search_text_changed(self, text: str) -> None:
+        pass
+        # self.searchChanged.emit(text, self.filter_menu_data())
+
+    # endregion
