@@ -5,13 +5,13 @@ import weakref
 from dataclasses import dataclass
 
 from Qt.QtCore import Signal, QSize, QTimer
-from Qt.QtWidgets import QWidget
+from Qt.QtGui import QMouseEvent
 
 from tp.libs import qt
 from tp.libs.qt.widgets import StackItem, BaseButton, VerticalLayout
 
 if typing.TYPE_CHECKING:
-    from ..toolpanelstree import ToolPanelsTreeWidget, ToolPanelWidgetTreeItem
+    from ..toolpanelstree import ToolPanelsTreeWidget
 
 
 @dataclass
@@ -84,6 +84,7 @@ class BaseToolPanelWidget(StackItem):
 
         super()._setup_widgets()
 
+        self._title_frame.mouseReleaseEvent = self._activate_event
         self._help_button = BaseButton(parent=self)
         self._help_button.set_icon(qt.icon("help"))
         self._help_button.setIconSize(QSize(15, 15))
@@ -99,6 +100,14 @@ class BaseToolPanelWidget(StackItem):
         self._main_layout.setSpacing(0)
         self._main_layout.setContentsMargins(0, 0, 0, 0)
         self._contents_layout.addLayout(self._main_layout)
+
+    def _activate_event(self, event: QMouseEvent) -> None:
+        """Handle the mouse release event on the title frame to toggle
+        contents.
+        """
+
+        self.toggle_contents(emit=True)
+        event.ignore()
 
     # endregion
 

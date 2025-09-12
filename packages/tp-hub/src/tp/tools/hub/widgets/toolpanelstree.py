@@ -5,17 +5,17 @@ import weakref
 from typing import cast, Type, Any
 from collections.abc import Generator
 
-from Qt.QtCore import Qt
+from Qt.QtCore import Qt, Signal, QTimer
 from Qt.QtWidgets import QSizePolicy, QTreeWidgetItem
 
 from tp.libs import qt
 from tp.libs.qt.widgets import GroupedTreeWidget
 
+from .toolpanel import ToolPanelWidget
 from ..managers import ToolPanelsManager
 
 if typing.TYPE_CHECKING:
     from .hubframe import HubFrame
-    from .toolpanel import ToolPanelWidget
     from ..view import HubWindow
 
 
@@ -82,9 +82,28 @@ class ToolPanelWidgetTreeItem(QTreeWidgetItem):
 
     # region === Setup === #
 
+    @property
+    def widget(self) -> ToolPanelWidget:
+        """The tool panel widget instance."""
+
+        return self._widget
+
     def apply_widget(self, activate: bool = True) -> None:
+        tree_widget = cast(ToolPanelsTreeWidget, self.treeWidget())
+
         self._widget.setParent(self.treeWidget())
-        self.treeWidget().setItemWidget(self, 0, self._widget)
+        tree_widget.setItemWidget(self, 0, self._widget)
+
+        self._widget.maximized.connect(
+            lambda: tree_widget.activate_tool_panel(self, activate=True)
+        )
+        self._widget.minimized.connect(
+            lambda: tree_widget.activate_tool_panel(self, activate=False)
+        )
+        self._widget.deletePressed.connect(self.toggle_hidden)
+        self._widget.deletePressed.connect(
+            lambda: tree_widget.toolPanelHidden.emit(self.id())
+        )
 
         self._widget.pre_contents_setup()
         self._widget.setup_widgets()
@@ -134,6 +153,8 @@ class ToolPanelWidgetTreeItem(QTreeWidgetItem):
 
 
 class ToolPanelsTreeWidget(GroupedTreeWidget):
+    toolPanelHidden = Signal(str)
+
     def __init__(self, hub_frame: HubFrame):
         super().__init__(
             custom_tree_widget_item_class=ToolPanelWidgetTreeItem, parent=hub_frame
@@ -297,5 +318,69 @@ class ToolPanelsTreeWidget(GroupedTreeWidget):
         tree_widget_item.apply_widget(activate=activate)
 
         return tree_widget_item
+
+    def activate_tool_panel(
+        self,
+        tool_panel_item: ToolPanelWidgetTreeItem,
+        activate: bool = True,
+        close_others: bool = False,
+    ) -> None:
+        """Activates or deactivates the given tool panel tree item.
+
+        Args:
+            tool_panel_item: The tool panel tree item to activate or deactivate.
+            activate: Whether to activate or deactivate the tool panel.
+            close_others: Whether to close other tool panels when activating
+                this one.
+        """
+
+        widget = cast(ToolPanelWidget, tool_panel_item.widget)
+        widget.set_active(activate, emit=False)
+
+        if close_others:
+            for tree_item in qt.safe_tree_widget_iterator(self):
+                if tree_item is not tool_panel_item:
+                    # noinspection PyUnresolvedReferences
+                    tree_item.collapse()
+
+        QTimer.singleShot(0, lambda: self.update_tree_widget())
+
+    def update_tree_widget(self, disable_scroll_bars: bool = False) -> None:
+        vertical_policy: Qt.ScrollBarPolicy | None = None
+        if disable_scroll_bars:
+            vertical_policy = self.verticalScrollBarPolicy()
+            self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        super().update_tree_widget()
+
+        self._hub_frame().resizeRequested.emit()
+
+        if vertical_policy is not None:
+            self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+    # endregion
+
+    # region === Resizing === #
+
+    def calculate_content_height(self) -> int:
+        """Calculate the total height of all visible tool panel widgets in the
+        tree.
+
+        Notes:
+            - This method is used to determine the size hint for the hub frame
+                based on the contents of the tree.
+            - This method ignores hidden tool panels.
+
+        Returns:
+            The total height of all visible tool panel widgets.
+        """
+
+        total_height: int = 0
+        for i in range(self.topLevelItemCount()):
+            item = self.topLevelItem(i)
+            if isinstance(item, ToolPanelWidgetTreeItem) and not item.isHidden():
+                total_height += item.widget.sizeHint().height()
+
+        return total_height
 
     # endregion

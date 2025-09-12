@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing
 import weakref
 
-from Qt.QtCore import Qt, Signal
+from Qt.QtCore import Qt, Signal, QSize
 from Qt.QtWidgets import QWidget, QFrame
 
 from tp.libs import qt
@@ -140,6 +140,23 @@ class HubFrame(QFrame):
         """Update the colors of the toolbar buttons."""
 
         pass
+
+    # endregion
+
+    # region === Resizing === #
+
+    def calculate_size_hint(self) -> QSize:
+        """Calculates the size hint for the frame based on the contents of
+        the tree.
+
+        Returns:
+            The size hint for the frame.
+        """
+
+        size = self.sizeHint()
+        width = size.width()
+        height = self._tree.calculate_content_height()
+        return QSize(width, height)
 
     # endregion
 
