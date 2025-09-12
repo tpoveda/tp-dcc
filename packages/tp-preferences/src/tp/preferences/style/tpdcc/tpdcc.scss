@@ -110,11 +110,11 @@ BaseLabel {
 
 /* tp/qt/widgets/stacks.py */
 StackHiderWidget {
-    background-color: $background-color;
-    border-radius: 1px;
+  background-color: $background-color;
+  border-radius: 1px;
 
-      &#selected {
-        border-color: transparent $primary-color transparent transparent;
+    &#selected {
+      border-color: transparent $primary-color transparent transparent;
   }
 }
 
@@ -135,6 +135,15 @@ StackItem {
 }
 
 StackTitleFrame {
+
+  background-color: $stack-item-background-color;
+  border-radius: 1px;
+
+    &#selected {
+      background-color: $primary-color;
+      border-radius: 1px;
+  }
+
   &::lineEdit {
     background-color: transparent;
     font-weight: bold;
@@ -148,14 +157,12 @@ StackTitleFrame {
 }
 
 LineClickEdit {
-  font-weight: bold;
-  color: $stack-title-color;
-  font-family: "Roboto";
+  background-color: transparent;
 }
 
 /* tp/tools/hub/widgets/toolpanel/base.py */
 
-BaseToolPanelWidget {
+BaseToolPanelWidget StackTitleFrame LineClickEdit {
     font-weight: bold;
     color: $stack-title-color;
     font-family: 'Roboto'
@@ -166,6 +173,14 @@ ToolsetToolBar{
 }
 
 /* tp/tools/hub/widgets/toolpanelstree.py */
+
+ToolPanelsTreeWidget {
+  background-color: transparent;
+
+  &:hover {
+    border: 1px solid $tree-hover-color;
+  }
+}
 
 ToolPanelWidgetTreeItem QPushButton,
 {

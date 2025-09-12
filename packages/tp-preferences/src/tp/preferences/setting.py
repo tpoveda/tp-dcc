@@ -194,6 +194,8 @@ class SettingObject(dict):
         if indent:
             kwargs["indent"] = 2
 
+        print("gogogogog", file_path, os.path.isfile(file_path))
+
         with open(file_path, "w", encoding="utf-8") as f:
             yaml.safe_dump(dict(self), f, **kwargs)
 

@@ -15,7 +15,6 @@ from ..managers import ToolPanelsManager
 
 if typing.TYPE_CHECKING:
     from ..view import HubWindow
-    from .toolpanel import ToolPanelWidget
 
 
 class HubFrame(QFrame):
@@ -26,7 +25,7 @@ class HubFrame(QFrame):
     def __init__(
         self,
         window: HubWindow,
-        icon_color: tuple[float, float, float] = (255, 255, 255),
+        icon_color: tuple[float, float, float] | None = None,
         hue_shift: int = 30,
         icon_size: int = 18,
         icon_padding: int = 1,

@@ -318,12 +318,14 @@ class StackItem(QFrame):
         self._title = title
         self._collapsed = collapsed
         self._collapsable = collapsable
+        self._icon = icon
         self._shift_arrows_enabled = shift_arrows_enabled
         self._delete_button_enabled = delete_button_enabled
         self._title_editable = title_editable
         self._item_icon_size = item_icon_size
         self._title_upper = title_upper
-        self._border_width = dpi.dpi_scale(1)
+        # self._border_width = dpi.dpi_scale(1)
+        self._border_width = 0
         self._title_frame = title_frame
 
         self.hide()
@@ -350,6 +352,8 @@ class StackItem(QFrame):
         """Set up the widgets for the stack item."""
 
         self._title_frame = self._title_frame or StackTitleFrame(
+            title=self._title,
+            icon=self._icon,
             title_editable=self._title_editable,
             item_icon_size=self._item_icon_size,
             collapsed=self._collapsed,

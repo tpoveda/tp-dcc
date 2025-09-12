@@ -30,7 +30,7 @@ class ToolPanelWidgetTreeItem(QTreeWidgetItem):
 
         self._color = color
         self._widget = tool_panel_widget_class(
-            icon_color=color, widget_item=self, tree_widget=tree_widget
+            icon_color=color, tree_widget=tree_widget
         )
 
         self.setChildIndicatorPolicy(QTreeWidgetItem.DontShowIndicator)
@@ -85,6 +85,10 @@ class ToolPanelWidgetTreeItem(QTreeWidgetItem):
     def apply_widget(self, activate: bool = True) -> None:
         self._widget.setParent(self.treeWidget())
         self.treeWidget().setItemWidget(self, 0, self._widget)
+
+        self._widget.pre_contents_setup()
+        self._widget.setup_widgets()
+        self._widget.setup_layouts(self._widget.main_layout)
 
         self.setData(
             GroupedTreeWidget.DATA_COLUMN,

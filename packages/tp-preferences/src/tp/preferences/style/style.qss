@@ -223,41 +223,36 @@ QGroupBox::indicator:checked:disabled,
 QCheckBox::indicator:checked:disabled {
   image: url(:/icons/check-disabled.svg); }
 
-QTableView,
-QTreeView,
-QListView {
+QAbstractItemView {
   background-color: #151515;
-  outline: none; }
+  outline: none;
+  border: none;
+  padding: 1px 0 1px 1px; }
 
-QTableView::item,
-QTreeView::item,
-QListView::item {
-  padding: 0px 5px; }
+QAbstractItemView::item {
+  font-family: 'Roboto';
+  selection-background-color: #5285A5;
+  alternate-background-color: #252525; }
 
-QTableView::item::selected,
-QTreeView::item::selected,
-QListView::item::selected {
+QAbstractItemView::item:selected {
   selection-color: white;
   selection-background-color: #0070e0; }
 
-QTableView::item::selected:focus,
-QTreeView::item::selected:focus,
-QListView::item::selected:focus {
+QAbstractItemView::item:selected:focus {
   background-color: #0070e0; }
 
-QTableView::indicator:unchecked,
-QTreeView::indicator:unchecked,
-QListView::indicator:unchecked {
-  image: url(:/icons/uncheck.svg); }
+QAbstractItemView::item:hover {
+  background-color: #3D637D; }
 
-QTableView::indicator:checked,
-QTreeView::indicator:checked,
-QListView::indicator:checked {
-  image: url(:/icons/check.svg); }
+QAbstractItemView::indicator:unchecked {
+  image: url(":/icons/uncheck.svg"); }
+
+QAbstractItemView::indicator:checked {
+  image: url(":/icons/check.svg"); }
 
 QHeaderView::section {
   background-color: #2f2f2f;
-  padding-left: 5px;
+  padding: 2px;
   color: #c0c0c0;
   border: none; }
 
@@ -571,6 +566,14 @@ StackItem .QToolButton {
   background-color: transparent;
   border-color: transparent; }
 
+StackTitleFrame {
+  background-color: #232323;
+  border-radius: 1px; }
+
+StackTitleFrame#selected {
+  background-color: #0070e0;
+  border-radius: 1px; }
+
 StackTitleFrame::lineEdit {
   background-color: transparent;
   font-weight: bold;
@@ -581,12 +584,10 @@ StackTitleFrame::lineEdit#disabled {
   color: #8f8f8f; }
 
 LineClickEdit {
-  font-weight: bold;
-  color: #a6a6a6;
-  font-family: "Roboto"; }
+  background-color: transparent; }
 
 /* tp/tools/hub/widgets/toolpanel/base.py */
-BaseToolPanelWidget {
+BaseToolPanelWidget StackTitleFrame LineClickEdit {
   font-weight: bold;
   color: #a6a6a6;
   font-family: 'Roboto'; }
@@ -595,6 +596,12 @@ ToolsetToolBar {
   background-color: transparent; }
 
 /* tp/tools/hub/widgets/toolpanelstree.py */
+ToolPanelsTreeWidget {
+  background-color: transparent; }
+
+ToolPanelsTreeWidget:hover {
+  border: 1px solid #3D637D; }
+
 ToolPanelWidgetTreeItem QPushButton {
   padding: 3px;
   border: 0 solid transparent;

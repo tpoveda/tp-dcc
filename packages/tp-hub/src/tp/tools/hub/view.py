@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import cast
 
-from Qt.QtWidgets import QSizePolicy, QWidget, QVBoxLayout
+from Qt.QtWidgets import QSizePolicy, QWidget, QVBoxLayout, QTreeWidget
 
 from tp.libs import qt
 from tp.libs.qt.widgets import Window
@@ -137,6 +137,7 @@ class HubWindow(Window):
     def setup_layouts(self, main_layout: QVBoxLayout):
         super().setup_layouts(main_layout)
 
+        main_layout.setSpacing(0)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(self._hub_frame.tree_widget)
         main_layout.setStretch(1, 1)

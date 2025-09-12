@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import typing
-from typing import Any
+from typing import Iterable, Any
 
 from . import constants
 from .directory import DirectoryPath
@@ -41,8 +41,13 @@ class BrowserPreference(AssetPreference):
         asset_folder: str,
         preference_interface: PreferenceInterface,
         build_assets: bool = True,
+        file_types: Iterable[str] | None = None,
+        auto_fill_folders: bool = True,
     ):
         super().__init__(asset_folder, preference_interface, build_assets=build_assets)
+
+        self._file_types = file_types or []
+        self._auto_fill_folders = auto_fill_folders
 
     def settings(self) -> dict[str, Any]:
         """Get the browser settings dictionary.
@@ -71,18 +76,6 @@ class BrowserPreference(AssetPreference):
             True if uniform icons are enabled for the specified asset
                   folder, False otherwise.
         """
-
-        uniform_icons = (
-            self.settings()
-            .get(constants.BROWSER_UNIFORM_ICONS_KEY, {})
-            .get(self.asset_folder, None)
-        )
-        if uniform_icons is None:
-            self.settings().setdefault(constants.BROWSER_UNIFORM_ICONS_KEY, {})[
-                self.asset_folder
-            ] = True
-            self.save_settings()
-            return True
 
         return (
             self.settings()

@@ -14,6 +14,7 @@ from .stacks import SlidingOpacityStackedWidget, StackWidget, StackItem
 from .overlay import OverlayWidget, OverlayLoadingWidget
 from .groupedtreewidget import GroupedTreeWidget
 from .flowtoolbar import FlowToolBar
+from .thumbsbrowser.browser import ThumbBrowser
 
 __all__ = [
     "Window",
@@ -38,4 +39,5 @@ __all__ = [
     "OverlayLoadingWidget",
     "GroupedTreeWidget",
     "FlowToolBar",
+    "ThumbBrowser",
 ]

@@ -949,18 +949,6 @@ class FramelessWindow(QWidget):
 
         return self._main_contents.layout()
 
-    # def set_main_layout(self, layout: QVBoxLayout | QHBoxLayout) -> QVBoxLayout | QHBoxLayout | QLayout:
-    #     """
-    #     Sets main window layout.
-    #
-    #     param QVBoxLayout or QHBoxLayout layout: main window contents layout.
-    #     :return: contents layout.
-    #     :rtype: QVBoxLayout or QHBoxLayout or QLayout
-    #     """
-    #
-    #     self._main_contents.setLayout(layout)
-    #     return self.main_layout()
-
     def set_title(self, title: str):
         """Sets title text.
 
@@ -1417,6 +1405,8 @@ class FramelessTitleBar(QFrame):
         self._move_threshold = 5
 
         self._main_layout = HorizontalLayout()
+        self._main_layout.setSpacing(0)
+        self._main_layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self._main_layout)
         self._left_contents = QFrame(parent=self)
         self._right_contents = QWidget(parent=self)

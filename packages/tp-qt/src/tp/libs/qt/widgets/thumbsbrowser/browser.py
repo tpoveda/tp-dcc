@@ -5,7 +5,7 @@ import typing
 from Qt.QtCore import Signal, QSize
 from Qt.QtWidgets import QWidget
 
-from tp.preferences.interfaces.core import theme_interface
+from tp.preferences.interfaces.preferences import theme_interface
 
 from .thumbslist.view import ThumbsListView
 from .thumbslist.widgets.infowindow import InfoEmbeddedWindow

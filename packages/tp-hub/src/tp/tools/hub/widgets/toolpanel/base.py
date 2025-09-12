@@ -32,7 +32,6 @@ class BaseToolPanelWidget(StackItem):
 
     def __init__(
         self,
-        widget_item: ToolPanelWidgetTreeItem,
         tree_widget: ToolPanelsTreeWidget,
         icon_color: tuple[float, float, float] | None = None,
     ):
@@ -56,6 +55,12 @@ class BaseToolPanelWidget(StackItem):
 
     # region === Setup === #
 
+    def pre_contents_setup(self) -> None:
+        """Operations to run before setting up the contents of the tool panel.
+
+        This method can be overridden by subclasses.
+        """
+
     def setup_widgets(self) -> None:
         """Set up the custom user widgets.
 
@@ -68,6 +73,12 @@ class BaseToolPanelWidget(StackItem):
         This method can be overridden by subclasses.
         """
 
+    @property
+    def main_layout(self) -> VerticalLayout:
+        """The main layout of the tool panel widget."""
+
+        return self._main_layout
+
     def _setup_widgets(self) -> None:
         """Set up the widgets for the tool panel widget."""
 
@@ -77,8 +88,6 @@ class BaseToolPanelWidget(StackItem):
         self._help_button.set_icon(qt.icon("help"))
         self._help_button.setIconSize(QSize(15, 15))
 
-        self.setup_widgets()
-
     def _setup_layouts(self) -> None:
         """Set up the layouts for the tool panel widget."""
 
@@ -86,12 +95,10 @@ class BaseToolPanelWidget(StackItem):
 
         self._title_frame.main_layout.addWidget(self._help_button)
 
-        main_layout = VerticalLayout()
-        main_layout.setSpacing(0)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        self._contents_layout.addLayout(main_layout)
-
-        self.setup_layouts(main_layout)
+        self._main_layout = VerticalLayout()
+        self._main_layout.setSpacing(0)
+        self._main_layout.setContentsMargins(0, 0, 0, 0)
+        self._contents_layout.addLayout(self._main_layout)
 
     # endregion
 

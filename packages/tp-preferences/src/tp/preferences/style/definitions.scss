@@ -59,7 +59,11 @@ $stack-item-background-color:           $verified-black-color;
 $stack-item-header-foreground-color:    $primary-text-color;
 $stack-title-color:                     $quicksilver-color;
 $stack-title-disabled-color:            $silver-snippet-color;
-
+$tree-header-color:                     $matte-black-color;
+$tree-grid-color:                       $pig-iron-color;
+$tree-active-color:                     #5285A5;
+$tree-hover-color:                      #3D637D;
+$tree-alternative-color:                #252525;
 
 $info-color:                    $clear-chill-color;
 $info1-color:                   scale-color($info-color, $alpha: -25%);
