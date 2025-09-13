@@ -4,7 +4,7 @@ from typing import cast, Any
 
 from Qt.QtWidgets import QWidget
 
-from tp.core import Tool, UiData, current_host
+from tp.core import Tool, ToolUiData, current_host
 
 from .view import HubWindow
 
@@ -14,7 +14,7 @@ class HubTool(Tool):
 
     id = "tp.hub"
     creator = "Tomi Poveda"
-    ui_data = UiData(label="Hub")
+    ui_data = ToolUiData(label="Hub")
     tags = ["hub"]
 
     # noinspection PyAttributeOutsideInit

@@ -11,7 +11,6 @@ from tp.libs.qt.widgets import FlowToolBar
 
 from .toolpanelsbutton import ToolPanelsMenuButton
 from .toolpanelstree import ToolPanelsTreeWidget, ToolPanelWidgetTreeItem
-from ..managers import ToolPanelsManager
 
 if typing.TYPE_CHECKING:
     from ..view import HubWindow
@@ -36,7 +35,6 @@ class HubFrame(QFrame):
         super().__init__(parent=parent)
 
         self._hub_window = weakref.ref(window)
-        self._tool_panels_manager = ToolPanelsManager()
         self._icon_color = icon_color
         self._hue_shift = hue_shift
         self._icon_size = icon_size

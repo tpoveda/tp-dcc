@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import time
-from typing import cast
 
 from Qt.QtCore import Qt, QPoint, QSize, QTimer
 from Qt.QtWidgets import QSizePolicy, QWidget, QVBoxLayout
@@ -10,7 +9,6 @@ from Qt.QtGui import QResizeEvent, QCloseEvent
 from tp.libs import qt
 from tp.libs.qt.widgets import Window
 
-from .managers import ToolPanelsManager
 from .widgets import HubFrame, ToolPanelWidgetTreeItem
 
 
@@ -45,7 +43,6 @@ class HubWindow(Window):
         self._icon_color = icon_color
         self._hue_shift = hue_shift
         self._always_resize_to_tree = True
-        self._tool_panels_manager = cast(ToolPanelsManager, ToolPanelsManager())
         self._last_focused_time = time.time()
 
         super().__init__(

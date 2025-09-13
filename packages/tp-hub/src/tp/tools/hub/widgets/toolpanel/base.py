@@ -2,46 +2,50 @@ from __future__ import annotations
 
 import typing
 import weakref
-from dataclasses import dataclass
+from typing import cast
 
 from Qt.QtCore import Signal, QSize, QTimer
 from Qt.QtGui import QMouseEvent
 
 from tp.libs import qt
+from tp.core import ToolUiData
+from tp.managers import ToolsManager
 from tp.libs.qt.widgets import StackItem, BaseButton, VerticalLayout
 
 if typing.TYPE_CHECKING:
     from ..toolpanelstree import ToolPanelsTreeWidget
-
-
-@dataclass
-class ToolPanelUiData:
-    label: str = ""
-    icon: str = "tpdcc"
-    tooltip: str = ""
-    default_action_double_click: bool = False
-    help_url: str = ""
+    from ...view import HubWindow
 
 
 class BaseToolPanelWidget(StackItem):
-    id: str = ""
-    ui_data: ToolPanelUiData = ToolPanelUiData()
+    ui_data: ToolUiData = ToolUiData()
 
     toolPanelHidden = Signal()
+    toolPanelActivated = Signal()
+    toolPanelDeactivated = Signal()
     toolPanelShown = Signal()
+    toolPanelClosed = Signal()
+    toolPanelDragged = Signal()
+    toolPanelDropped = Signal()
+    toolPanelDragCancelled = Signal()
+    toolPanelMousePressed = Signal()
 
     def __init__(
         self,
-        tree_widget: ToolPanelsTreeWidget,
+        tree_widget: ToolPanelsTreeWidget | None = None,
         icon_color: tuple[float, float, float] | None = None,
+        ui_data: ToolUiData | None = None,
     ):
+        self.ui_data = ui_data or self.ui_data
         self._icon_color = icon_color
-        self._tree_widget = weakref.ref(tree_widget)
+        self._tree_widget = (
+            weakref.ref(tree_widget) if tree_widget is not None else None
+        )
 
         super().__init__(
-            title=self.ui_data.label,
+            title=self.ui_data.get("label"),
             collapsed=True,
-            icon=qt.icon(self.ui_data.icon),
+            icon=qt.icon(self.ui_data.get("icon")),
             shift_arrows_enabled=False,
             title_editable=False,
             title_upper=True,
@@ -53,25 +57,40 @@ class BaseToolPanelWidget(StackItem):
         self.set_icon_color(self._icon_color)
         self.visual_update(collapse=True)
 
+    @property
+    def hub_window(self) -> HubWindow | None:
+        """The hub window instance the panel is attached to."""
+
+        if self._tree_widget is None:
+            return None
+
+        tree_widget = self._tree_widget()
+        return tree_widget.hub_window if tree_widget else None
+
     # region === Setup === #
 
-    def pre_contents_setup(self) -> None:
-        """Operations to run before setting up the contents of the tool panel.
+    def setup(self, tool_id: str | None = None):
+        """Set up the tool panel widget.
 
-        This method can be overridden by subclasses.
+        This method can be overridden in subclasses to handle the creation
+        and setup of the widget contained within the tool panel.
+
+        Args:
+            tool_id: Optional tool id to set up the panel with. If not
+                specified, the `id` class attribute will be used.
+
+        Notes:
+            - This method is called when ToolsPanelsTreeWidget is setting up
+                the tool panel widgets (by calling `apply_widget` method).
         """
 
-    def setup_widgets(self) -> None:
-        """Set up the custom user widgets.
-
-        This method can be overridden by subclasses.
-        """
-
-    def setup_layouts(self, main_layout: VerticalLayout) -> None:
-        """Set up the custom user layouts.
-
-        This method can be overridden by subclasses.
-        """
+        if tool_id is not None:
+            tools_managers = cast(ToolsManager, ToolsManager())
+            tool_class = tools_managers.tool_class(tool_id)
+            if tool_class is not None:
+                view = tool_class.setup()
+                if view is not None:
+                    self.main_layout.addWidget(view)
 
     @property
     def main_layout(self) -> VerticalLayout:

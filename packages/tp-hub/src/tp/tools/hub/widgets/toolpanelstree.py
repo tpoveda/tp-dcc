@@ -9,10 +9,11 @@ from Qt.QtCore import Qt, Signal, QTimer
 from Qt.QtWidgets import QSizePolicy, QTreeWidgetItem
 
 from tp.libs import qt
+from tp.core import ToolUiData
+from tp.managers import ToolsManager
 from tp.libs.qt.widgets import GroupedTreeWidget
 
 from .toolpanel import ToolPanelWidget
-from ..managers import ToolPanelsManager
 
 if typing.TYPE_CHECKING:
     from .hubframe import HubFrame
@@ -20,17 +21,33 @@ if typing.TYPE_CHECKING:
 
 
 class ToolPanelWidgetTreeItem(QTreeWidgetItem):
+    # noinspection PyShadowingBuiltins
     def __init__(
         self,
+        id: str,
         tool_panel_widget_class: Type[ToolPanelWidget],
         tree_widget: ToolPanelsTreeWidget,
         color: tuple[int, int, int] | None = None,
-    ):
+        ui_data: ToolUiData | None = None,
+    ) -> None:
+        """Initialize the tool panel tree item.
+
+        Args:
+            id: The tool panel id.
+            tool_panel_widget_class: The tool panel widget class to instantiate.
+            tree_widget: The tree widget to add the tool panel to.
+            color: The color to use for the tool panel icon.
+            ui_data: The tool panel UI data.
+        """
+
         super().__init__()
 
+        self._id = id
         self._color = color
         self._widget = tool_panel_widget_class(
-            icon_color=color, tree_widget=tree_widget
+            icon_color=color,
+            tree_widget=tree_widget,
+            ui_data=ui_data,
         )
 
         self.setChildIndicatorPolicy(QTreeWidgetItem.DontShowIndicator)
@@ -60,16 +77,23 @@ class ToolPanelWidgetTreeItem(QTreeWidgetItem):
                 found.
         """
 
-        tool_panels_manager = cast(ToolPanelsManager, ToolPanelsManager())
-        tool_panel_class = tool_panels_manager.tool_panel_class(tool_id)
-        if not tool_panel_class:
+        tools_managers = cast(ToolsManager, ToolsManager())
+        tool_class = tools_managers.tool_class(tool_id)
+        if not tool_class:
             return None
 
-        return cls(
+        tool_panel_class = tool_class.tool_panel_class
+        tool_panel_class = tool_panel_class or ToolPanelWidget
+
+        tool_panel = cls(
+            id=tool_id,
             tool_panel_widget_class=tool_panel_class,
             tree_widget=tree_widget,
             color=color,
+            ui_data=tool_class.ui_data,
         )
+
+        return tool_panel
 
     def id(self) -> str:
         """Return the tool panel id.
@@ -78,7 +102,7 @@ class ToolPanelWidgetTreeItem(QTreeWidgetItem):
             The tool panel id.
         """
 
-        return self._widget.id
+        return self._id
 
     # region === Setup === #
 
@@ -105,9 +129,11 @@ class ToolPanelWidgetTreeItem(QTreeWidgetItem):
             lambda: tree_widget.toolPanelHidden.emit(self.id())
         )
 
-        self._widget.pre_contents_setup()
-        self._widget.setup_widgets()
-        self._widget.setup_layouts(self._widget.main_layout)
+        tools_managers = cast(ToolsManager, ToolsManager())
+        tool_class = tools_managers.tool_class(self.id())
+
+        # Set up the widget.
+        self._widget.setup(tool_id=tool_class.id if tool_class else None)
 
         self.setData(
             GroupedTreeWidget.DATA_COLUMN,
@@ -160,7 +186,6 @@ class ToolPanelsTreeWidget(GroupedTreeWidget):
             custom_tree_widget_item_class=ToolPanelWidgetTreeItem, parent=hub_frame
         )
 
-        self._tool_panels_manager = cast(ToolPanelsManager, ToolPanelsManager())
         self._hub_frame = weakref.ref(hub_frame)
 
         self.setMouseTracking(True)
@@ -304,7 +329,7 @@ class ToolPanelsTreeWidget(GroupedTreeWidget):
                 found or added.
         """
 
-        color = self._tool_panels_manager.tool_panel_color(tool_id)
+        color = cast(ToolsManager, ToolsManager()).tool_color(tool_id)
         tree_widget_item = ToolPanelWidgetTreeItem.create_from_tool_id(
             tool_id=tool_id, tree_widget=self, color=color
         )
