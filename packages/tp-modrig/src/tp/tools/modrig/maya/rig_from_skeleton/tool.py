@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from Qt.QtWidgets import QWidget
 
-from tp.core.tool import Tool, UiData
+from tp.core.tool import Tool, ToolUiData
 
 from .view import RigFromSkeletonView
 from .model import RigFromSkeletonModel
@@ -14,7 +14,7 @@ class RigFromSkeletonTool(Tool):
 
     id = "tp.tools.rig.rigfromskeleton"
     creator = "Tomas Poveda"
-    ui_data = UiData(label="Build Rig from Skeleton")
+    ui_data = ToolUiData(label="Build Rig from Skeleton")
     tags = ["rig", "noddle", "skeleton", "tp", "rigging"]
 
     def __init__(self, *args, **kwargs):

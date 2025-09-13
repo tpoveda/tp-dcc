@@ -6,7 +6,7 @@ from typing import cast
 from Qt.QtWidgets import QVBoxLayout
 
 from tp.libs.qt.widgets import Window
-from tp.core import Tool, UiData, current_host
+from tp.core import Tool, ToolUiData, current_host
 
 from .model import ModuleCreatorModel
 from .view import ModuleCreatorView
@@ -21,7 +21,7 @@ class ModuleCreatorTool(Tool):
 
     id = "tp.modrig.module_creator"
     creator = "Tomi Poveda"
-    ui_data = UiData(label="Module Creator")
+    ui_data = ToolUiData(label="Module Creator")
     tags = ["modrig", "rigging", "modules"]
 
     # noinspection PyAttributeOutsideInit
