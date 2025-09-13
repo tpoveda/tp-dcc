@@ -29,3 +29,11 @@ BROWSER_UNIFORM_ICONS_KEY = "browserUniformIcons"
 # interfaces are stored relative to the TP DCC Python package preferences'
 # directory.
 INTERFACES_FOLDER = "interfaces"
+
+# Defines the name of the folder where the assets defined by the different
+# packages are stored.
+ASSETS_FOLDER = "assets"
+
+# Defines the name of the folder where the default assets provided by the
+# different packages are stored.
+ASSETS_DEFAULTS_FOLDER = "defaults"

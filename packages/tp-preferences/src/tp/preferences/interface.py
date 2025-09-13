@@ -72,6 +72,12 @@ class PreferenceInterface:
         self._preferences_manager = preferences_manager
         self._revert_settings: SettingObject | None = None
 
+    @property
+    def manager(self) -> PreferencesManager:
+        """The main `PreferencesManager` instance."""
+
+        return self._preferences_manager
+
     def settings(
         self,
         name: str | None = None,

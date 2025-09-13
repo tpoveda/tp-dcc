@@ -323,6 +323,17 @@ class PreferencesManager:
 
         return SettingObject(relative_path=relative_path)
 
+    @property
+    def should_copy_default_assets(self) -> bool:
+        """Whether default assets should be copied to the user preference
+        folder on the first run.
+
+        Returns:
+            `True` if default assets should be copied; `False` otherwise.
+        """
+
+        return os.environ.get("TP_COPY_DEFAULT_ASSETS", "0") != "0"
+
     def package_preference_root_location(self, package_name: str) -> str:
         """Determine the root location of the preference folder for a given
         package.

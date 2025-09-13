@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import stat
 import typing
 from typing import Any
 from pathlib import Path
@@ -119,7 +120,7 @@ class SettingObject(dict):
         if not root_paths:
             return None
 
-        return str(next(iter(root_paths.values())))
+        return root_paths.get(self.get("activeRoot")) or str(next(iter(root_paths.values())))
 
     def path(self) -> str:
         """Return the path of the setting.
@@ -190,16 +191,49 @@ class SettingObject(dict):
 
         file_path = Path(root_path) / self.get("relativePath", "")
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        kwargs = {"sort_keys": sort}
+
+        kwargs: dict[str, Any] = {"sort_keys": sort}
         if indent:
             kwargs["indent"] = 2
 
-        print("gogogogog", file_path, os.path.isfile(file_path))
+        parent_dir = Path(file_path).parent
+        parent_dir.mkdir(parents=True, exist_ok=True)
+        if not os.access(parent_dir, os.W_OK):
+            raise PermissionError(
+                f"Cannot write settings: directory is not writable: '{parent_dir}'"
+            )
 
-        with open(file_path, "w", encoding="utf-8") as f:
-            yaml.safe_dump(dict(self), f, **kwargs)
+        output = self.copy()
+        output.pop("rootPaths", None)
+        output.pop("relativePath", None)
+        output.pop("activeRoot", None)
+
+        with self._open_writable_once(str(file_path)) as f:
+            yaml.safe_dump(output, f, **kwargs)
 
         return str(file_path)
+
+    @staticmethod
+    def _open_writable_once(path: str):
+        """Open a file for writing, attempting to change permissions if
+        necessary.
+        """
+
+        try:
+            return open(path, "w", encoding="utf-8")
+        except PermissionError:
+            if os.path.exists(path):
+                # noinspection PyBroadException
+                try:
+                    current_mode = os.stat(path).st_mode
+                    os.chmod(path, current_mode | stat.S_IWUSR)
+                except Exception:
+                    # If chmod fails, re-raise the original error on the next
+                    # open
+                    pass
+
+            # Retry once; if it still fails, let the error propagate
+            return open(path, "w", encoding="utf-8")
 
     def save_to_active_root(
         self, preferences_manager: PreferencesManager
