@@ -1,0 +1,5 @@
+- cmd_type: hotkey
+  key_shortcut: r
+  name: HelloWorldCommand
+  ctrl: True
+  shift: True
