@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tp.core import Tool, UiData, current_host
+from tp.core import Tool, ToolUiData, current_host
 
 from .controller import SkinningToolboxControllerFactory
 from .view import SkinningToolboxWindow
@@ -12,7 +12,7 @@ class SkinningToolbox(Tool):
     id = "tp.rigging.skinningtoolbox"
     creator = "Tomi Poveda"
     tags = ["tp", "rigging", "skin", "skinning", "toolbox", "tool"]
-    ui_data = UiData(
+    ui_data = ToolUiData(
         label="Skinning Toolbox",
         icon="skin.png",
         tooltip="Toolbox for skinning operations.",
