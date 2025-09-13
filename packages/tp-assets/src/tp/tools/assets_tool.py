@@ -24,9 +24,9 @@ class AssetsTool(Tool):
             kwargs: Keyword arguments to pass to the function.
         """
 
-        from tp.assets.ui.view import AssetsView
+        from tp.assets.ui.view import AssetsWindow
 
         current_host = host.current_host()
         current_host.show_dialog(
-            window_class=AssetsView, name="AssetsUI", allows_multiple=True
+            window_class=AssetsWindow, name="AssetsUI", allows_multiple=True
         )
