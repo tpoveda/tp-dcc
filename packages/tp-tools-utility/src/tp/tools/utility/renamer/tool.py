@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-from tp.core.tool import Tool, UiData
+from tp.core.tool import Tool, ToolUiData
 
 from . import consts
 from .view import RenamerWidget
@@ -17,7 +17,7 @@ class RenamerTool(Tool):
     """Tool used to rename nodes."""
 
     id = consts.TOOL_ID
-    ui_data = UiData(label="Renamer")
+    ui_data = ToolUiData(label="Renamer")
     tags = ["tp", "renamer", "tool"]
 
     # def __init__(self, *args, **kwargs):
