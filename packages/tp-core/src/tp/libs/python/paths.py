@@ -6,6 +6,7 @@ import stat
 import inspect
 import platform
 from pathlib import Path
+from collections.abc import Generator
 
 from .names import FindUniqueString
 
@@ -190,6 +191,40 @@ def find_in_sys_path(file_name: str):
     """
 
     return find_first_in_paths(file_name, sys.path)
+
+
+def up_directory(path: str, depth: int = 1) -> str:
+    """Returns the path up to the given depth.
+
+    Args:
+        path: Path to go up from.
+        depth: Depth to go up.
+
+    Returns:
+        Path up to the given depth.
+    """
+
+    _current_depth: int = 1
+    while _current_depth < depth:
+        path = os.path.dirname(path)
+        _current_depth += 1
+
+    return path
+
+
+def iterate_parent_paths(child_path: str) -> Generator[str, None, None]:
+    """Generator that yields all parent paths of the given child path.
+
+    Args:
+        child_path: Child path to get parent paths from.
+
+    Yields:
+        Parent paths of the given child path.
+    """
+
+    path = Path(child_path).resolve()
+    for parent in path.parents:
+        yield str(parent)
 
 
 class FindUniquePath(FindUniqueString):

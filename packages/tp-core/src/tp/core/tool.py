@@ -1,17 +1,24 @@
 from __future__ import annotations
 
 import sys
+import typing
 import traceback
-from typing import TypedDict
+from typing import cast, Type, TypedDict
 
 from loguru import logger
 from Qt.QtWidgets import QWidget, QStackedWidget
 
 from tp.dcc import callback
+from tp.core.host import current_host
+from tp.libs.qt.widgets import Window
 from tp.libs.plugin import Plugin, PluginsManager, PluginExecutionStats
 
+if typing.TYPE_CHECKING:
+    from tp.libs.qt.mvc import Model, Controller
+    from tp.tools.hub.widgets.toolpanel import ToolPanelWidget
 
-class UiData(TypedDict, total=False):
+
+class ToolUiData(TypedDict, total=False):
     """A data class for storing UI-related data for a tool.
 
     Attributes:
@@ -72,7 +79,11 @@ class Tool(Plugin):
     id: str = ""
     creator: str = "Tomi Poveda"
     tags: list[str] = []
-    ui_data: UiData = {}
+    ui_data: ToolUiData = {}
+    tool_panel_class: Type[ToolPanelWidget] | None = None
+    tool_model: Model = None
+    tool_controller: Controller = None
+    tool_view: QWidget = None
 
     def __init__(self, manager: PluginsManager | None = None):
         super(Tool, self).__init__()
@@ -96,7 +107,47 @@ class Tool(Plugin):
 
         return self._callbacks
 
-    # noinspection PyUnusedLocal
+    # noinspection PyCallingNonCallable,PyAttributeOutsideInit
+    @classmethod
+    def setup(cls) -> QWidget | None:
+        """Set up the tool by initializing its model, controller, and view."""
+
+        view: QWidget | None = None
+        if all(
+            [
+                cls.tool_model is not None,
+                cls.tool_controller is not None,
+                cls.tool_view is not None,
+            ]
+        ):
+            model = cls.tool_model()
+            controller = cls.tool_controller(model=model)
+
+            cls.setup_model_controller(model=model, controller=controller)
+
+            view = cls.tool_view(model=model)
+
+        return view
+
+    @classmethod
+    def setup_model_controller(cls, model: Model, controller: Controller) -> None:
+        """Set up the model and controller for the tool.
+
+        Args:
+            model: The model instance to set up.
+            controller: The controller instance to set up.
+        """
+
+    @classmethod
+    def setup_tool_panel(cls, tool_panel: ToolPanelWidget, view: QWidget) -> None:
+        """Set up the tool panel with the provided view.
+
+        Args:
+            tool_panel: The tool panel widget to set up.
+            view: The view widget to add to the tool panel.
+        """
+
+    # noinspection PyUnusedLocal, PyCallingNonCallable, PyAttributeOutsideInit
     def execute(self, *args, **kwargs):
         """Execute the tool with the specified arguments.
 
@@ -107,6 +158,49 @@ class Tool(Plugin):
             args: Positional arguments to pass to the function.
             kwargs: Keyword arguments to pass to the function.
         """
+
+        tool_view = self.setup()
+
+        if tool_view is not None:
+            host = current_host()
+            window = cast(
+                Window,
+                host.show_dialog(
+                    window_class=Window,
+                    name=self.__class__.__name__,
+                    allows_multiple=False,
+                    settings_path=self.id.replace(".", "/") if self.id else "",
+                ),
+            )
+            window.set_title(self.ui_data.get("label"))
+            window.main_layout().addWidget(tool_view)
+            window.closed.connect(self._run_teardown)
+
+        # if not self.tool_panel_class:
+        #     return
+        #
+        # tool_panel_widget = self.tool_panel_class()
+        # tool_panel_widget.setup()
+        # tool_panel_widget.toggle_contents(True)
+        # window = Window()
+        # window.main_layout().addWidget(tool_panel_widget)
+        # window.set_title(self.ui_data.get("label", "Tool"))
+        # window.resize(400, 600)
+        # window.show()
+
+        # host = current_host()
+        # window = cast(
+        #     Window,
+        #     host.show_dialog(
+        #         window_class=Window,
+        #         name=self.id,
+        #         allows_multiple=False,
+        #         *args,
+        #         **kwargs,
+        #     ),
+        # )
+        # tool_panel_widget.setParent(window)
+        # window.main_layout().addWidget(tool_panel_widget)
 
         # kwargs["name"] = self.__class__.__name__
         # kwargs["settings_path"] = self.id.replace(".", "/") if self.id else ""

@@ -262,7 +262,7 @@ def copy_folder(
     return directory_destination
 
 
-def copy_folder_contents(directory, directory_destination, *args, **kwargs):
+def copy_folder_contents(directory, directory_destination, *args, **kwargs) -> bool:
     """Copies the given directory contents into the given destination directory.
 
     :param str directory: absolute path of the directory we want to copy.

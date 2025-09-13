@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 
 from loguru import logger
 
-from ..core.tool import Tool, UiData
+from ..core.tool import Tool, ToolUiData
 from ..core.consts import TOOLS_ENV_VAR
 from ..libs.plugin import PluginsManager
 from ..libs.python.decorators import Singleton
@@ -69,6 +69,22 @@ class ToolsManager(metaclass=Singleton):
         self._manager.register_by_environment_variable(TOOLS_ENV_VAR)
         self._manager.load_all_plugins()
 
+    def tool_class(self, tool_id: str) -> type[Tool] | None:
+        """Returns the tool class for a given tool ID.
+
+        Args:
+            tool_id: The ID of the tool.
+
+        Returns:
+            The tool class if found, otherwise None.
+        """
+
+        try:
+            return cast(type[Tool], self._manager.get_plugin(tool_id))
+        except AttributeError:
+            logger.error(f"Tool with ID '{tool_id}' is not registered.")
+            return None
+
     def generate_command(
         self, tool_id: str, arguments: dict[str, Any] | None = None
     ) -> ToolCommand:
@@ -88,7 +104,9 @@ class ToolsManager(metaclass=Singleton):
 
         return ToolCommand(tool_id, arguments=args, string=command)
 
-    def tool_ui_data(self, tool_id: str, overrides: UiData | None = None) -> UiData:
+    def tool_ui_data(
+        self, tool_id: str, overrides: ToolUiData | None = None
+    ) -> ToolUiData:
         """Get the UI data for a tool by its ID.
 
         Args:
@@ -99,8 +117,8 @@ class ToolsManager(metaclass=Singleton):
             A dictionary containing the UI data for the tool.
         """
 
-        ui_data = UiData()
-        overrides = overrides or UiData()
+        ui_data = ToolUiData()
+        overrides = overrides or ToolUiData()
         try:
             tool_class: type[Tool] = cast(type[Tool], self._manager.get_plugin(tool_id))
             ui_data.update(tool_class.ui_data)
@@ -149,3 +167,12 @@ class ToolsManager(metaclass=Singleton):
             cast(Tool, tool_instance)._run_teardown()
 
         self._manager.unload_all_plugins()
+
+    def tool_color(self, tool_id: str) -> tuple[int, int, int] | None:
+        """Return the default color for tools in the UI.
+
+        Returns:
+            A tuple representing the RGB color.
+        """
+
+        return None
