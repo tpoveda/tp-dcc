@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tp.core import Tool, UiData, current_host
+from tp.core import Tool, ToolUiData, current_host
 
 from .controller import MatchBakeControllerFactory
 from .view import MatchBakeWindow
@@ -12,7 +12,7 @@ class MatchBakeTool(Tool):
     id = "tp.animation.matchbake"
     creator = "Tomi Poveda"
     tags = ["tp", "animation", "match", "bake", "tool"]
-    ui_data = UiData(label="Match & Bake Animations")
+    ui_data = ToolUiData(label="Match & Bake Animations")
 
     def execute(self, *args, **kwargs):
         """Execute the tool with the specified arguments.
