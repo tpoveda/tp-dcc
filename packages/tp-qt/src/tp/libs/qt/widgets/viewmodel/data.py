@@ -387,7 +387,7 @@ class BaseDataSource(QObject):
 
         return ""
 
-    def set_data(self, index: int, value: Any):
+    def set_data(self, index: int, value: Any) -> bool:
         """Set the value at the specified index in a data structure.
 
         Args:
@@ -396,9 +396,12 @@ class BaseDataSource(QObject):
             value: The new value to be assigned at the specified index. The
                 type of this value depends on the data structure's expected
                 content.
+
+        Returns:
+            `True` if the data was modified; `False` otherwise.
         """
 
-        pass
+        return False
 
     def set_data_by_custom_role(self, index: int, data: Any, role: Qt.ItemDataRole):
         """Set the data for the given index and role with the specified value.
@@ -745,7 +748,7 @@ class BaseDataSource(QObject):
                 functionality is supported.
 
         Returns:
-            True if the item at the specified index supports drag-and-drop;
+            `True` if the item at the specified index supports drag-and-drop;
             `False` otherwise.
         """
 
@@ -1125,7 +1128,7 @@ class ColumnDataSource(BaseDataSource):
 
         return False
 
-    def set_data(self, row_data_source: BaseDataSource, index: int, value: Any):
+    def set_data(self, row_data_source: BaseDataSource, index: int, value: Any) -> bool:
         """Set a value in a specific row and column within the data source.
 
         Args:
@@ -1135,9 +1138,12 @@ class ColumnDataSource(BaseDataSource):
                 should be updated.
             value: The new value to be set at the specified column index in
                 the row.
+
+        Returns:
+            `True` if the data was modified; `False` otherwise.
         """
 
-        pass
+        return False
 
     def tooltip(self, row_data_source: BaseDataSource, index: int) -> str:
         """Generate the tooltip text for a specific data point in a given data

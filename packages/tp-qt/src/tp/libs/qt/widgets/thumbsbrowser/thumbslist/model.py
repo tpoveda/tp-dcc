@@ -1,21 +1,25 @@
 from __future__ import annotations
 
+import os
 import time
 import random
 import typing
 from pathlib import Path
+from functools import partial
 from typing import cast, TypedDict, Any
 
+from loguru import logger
 from Qt.QtCore import (
     Qt,
     Signal,
     QObject,
+    QSize,
     QModelIndex,
     QSortFilterProxyModel,
     QThreadPool,
 )
 from Qt.QtWidgets import QStyleOptionViewItem
-from Qt.QtGui import QStandardItem, QStandardItemModel, QPainter
+from Qt.QtGui import QFont, QImage, QPixmap, QStandardItem, QStandardItemModel, QPainter
 
 from tp.libs.qt import icons
 from tp.libs.qt import utils
@@ -25,7 +29,7 @@ from .utils import IconLoader
 
 if typing.TYPE_CHECKING:
     from tp.preferences.directory import DirectoryPath
-    from .view import ThumbsListView
+    from tp.preferences.assets import BrowserPreference
 
 
 class ThumbRole:
@@ -64,7 +68,7 @@ class SerializedThumbData(TypedDict):
     metadata: ThumbMetadataInfo
 
 
-class ThumbData:
+class ItemData:
     _EMPTY_THUMBNAIL: str | None = None
 
     def __init__(
@@ -72,18 +76,23 @@ class ThumbData:
         name: str | None = None,
         icon_path: str | None = None,
         file_path: str = "",
+        tooltip: str = "",
         thumbnail: str = "",
-    ):
+        auto_thumb_from_image: bool = False,
+    ) -> None:
         super().__init__()
 
-        if ThumbData._EMPTY_THUMBNAIL is None:
-            ThumbData._EMPTY_THUMBNAIL = icons.icon_path("emptyThumbnail")["sizes"][
-                200
-            ]["path"]
+        if ItemData._EMPTY_THUMBNAIL is None:
+            ItemData._EMPTY_THUMBNAIL = icons.icon_path("emptyThumbnail")["sizes"][200][
+                "path"
+            ]
 
         self._name = name or ""
+        self._icon_path = icon_path or ""
         self._file_path = file_path
+        self._tooltip = tooltip
         self._thumbnail = thumbnail
+        self._auto_thumb_from_image = auto_thumb_from_image
         self._resolved_thumbnail: str | None = None
 
         self._user = ""
@@ -97,6 +106,8 @@ class ThumbData:
         self.set_file_path(file_path)
         self._name = self._name or self._file_name
 
+    # === File Path === #
+
     @property
     def name(self) -> str:
         """The name of the thumb data."""
@@ -108,6 +119,18 @@ class ThumbData:
         """The file name of the thumb data without extension."""
 
         return self._file_name
+
+    @property
+    def directory(self) -> str:
+        """The directory of the thumb data."""
+
+        return self._directory
+
+    @property
+    def tooltip(self) -> str:
+        """The tooltip of the thumb data."""
+
+        return self._tooltip
 
     def set_file_path(self, file_path: str):
         """Set the file path and extracts related file and directory
@@ -151,11 +174,48 @@ class ThumbData:
 
         return Path(self._directory, self.file_name_with_extension()).as_posix()
 
+    # noinspection PyMethodMayBeStatic
+    def _normalize_path(self, path: str) -> str:
+        """Normalize the given path for reliable comparison.
+
+        Args:
+            path: The file path to normalize.
+
+        Returns:
+            A normalized path string using forward slashes.
+        """
+
+        if not path:
+            return ""
+
+        try:
+            normalized = Path(path).resolve()
+            return normalized.as_posix()
+        except (OSError, ValueError):
+            # Fallback for invalid paths.
+            return Path(path).as_posix()
+
+    # endregion
+
+    # region === Thumbnail === #
+
+    @property
+    def icon_loader(self) -> IconLoader | None:
+        """The icon loader used to load the thumbnail icon."""
+
+        return self._icon_loader
+
+    @icon_loader.setter
+    def icon_loader(self, value: IconLoader) -> None:
+        """Sets the icon loader used to load the thumbnail icon."""
+
+        self._icon_loader = value
+
     def thumbnail_exists(self) -> bool:
         """Checks if the thumbnail exists.
 
         Returns:
-            True if the thumbnail exists, False otherwise.
+            `True` if the thumbnail exists; `False` otherwise.
         """
 
         return bool(self._thumbnail) and Path(self._thumbnail).exists()
@@ -234,6 +294,19 @@ class ThumbData:
         # resolved on the next call.
         self._resolved_thumbnail = None
 
+    def icon_loaded(self) -> bool:
+        """Check if the icon loader has been initialized and the icon is loaded.
+
+        Returns:
+            True if the icon is loaded, False otherwise.
+        """
+
+        return self._icon_loader is not None and self._icon_loader.is_finished()
+
+    # endregion
+
+    # region === MetaData === #
+
     def description(self) -> str:
         return self._metadata.get("description")
 
@@ -251,15 +324,6 @@ class ThumbData:
 
     def has_any_tags(self, tags: list[str]) -> bool:
         return any(tag in self.tags() for tag in tags)
-
-    def icon_loaded(self) -> bool:
-        """Check if the icon loader has been initialized and the icon is loaded.
-
-        Returns:
-            True if the icon is loaded, False otherwise.
-        """
-
-        return self._icon_loader is not None and self._icon_loader.is_finished()
 
     def serialize(self) -> SerializedThumbData:
         """Serialize the thumb data into a dictionary.
@@ -283,32 +347,13 @@ class ThumbData:
             }
         }
 
-    # noinspection PyMethodMayBeStatic
-    def _normalize_path(self, path: str) -> str:
-        """Normalize the given path for reliable comparison.
-
-        Args:
-            path: The file path to normalize.
-
-        Returns:
-            A normalized path string using forward slashes.
-        """
-
-        if not path:
-            return ""
-
-        try:
-            normalized = Path(path).resolve()
-            return normalized.as_posix()
-        except (OSError, ValueError):
-            # Fallback for invalid paths.
-            return Path(path).as_posix()
+    # endregion
 
 
 class ThumbItemModel(QStandardItem):
     def __init__(
         self,
-        data: ThumbData,
+        data: ItemData,
         square_icon: bool = False,
         parent: ThumbItemModel | None = None,
     ):
@@ -323,24 +368,41 @@ class ThumbItemModel(QStandardItem):
         self._border_width = 1
         self._text_padding_horizontal = 7
         self._text_padding_vertical = 2
+        self._show_text = True
+        self._icon_size = QSize(256, 256)
+        self._font = QFont("Tahoma")
+        self._aspect_ratio = Qt.KeepAspectRatioByExpanding
+        self._pixmap: QPixmap | None = None
 
-    def thumb(self) -> ThumbData:
-        """Returns the thumb data associated with this item.
+    # region === Properties === #
 
-        Returns:
-            The ThumbData instance associated with this item.
-        """
+    @property
+    def item_data(self) -> ItemData:
+        """The thumb data associated with this item."""
 
         return self._data
 
-    def thumb_text(self) -> str:
-        """Returns the text representation of the thumb data.
-
-        Returns:
-            The text representation of the thumb data.
-        """
+    @property
+    def item_text(self) -> str:
+        """The text associated with this item."""
 
         return self._data.name
+
+    @property
+    def square_icon(self) -> bool:
+        """Whether the icon should be square."""
+
+        return self._square_icon
+
+    @square_icon.setter
+    def square_icon(self, flag: bool):
+        """Sets whether the icon should be square."""
+
+        self._square_icon = flag
+
+    # endregion
+
+    # region === Rendering === #
 
     def paint(
         self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
@@ -358,6 +420,38 @@ class ThumbItemModel(QStandardItem):
 
         painter.save()
         painter.restore()
+
+    def sizeHint(self) -> QSize:
+        """Returns the size hint for the item.
+
+        Returns:
+            The size hint as a QSize object.
+        """
+
+        model = cast(ThumbsListModel, self.model())
+        size_hint = model.icon_size
+
+        pixmap_size = QSize(1, 1)
+        if self._pixmap:
+            pixmap_size = self._pixmap.rect().size()
+
+        size = min(size_hint.height(), size_hint.width())
+        pixmap_size = QSize(128, 128) if pixmap_size == QSize(0, 0) else pixmap_size
+
+        aspect_ratio = 1
+        if not self._square_icon:
+            aspect_ratio = float(pixmap_size.width()) / float(pixmap_size.height())
+
+        size_hint.setWidth(size * aspect_ratio)
+
+        size_hint.setHeight(size + 1)
+
+        if self._show_text:
+            size_hint.setHeight(
+                size_hint.height() + self._text_height + self._text_padding_vertical * 2
+            )
+
+        return size_hint
 
 
 class ThumbsListFilterProxyModel(QSortFilterProxyModel):
@@ -406,6 +500,7 @@ class ThumbsListFilterProxyModel(QSortFilterProxyModel):
 
 
 class ThumbsListModel(QStandardItemModel):
+    # Total number of items to load per chunk for lazy loading.
     CHUNK_COUNT = 20
 
     refreshRequested = Signal()
@@ -415,18 +510,30 @@ class ThumbsListModel(QStandardItemModel):
 
     def __init__(
         self,
-        view: ThumbsListView,
         extensions: list[str],
         directories: list[str] | None = None,
         active_directories: list[str] | None = None,
         chunk_count: int | None = None,
         uniform_icons: bool = False,
         include_sub_directories: bool = False,
+        preferences: BrowserPreference | None = None,
         parent: QObject | None = None,
-    ):
+    ) -> None:
+        """Initialize the `ThumbsListModel`.
+
+        Args:
+            extensions: A list of file extensions to filter the thumbnails.
+            directories: A list of directory paths to load thumbnails from.
+            active_directories: A list of active directory paths to filter
+            chunk_count: Number of items to load per chunk for lazy loading.
+            uniform_icons: Whether to use uniform icons for all items.
+            include_sub_directories: Whether to include sub-directories when
+                loading thumbnails.
+            parent: The parent QObject, if any.
+        """
+
         super().__init__(parent=parent)
 
-        self._view = view
         if not osplatform.is_windows():
             self._extensions = (
                 list(
@@ -442,20 +549,26 @@ class ThumbsListModel(QStandardItemModel):
         self._chunk_count = chunk_count or self.CHUNK_COUNT
         self._uniform_icons = uniform_icons
         self._include_sub_directories = include_sub_directories
+        self._preferences = preferences
 
         self._thread_pool = QThreadPool.globalInstance()
 
         self._loaded_count = 0
-        self._file_items: list[ThumbItemModel] = []
+        self._items: list[ThumbItemModel] = []
         self._directories: list[DirectoryPath] | None = None
         self._active_directories: list[DirectoryPath] | None = None
+        self._icon_size = QSize(256, 256)
+        self._current_item_data: ItemData | None = None
+        self._current_item_image_path: str | None = None
 
         if directories:
             self.set_directories(directories, False)
 
         self.set_active_directories(active_directories, False)
 
-    def data(self, index: QModelIndex, role: Qt.ItemDataRole = Qt.DisplayRole):
+    # === QAbstractItemModel overrides === #
+
+    def data(self, index: QModelIndex, role: Qt.ItemDataRole = Qt.DisplayRole) -> Any:
         """Returns the data for the given index and role.
 
         Args:
@@ -492,6 +605,42 @@ class ThumbsListModel(QStandardItemModel):
             return thumb_data.creators()
 
         return super().data(index, role)
+
+    def clear(self) -> None:
+        """Clears the thumbs and the data from the model."""
+
+        # Remove non-started threads from the thread pool.
+        self._thread_pool.clear()
+
+        # Wait for all threads to finish before clearing the model.
+        while not self._thread_pool.waitForDone():
+            continue
+
+        self._loaded_count = 0
+
+        super().clear()
+
+    # endregion
+
+    # region === Preferences ===
+
+    @property
+    def preferences(self) -> BrowserPreference | None:
+        """The browser preferences."""
+
+        return self._preferences
+
+    def refresh_asset_folders(self) -> None:
+        """Refresh the asset folders from the preferences."""
+
+        if not self._preferences:
+            return
+
+        self._preferences.refresh_asset_folders(set_active=True)
+
+    # endregion
+
+    # region === Directories === #
 
     def set_directory(
         self, directory: str | DirectoryPath | None, refresh: bool = True
@@ -569,28 +718,209 @@ class ThumbsListModel(QStandardItemModel):
         if refresh:
             self.refresh()
 
-    def load_data(self, chunk_count: int = 0):
-        pass
+    # endregion
+
+    # region === Items === #
+
+    @property
+    def current_item_data(self) -> ItemData | None:
+        """The data of the currently selected item."""
+
+        return self._current_item_data
+
+    @property
+    def current_item_image_path(self) -> str | None:
+        """The image path of the currently selected item."""
+
+        return self._current_item_image_path
+
+    @property
+    def icon_size(self) -> QSize:
+        """The icon size used by the model."""
+
+        return self._icon_size
+
+    @icon_size.setter
+    def icon_size(self, value: QSize) -> None:
+        """Set the icon size used by the model."""
+
+        self._icon_size = value
+
+    def set_uniform_item_sizes(self, flag: bool) -> None:
+        """Sets whether the icons should be uniform in size.
+
+        Args:
+            flag: `True` to use uniform icon sizes; `False` otherwise.
+        """
+
+        self._uniform_icons = flag
+
+        for row in range(self.rowCount()):
+            item = cast(ThumbItemModel, self.itemFromIndex(self.index(row, 0)))
+            item.square_icon = flag
+
+    # endregion
+
+    # region === Loading === #
+
+    def update_from_prefs(self, update_items: bool = True) -> None:
+        """Updates the model's directories and active directories from the
+        preferences.
+
+        Args:
+            update_items: Whether to update the items if the active directories
+                have changed.
+        """
+
+        if not self._preferences:
+            return
+
+        self._directories = self._preferences.browser_folder_paths()
+        old_active_directories = self._active_directories
+        self._active_directories = self._preferences.active_browser_paths()
+
+        # If the active directories have changed, update the items.
+        if update_items and not set(
+            [Path(a.path).as_posix() for a in old_active_directories]
+        ) == set([Path(b.path).as_posix() for b in self._active_directories]):
+            logger.debug("Active directories have changed, updating items...")
+            self._update_items()
+
+    def load_data(self, chunk_count: int = 0) -> None:
+        """Loads data based on a specified chunk count.
+
+        This function uses a lazy loading filter to determine the items
+        to load and then performs the data loading operation.
+
+        Args:
+            chunk_count: The number of chunks to consider for lazy loading.
+                If set to 0, all available data is loaded.
+
+        Notes:
+            - Lazy loading happens either on initialization and any time the
+                vertical bar hits the max value.
+        """
+
+        items_to_load = self.lazy_load_filter(chunk_count)
+        self._load_items(items_to_load)
+
+    def lazy_load_filter(self, chunk_count: int = 0) -> list[ThumbItemModel]:
+        """Retrieves the next chunk of items for lazy loading.
+
+        Args:
+            chunk_count: Number of items to load. If 0, uses the default chunk
+                size configured for this model. If the model defines a default
+                chunk in its constructor, this value will be ignored.
+
+        Returns:
+            A list of `QStandardItem` objects representing the next chunk of
+                items to be loaded.
+        """
+
+        files_to_load: list[ThumbItemModel] = []
+
+        chunk_count = self._chunk_count if chunk_count == 0 else chunk_count
+        if len(self._items) < self._loaded_count:
+            files_to_load.extend(
+                [
+                    cast(ThumbItemModel, self.itemFromIndex(self.index(row, 0)))
+                    for row in range(self.rowCount())
+                ]
+            )
+        else:
+            for i in range(self._loaded_count, self._loaded_count + chunk_count):
+                index = self.index(i, 0)
+                if not index.isValid():
+                    continue
+                item = cast(ThumbItemModel, self.itemFromIndex(index))
+                if item is not None:
+                    files_to_load.append(item)
+
+        return files_to_load
+
+    def _load_items(self, items_to_load: list[ThumbItemModel]) -> None:
+        """Loads the specified items using separate threads for each item.
+
+        Args:
+            items_to_load: A list of `ThumbItemModel` items to be loaded.
+        """
+
+        threads: list[IconLoader] = []
+        for item in items_to_load:
+            thread = self._load_item_in_thread(item)
+            if thread is not None:
+                threads.append(thread)
+            self._loaded_count += 1
+
+        # Start all threads in the thread pool.
+        for thread in threads:
+            self._thread_pool.start(thread)
+
+    def _load_item_in_thread(
+        self, item_to_load: ThumbItemModel, start: bool = False
+    ) -> IconLoader | None:
+        """Loads a thumbnail item in a separate thread if a valid thumbnail path
+        exists.
+
+        This method checks if the given item's thumbnail exists and is a valid
+        file. If so, it initializes a new thread for loading the thumbnail and
+        connects the necessary signals for updating the item's icon.
+
+        Optionally, the thread can be started immediately if specified.
+
+        Args:
+            item_to_load: The thumbnail item to be loaded.
+            start: Whether to start the thread immediately after loading the
+                item.
+
+        Returns:
+            The worker thread created for loading the thumbnail, or `None` if
+                no valid thumbnail was found.
+        """
+
+        item_data = item_to_load.item_data
+        thumbnail = item_data.thumbnail()
+        if not thumbnail or os.path.isfile(thumbnail):
+            return None
+
+        worker_thread = IconLoader(icon_path=thumbnail)
+        worker_thread.signals.updated.connect(
+            partial(self._set_item_icon_from_image, item_to_load)
+        )
+        self.parentClosed.connect(worker_thread.finish)
+
+        # Make sure to keep a reference to the worker thread in the item data
+        # to prevent it from being garbage collected.
+        item_data.icon_loader = worker_thread
+
+        if start:
+            self._thread_pool.start(worker_thread)
+            self._loaded_count += 1
+
+        return worker_thread
+
+    def _set_item_icon_from_image(self, item: ThumbItemModel, image: QImage) -> None:
+        """Sets the icon of the given item from the provided image.
+
+        This method converts the provided `QImage` into a `QPixmap`, scales it
+        to fit the model's icon size while maintaining the aspect ratio, and
+        then sets it as the item's icon.
+
+        Args:
+            item: The thumbnail item whose icon is to be set.
+            image: The `QImage` to be converted and set as the item's icon.
+        """
+
+        print("Setting image icon from image...")
 
     def refresh(self):
         self.clear()
         self.refreshRequested.emit()
-        self._update_from_prefs(False)
+        self.update_from_prefs(update_items=False)
         self._update_items()
 
-    def clear(self):
-        """Clears the thumbs and the data from the model."""
-
-        # Remove non-started threads from the thread pool.
-        self._thread_pool.clear()
-
-        # Wait for all threads to finish before clearing the model.
-        while self._thread_pool.waitForDone():
-            continue
-
-        self._loaded_count = 0
-
-        super().clear()
+    def _update_items(self):
+        print("Updating items ...")
 
     def reset(self):
         """Resets the model data, notifying the views that the model has been
@@ -624,7 +954,7 @@ class ThumbsListModel(QStandardItemModel):
 
         # If we have fewer file items than loaded count, load all remaining
         # items.
-        if len(self._file_items) < self._loaded_count:
+        if len(self._items) < self._loaded_count:
             return [
                 cast(ThumbItemModel, self.itemFromIndex(self.index(row, 0)))
                 for row in range(self.rowCount())

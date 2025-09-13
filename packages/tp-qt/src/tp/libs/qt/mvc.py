@@ -603,4 +603,21 @@ class Model(QObject):
 
 
 class Controller(QObject):
-    """Simple Controller class that handles all DCC specific logic code should be handled by a controller."""
+    """Simple Controller class that handles all DCC specific logic code
+    should be handled by a controller."""
+
+    def __init__(self, model: Model):
+        super().__init__()
+
+        self.setup_model(model)
+
+    def setup_model(self, model: Model) -> None:
+        """Sets up the model associated with the controller.
+
+        This method sets up the model associated with the controller.
+
+        Args:
+            model: The model to associate with the controller.
+        """
+
+        pass

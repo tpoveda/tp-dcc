@@ -176,6 +176,18 @@ class TreeViewWidget(QFrame):
 
         return self._toolbar_layout
 
+    @property
+    def model(self) -> TreeModel | None:
+        """The source model associated with this widget."""
+
+        return self._model
+
+    @property
+    def proxy_model(self) -> LeafTreeFilterProxyModel:
+        """The proxy model associated with this widget."""
+
+        return self._proxy_model
+
     def set_model(self, model: TreeModel):
         """Set the source model for the tree view.
 
