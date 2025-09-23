@@ -2,11 +2,15 @@
 
 #include "tpUnreal.h"
 
+#include "AssetToolsModule.h"
+#include "AssetViewUtils.h"
 #include "ContentBrowserModule.h"
 #include "DebugHelpers.h"
 #include "EditorAssetLibrary.h"
 #include "ObjectTools.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "Internationalization/Regex.h"
 
 #define LOCTEXT_NAMESPACE "FtpUnrealModule"
 
@@ -80,13 +84,19 @@ void FtpUnrealModule::OnDeleteUnusedAssetsButtonClicked()
 		return;
 	}
 
-	if (const EAppReturnType::Type ConfirmResult = DebugHelpers::ShowMessageDialog(EAppMsgType::YesNo, TEXT("Are you sure you want to delete all unused assets under folder?"), false);
+	if (const EAppReturnType::Type ConfirmResult = DebugHelpers::ShowMessageDialog(
+		EAppMsgType::YesNo,
+		TEXT("Are you sure you want to delete all unused assets under folder?"),
+		false);
 		ConfirmResult == EAppReturnType::No) return;
-
+	
 	TArray<FAssetData> UnusedAssetsData;
 	for (const FString& AssetPathName : AssetsPathNames)
 	{
-		if (AssetPathName.Contains(TEXT("Developers")) || AssetPathName.Contains(TEXT("Collections"))) continue;
+		if (AssetPathName.Contains(TEXT("Developers")) ||
+			AssetPathName.Contains(TEXT("Collections")) ||
+			AssetPathName.Contains(TEXT("__ExternalActors__")) ||
+			AssetPathName.Contains(TEXT("__ExternalObjects__"))) continue;
 		if (!UEditorAssetLibrary::DoesAssetExist(AssetPathName)) continue;
 
 		TArray<FString> AssetReferences = UEditorAssetLibrary::FindPackageReferencersForAsset(AssetPathName);
@@ -99,12 +109,80 @@ void FtpUnrealModule::OnDeleteUnusedAssetsButtonClicked()
 
 	if (UnusedAssetsData.Num() > 0)
 	{
+		FixUpRedirectors(GetTopLevelPackagePath(UnusedAssetsData));
 		ObjectTools::DeleteAssets(UnusedAssetsData);
 	}
 	else
 	{
 		DebugHelpers::ShowMessageDialog(EAppMsgType::Ok, TEXT("No unused assets found under folder"));
 	}
+}
+
+void FtpUnrealModule::FixUpRedirectors(const TArray<FName>& PackagePaths)
+{
+	TArray<UObjectRedirector*> RedirectorsToFixArray;
+	const IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+
+	// Form a filter from the paths.
+	FARFilter Filter;
+	Filter.bRecursiveClasses = true;
+	Filter.PackagePaths.Append(PackagePaths);
+	Filter.ClassPaths.Add(UObjectRedirector::StaticClass()->GetClassPathName());
+
+	// Query for a list of assets in the selected paths.
+	TArray<FAssetData> AssetList;
+	AssetRegistry.GetAssets(Filter, AssetList);
+	if (AssetList.Num() == 0) return;
+	TArray<FString> ObjectPaths;
+	for (const FAssetData& Asset : AssetList)
+	{			
+		ObjectPaths.Add(Asset.GetObjectPathString());	
+	}
+
+	AssetViewUtils::FLoadAssetsSettings Settings;
+	Settings.bFollowRedirectors = false;
+	Settings.bAllowCancel = true;
+	TArray<UObject*> Objects;
+	if (AssetViewUtils::ELoadAssetsResult Result = AssetViewUtils::LoadAssetsIfNeeded(ObjectPaths,Objects,Settings); Result != AssetViewUtils::ELoadAssetsResult::Cancelled)
+	{
+		// Transform Objects array to ObjectRedirectors array
+		TArray<UObjectRedirector*> Redirectors;
+		for (UObject* Object : Objects)
+		{
+			Redirectors.Add(CastChecked<UObjectRedirector>(Object));
+		}
+	
+		// Load the asset tools module
+		FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>(TEXT("AssetTools"));
+		AssetToolsModule.Get().FixupReferencers(Redirectors);
+	}
+}
+
+FString FtpUnrealModule::MatchAndGetCaptureGroup(const FString& Regex, const FString& Text, int CaptureGroup)
+{
+	const FRegexPattern Pattern(Regex);
+	FRegexMatcher Matcher(Pattern, Text);
+	if (Matcher.FindNext())
+	{
+		return Matcher.GetCaptureGroup(CaptureGroup);
+	}
+	return "";
+}
+
+TArray<FName> FtpUnrealModule::GetTopLevelPackagePath(const TArray<FAssetData>& Array)
+{
+	TMap<FName, int32> TopLevelPackagePath;
+	for (const auto& AssetData : Array)
+	{
+		FString AssetPath = AssetData.GetSoftObjectPath().ToString();
+		FString TopLevelPath = MatchAndGetCaptureGroup(TEXT("^(/[^/]*)"), AssetPath, 1);
+		TopLevelPackagePath.FindOrAdd(*TopLevelPath);
+	} 
+ 
+	TArray<FName> Result;
+	TopLevelPackagePath.GetKeys(Result);
+	
+	return Result;
 }
 
 #pragma endregion

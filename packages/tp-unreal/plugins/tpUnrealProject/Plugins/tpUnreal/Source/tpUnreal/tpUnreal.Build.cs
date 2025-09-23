@@ -40,7 +40,8 @@ public class tpUnreal : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"UnrealEd"
+				"UnrealEd",
+				"AssetTools",
 			}
 			);
 		
