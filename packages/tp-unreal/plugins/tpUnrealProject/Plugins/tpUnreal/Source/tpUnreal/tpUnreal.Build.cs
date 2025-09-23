@@ -27,7 +27,8 @@ public class tpUnreal : ModuleRules
 			{
 				"Core",
 				"Blutility",
-				"EditorScriptingUtilities"
+				"EditorScriptingUtilities",
+				"ContentBrowser",
 			}
 			);
 			
@@ -39,7 +40,7 @@ public class tpUnreal : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				// ... add private dependencies that you statically link with here ...	
+				"UnrealEd"
 			}
 			);
 		
