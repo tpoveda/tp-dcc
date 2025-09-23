@@ -1,7 +1,6 @@
 #include "DebugHelpers.h"
 #include "AssetActions/QuickAssetAction.h"
 
-#include "AssetToolsModule.h"
 #include "EditorAssetLibrary.h"
 #include "EditorUtilityLibrary.h"
 #include "Modules/ModuleManager.h"
@@ -10,7 +9,7 @@ void UQuickAssetAction::DuplicateAssets(const int32 NumOfDuplicates)
 {
 	if (NumOfDuplicates <= 0)
 	{
-		ShowMessageDialog(EAppMsgType::Ok, TEXT("Please enter a valid number"));
+		DebugHelpers::ShowMessageDialog(EAppMsgType::Ok, TEXT("Please enter a valid number"));
 		return;
 	}
 
@@ -33,6 +32,6 @@ void UQuickAssetAction::DuplicateAssets(const int32 NumOfDuplicates)
 	}
 	if (Counter > 0)
 	{
-		ShowNotifyInfo(TEXT("Successfully duplicated " + FString::FromInt(Counter) + " assets"));
+		DebugHelpers::ShowNotifyInfo(TEXT("Successfully duplicated " + FString::FromInt(Counter) + " assets"));
 	}
 }

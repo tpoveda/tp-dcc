@@ -14,5 +14,5 @@ class TPUNREAL_API UQuickAssetAction : public UAssetActionUtility
 
 public:
 	UFUNCTION(CallInEditor)
-	void DuplicateAssets(int32 NumOfDuplicates);
+	static void DuplicateAssets(int32 NumOfDuplicates);
 };
