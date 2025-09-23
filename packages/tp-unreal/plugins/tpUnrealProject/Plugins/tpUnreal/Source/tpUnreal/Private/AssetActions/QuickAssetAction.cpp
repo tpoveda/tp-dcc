@@ -1,9 +1,10 @@
-#include "DebugHelpers.h"
 #include "AssetActions/QuickAssetAction.h"
 
 #include "EditorAssetLibrary.h"
 #include "EditorUtilityLibrary.h"
-#include "Modules/ModuleManager.h"
+
+#include "DebugHelpers.h"
+
 
 void UQuickAssetAction::DuplicateAssets(const int32 NumOfDuplicates)
 {
@@ -33,5 +34,45 @@ void UQuickAssetAction::DuplicateAssets(const int32 NumOfDuplicates)
 	if (Counter > 0)
 	{
 		DebugHelpers::ShowNotifyInfo(TEXT("Successfully duplicated " + FString::FromInt(Counter) + " assets"));
+	}
+}
+
+void UQuickAssetAction::AddPrefixes()
+{
+	TArray<UObject*> SelectedObjects = UEditorUtilityLibrary::GetSelectedAssets();
+	uint32 Counter = 0;
+	
+	for (UObject* SelectedObject : SelectedObjects)
+	{
+		if (!SelectedObject) continue;
+
+		const FString* PrefixFound = PrefixMap.Find(SelectedObject->GetClass());
+		if (!PrefixFound || PrefixFound->IsEmpty())
+		{
+			DebugHelpers::Print(TEXT("No prefix found for class: ") + SelectedObject->GetClass()->GetName(), FColor::Red);
+			continue;
+		}
+
+		FString OldName = SelectedObject->GetName();
+		if (OldName.StartsWith(*PrefixFound))
+		{
+			DebugHelpers::Print(TEXT("Object already has prefix: ") + OldName, FColor::Red);
+			continue;
+		}
+
+		if (SelectedObject->IsA<UMaterialInstanceConstant>())
+		{
+			OldName.RemoveFromStart(TEXT("M_"));
+			OldName.RemoveFromEnd(TEXT("_Inst"));
+		}
+
+		const FString NewNameWithPrefix = *PrefixFound + OldName;
+		UEditorUtilityLibrary::RenameAsset(SelectedObject, NewNameWithPrefix);
+		++Counter;
+	}
+
+	if (Counter > 0)
+	{
+		DebugHelpers::ShowNotifyInfo(TEXT("Successfully renamed " + FString::FromInt(Counter) + " assets"));
 	}
 }
