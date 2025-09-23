@@ -54,6 +54,8 @@ private:
 	 */
 	void OnDeleteUnusedAssetsButtonClicked();
 
+	void OnDeleteEmptyFoldersButtonClicked();
+
 	/**
 	 * @brief Fixes up redirectors within the specified package paths.
 	 *
@@ -72,7 +74,7 @@ private:
 	 * @param CaptureGroup The index of the capture group to retrieve from the match.
 	 * @return The string corresponding to the specified capture group if a match is found, otherwise an empty string.
 	 */
-	FString MatchAndGetCaptureGroup(const FString& Regex, const FString& Text, int CaptureGroup);
+	static FString MatchAndGetCaptureGroup(const FString& Regex, const FString& Text, int CaptureGroup);
 
 	/**
 	 * Extracts and returns the top-level package paths from the provided array of asset data.
@@ -80,7 +82,7 @@ private:
 	 * @param Array An array of FAssetData objects containing information about assets.
 	 * @return An array of FName objects representing unique top-level package paths.
 	 */
-	TArray<FName> GetTopLevelPackagePath(const TArray<FAssetData>& Array);
+	static TArray<FName> GetTopLevelPackagePath(const TArray<FAssetData>& Array);
 
 	/**
 	 * @brief Holds the paths of the folders currently selected in the Content Browser.

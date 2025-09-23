@@ -61,16 +61,26 @@ void FtpUnrealModule::AddContentBrowserMenuEntry(FMenuBuilder& MenuBuilder)
 {
 	MenuBuilder.AddMenuEntry(
 		LOCTEXT("DeleteUnusedAssets", "Delete Unused Assets"),
-		LOCTEXT("DeleteUnusedAssetsTooltip", "Safely delete all unused assets under folder"),
+		LOCTEXT("DeleteUnusedAssetsTooltip", "Safely delete all unused assets under folder."),
 		FSlateIcon(),
 		FExecuteAction::CreateRaw(
 			this, &FtpUnrealModule::OnDeleteUnusedAssetsButtonClicked
 		)
 	);
+
+	MenuBuilder.AddMenuEntry(
+	LOCTEXT("DeleteEmptyFolder", "Delete Empty Folders"),
+	LOCTEXT("DeleteEmptyFoldersTooltip", "Safely delete all empty folders."),
+	FSlateIcon(),
+	FExecuteAction::CreateRaw(
+		this, &FtpUnrealModule::OnDeleteEmptyFoldersButtonClicked
+	)
+);
 }
 
 void FtpUnrealModule::OnDeleteUnusedAssetsButtonClicked()
 {
+	if (FolderPathsSelected.IsEmpty()) return;
 	if (FolderPathsSelected.Num() > 1)
 	{
 		DebugHelpers::ShowMessageDialog(EAppMsgType::Ok, TEXT("Please select only one folder"));
@@ -118,6 +128,64 @@ void FtpUnrealModule::OnDeleteUnusedAssetsButtonClicked()
 	}
 }
 
+void FtpUnrealModule::OnDeleteEmptyFoldersButtonClicked()
+{
+	if (FolderPathsSelected.IsEmpty()) return;
+	
+	TArray<FString> FolderPaths = UEditorAssetLibrary::ListAssets(FolderPathsSelected[0], true, true);
+	if (FolderPaths.IsEmpty()) return;
+
+	FixUpRedirectors(TArray<FName>({"/Game"}));
+	
+	int32 Counter = 0;
+	FString EmptyFolderPathsNames;
+	TArray<FString> EmptyFolderPaths;
+	for (const FString& FolderPath : FolderPaths)
+	{
+		if (FolderPath.Contains(TEXT("Developers")) ||
+		FolderPath.Contains(TEXT("Collections")) ||
+		FolderPath.Contains(TEXT("__ExternalActors__")) ||
+		FolderPath.Contains(TEXT("__ExternalObjects__")))
+			continue;
+		
+		if (!UEditorAssetLibrary::DoesDirectoryExist(FolderPath)) continue;
+		if (UEditorAssetLibrary::DoesDirectoryHaveAssets(FolderPath)) continue;
+
+		EmptyFolderPathsNames.Append(FolderPath);
+		EmptyFolderPathsNames.Append(TEXT("\n"));
+		EmptyFolderPaths.Add(FolderPath);
+	}
+
+	if (EmptyFolderPaths.IsEmpty())
+	{
+		DebugHelpers::ShowMessageDialog(EAppMsgType::Ok, TEXT("No empty folders found"), false);
+		return;
+	}
+
+	if (DebugHelpers::ShowMessageDialog(
+		EAppMsgType::OkCancel,
+		TEXT("Empty folders found in:\n") + EmptyFolderPathsNames + TEXT("\nWould you like to delete all?"),
+		false) != EAppReturnType::Ok)
+		return;
+
+	for (const FString& EmptyFolderPath : EmptyFolderPaths)
+	{
+		if (UEditorAssetLibrary::DeleteDirectory(EmptyFolderPath))
+		{
+			++Counter;
+		}
+		else
+		{
+			DebugHelpers::Print(TEXT("Failed to delete folder: ") + EmptyFolderPath, FColor::Red);
+		}
+	}
+
+	if (Counter > 0)
+	{
+		DebugHelpers::ShowNotifyInfo(TEXT("Successfully deleted " + FString::FromInt(Counter) + " folders"));
+	}
+}
+
 void FtpUnrealModule::FixUpRedirectors(const TArray<FName>& PackagePaths)
 {
 	TArray<UObjectRedirector*> RedirectorsToFixArray;
@@ -158,7 +226,7 @@ void FtpUnrealModule::FixUpRedirectors(const TArray<FName>& PackagePaths)
 	}
 }
 
-FString FtpUnrealModule::MatchAndGetCaptureGroup(const FString& Regex, const FString& Text, int CaptureGroup)
+FString FtpUnrealModule::MatchAndGetCaptureGroup(const FString& Regex, const FString& Text, const int CaptureGroup)
 {
 	const FRegexPattern Pattern(Regex);
 	FRegexMatcher Matcher(Pattern, Text);
