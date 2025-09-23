@@ -27,6 +27,7 @@ public class tpUnreal : ModuleRules
 			{
 				"Core",
 				"Blutility",
+				"EditorScriptingUtilities"
 			}
 			);
 			
