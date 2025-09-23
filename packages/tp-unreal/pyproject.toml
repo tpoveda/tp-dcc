@@ -31,21 +31,23 @@ dev = [
 packages = { find = { where = ["src"], exclude = ["tests", "docs"] } }
 
 [tool.setuptools.package-data]
-"tp.libs.unreal" = [
-    "*.json", "*.yml", "*.yaml", "*.txt", "*.md", "*.ui", "*.qss", "*.scss", "*.png", "*.svg",
-    "plugins/**/tpUnreal.uplugin",
-    "plugins/**/Config/**/*",
-    "plugins/**/Resources/**/*",
-    "plugins/**/Source/**/*",
-    "plugins/**/Content/**/*"
+"tp.libs.unreal" = ["*.json", "*.yml", "*.yaml", "*.txt", "*.md", "*.ui", "*.qss", "*.scss", "*.png", "*.svg", "*.ico",]
+"plugins" = ["**/tpUnreal.uplugin",
+    "**/Config/**/*",
+    "**/Resources/**/*",
+    "**/Source/**/*",
+    "**/Content/**/*",
 ]
 
+
 [tool.setuptools.exclude-package-data]
-"tp.libs.unreal" = [
-    "plugins/**/Binaries/**/*",
-    "plugins/**/Intermediate/**/*",
-    "plugins/**/DerivedDataCache/**/*",
-    "plugins/**/Saved/**/*",
+"plugins" = [
+    "**/Binaries/**/*",
+    "**/Intermediate/**/*",
+    "**/DerivedDataCache/**/*",
+    "**/Saved/**/*",
+    "*.sln",
+    "*.vsconfig",
 ]
 
 [tool.setuptools.dynamic]
