@@ -6,7 +6,6 @@
 
 void FtpUnrealModule::StartupModule()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Hello from tpUnreal!"));
 }
 
 void FtpUnrealModule::ShutdownModule()
