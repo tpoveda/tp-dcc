@@ -108,7 +108,9 @@ Intermediate/
 DerivedDataCache/
 Saved/
 .vs/
+.vsconfig
 *.VC.db
 *.opensdf
 *.sdf
 *.suo
+*.sln
