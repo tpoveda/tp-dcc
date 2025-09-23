@@ -17,6 +17,7 @@
 void FtpUnrealModule::StartupModule()
 {
 	InitContentBrowserExtension();
+	RegisterAdvanceDeletionTab();
 }
 
 void FtpUnrealModule::ShutdownModule()
@@ -69,13 +70,22 @@ void FtpUnrealModule::AddContentBrowserMenuEntry(FMenuBuilder& MenuBuilder)
 	);
 
 	MenuBuilder.AddMenuEntry(
-	LOCTEXT("DeleteEmptyFolder", "Delete Empty Folders"),
-	LOCTEXT("DeleteEmptyFoldersTooltip", "Safely delete all empty folders."),
-	FSlateIcon(),
-	FExecuteAction::CreateRaw(
-		this, &FtpUnrealModule::OnDeleteEmptyFoldersButtonClicked
-	)
-);
+		LOCTEXT("DeleteEmptyFolder", "Delete Empty Folders"),
+		LOCTEXT("DeleteEmptyFoldersTooltip", "Safely delete all empty folders."),
+		FSlateIcon(),
+		FExecuteAction::CreateRaw(
+			this, &FtpUnrealModule::OnDeleteEmptyFoldersButtonClicked
+		)
+	);
+
+	MenuBuilder.AddMenuEntry(
+		LOCTEXT("AdvanceDeletion", "Advance Deletion"),
+		LOCTEXT("AdvanceDeletionTooltip", "List assets by specific condition in a tab for deleting."),
+		FSlateIcon(),
+		FExecuteAction::CreateRaw(
+			this, &FtpUnrealModule::OnAdvanceDeletionButtonClicked
+		)
+	);
 }
 
 void FtpUnrealModule::OnDeleteUnusedAssetsButtonClicked()
@@ -187,6 +197,11 @@ void FtpUnrealModule::OnDeleteEmptyFoldersButtonClicked()
 	}
 }
 
+void FtpUnrealModule::OnAdvanceDeletionButtonClicked()
+{
+	FGlobalTabmanager::Get()->TryInvokeTab(FName("AdvanceDeletion"));
+}
+
 void FtpUnrealModule::FixUpRedirectors(const TArray<FName>& PackagePaths)
 {
 	TArray<UObjectRedirector*> RedirectorsToFixArray;
@@ -252,6 +267,26 @@ TArray<FName> FtpUnrealModule::GetTopLevelPackagePath(const TArray<FAssetData>& 
 	TopLevelPackagePath.GetKeys(Result);
 	
 	return Result;
+}
+
+#pragma endregion
+
+#pragma region CustomEditorTab
+
+void FtpUnrealModule::RegisterAdvanceDeletionTab()
+{
+	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(
+		"AdvanceDeletion",
+		FOnSpawnTab::CreateRaw(
+			this,
+			&FtpUnrealModule::OnSpawnAdvanceDeletionTab
+		)
+	).SetDisplayName(LOCTEXT("AdvanceDeletionTabName", "Advance Deletion"));
+}
+
+TSharedRef<SDockTab> FtpUnrealModule::OnSpawnAdvanceDeletionTab(const FSpawnTabArgs& Args)
+{
+	return SNew(SDockTab).TabRole(ETabRole::NomadTab);
 }
 
 #pragma endregion

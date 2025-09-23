@@ -1,6 +1,8 @@
 ﻿#pragma once
 
+#include "Framework/Docking/TabManager.h"
 #include "Modules/ModuleManager.h"
+#include "Widgets/Docking/SDockTab.h"
 
 struct FAssetData;
 class FMenuBuilder;
@@ -54,7 +56,28 @@ private:
 	 */
 	void OnDeleteUnusedAssetsButtonClicked();
 
+	/**
+	 * @brief Handles the click event for the "Delete Empty Folders" button.
+	 *
+	 * This method validates and retrieves the folder paths, identifies empty folders,
+	 * and optionally deletes them based on user confirmation. It displays appropriate
+	 * messages or notifications for the actions performed.
+	 *
+	 * Key functionality:
+	 * - Verifies if folder paths are selected.
+	 * - Checks for empty folders, excluding specific directories such as "Developers",
+	 *   "Collections", "__ExternalActors__", and "__ExternalObjects__".
+	 * - Provides a message dialog to the user indicating the presence of empty folders
+	 *   and prompts for confirmation to delete.
+	 * - Deletes the empty folders on user consent and shows notifications for the
+	 *   number of folders deleted or any failures encountered.
+	 */
 	void OnDeleteEmptyFoldersButtonClicked();
+
+	/**
+	 * @brief Handles the click event for the "Advance Deletion" button within the custom editor tab.
+	 */
+	void OnAdvanceDeletionButtonClicked();
 
 	/**
 	 * @brief Fixes up redirectors within the specified package paths.
@@ -93,4 +116,12 @@ private:
 	TArray<FString> FolderPathsSelected;
 	
 #pragma endregion
+
+#pragma region CustomEditorTab
+
+	void RegisterAdvanceDeletionTab();
+	TSharedRef<SDockTab> OnSpawnAdvanceDeletionTab(const FSpawnTabArgs& Args);
+	
+#pragma endregion
+	
 };
