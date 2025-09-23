@@ -19,6 +19,10 @@ environment:
     - "{self}/src"
   TP_DCC_TOOLS:
     - "{self}/src/tp/tools/sceneinventory/tool.py"
+  TP_NODEGRAPH_PACKAGE_PATHS:
+    - "{self}/src/tp/libs/nodegraph/packages"
+  TNM_NODE_GRAPH_EDITOR_COMMANDS:
+    - "{self}/src/tp/libs/nodegraph/ui/commands"
 dependencies: []
 tests:
   - "{self}/tests"

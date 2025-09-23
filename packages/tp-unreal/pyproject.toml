@@ -31,7 +31,22 @@ dev = [
 packages = { find = { where = ["src"], exclude = ["tests", "docs"] } }
 
 [tool.setuptools.package-data]
-"tp.libs.unreal" = ["*.json", "*.yml", "*.yaml", "*.txt", "*.md", "*.ui", "*.qss", "*.scss", "*.png", "*.svg"]
+"tp.libs.unreal" = [
+    "*.json", "*.yml", "*.yaml", "*.txt", "*.md", "*.ui", "*.qss", "*.scss", "*.png", "*.svg",
+    "plugins/**/tpUnreal.uplugin",
+    "plugins/**/Config/**/*",
+    "plugins/**/Resources/**/*",
+    "plugins/**/Source/**/*",
+    "plugins/**/Content/**/*"
+]
+
+[tool.setuptools.exclude-package-data]
+"tp.libs.unreal" = [
+    "plugins/**/Binaries/**/*",
+    "plugins/**/Intermediate/**/*",
+    "plugins/**/DerivedDataCache/**/*",
+    "plugins/**/Saved/**/*",
+]
 
 [tool.setuptools.dynamic]
 version = { attr = "tp.libs.unreal.__version__" }

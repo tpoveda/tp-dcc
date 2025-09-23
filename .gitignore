@@ -101,3 +101,14 @@ envs/
 
 # PyCharm
 .idea
+
+# Unreal Plugin
+Binaries/
+Intermediate/
+DerivedDataCache/
+Saved/
+.vs/
+*.VC.db
+*.opensdf
+*.sdf
+*.suo
