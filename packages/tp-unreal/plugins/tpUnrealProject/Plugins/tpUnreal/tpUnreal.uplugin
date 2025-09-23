@@ -16,8 +16,8 @@
 	"Modules": [
 		{
 			"Name": "tpUnreal",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"Type": "Editor",
+			"LoadingPhase": "PreDefault"
 		}
 	]
 }
