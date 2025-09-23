@@ -133,7 +133,6 @@ void FtpUnrealModule::OnDeleteEmptyFoldersButtonClicked()
 	if (FolderPathsSelected.IsEmpty()) return;
 	
 	TArray<FString> FolderPaths = UEditorAssetLibrary::ListAssets(FolderPathsSelected[0], true, true);
-	if (FolderPaths.IsEmpty()) return;
 
 	FixUpRedirectors(TArray<FName>({"/Game"}));
 	
@@ -147,13 +146,15 @@ void FtpUnrealModule::OnDeleteEmptyFoldersButtonClicked()
 		FolderPath.Contains(TEXT("__ExternalActors__")) ||
 		FolderPath.Contains(TEXT("__ExternalObjects__")))
 			continue;
-		
-		if (!UEditorAssetLibrary::DoesDirectoryExist(FolderPath)) continue;
-		if (UEditorAssetLibrary::DoesDirectoryHaveAssets(FolderPath)) continue;
 
-		EmptyFolderPathsNames.Append(FolderPath);
+		FString Path = FolderPath;
+		Path.RemoveAt(Path.Len()-1);
+		if (!UEditorAssetLibrary::DoesDirectoryExist(Path)) continue;
+		if (UEditorAssetLibrary::DoesDirectoryHaveAssets(Path)) continue;
+
+		EmptyFolderPathsNames.Append(Path);
 		EmptyFolderPathsNames.Append(TEXT("\n"));
-		EmptyFolderPaths.Add(FolderPath);
+		EmptyFolderPaths.Add(Path);
 	}
 
 	if (EmptyFolderPaths.IsEmpty())
