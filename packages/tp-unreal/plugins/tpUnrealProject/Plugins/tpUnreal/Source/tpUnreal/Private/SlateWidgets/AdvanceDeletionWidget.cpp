@@ -32,7 +32,7 @@ void SAdvanceDeletionTab::Construct(const FArguments& InArgs)
 			SNew(SHorizontalBox)
 		]
 		+ SVerticalBox::Slot()
-		.AutoHeight()
+		.VAlign(VAlign_Fill)
 		[
 			SNew(SScrollBox)
 			+ SScrollBox::Slot()
