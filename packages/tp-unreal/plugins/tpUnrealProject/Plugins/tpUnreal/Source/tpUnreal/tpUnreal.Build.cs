@@ -29,6 +29,7 @@ public class tpUnreal : ModuleRules
 				"Blutility",
 				"EditorScriptingUtilities",
 				"ContentBrowser",
+				"InputCore",
 				"UMG",
 				"Niagara",
 			}

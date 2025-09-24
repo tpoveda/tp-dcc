@@ -11,6 +11,7 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Internationalization/Regex.h"
+#include "SlateWidgets/AdvanceDeletionWidget.h"
 
 #define LOCTEXT_NAMESPACE "FtpUnrealModule"
 
@@ -286,7 +287,33 @@ void FtpUnrealModule::RegisterAdvanceDeletionTab()
 
 TSharedRef<SDockTab> FtpUnrealModule::OnSpawnAdvanceDeletionTab(const FSpawnTabArgs& Args)
 {
-	return SNew(SDockTab).TabRole(ETabRole::NomadTab);
+	return SNew(SDockTab).TabRole(ETabRole::NomadTab)
+	[
+		SNew(SAdvanceDeletionTab)
+		.AssetsData(GetAllAssetsDataUnderSelectedFolder())
+	];
+}
+
+TArray<TSharedPtr<FAssetData>> FtpUnrealModule::GetAllAssetsDataUnderSelectedFolder()
+{
+	TArray<TSharedPtr<FAssetData>> AvailableAssetsData;
+	if (FolderPathsSelected.IsEmpty()) return AvailableAssetsData;
+	
+	TArray<FString> AssetsPathNames = UEditorAssetLibrary::ListAssets(FolderPathsSelected[0]);
+	for (const FString& AssetPathName : AssetsPathNames)
+	{
+		if (AssetPathName.Contains(TEXT("Developers")) ||
+			AssetPathName.Contains(TEXT("Collections")) ||
+			AssetPathName.Contains(TEXT("__ExternalActors__")) ||
+			AssetPathName.Contains(TEXT("__ExternalObjects__")))
+			continue;
+		if (!UEditorAssetLibrary::DoesAssetExist(AssetPathName)) continue;
+
+		const FAssetData AssetData = UEditorAssetLibrary::FindAssetData(AssetPathName);
+		AvailableAssetsData.Add(MakeShared<FAssetData>(AssetData));
+	}
+
+	return AvailableAssetsData;
 }
 
 #pragma endregion
