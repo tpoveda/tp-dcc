@@ -326,6 +326,12 @@ bool FtpUnrealModule::DeleteSingleAssetForAssetList(const FAssetData& AssetDataT
 	return false;
 }
 
+bool FtpUnrealModule::DeleteMultipleAssetsForAssetList(const TArray<FAssetData>& AssetDataToDelete)
+{
+	if (ObjectTools::DeleteAssets(AssetDataToDelete) > 0) return true;
+	return false;
+}
+
 #pragma endregion
 
 #undef LOCTEXT_NAMESPACE

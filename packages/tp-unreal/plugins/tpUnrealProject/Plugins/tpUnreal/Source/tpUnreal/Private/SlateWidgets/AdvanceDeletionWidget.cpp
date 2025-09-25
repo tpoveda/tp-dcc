@@ -15,6 +15,10 @@ void SAdvanceDeletionTab::Construct(const FArguments& InArgs)
 	bCanSupportFocus = true;
 
 	AssetsData = InArgs._AssetsData;
+	
+	CheckBoxes.Empty();
+	AssetsDataToDelete.Empty();
+	
 	FSlateFontInfo TitleTextFont = GetEmbossedTextFont();
 	TitleTextFont.Size = 30.0f;
 	
@@ -48,9 +52,53 @@ void SAdvanceDeletionTab::Construct(const FArguments& InArgs)
 		.AutoHeight()
 		[
 			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.FillWidth(10.0f)
+			.Padding(5.0f)
+			[
+				ConstructDeleteAllButton()
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(10.0f)
+			.Padding(5.0f)
+			[
+				ConstructSelectAllButton()
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(10.0f)
+			.Padding(5.0f)
+			[
+				ConstructDeselectAllButton()
+			]
 		]
 	];
 }
+
+TSharedRef<SListView<TSharedPtr<FAssetData>>> SAdvanceDeletionTab::ConstructAssetListView()
+{
+	ConstructedAssetListView = SNew(SListView<TSharedPtr<FAssetData>>)
+	.ListItemsSource(&AssetsData)
+	.OnGenerateRow(this, &SAdvanceDeletionTab::OnGenerateRowForList);
+
+	return ConstructedAssetListView.ToSharedRef();
+}
+
+void SAdvanceDeletionTab::RefreshAssetListView()
+{
+	CheckBoxes.Empty();
+	AssetsDataToDelete.Empty();
+
+	if (!ConstructedAssetListView.IsValid()) return;
+	ConstructedAssetListView->RebuildList();
+		
+}
+
+FSlateFontInfo SAdvanceDeletionTab::GetEmbossedTextFont() const
+{
+	return FCoreStyle::Get().GetFontStyle(FName("EmbossedText"));
+}
+
+#pragma region RowWidgetForAssetListView
 
 TSharedRef<ITableRow> SAdvanceDeletionTab::OnGenerateRowForList(TSharedPtr<FAssetData> AssetData,
 	const TSharedRef<STableViewBase>& OwnerTable)
@@ -108,16 +156,9 @@ TSharedRef<SCheckBox> SAdvanceDeletionTab::ConstructCheckBox(const TSharedPtr<FA
 		.OnCheckStateChanged(this, &SAdvanceDeletionTab::OnCheckBoxStateSateChanged, AssetData)
 		.Visibility(EVisibility::Visible);
 
+	CheckBoxes.Add(ConstructedCheckBox);
+	
 	return ConstructedCheckBox;
-}
-
-TSharedRef<SListView<TSharedPtr<FAssetData>>> SAdvanceDeletionTab::ConstructAssetListView()
-{
-	ConstructedAssetListView = SNew(SListView<TSharedPtr<FAssetData>>)
-	.ListItemsSource(&AssetsData)
-	.OnGenerateRow(this, &SAdvanceDeletionTab::OnGenerateRowForList);
-
-	return ConstructedAssetListView.ToSharedRef();
 }
 
 TSharedRef<STextBlock> SAdvanceDeletionTab::ConstructTextForRowWidget(const FString& TextContent,
@@ -140,20 +181,18 @@ TSharedRef<SButton> SAdvanceDeletionTab::ConstructButtonForRowWidget(const TShar
 	return ConstructedButton;
 }
 
-FSlateFontInfo SAdvanceDeletionTab::GetEmbossedTextFont() const
-{
-	return FCoreStyle::Get().GetFontStyle(FName("EmbossedText"));
-}
-
 void SAdvanceDeletionTab::OnCheckBoxStateSateChanged(ECheckBoxState NewState, TSharedPtr<FAssetData> AssetData)
 {
 	switch (NewState)
 	{
 	case ECheckBoxState::Unchecked:
-		DebugHelpers::Print(FString::Printf(TEXT("Asset %s has been unchecked"), *AssetData->AssetName.ToString()), FColor::Red);
+		if (AssetsDataToDelete.Contains(AssetData))
+		{
+			AssetsDataToDelete.Remove(AssetData);
+		}
 		break;
 	case ECheckBoxState::Checked:
-		DebugHelpers::Print(FString::Printf(TEXT("Asset %s has been checked"), *AssetData->AssetName.ToString()), FColor::Green);
+		AssetsDataToDelete.AddUnique(AssetData);
 		break;
 	case ECheckBoxState::Undetermined:
 		break;
@@ -178,10 +217,107 @@ FReply SAdvanceDeletionTab::OnDeleteButtonClicked(TSharedPtr<FAssetData> AssetDa
 	return FReply::Handled();
 }
 
-void SAdvanceDeletionTab::RefreshAssetListView()
-{
-	if (!ConstructedAssetListView.IsValid()) return;
+#pragma endregion
 
-	ConstructedAssetListView->RebuildList();
-		
+#pragma region TabButtons
+
+TSharedRef<SButton> SAdvanceDeletionTab::ConstructDeleteAllButton()
+{
+	TSharedRef<SButton> DeleteAllButton = SNew(SButton)
+		.ContentPadding(FMargin(5.0f))
+		.OnClicked(this, &SAdvanceDeletionTab::OnDeleteAllButtonClicked);
+	DeleteAllButton->SetContent(ConstructTextForTabButtons(TEXT("Delete Selected")));
+
+	return DeleteAllButton;
 }
+
+TSharedRef<SButton> SAdvanceDeletionTab::ConstructSelectAllButton()
+{
+	TSharedRef<SButton> SelectAllButton = SNew(SButton)
+		.ContentPadding(FMargin(5.0f))
+		.OnClicked(this, &SAdvanceDeletionTab::OnSelectAllButtonClicked);
+	SelectAllButton->SetContent(ConstructTextForTabButtons(TEXT("Select All")));
+
+	return SelectAllButton;
+}
+
+TSharedRef<SButton> SAdvanceDeletionTab::ConstructDeselectAllButton()
+{
+	TSharedRef<SButton> DeselectAllButton = SNew(SButton)
+		.ContentPadding(FMargin(5.0f))
+		.OnClicked(this, &SAdvanceDeletionTab::OnDeselectAllButtonClicked);
+	DeselectAllButton->SetContent(ConstructTextForTabButtons(TEXT("Deselect All")));
+
+	return DeselectAllButton;
+}
+
+FReply SAdvanceDeletionTab::OnDeleteAllButtonClicked()
+{
+	if (AssetsDataToDelete.IsEmpty())
+	{
+		DebugHelpers::ShowMessageDialog(EAppMsgType::Ok, TEXT("No assets selected"));
+		return FReply::Handled();
+	}
+
+	TArray<FAssetData> AssetsToDelete;
+	for (const TSharedPtr<FAssetData>& AssetData : AssetsDataToDelete)
+	{
+		AssetsToDelete.AddUnique(*AssetData.Get());
+	}
+
+	FtpUnrealModule& tpUnrealModule = FModuleManager::LoadModuleChecked<FtpUnrealModule>(TEXT("tpUnreal"));
+	const bool bAssetsDeleted = tpUnrealModule.DeleteMultipleAssetsForAssetList(AssetsToDelete);
+	if (bAssetsDeleted)
+	{
+		for (const TSharedPtr<FAssetData>& DeletedData : AssetsDataToDelete)
+		{
+			if (AssetsData.Contains(DeletedData))
+			{
+				AssetsData.Remove(DeletedData);
+			}
+		}
+		
+		RefreshAssetListView();
+	}
+	
+	return FReply::Handled();
+}
+
+FReply SAdvanceDeletionTab::OnSelectAllButtonClicked()
+{
+	if (CheckBoxes.IsEmpty()) return FReply::Handled();
+	
+	for (const TSharedRef<SCheckBox>& CheckBox : CheckBoxes)
+	{
+		CheckBox->SetIsChecked(ECheckBoxState::Checked);
+	}
+	
+	return FReply::Handled();
+}
+
+FReply SAdvanceDeletionTab::OnDeselectAllButtonClicked()
+{
+	if (CheckBoxes.IsEmpty()) return FReply::Handled();
+	
+	for (const TSharedRef<SCheckBox>& CheckBox : CheckBoxes)
+	{
+		CheckBox->SetIsChecked(ECheckBoxState::Unchecked);
+	}
+	
+	return FReply::Handled();
+}
+
+TSharedRef<STextBlock> SAdvanceDeletionTab::ConstructTextForTabButtons(const FString& TextContent)
+{
+	FSlateFontInfo ButtonTextFont = GetEmbossedTextFont();
+	ButtonTextFont.Size = 15.0f;
+	
+	TSharedRef<STextBlock> ConstructedTextBlock = SNew(STextBlock)
+		.Text(FText::FromString(TextContent))
+		.Font(ButtonTextFont)
+		.Justification(ETextJustify::Center);
+
+	return ConstructedTextBlock;
+}
+
+#pragma endregion
