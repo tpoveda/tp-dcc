@@ -1,8 +1,10 @@
 #include "SlateWidgets/AdvanceDeletionWidget.h"
 
+#include "tpUnreal.h"
 #include "DebugHelpers.h"
 #include "AssetRegistry/AssetData.h"
 #include "Components/VerticalBox.h"
+#include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Text/STextBlock.h"
@@ -34,14 +36,12 @@ void SAdvanceDeletionTab::Construct(const FArguments& InArgs)
 			SNew(SHorizontalBox)
 		]
 		+ SVerticalBox::Slot()
-		.VAlign(VAlign_Fill)
+		.VAlign(VAlign_Fill)	// Needed to ensure scrollbox works as expected.
 		[
 			SNew(SScrollBox)
 			+ SScrollBox::Slot()
 			[
-				SNew(SListView<TSharedPtr<FAssetData>>)
-				.ListItemsSource(&AssetsData)
-				.OnGenerateRow(this, &SAdvanceDeletionTab::OnGenerateRowForList)
+				ConstructAssetListView()
 			]
 		]
 		+ SVerticalBox::Slot()
@@ -63,10 +63,11 @@ TSharedRef<ITableRow> SAdvanceDeletionTab::OnGenerateRowForList(TSharedPtr<FAsse
 	FSlateFontInfo AssetClassNameFont = GetEmbossedTextFont();
 	AssetClassNameFont.Size = 10.0f;
 	FSlateFontInfo AssetNameFont = GetEmbossedTextFont();
-	AssetNameFont.Size = 12.5f;
+	AssetNameFont.Size = 11.5f;
 	
 	TSharedRef<STableRow<TSharedPtr<FAssetData>>> ListViewRowWidget =
 	SNew(STableRow<TSharedPtr<FAssetData>>, OwnerTable)
+		.Padding(FMargin(2.5f))
 	[
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
@@ -84,8 +85,16 @@ TSharedRef<ITableRow> SAdvanceDeletionTab::OnGenerateRowForList(TSharedPtr<FAsse
 			ConstructTextForRowWidget(DisplayAssetClassName, AssetClassNameFont)
 		]
 		+ SHorizontalBox::Slot()
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Fill)
 		[
 			ConstructTextForRowWidget(DisplayAssetName, AssetNameFont)
+		]
+		+ SHorizontalBox::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Fill)
+		[
+			ConstructButtonForRowWidget(AssetData)
 		]
 	];
 
@@ -102,8 +111,17 @@ TSharedRef<SCheckBox> SAdvanceDeletionTab::ConstructCheckBox(const TSharedPtr<FA
 	return ConstructedCheckBox;
 }
 
+TSharedRef<SListView<TSharedPtr<FAssetData>>> SAdvanceDeletionTab::ConstructAssetListView()
+{
+	ConstructedAssetListView = SNew(SListView<TSharedPtr<FAssetData>>)
+	.ListItemsSource(&AssetsData)
+	.OnGenerateRow(this, &SAdvanceDeletionTab::OnGenerateRowForList);
+
+	return ConstructedAssetListView.ToSharedRef();
+}
+
 TSharedRef<STextBlock> SAdvanceDeletionTab::ConstructTextForRowWidget(const FString& TextContent,
-	const FSlateFontInfo& FontToUse)
+                                                                      const FSlateFontInfo& FontToUse)
 {
 	TSharedRef<STextBlock> ConstructedTextBlock = SNew(STextBlock)
 	.Text(FText::FromString(TextContent))
@@ -111,6 +129,15 @@ TSharedRef<STextBlock> SAdvanceDeletionTab::ConstructTextForRowWidget(const FStr
 	.ColorAndOpacity(FColor::White);
 
 	return ConstructedTextBlock;
+}
+
+TSharedRef<SButton> SAdvanceDeletionTab::ConstructButtonForRowWidget(const TSharedPtr<FAssetData>& AssetData)
+{
+	TSharedRef<SButton> ConstructedButton = SNew(SButton)
+	.Text(FText::FromString("Delete"))
+	.OnClicked(this, &SAdvanceDeletionTab::OnDeleteButtonClicked, AssetData);
+
+	return ConstructedButton;
 }
 
 FSlateFontInfo SAdvanceDeletionTab::GetEmbossedTextFont() const
@@ -133,4 +160,28 @@ void SAdvanceDeletionTab::OnCheckBoxStateSateChanged(ECheckBoxState NewState, TS
 	default:
 		break;
 	}
+}
+
+FReply SAdvanceDeletionTab::OnDeleteButtonClicked(TSharedPtr<FAssetData> AssetData)
+{
+	FtpUnrealModule& tpUnrealModule = FModuleManager::LoadModuleChecked<FtpUnrealModule>(TEXT("tpUnreal"));
+
+	if (tpUnrealModule.DeleteSingleAssetForAssetList(*AssetData.Get()))
+	{
+		if (AssetsData.Contains(AssetData))
+		{
+			AssetsData.Remove(AssetData);
+		}
+		RefreshAssetListView();
+	}
+	
+	return FReply::Handled();
+}
+
+void SAdvanceDeletionTab::RefreshAssetListView()
+{
+	if (!ConstructedAssetListView.IsValid()) return;
+
+	ConstructedAssetListView->RebuildList();
+		
 }

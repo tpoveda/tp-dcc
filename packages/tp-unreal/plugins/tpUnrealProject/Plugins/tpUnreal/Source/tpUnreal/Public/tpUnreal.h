@@ -125,4 +125,12 @@ private:
 	
 #pragma endregion
 	
+public:
+	
+#pragma region ProcessDataForAdvanceDeletion
+
+	bool DeleteSingleAssetForAssetList(const FAssetData& AssetDataToDelete);
+	
+#pragma endregion
+
 };

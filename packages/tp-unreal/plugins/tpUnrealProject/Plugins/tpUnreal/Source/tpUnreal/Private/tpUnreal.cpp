@@ -318,6 +318,16 @@ TArray<TSharedPtr<FAssetData>> FtpUnrealModule::GetAllAssetsDataUnderSelectedFol
 
 #pragma endregion
 
+#pragma region ProcessDataForAdvanceDeletion
+
+bool FtpUnrealModule::DeleteSingleAssetForAssetList(const FAssetData& AssetDataToDelete)
+{
+	if (ObjectTools::DeleteAssets({AssetDataToDelete}) > 0) return true;
+	return false;
+}
+
+#pragma endregion
+
 #undef LOCTEXT_NAMESPACE
 	
 IMPLEMENT_MODULE(FtpUnrealModule, tpUnreal)
