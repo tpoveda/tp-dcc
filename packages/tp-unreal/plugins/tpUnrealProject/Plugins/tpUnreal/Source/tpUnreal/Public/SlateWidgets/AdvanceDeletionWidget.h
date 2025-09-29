@@ -27,6 +27,16 @@ private:
 
 	FSlateFontInfo GetEmbossedTextFont() const;
 
+#pragma region ComboBoxForListingCondition
+
+	TSharedRef<SComboBox<TSharedPtr<FString>>> ConstructComboBox();
+	TArray<TSharedPtr<FString>> ComboBoxSourceItems;
+	TSharedRef<SWidget> OnGenerateComboBoxContent(TSharedPtr<FString> SourceItem);
+	void OnComboBoxSelectionChanged(TSharedPtr<FString> SelectedOption, ESelectInfo::Type SelectInfo);
+	TSharedPtr<STextBlock> ComboBoxContentContainer;
+	
+#pragma endregion
+	
 #pragma region RowWidgetForAssetListView
 	
 	TSharedRef<ITableRow> OnGenerateRowForList(TSharedPtr<FAssetData> AssetData, const TSharedRef<STableViewBase>& OwnerTable);

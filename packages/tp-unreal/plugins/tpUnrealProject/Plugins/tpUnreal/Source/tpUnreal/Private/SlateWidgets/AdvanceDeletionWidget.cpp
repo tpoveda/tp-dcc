@@ -3,12 +3,13 @@
 #include "tpUnreal.h"
 #include "DebugHelpers.h"
 #include "AssetRegistry/AssetData.h"
-#include "Components/VerticalBox.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/SListView.h"
+
+#define ListAll TEXT("List All Available Assets")
 
 void SAdvanceDeletionTab::Construct(const FArguments& InArgs)
 {
@@ -18,6 +19,8 @@ void SAdvanceDeletionTab::Construct(const FArguments& InArgs)
 	
 	CheckBoxes.Empty();
 	AssetsDataToDelete.Empty();
+
+	ComboBoxSourceItems.Add(MakeShared<FString>(ListAll));
 	
 	FSlateFontInfo TitleTextFont = GetEmbossedTextFont();
 	TitleTextFont.Size = 30.0f;
@@ -38,6 +41,11 @@ void SAdvanceDeletionTab::Construct(const FArguments& InArgs)
 		.AutoHeight()
 		[
 			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			[
+				ConstructComboBox()
+			]
 		]
 		+ SVerticalBox::Slot()
 		.VAlign(VAlign_Fill)	// Needed to ensure scrollbox works as expected.
@@ -98,10 +106,43 @@ FSlateFontInfo SAdvanceDeletionTab::GetEmbossedTextFont() const
 	return FCoreStyle::Get().GetFontStyle(FName("EmbossedText"));
 }
 
+#pragma region ComboBoxForListingCondition
+
+TSharedRef<SComboBox<TSharedPtr<FString>>> SAdvanceDeletionTab::ConstructComboBox()
+{
+	TSharedRef<SComboBox<TSharedPtr<FString>>> ConstructedComboBox = SNew(SComboBox<TSharedPtr<FString>>)
+		.OptionsSource(&ComboBoxSourceItems)
+		.OnGenerateWidget(this, &SAdvanceDeletionTab::OnGenerateComboBoxContent)
+		.OnSelectionChanged(this, &SAdvanceDeletionTab::OnComboBoxSelectionChanged)
+		[
+			SAssignNew(ComboBoxContentContainer, STextBlock)
+			.Text(FText::FromString(ListAll))
+		];		
+
+	return ConstructedComboBox;
+}
+
+#pragma endregion
+
 #pragma region RowWidgetForAssetListView
 
+TSharedRef<SWidget> SAdvanceDeletionTab::OnGenerateComboBoxContent(TSharedPtr<FString> SourceItem)
+{
+	TSharedRef<STextBlock> ConstructedComboText = SNew(STextBlock)
+		.Text(FText::FromString(*SourceItem.Get()));
+
+	return ConstructedComboText;
+}
+
+void SAdvanceDeletionTab::OnComboBoxSelectionChanged(TSharedPtr<FString> SelectedOption, ESelectInfo::Type SelectInfo)
+{
+	DebugHelpers::Print(*SelectedOption.Get(), FColor::Cyan);
+
+	ComboBoxContentContainer->SetText(FText::FromString(*SelectedOption.Get()));
+}
+
 TSharedRef<ITableRow> SAdvanceDeletionTab::OnGenerateRowForList(TSharedPtr<FAssetData> AssetData,
-	const TSharedRef<STableViewBase>& OwnerTable)
+                                                                const TSharedRef<STableViewBase>& OwnerTable)
 {
 	if (!AssetData.IsValid()) return SNew(STableRow<TSharedPtr<FAssetData>>, OwnerTable);
 
