@@ -10,17 +10,20 @@
 #include "Widgets/Views/SListView.h"
 
 #define ListAll TEXT("List All Available Assets")
+#define ListUnused TEXT("List Unused Assets")
 
 void SAdvanceDeletionTab::Construct(const FArguments& InArgs)
 {
 	bCanSupportFocus = true;
 
 	AssetsData = InArgs._AssetsData;
+	DisplayedAssetsData = AssetsData; 
 	
 	CheckBoxes.Empty();
 	AssetsDataToDelete.Empty();
 
 	ComboBoxSourceItems.Add(MakeShared<FString>(ListAll));
+	ComboBoxSourceItems.Add(MakeShared<FString>(ListUnused));
 	
 	FSlateFontInfo TitleTextFont = GetEmbossedTextFont();
 	TitleTextFont.Size = 30.0f;
@@ -85,7 +88,7 @@ void SAdvanceDeletionTab::Construct(const FArguments& InArgs)
 TSharedRef<SListView<TSharedPtr<FAssetData>>> SAdvanceDeletionTab::ConstructAssetListView()
 {
 	ConstructedAssetListView = SNew(SListView<TSharedPtr<FAssetData>>)
-	.ListItemsSource(&AssetsData)
+	.ListItemsSource(&DisplayedAssetsData)
 	.OnGenerateRow(this, &SAdvanceDeletionTab::OnGenerateRowForList);
 
 	return ConstructedAssetListView.ToSharedRef();
@@ -106,8 +109,6 @@ FSlateFontInfo SAdvanceDeletionTab::GetEmbossedTextFont() const
 	return FCoreStyle::Get().GetFontStyle(FName("EmbossedText"));
 }
 
-#pragma region ComboBoxForListingCondition
-
 TSharedRef<SComboBox<TSharedPtr<FString>>> SAdvanceDeletionTab::ConstructComboBox()
 {
 	TSharedRef<SComboBox<TSharedPtr<FString>>> ConstructedComboBox = SNew(SComboBox<TSharedPtr<FString>>)
@@ -122,10 +123,6 @@ TSharedRef<SComboBox<TSharedPtr<FString>>> SAdvanceDeletionTab::ConstructComboBo
 	return ConstructedComboBox;
 }
 
-#pragma endregion
-
-#pragma region RowWidgetForAssetListView
-
 TSharedRef<SWidget> SAdvanceDeletionTab::OnGenerateComboBoxContent(TSharedPtr<FString> SourceItem)
 {
 	TSharedRef<STextBlock> ConstructedComboText = SNew(STextBlock)
@@ -139,6 +136,18 @@ void SAdvanceDeletionTab::OnComboBoxSelectionChanged(TSharedPtr<FString> Selecte
 	DebugHelpers::Print(*SelectedOption.Get(), FColor::Cyan);
 
 	ComboBoxContentContainer->SetText(FText::FromString(*SelectedOption.Get()));
+
+	FtpUnrealModule& tpUnrealModule = FModuleManager::LoadModuleChecked<FtpUnrealModule>(TEXT("tpUnreal"));
+	if (*SelectedOption.Get() == ListAll)
+	{
+		DisplayedAssetsData = AssetsData;
+		RefreshAssetListView();
+	}
+	else if (*SelectedOption.Get() == ListUnused)
+	{
+		tpUnrealModule.ListUnusedAssetsForAssetList(AssetsData, DisplayedAssetsData);
+		RefreshAssetListView();
+	}
 }
 
 TSharedRef<ITableRow> SAdvanceDeletionTab::OnGenerateRowForList(TSharedPtr<FAssetData> AssetData,
@@ -252,15 +261,18 @@ FReply SAdvanceDeletionTab::OnDeleteButtonClicked(TSharedPtr<FAssetData> AssetDa
 		{
 			AssetsData.Remove(AssetData);
 		}
+
+		if (DisplayedAssetsData.Contains(AssetData))
+		{
+			DisplayedAssetsData.Remove(AssetData);
+		}
+		
 		RefreshAssetListView();
 	}
 	
 	return FReply::Handled();
 }
 
-#pragma endregion
-
-#pragma region TabButtons
 
 TSharedRef<SButton> SAdvanceDeletionTab::ConstructDeleteAllButton()
 {
@@ -316,6 +328,11 @@ FReply SAdvanceDeletionTab::OnDeleteAllButtonClicked()
 			{
 				AssetsData.Remove(DeletedData);
 			}
+
+			if (DisplayedAssetsData.Contains(DeletedData))
+			{
+				DisplayedAssetsData.Remove(DeletedData);
+			}
 		}
 		
 		RefreshAssetListView();
@@ -360,5 +377,3 @@ TSharedRef<STextBlock> SAdvanceDeletionTab::ConstructTextForTabButtons(const FSt
 
 	return ConstructedTextBlock;
 }
-
-#pragma endregion

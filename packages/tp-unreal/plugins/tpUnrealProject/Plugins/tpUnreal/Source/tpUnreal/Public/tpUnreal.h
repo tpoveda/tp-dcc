@@ -15,11 +15,13 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
-
+	
+	bool DeleteSingleAssetForAssetList(const FAssetData& AssetDataToDelete);
+	bool DeleteMultipleAssetsForAssetList(const TArray<FAssetData>& AssetDataToDelete);
+	void ListUnusedAssetsForAssetList(const TArray<TSharedPtr<FAssetData>>& AssetsDataToFilter, TArray<TSharedPtr<FAssetData>>& OutUnusedAssetsData);
+	
 private:
-
-#pragma region ContentBrowserExtension
-
+	
 	/**
 	 * @brief Initializes the content browser extension by adding a custom menu extender for selected paths
 	 * within the content browser.
@@ -114,24 +116,11 @@ private:
 	 * assets, or applying fixes to redirectors within the specified paths.
 	 */
 	TArray<FString> FolderPathsSelected;
-	
-#pragma endregion
-
-#pragma region CustomEditorTab
 
 	void RegisterAdvanceDeletionTab();
 	TSharedRef<SDockTab> OnSpawnAdvanceDeletionTab(const FSpawnTabArgs& Args);
 	TArray<TSharedPtr<FAssetData>> GetAllAssetsDataUnderSelectedFolder();
 	
-#pragma endregion
 	
-public:
-	
-#pragma region ProcessDataForAdvanceDeletion
-
-	bool DeleteSingleAssetForAssetList(const FAssetData& AssetDataToDelete);
-	bool DeleteMultipleAssetsForAssetList(const TArray<FAssetData>& AssetDataToDelete);
-	
-#pragma endregion
 
 };

@@ -200,6 +200,8 @@ void FtpUnrealModule::OnDeleteEmptyFoldersButtonClicked()
 
 void FtpUnrealModule::OnAdvanceDeletionButtonClicked()
 {
+	FixUpRedirectors(TArray<FName>({"/Game"}));
+	
 	FGlobalTabmanager::Get()->TryInvokeTab(FName("AdvanceDeletion"));
 }
 
@@ -330,6 +332,22 @@ bool FtpUnrealModule::DeleteMultipleAssetsForAssetList(const TArray<FAssetData>&
 {
 	if (ObjectTools::DeleteAssets(AssetDataToDelete) > 0) return true;
 	return false;
+}
+
+void FtpUnrealModule::ListUnusedAssetsForAssetList(const TArray<TSharedPtr<FAssetData>>& AssetsDataToFilter,
+	TArray<TSharedPtr<FAssetData>>& OutUnusedAssetsData)
+{
+	OutUnusedAssetsData.Empty();
+	
+	for (const TSharedPtr<FAssetData>& AssetData : AssetsDataToFilter)
+	{
+		TArray<FString> AssetReferencers = UEditorAssetLibrary::FindPackageReferencersForAsset(
+			AssetData->GetObjectPathString());
+		if (AssetReferencers.Num() == 0)
+		{
+			OutUnusedAssetsData.Add(AssetData);
+		}
+	}
 }
 
 #pragma endregion

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Widgets/SCompoundWidget.h"
+#include "Widgets/Input/SComboBox.h"
 #include "Widgets/Views/SListView.h"
 
 
@@ -26,18 +27,12 @@ private:
 	void RefreshAssetListView();
 
 	FSlateFontInfo GetEmbossedTextFont() const;
-
-#pragma region ComboBoxForListingCondition
-
+	
 	TSharedRef<SComboBox<TSharedPtr<FString>>> ConstructComboBox();
 	TArray<TSharedPtr<FString>> ComboBoxSourceItems;
 	TSharedRef<SWidget> OnGenerateComboBoxContent(TSharedPtr<FString> SourceItem);
 	void OnComboBoxSelectionChanged(TSharedPtr<FString> SelectedOption, ESelectInfo::Type SelectInfo);
 	TSharedPtr<STextBlock> ComboBoxContentContainer;
-	
-#pragma endregion
-	
-#pragma region RowWidgetForAssetListView
 	
 	TSharedRef<ITableRow> OnGenerateRowForList(TSharedPtr<FAssetData> AssetData, const TSharedRef<STableViewBase>& OwnerTable);
 	TSharedRef<SCheckBox> ConstructCheckBox(const TSharedPtr<FAssetData>& AssetData);
@@ -45,10 +40,6 @@ private:
 	TSharedRef<SButton> ConstructButtonForRowWidget(const TSharedPtr<FAssetData>& AssetData);
 	void OnCheckBoxStateSateChanged(ECheckBoxState NewState, TSharedPtr<FAssetData> AssetData);
 	FReply OnDeleteButtonClicked(TSharedPtr<FAssetData> AssetData);
-
-#pragma endregion
-
-#pragma region TabButtons
 	
 	TSharedRef<SButton> ConstructDeleteAllButton();
 	TSharedRef<SButton> ConstructSelectAllButton();
@@ -57,16 +48,11 @@ private:
 	FReply OnSelectAllButtonClicked();
 	FReply OnDeselectAllButtonClicked();
 	TSharedRef<STextBlock> ConstructTextForTabButtons(const FString& TextContent);
-
-#pragma endregion
 	
-#pragma region Member Variables
-
 	TArray<TSharedPtr<FAssetData>> AssetsData;
+	TArray<TSharedPtr<FAssetData>> DisplayedAssetsData;
 	TArray<TSharedPtr<FAssetData>> AssetsDataToDelete;
 	TArray<TSharedRef<SCheckBox>> CheckBoxes;
 	TSharedPtr<SListView<TSharedPtr<FAssetData>>> ConstructedAssetListView;
-
-#pragma endregion
 	
 };
