@@ -15,10 +15,37 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
-	
+
+	/** @brief Deletes a single asset from the asset list.
+	 
+	 @param AssetDataToDelete The asset data representing the asset to be deleted.
+	 @return True if the asset was successfully deleted, otherwise false.
+	 */
 	bool DeleteSingleAssetForAssetList(const FAssetData& AssetDataToDelete);
+
+	/**
+	 * @brief Deletes multiple assets specified in the provided list of asset data.
+	 *
+	 * @param AssetDataToDelete The list of asset data representing the assets to be deleted.
+	 * @return true if one or more assets were successfully deleted, otherwise false.
+	 */
 	bool DeleteMultipleAssetsForAssetList(const TArray<FAssetData>& AssetDataToDelete);
+
+	/**
+	 * @brief Filters the provided list of asset data to identify unused assets and populates the output array with them.
+	 *
+	 * @param AssetsDataToFilter The array of asset data to be filtered for unused assets.
+	 * @param OutUnusedAssetsData The array that will be populated with the unused assets from the input asset data.
+	 */
 	void ListUnusedAssetsForAssetList(const TArray<TSharedPtr<FAssetData>>& AssetsDataToFilter, TArray<TSharedPtr<FAssetData>>& OutUnusedAssetsData);
+
+	/**
+	 * @brief Filters a list of asset data to identify assets with the same name and outputs the filtered assets.
+	 *
+	 * @param AssetsDataToFilter The array of asset data pointers to be filtered.
+	 * @param OutSameNameAssetsData The array where the filtered assets with the same name will be stored.
+	 */
+	void ListSameNameAssetsForAssetList(const TArray<TSharedPtr<FAssetData>>& AssetsDataToFilter, TArray<TSharedPtr<FAssetData>>& OutSameNameAssetsData);
 	
 private:
 	
@@ -117,10 +144,26 @@ private:
 	 */
 	TArray<FString> FolderPathsSelected;
 
+	/**
+	 * @brief Registers the "Advance Deletion" tab within the Unreal Editor's Tab Manager.
+	 * This function binds the spawning behavior of the tab to a custom handler method.
+	 */
 	void RegisterAdvanceDeletionTab();
-	TSharedRef<SDockTab> OnSpawnAdvanceDeletionTab(const FSpawnTabArgs& Args);
-	TArray<TSharedPtr<FAssetData>> GetAllAssetsDataUnderSelectedFolder();
-	
-	
 
+	/**
+	 * @brief Handles the spawning of the advanced deletion tab within the Unreal Engine editor.
+	 *
+	 * @param Args The arguments used to configure the advanced deletion tab during spawning.
+	 * @return A shared reference to the created advanced deletion tab.
+	 */
+	TSharedRef<SDockTab> OnSpawnAdvanceDeletionTab(const FSpawnTabArgs& Args);
+
+	/**
+	 * @brief Retrieves all asset data objects under the selected folder paths in the Unreal Editor,
+	 * excluding specific paths such as "Developers", "Collections", "__ExternalActors__", or "__ExternalObjects__".
+	 *
+	 * @return An array of shared pointers to FAssetData objects representing the assets found under the selected folder paths.
+	 *         If no folder is selected or no assets are found, an empty array is returned.
+	 */
+	TArray<TSharedPtr<FAssetData>> GetAllAssetsDataUnderSelectedFolder();
 };

@@ -350,6 +350,33 @@ void FtpUnrealModule::ListUnusedAssetsForAssetList(const TArray<TSharedPtr<FAsse
 	}
 }
 
+void FtpUnrealModule::ListSameNameAssetsForAssetList(const TArray<TSharedPtr<FAssetData>>& AssetsDataToFilter,
+	TArray<TSharedPtr<FAssetData>>& OutSameNameAssetsData)
+{
+	OutSameNameAssetsData.Empty();
+	
+	TMultiMap<FString, TSharedPtr<FAssetData>> SameNameAssetsMap;
+
+	for (const TSharedPtr<FAssetData>& AssetData : AssetsDataToFilter)
+	{
+		SameNameAssetsMap.Emplace(AssetData->AssetName.ToString(), AssetData);
+	}
+
+	for (const TSharedPtr<FAssetData>& AssetData : AssetsDataToFilter)
+	{
+		TArray<TSharedPtr<FAssetData>> OutAssetsData;
+		SameNameAssetsMap.MultiFind(AssetData->AssetName.ToString(), OutAssetsData);
+
+		if (OutAssetsData.Num() <= 1) return;
+		
+		for (const TSharedPtr<FAssetData>& OutAssetData : OutAssetsData)
+		{
+			if (!OutAssetData.IsValid()) continue;
+			OutSameNameAssetsData.AddUnique(OutAssetData);
+		}
+	}
+}
+
 #pragma endregion
 
 #undef LOCTEXT_NAMESPACE
