@@ -52,6 +52,16 @@ void SAdvanceDeletionTab::Construct(const FArguments& InArgs)
 			[
 				ConstructComboBox()
 			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(0.6f)
+			[
+				ConstructHelpTextForComboBox(TEXT("Specify the listing condition in the drop down. Left mouse click to go to where asset is located"), ETextJustify::Center)
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(0.1f)
+			[
+				ConstructHelpTextForComboBox(TEXT("Current Folder:\n") + InArgs._CurrentSelectedFolder, ETextJustify::Right)
+			]
 		]
 		+ SVerticalBox::Slot()
 		.VAlign(VAlign_Fill)	// Needed to ensure scrollbox works as expected.
@@ -125,6 +135,17 @@ TSharedRef<SComboBox<TSharedPtr<FString>>> SAdvanceDeletionTab::ConstructComboBo
 		];		
 
 	return ConstructedComboBox;
+}
+
+TSharedRef<STextBlock> SAdvanceDeletionTab::ConstructHelpTextForComboBox(const FString& TextContent,
+	ETextJustify::Type TextJustify)
+{
+	TSharedRef<STextBlock> ConstructedHelpText = SNew(STextBlock)
+		.Text(FText::FromString(TextContent))
+		.Justification(TextJustify)
+		.AutoWrapText(true);
+
+	return ConstructedHelpText;
 }
 
 TSharedRef<SWidget> SAdvanceDeletionTab::OnGenerateComboBoxContent(TSharedPtr<FString> SourceItem)

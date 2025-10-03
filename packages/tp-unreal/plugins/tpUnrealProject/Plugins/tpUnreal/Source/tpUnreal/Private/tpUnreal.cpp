@@ -23,6 +23,7 @@ void FtpUnrealModule::StartupModule()
 
 void FtpUnrealModule::ShutdownModule()
 {
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner("AdvanceDeletion");
 }
 
 #pragma region ContentBrowserExtension
@@ -293,6 +294,7 @@ TSharedRef<SDockTab> FtpUnrealModule::OnSpawnAdvanceDeletionTab(const FSpawnTabA
 	[
 		SNew(SAdvanceDeletionTab)
 		.AssetsData(GetAllAssetsDataUnderSelectedFolder())
+		.CurrentSelectedFolder(FolderPathsSelected[0])
 	];
 }
 
