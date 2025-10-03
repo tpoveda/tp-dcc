@@ -377,6 +377,14 @@ void FtpUnrealModule::ListSameNameAssetsForAssetList(const TArray<TSharedPtr<FAs
 	}
 }
 
+void FtpUnrealModule::SyncToClickedAssetForAssetList(const FString& AssetPathToSync)
+{
+	TArray<FString> AssetPathsToSync;
+	AssetPathsToSync.Add(AssetPathToSync);
+	
+	UEditorAssetLibrary::SyncBrowserToObjects(AssetPathsToSync);
+}
+
 #pragma endregion
 
 #undef LOCTEXT_NAMESPACE

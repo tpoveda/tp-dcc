@@ -46,6 +46,8 @@ public:
 	 * @param OutSameNameAssetsData The array where the filtered assets with the same name will be stored.
 	 */
 	void ListSameNameAssetsForAssetList(const TArray<TSharedPtr<FAssetData>>& AssetsDataToFilter, TArray<TSharedPtr<FAssetData>>& OutSameNameAssetsData);
+
+	void SyncToClickedAssetForAssetList(const FString& AssetPathToSync);
 	
 private:
 	

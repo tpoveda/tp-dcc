@@ -22,7 +22,8 @@ void SAdvanceDeletionTab::Construct(const FArguments& InArgs)
 	
 	CheckBoxes.Empty();
 	AssetsDataToDelete.Empty();
-
+    ComboBoxSourceItems.Empty();
+    
 	ComboBoxSourceItems.Add(MakeShared<FString>(ListAll));
 	ComboBoxSourceItems.Add(MakeShared<FString>(ListUnused));
 	ComboBoxSourceItems.Add(MakeShared<FString>(ListSameName));
@@ -91,7 +92,8 @@ TSharedRef<SListView<TSharedPtr<FAssetData>>> SAdvanceDeletionTab::ConstructAsse
 {
 	ConstructedAssetListView = SNew(SListView<TSharedPtr<FAssetData>>)
 	.ListItemsSource(&DisplayedAssetsData)
-	.OnGenerateRow(this, &SAdvanceDeletionTab::OnGenerateRowForList);
+	.OnGenerateRow(this, &SAdvanceDeletionTab::OnGenerateRowForList)
+	.OnMouseButtonClick(this, &SAdvanceDeletionTab::OnRowWidgetMouseButtonClicked);
 
 	return ConstructedAssetListView.ToSharedRef();
 }
@@ -204,6 +206,12 @@ TSharedRef<ITableRow> SAdvanceDeletionTab::OnGenerateRowForList(TSharedPtr<FAsse
 	];
 
 	return ListViewRowWidget;
+}
+
+void SAdvanceDeletionTab::OnRowWidgetMouseButtonClicked(TSharedPtr<FAssetData> AssetData)
+{
+	FtpUnrealModule& tpUnrealModule = FModuleManager::LoadModuleChecked<FtpUnrealModule>(TEXT("tpUnreal"));
+	tpUnrealModule.SyncToClickedAssetForAssetList(AssetData->GetObjectPathString());
 }
 
 TSharedRef<SCheckBox> SAdvanceDeletionTab::ConstructCheckBox(const TSharedPtr<FAssetData>& AssetData)
