@@ -4,7 +4,7 @@ from Qt.QtWidgets import QVBoxLayout
 
 from tp.libs.qt.widgets.window import Window
 
-from .blueprint_canvas import BlueprintCanvasWidget
+from .editor import NodeGraphEditor
 
 
 class NodeGraphWindow(Window):
@@ -19,11 +19,13 @@ class NodeGraphWindow(Window):
 
         super().setup_widgets()
 
-        self._canvas_widget = BlueprintCanvasWidget(parent=self)
+        self._graph_editor = NodeGraphEditor(parent=self)
 
     def setup_layouts(self, main_layout: QVBoxLayout):
         """Set up the layouts for the window."""
 
         super().setup_layouts(main_layout)
 
-        main_layout.addWidget(self._canvas_widget)
+        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.addWidget(self._graph_editor)

@@ -124,3 +124,17 @@ class NodeGraphPreferenceInterface(PreferenceInterface):
         """The tick interval in milliseconds for the node graph canvas."""
 
         return self.settings(name="canvas", fallback={}).get("tick_ms", 8)
+
+    # === Packages === #
+
+    def user_package_paths(self) -> list[str]:
+        """Returns a list of user-defined package paths for node graph nodes.
+
+        These paths are specified in the preferences and are used to locate
+        additional node packages that can be loaded into the node graph.
+
+        Returns:
+            A list of strings representing the user-defined package paths.
+        """
+
+        return self.settings(name="packages", fallback={}).get("user_paths", [])

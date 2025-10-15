@@ -27,6 +27,24 @@ class ConfigManager(metaclass=Singleton):
                 mouse=Qt.MouseButton.MiddleButton,
             )
         )
+        input_manager.register_action(
+            InputAction(
+                name="Canvas.Pan",
+                action_type=InputActionType.Mouse,
+                group="Navigation",
+                mouse=Qt.MouseButton.LeftButton,
+                modifiers=Qt.AltModifier,
+            )
+        )
+        input_manager.register_action(
+            InputAction(
+                name="Canvas.Zoom",
+                action_type=InputActionType.Mouse,
+                group="Navigation",
+                mouse=Qt.MouseButton.RightButton,
+                modifiers=Qt.AltModifier,
+            )
+        )
 
 
 # noinspection PyTypeChecker

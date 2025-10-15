@@ -42,6 +42,22 @@ class CanvasScene(QGraphicsScene):
         self.setSceneRect(QRectF(0, 0, 10, 10))
         self.setBackgroundBrush(self._background_color)
 
+    @property
+    def background_color(self) -> QColor:
+        """The background color of the canvas scene."""
+
+        return self._background_color
+
+    @background_color.setter
+    def background_color(self, color: QColor | tuple[float, float, float]) -> None:
+        """Sets the background color of the canvas scene."""
+
+        if isinstance(color, tuple):
+            color = QColor(*color)
+
+        self._background_color = color
+        self.setBackgroundBrush(self._background_color)
+
     def __repr__(self) -> str:
         """Returns a string representation of the canvas scene.
 

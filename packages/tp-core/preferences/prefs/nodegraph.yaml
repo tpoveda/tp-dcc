@@ -5,7 +5,7 @@ settings:
     background_color: "#232323"
     grid_color: "#303030"
     grid_color_darker: "#141414"
-    grid_mode: 1                         # 0: No Grid; 1: Dots; 2: Lines.
+    grid_mode: 2                         # 0: No Grid; 1: Dots; 2: Lines.
     draw_grid: True
     grid_size_small: 10
     grid_size_large: 100
@@ -15,3 +15,5 @@ settings:
     smooth_friction: 0.92                # 0.85–0.92 for a modern inertial glide; lower for “heavier,” higher for “floaty.”
     smooth_max_step_zoom_factor:  1.35   # 2–1.5 keeps high-res wheels from jumping too far in a single step.
     smooth_tick_ms: 8                    # 6–10 ms for ultra-smooth motion on fast displays.
+  packages:
+    user_paths: []

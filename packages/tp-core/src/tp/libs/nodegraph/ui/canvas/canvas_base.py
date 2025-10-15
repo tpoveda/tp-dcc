@@ -4,7 +4,7 @@ from enum import IntEnum
 
 from Qt.QtCore import Qt, QPoint, QPointF, QRectF, QTimerEvent
 from Qt.QtWidgets import QWidget, QGraphicsView, QGraphicsScene
-from Qt.QtGui import QCursor, QMouseEvent, QPainter, QWheelEvent
+from Qt.QtGui import QCursor, QPainter, QMouseEvent, QKeyEvent, QWheelEvent
 
 from tp.libs.math.scalar import lerp_value, range_percentage
 from tp.preferences.interfaces import core as core_interfaces
@@ -43,7 +43,12 @@ class CanvasBase(QGraphicsView):
         self._last_mouse_pos = QPoint()
         self._mouse_release_pos = QPoint()
 
+        self._shortcuts_enabled = True
+        self._current_pressed_key: int | None = None
+
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
+        # self.setViewportUpdateMode(QGraphicsView.BoundingRectViewportUpdate)
+        # self.setCacheMode(QGraphicsView.CacheBackground)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
         self.setRenderHint(QPainter.Antialiasing)
@@ -51,6 +56,8 @@ class CanvasBase(QGraphicsView):
         self.setAttribute(Qt.WA_AlwaysShowToolTips)
         self.setAcceptDrops(True)
         self.setMouseTracking(True)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         self.setScene(self._create_scene())
         self.centerOn(
@@ -74,7 +81,7 @@ class CanvasBase(QGraphicsView):
         return self._maximum_scale
 
     def current_view_scale(self) -> float:
-        """Returns the current scale of the view.
+        """Return the current scale of the view.
 
         Returns:
             The current scale of the view.
@@ -89,12 +96,12 @@ class CanvasBase(QGraphicsView):
         return self.transform().m22()
 
     def reset_scale(self) -> None:
-        """Resets the scale of the view to the default value."""
+        """Reset the scale of the view to the default value."""
 
         self.resetMatrix()
 
     def get_lod_value_from_scale(self, num_lods: int = 5, scale: float = 1.0):
-        """Calculates the level of detail (LOD) value based on the current
+        """Calculate the level of detail (LOD) value based on the current
         scale.
 
         Args:
@@ -157,6 +164,27 @@ class CanvasBase(QGraphicsView):
         scene.setSceneRect(QRectF(0, 0, 10, 10))
 
         return scene
+
+    # === Shortcuts ===
+
+    def is_shortcuts_enabled(self) -> bool:
+        """Check if shortcuts are enabled.
+
+        Returns:
+             `True` if shortcuts are enabled; `False` otherwise.
+        """
+
+        return self._shortcuts_enabled
+
+    def enable_shortcuts(self) -> None:
+        """Enable shortcuts for the canvas."""
+
+        self._shortcuts_enabled = True
+
+    def disable_shortcuts(self) -> None:
+        """Disable shortcuts for the canvas."""
+
+        self._shortcuts_enabled = False
 
     # === Manipulation (Zoom, Pan) === #
 
@@ -328,6 +356,9 @@ class CanvasBase(QGraphicsView):
         if current_input_action in input_manager["Canvas.Pan"]:
             self._cancel_zoom_animation()
             self.manipulation_mode = CanvasManipulationMode.Pan
+        elif current_input_action in input_manager["Canvas.Zoom"]:
+            self.manipulation_mode = CanvasManipulationMode.Zoom
+            self._start_drag_zoom(event.pos())
 
         super().mousePressEvent(event)
 
@@ -344,6 +375,11 @@ class CanvasBase(QGraphicsView):
 
         if self._manipulation_mode == CanvasManipulationMode.Pan:
             self.pan(mouse_delta)
+        elif self._manipulation_mode == CanvasManipulationMode.Zoom:
+            self._update_drag_zoom(event.pos())
+            self._last_mouse_pos = self._mouse_pos
+            event.accept()
+            return
         else:
             super().mouseMoveEvent(event)
 
@@ -361,10 +397,29 @@ class CanvasBase(QGraphicsView):
         modifiers = event.modifiers()
         self._mouse_release_pos = event.pos()
 
+        if self._drag_zoom_active:
+            self._end_drag_zoom()
+
         # Reset the manipulation mode to undefined after releasing the mouse.
         self.manipulation_mode = CanvasManipulationMode.Undefined
 
         super().mouseReleaseEvent(event)
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        modifiers = event.modifiers()
+        current_input_action = InputAction(
+            "temp",
+            InputActionType.Keyboard,
+            "temp",
+            key=event.key(),
+            modifiers=modifiers,
+        )
+        self._current_pressed_key = event.key()
+
+        if self.is_shortcuts_enabled():
+            pass
+
+        super().keyPressEvent(event)
 
     # noinspection PyAttributeOutsideInit
     def wheelEvent(self, event: QWheelEvent) -> None:
@@ -447,6 +502,18 @@ class CanvasBase(QGraphicsView):
             max(1.01, self._prefs.canvas_smooth_max_step_zoom_factor)
         )
         self._smooth_tick_ms = max(4, int(self._prefs.canvas_smooth_tick_ms))
+
+        self._drag_zoom_active = False
+        self._drag_zoom_anchor_view = QPoint()
+        self._drag_zoom_initial_scale = 1.0
+        # pixels of mouse movement that equal one “wheel step”
+        self._drag_zoom_pixels_per_step = int(
+            getattr(self._prefs, "canvas_drag_zoom_pixels_per_step", 160)
+        )
+        # If True, use vertical drag (up/down); if False, horizontal (left/right)
+        self._drag_zoom_use_vertical = bool(
+            getattr(self._prefs, "canvas_drag_zoom_vertical", False)
+        )
 
         # State.
         self._smooth_timer_id: int | None = None
@@ -589,5 +656,69 @@ class CanvasBase(QGraphicsView):
         cur = self.current_view_scale()
         if cur > 0.0:
             self._smooth_zoom_target_scale = cur
+        self._smooth_anchor_view = None
+        self._smooth_anchor_scene = None
+
+    # === Drag Zoom === #
+
+    def _start_drag_zoom(self, pos_view: QPoint) -> None:
+        """Begin drag-zoom anchored at the press position of a mouse.
+
+        Args:
+            pos_view: The position in view coordinates where the mouse button
+            was pressed.
+        """
+
+        self._drag_zoom_active = True
+        self._drag_zoom_anchor_view = QPoint(pos_view)
+        self._drag_zoom_initial_scale = max(self.current_view_scale(), 1e-6)
+
+        # Pin zoom to the press point.
+        self._smooth_anchor_view = QPoint(pos_view)
+        self._smooth_anchor_scene = self.mapToScene(pos_view)
+
+    def _update_drag_zoom(self, pos_view: QPoint) -> None:
+        """Update target scale based on pointer delta while dragging mouse.
+
+        Args:
+            pos_view: The current position in view coordinates of the mouse.
+        """
+
+        if not self._drag_zoom_active:
+            return
+
+        dx = pos_view.x() - self._drag_zoom_anchor_view.x()
+        dy = pos_view.y() - self._drag_zoom_anchor_view.y()
+
+        # Choose axis; invert vertical so dragging UP zooms IN
+        drag = -dy if self._drag_zoom_use_vertical else dx
+
+        # Convert pixels → “steps” (like wheel notches)
+        steps = float(drag) / float(max(1, self._drag_zoom_pixels_per_step))
+
+        # Same base as wheel zoom
+        base = 1.0 + max(self._mouse_wheel_zoom_rate, 1e-4)
+
+        # Target absolute scale from the initial scale
+        raw_target = self._drag_zoom_initial_scale * (base**steps)
+        target = self._clamp_scale(raw_target)
+
+        # Optional stability: cap per-tick jump relative to current
+        cur = self.current_view_scale()
+        if cur > 0.0:
+            cap = self._smooth_max_step_zoom_factor
+            target = self._clamp_scale(max(cur / cap, min(cur * cap, target)))
+
+        self._smooth_zoom_target_scale = target
+        self._ensure_smooth_animating()
+
+    def _end_drag_zoom(self) -> None:
+        """Finish mouse drag-zoom and release the anchor so pan can start
+        immediately.
+        """
+
+        self._drag_zoom_active = False
+
+        # Stop anchor correction fighting subsequent pans.
         self._smooth_anchor_view = None
         self._smooth_anchor_scene = None
