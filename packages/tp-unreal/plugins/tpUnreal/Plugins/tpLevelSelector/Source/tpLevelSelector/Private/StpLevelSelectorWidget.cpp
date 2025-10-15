@@ -1,6 +1,9 @@
 ﻿#include "StpLevelSelectorWidget.h"
 
+#include "Editor.h"
+#include "tpLevelSelector.h"
 #include "TPLevelSelectorSettings.h"
+#include "tpLevelSelectorStyle.h"
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Components/HorizontalBox.h"
@@ -19,8 +22,8 @@ FLevelSelectorItem::FLevelSelectorItem(const FAssetData& InAssetData)
 void StpLevelSelectorWidget::Construct(const FArguments& InArgs)
 {
 	DefaultLevelIcon = FAppStyle::GetBrush("LevelEditor.Tabs.Levels");
-	RefreshIconBrush = FAppStyle::GetBrush("Icons.Refresh");
-
+	RefreshIconBrush = FtpLevelSelectorStyle::Get().GetBrush("tpLevelSelector.Refresh");
+	
 	PopulateLevels();
 	
 	ChildSlot
@@ -74,10 +77,7 @@ void StpLevelSelectorWidget::Construct(const FArguments& InArgs)
 					[
 						SNew(SButton)
 						.ContentPadding(0)
-						[
-							SNew(STextBlock)
-							.Text(FText::FromString("Refresh"))
-						]
+						.OnClicked(this, &StpLevelSelectorWidget::OnRefreshButtonClicked)
 					]
 					+ SOverlay::Slot()
 					.HAlign(HAlign_Center)
@@ -85,6 +85,7 @@ void StpLevelSelectorWidget::Construct(const FArguments& InArgs)
 					.Padding(4.0f)
 					[
 						SNew(SImage)
+						.Image(RefreshIconBrush)
 						.DesiredSizeOverride(FVector2D(20, 20))
 						.Visibility(EVisibility::HitTestInvisible)
 					]
@@ -103,7 +104,11 @@ void StpLevelSelectorWidget::PopulateLevels()
 	AssetRegistryModule.Get().GetAssetsByClass(UWorld::StaticClass()->GetClassPathName(), AssetData);
 
 	const UTpLevelSelectorSettings* Settings = GetDefault<UTpLevelSelectorSettings>();
-	if (!Settings) return;
+	if (!Settings)
+	{
+		UE_LOG(LogTpLevelSelector, Warning, TEXT("Failed to load UTpLevelSelectorSettings"));
+		return;
+	}
 
 	for (const FSoftObjectPath& FavoritePath : Settings->FavoriteLevels)
 	{
@@ -201,6 +206,11 @@ FGameplayTag StpLevelSelectorWidget::GetItemTag(const TSharedPtr<FLevelSelectorI
 	return FGameplayTag::EmptyTag;
 }
 
+void StpLevelSelectorWidget::RefreshSelection(const FString& MapPath, bool bStrict)
+{
+	UE_LOG(LogTpLevelSelector, Log, TEXT("Refreshing selection for %s"), *MapPath);
+}
+
 void StpLevelSelectorWidget::ApplyFilters()
 {
 	const FString Search = SearchTextFilter.ToString();
@@ -237,6 +247,18 @@ void StpLevelSelectorWidget::ApplyFilters()
 TSharedRef<SWidget> StpLevelSelectorWidget::OnGenerateWidgetForComboBox(TSharedPtr<FLevelSelectorItem> Item)
 {
 	return CreateLevelItemWidget(Item);
+}
+
+FReply StpLevelSelectorWidget::OnRefreshButtonClicked()
+{
+	PopulateLevels();
+
+	if (GEditor && GEditor->GetEditorWorldContext().World())
+	{
+		RefreshSelection(GEditor->GetEditorWorldContext().World()->GetPathName(), true);
+	}
+	
+	return FReply::Handled();
 }
 
 TSharedRef<SWidget> StpLevelSelectorWidget::CreateLevelItemWidget(TSharedPtr<FLevelSelectorItem>& Item)

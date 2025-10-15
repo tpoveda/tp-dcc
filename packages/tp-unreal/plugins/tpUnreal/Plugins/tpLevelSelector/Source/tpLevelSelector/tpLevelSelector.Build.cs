@@ -29,6 +29,7 @@ public class tpLevelSelector : ModuleRules
 				"DeveloperSettings",
 				"GameplayTags",
 				"InputCore",
+				"Projects",
 			}
 			);
 			
@@ -40,6 +41,7 @@ public class tpLevelSelector : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"UnrealEd",
 			}
 			);
 		

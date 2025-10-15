@@ -40,13 +40,15 @@ private:
 	
 	TSharedPtr<SComboBox<TSharedPtr<FLevelSelectorItem>>> LevelComboBox;
 	TSharedPtr<SBox> ComboBoxContentContainer;
-	const FSlateBrush* DefaultLevelIcon = nullptr;
-	const FSlateBrush* RefreshIconBrush = nullptr;
+	const FSlateBrush* DefaultLevelIcon{nullptr};
+	const FSlateBrush* RefreshIconBrush{nullptr};
 
 	TSharedRef<SWidget> CreateLevelItemWidget(TSharedPtr<FLevelSelectorItem>& Item);
 	bool IsSelectedItem(const TSharedPtr<FLevelSelectorItem>& Item) const;
 	FGameplayTag GetItemTag(const TSharedPtr<FLevelSelectorItem>& Item) const;
+	void RefreshSelection(const FString& MapPath, bool bStrict = true);
 	TSharedRef<SWidget> OnGenerateWidgetForComboBox(TSharedPtr<FLevelSelectorItem> Item);
+	FReply OnRefreshButtonClicked();
 
 	void ApplyFilters();
 	FText SearchTextFilter;
