@@ -33,24 +33,28 @@ public:
 private:
 	void PopulateLevels();
 	void SortLevels();
-	
+	void EnsureSelectedCurrentLevel(bool bStrict);
+	void ApplyFilters();
+
 	TArray<TSharedPtr<FLevelSelectorItem>> AllLevels;
 	TArray<TSharedPtr<FLevelSelectorItem>> AvailableLevels;
 	TSharedPtr<FLevelSelectorItem> SelectedLevel;
 	
-	TSharedPtr<SComboBox<TSharedPtr<FLevelSelectorItem>>> LevelComboBox;
+	FText SearchTextFilter;
+	FGameplayTag SelectedFilterTag;
 	TSharedPtr<SBox> ComboBoxContentContainer;
-	const FSlateBrush* DefaultLevelIcon{nullptr};
-	const FSlateBrush* RefreshIconBrush{nullptr};
-
+	TSharedPtr<SComboBox<TSharedPtr<FLevelSelectorItem>>> LevelComboBox;
 	TSharedRef<SWidget> CreateLevelItemWidget(TSharedPtr<FLevelSelectorItem>& Item);
+	TSharedRef<SWidget> CreateSelectedLevelItemWidget(TSharedPtr<FLevelSelectorItem>& Item);
 	bool IsSelectedItem(const TSharedPtr<FLevelSelectorItem>& Item) const;
 	FGameplayTag GetItemTag(const TSharedPtr<FLevelSelectorItem>& Item) const;
 	void RefreshSelection(const FString& MapPath, bool bStrict = true);
 	TSharedRef<SWidget> OnGenerateWidgetForComboBox(TSharedPtr<FLevelSelectorItem> Item);
+	void OnSelectionChanged(TSharedPtr<FLevelSelectorItem> Item, ESelectInfo::Type SelectInfo);
 	FReply OnRefreshButtonClicked();
+	FReply OnShowItemInContentBrowserClicked(const TSharedPtr<FLevelSelectorItem>& Item);
+	void OnMapOpened(const FString& MapPath, bool bAsTemplate);
 
-	void ApplyFilters();
-	FText SearchTextFilter;
-	FGameplayTag SelectedFilterTag;
+	const FSlateBrush* DefaultLevelIcon{nullptr};
+	const FSlateBrush* RefreshIconBrush{nullptr};
 };

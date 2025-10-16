@@ -1,6 +1,9 @@
 ﻿#include "StpLevelSelectorWidget.h"
 
+#include "ContentBrowserModule.h"
 #include "Editor.h"
+#include "FileHelpers.h"
+#include "IContentBrowserSingleton.h"
 #include "tpLevelSelector.h"
 #include "TPLevelSelectorSettings.h"
 #include "tpLevelSelectorStyle.h"
@@ -50,6 +53,7 @@ void StpLevelSelectorWidget::Construct(const FArguments& InArgs)
 				SAssignNew(LevelComboBox, SComboBox<TSharedPtr<FLevelSelectorItem>>)
 				.OptionsSource(&AvailableLevels)
 				.OnGenerateWidget(this, &StpLevelSelectorWidget::OnGenerateWidgetForComboBox)
+				.OnSelectionChanged(this, &StpLevelSelectorWidget::OnSelectionChanged)
 				.MaxListHeight(480.0f)
 				[
 					SAssignNew(ComboBoxContentContainer, SBox)
@@ -93,6 +97,13 @@ void StpLevelSelectorWidget::Construct(const FArguments& InArgs)
 			]
 		]
 	];
+
+	FEditorDelegates::OnMapOpened.AddSP(this, &StpLevelSelectorWidget::OnMapOpened);
+
+	if (GEditor && GEditor->GetEditorWorldContext().World())
+	{
+		EnsureSelectedCurrentLevel(true);
+	}
 }
 
 void StpLevelSelectorWidget::PopulateLevels()
@@ -187,6 +198,15 @@ void StpLevelSelectorWidget::SortLevels()
 	});
 }
 
+void StpLevelSelectorWidget::EnsureSelectedCurrentLevel(const bool bStrict)
+{
+	if (GEditor && GEditor->GetEditorWorldContext().World())
+	{
+		const FString CurrentMapPath = GEditor->GetEditorWorldContext().World()->GetPathName();
+		RefreshSelection(CurrentMapPath, bStrict);
+	}
+}
+
 bool StpLevelSelectorWidget::IsSelectedItem(const TSharedPtr<FLevelSelectorItem>& Item) const
 {
 	return SelectedLevel.IsValid() && SelectedLevel == Item;
@@ -208,7 +228,34 @@ FGameplayTag StpLevelSelectorWidget::GetItemTag(const TSharedPtr<FLevelSelectorI
 
 void StpLevelSelectorWidget::RefreshSelection(const FString& MapPath, bool bStrict)
 {
-	UE_LOG(LogTpLevelSelector, Log, TEXT("Refreshing selection for %s"), *MapPath);
+	const FString PackagePath = FPackageName::ObjectPathToPackageName(MapPath);
+
+	for (auto& Item : AllLevels)
+	{
+		if (Item.IsValid() && Item->PackagePath.Equals(PackagePath, ESearchCase::IgnoreCase))
+		{
+			if (LevelComboBox.IsValid())
+			{
+				LevelComboBox->SetSelectedItem(Item);
+			}
+			if (ComboBoxContentContainer.IsValid())
+			{
+				ComboBoxContentContainer->SetContent(CreateSelectedLevelItemWidget(Item));
+			}
+			return;
+		}
+	}
+
+	if (bStrict) return;
+
+	if (LevelComboBox.IsValid())
+	{
+		LevelComboBox->ClearSelection();
+	}
+	if (ComboBoxContentContainer.IsValid())
+	{
+		ComboBoxContentContainer->SetContent(SNew(STextBlock).Text(FText::FromString("Select a Level...")));
+	}
 }
 
 void StpLevelSelectorWidget::ApplyFilters()
@@ -249,16 +296,45 @@ TSharedRef<SWidget> StpLevelSelectorWidget::OnGenerateWidgetForComboBox(TSharedP
 	return CreateLevelItemWidget(Item);
 }
 
+void StpLevelSelectorWidget::OnSelectionChanged(TSharedPtr<FLevelSelectorItem> Item, const ESelectInfo::Type SelectInfo)
+{
+	if (SelectInfo != ESelectInfo::OnMouseClick && SelectInfo != ESelectInfo::OnKeyPress) return;
+	if (!Item.IsValid()) return;
+
+	FEditorFileUtils::LoadMap(Item->AssetData.GetSoftObjectPath().ToString());
+}
+
 FReply StpLevelSelectorWidget::OnRefreshButtonClicked()
 {
 	PopulateLevels();
+	EnsureSelectedCurrentLevel(true);
+	
+	return FReply::Handled();
+}
 
-	if (GEditor && GEditor->GetEditorWorldContext().World())
+FReply StpLevelSelectorWidget::OnShowItemInContentBrowserClicked(const TSharedPtr<FLevelSelectorItem>& Item)
+{
+	if (Item.IsValid())
 	{
-		RefreshSelection(GEditor->GetEditorWorldContext().World()->GetPathName(), true);
+		const FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
+		TArray<FAssetData> AssetsToSelect;
+		AssetsToSelect.Add(Item->AssetData);
+		ContentBrowserModule.Get().SyncBrowserToAssets(AssetsToSelect);
+		
+		// if (LevelComboBox.IsValid())
+		// {
+		// 	LevelComboBox->SetIsOpen(false);
+		// }
+
+		this->EnsureSelectedCurrentLevel(true);
 	}
 	
 	return FReply::Handled();
+}
+
+void StpLevelSelectorWidget::OnMapOpened(const FString& MapPath, bool bAsTemplate)
+{
+	RefreshSelection(MapPath, true);
 }
 
 TSharedRef<SWidget> StpLevelSelectorWidget::CreateLevelItemWidget(TSharedPtr<FLevelSelectorItem>& Item)
@@ -294,5 +370,67 @@ TSharedRef<SWidget> StpLevelSelectorWidget::CreateLevelItemWidget(TSharedPtr<FLe
 			.Font(FAppStyle::GetFontStyle("PropertyWindow.NormalFont"))
 			.MinDesiredWidth(200)
 			.Clipping(EWidgetClipping::ClipToBounds)
+		]
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Center)
+		.Padding(4.0f, 0.0f, 0.0f, 0.0f)
+		[
+			SNew(SBox)
+			.WidthOverride(18)
+			.HeightOverride(18)
+			[
+				SNew(SButton)
+				.ButtonStyle(FAppStyle::Get(), "NoBorder")
+				.ContentPadding(2)
+				.ToolTipText(FText::FromString("Show in Content Browser"))
+				.OnClicked(FOnClicked::CreateLambda([this, Item]() mutable -> FReply
+				{
+					return OnShowItemInContentBrowserClicked(Item);
+				}))
+				[
+					SNew(SImage)
+					.Image(FAppStyle::GetBrush("SystemWideCommands.FindInContentBrowser"))
+					.ColorAndOpacity(FSlateColor::UseForeground())
+				]
+			]
+		];
+}
+
+TSharedRef<SWidget> StpLevelSelectorWidget::CreateSelectedLevelItemWidget(TSharedPtr<FLevelSelectorItem>& Item)
+{
+	if (!Item.IsValid())
+	{
+		return SNew(STextBlock).Text(FText::FromString("Invalid Level"));
+	}
+
+	FString TagString = TEXT("");
+	const FString DisplayText = Item->DisplayName + TagString;
+	
+	return SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.VAlign(VAlign_Center)
+		[
+			SNew(SBox)
+			.WidthOverride(24)
+			.HeightOverride(24)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			.Padding(0.0f, 2.0f)
+			[
+				SNew(SImage)
+				.Image(DefaultLevelIcon)
+			]
+		]
+		+ SHorizontalBox::Slot()
+		.FillWidth(1.0f)
+		.VAlign(VAlign_Center)
+		.Padding(4.0f, 2.0f)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(DisplayText))
+			.Font(FAppStyle::GetFontStyle("PropertyWindow.NormalFont"))
 		];
 }
