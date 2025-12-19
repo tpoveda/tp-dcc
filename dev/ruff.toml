@@ -7,6 +7,7 @@ select = [
     "F",  # pyflakes errors (e.g., undefined or unused variables).
     "W",  # pycodestyle warnings (e.g., style issues that aren't strict errors).
     "D",  # pydocstyle (enforces docstrings, including Google/NumPy/reST style).
+    "I",  
 ]
 
 # These codes are explicitly ignored:

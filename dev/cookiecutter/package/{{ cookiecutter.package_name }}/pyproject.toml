@@ -27,6 +27,16 @@ dev = [
   "mypy",
 ]
 
+[tool.uv]
+
+[tool.uv.scripts]
+install = "uv pip install .[dev]"
+format = "ruff check . --fix"
+lint = "ruff check ."
+typecheck = "mypy tp/"
+test = "pytest"
+check = ["lint", "typecheck", "test"]
+
 [tool.setuptools]
 packages = { find = { where = ["src"], exclude = ["tests", "docs"] } }
 
@@ -52,6 +62,7 @@ select = [
     "F",  # pyflakes errors (e.g., undefined or unused variables).
     "W",  # pycodestyle warnings (e.g., style issues that aren't strict errors).
     "D",  # pydocstyle (enforces docstrings, including Google/NumPy/reST style).
+    "I",  # isort (import sorting and organization).
 ]
 
 # These codes are explicitly ignored:
