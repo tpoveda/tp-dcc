@@ -13,7 +13,7 @@ authors = [
 ]
 dependencies = []
 
-[project.optional-dependencies]
+[optional-dependencies]
 docs = [
     "sphinx",
     "sphinx-autodoc-typehints",
