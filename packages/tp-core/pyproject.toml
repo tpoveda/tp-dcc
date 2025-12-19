@@ -11,7 +11,7 @@ license = { text = "MIT" }
 authors = [
     { name = "Tomi Poveda", email = "tpovedatd@gmail.com" }
 ]
-dependencies = []
+dependencies = ["pydantic"]
 
 [project.optional-dependencies]
 docs = [

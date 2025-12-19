@@ -1,20 +1,18 @@
 from __future__ import annotations
 
 import sys
-import typing
 import traceback
-from typing import cast, Type, TypedDict
+import typing
+from typing import Type, TypedDict, cast
 
 from loguru import logger
-from Qt.QtWidgets import QWidget, QStackedWidget
-
-from tp.dcc import callback
+from Qt.QtWidgets import QStackedWidget, QWidget
 from tp.core.host import current_host
-from tp.libs.qt.widgets import Window
-from tp.libs.plugin import Plugin, PluginsManager, PluginExecutionStats
+from tp.dcc import callback
+from tp.libs.plugin import Plugin, PluginExecutionStats, PluginsManager
 
 if typing.TYPE_CHECKING:
-    from tp.libs.qt.mvc import Model, Controller
+    from tp.libs.qt.mvc import Controller, Model
     from tp.tools.hub.widgets.toolpanel import ToolPanelWidget
 
 
@@ -130,7 +128,9 @@ class Tool(Plugin):
         return view
 
     @classmethod
-    def setup_model_controller(cls, model: Model, controller: Controller) -> None:
+    def setup_model_controller(
+        cls, model: Model, controller: Controller
+    ) -> None:
         """Set up the model and controller for the tool.
 
         Args:
@@ -139,7 +139,9 @@ class Tool(Plugin):
         """
 
     @classmethod
-    def setup_tool_panel(cls, tool_panel: ToolPanelWidget, view: QWidget) -> None:
+    def setup_tool_panel(
+        cls, tool_panel: ToolPanelWidget, view: QWidget
+    ) -> None:
         """Set up the tool panel with the provided view.
 
         Args:
@@ -158,6 +160,8 @@ class Tool(Plugin):
             args: Positional arguments to pass to the function.
             kwargs: Keyword arguments to pass to the function.
         """
+
+        from tp.libs.qt.widgets import Window
 
         tool_view = self.setup()
 

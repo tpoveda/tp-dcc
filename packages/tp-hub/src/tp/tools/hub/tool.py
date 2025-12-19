@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import cast, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from Qt.QtWidgets import QWidget
-
 from tp.core import Tool, ToolUiData, current_host
 
-from .view import HubWindow
+if TYPE_CHECKING:
+    from .view import HubWindow
 
 
 class HubTool(Tool):
@@ -48,6 +48,8 @@ def launch(
     Returns:
         The created `HubWindow` instance.
     """
+
+    from .view import HubWindow
 
     tool_args = tool_args or {}
     tool_ids: list[str] = tool_args.get("tool_ids", [])

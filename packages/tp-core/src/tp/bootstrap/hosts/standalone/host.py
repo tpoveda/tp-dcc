@@ -69,6 +69,18 @@ class StandaloneHostApplication(host.HostApplication):
 
         return ""
 
+    def set_current_hotkey_set(self, name: str) -> bool:
+        """Sets the current hotkey set in the host application.
+
+        Args:
+            name: The name of the hotkey set to set as current.
+
+        Returns:
+            `True` if the hotkey set was successfully set; `False` otherwise.
+        """
+
+        return True
+
     def set_source_key_set(self, name: str, source: str) -> bool:
         """Sets the source key set in the host application.
 
