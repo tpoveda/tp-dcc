@@ -20,6 +20,9 @@ ignore = [
     "D104",  # Missing docstring in public packages.
 ]
 
+[lint.isort]
+known-first-party = ["tp"]              # Treat `tp` as a first-party package.
+
 [lint.pydocstyle]
 convention = "google"                   # Use Google-style docstring convention.
 property-decorators = ["@property"]     # Enforce docstrings on properties.
