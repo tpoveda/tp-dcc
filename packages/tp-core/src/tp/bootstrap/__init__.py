@@ -5,12 +5,11 @@ __version__ = "0.1.0"
 import os
 import site
 
-from .core import log
-from .core import constants
-from .core.manager import PackagesManager
-from .utils import dcc
 from ..core.host import Host
 from ..managers.tools import ToolsManager
+from .core import constants, log
+from .core.manager import PackagesManager
+from .utils import dcc
 
 
 def init() -> PackagesManager:
@@ -72,7 +71,9 @@ def setup_host(packages_manager: PackagesManager) -> Host:
 
         return Host.create(packages_manager, MayaHost, dcc.Maya)
     else:
-        raise NotImplementedError(f"Host not implemented for {dcc.current_dcc()}")
+        raise NotImplementedError(
+            f"Host not implemented for {dcc.current_dcc()}"
+        )
 
 
 def shutdown():
