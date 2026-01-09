@@ -2,21 +2,28 @@ from __future__ import annotations
 
 import uuid
 
-from Qt.QtCore import Qt, QSize
-from Qt.QtWidgets import QApplication, QSizePolicy, QWidget, QLabel, QToolButton
+from Qt.QtCore import QSize, Qt
 from Qt.QtGui import QIcon, QKeyEvent
+from Qt.QtWidgets import (
+    QApplication,
+    QLabel,
+    QSizePolicy,
+    QToolButton,
+    QWidget,
+)
 
 from tp.libs.python import strings
 from tp.libs.python.paths import canonical_path
 
-from .. import dpi, utils as qtutils
+from .. import dpi
+from .. import utils as qtutils
 from ..icon import colorize_icon
-from .frameless import FramelessWindowThin
-from .layouts import VerticalLayout, HorizontalLayout
 from .buttons import BaseButton
+from .layouts import HorizontalLayout, VerticalLayout
+from .window import Window
 
 
-class MessageBoxBase(FramelessWindowThin):
+class MessageBoxBase(Window):
     """Base message box implementation.
 
     A frameless window that provides standardized message box functionality
@@ -49,12 +56,20 @@ class MessageBoxBase(FramelessWindowThin):
         button_icon_c: str | QIcon | None = None,
         default: int = 0,
         on_top: bool = True,
-        key_presses: tuple[Qt.Key, ...] = (Qt.Key_Enter, Qt.Key_Return, Qt.Key_Space),
+        key_presses: tuple[Qt.Key, ...] = (
+            Qt.Key_Enter,
+            Qt.Key_Return,
+            Qt.Key_Space,
+        ),
     ):
         self._args = locals()
         self._default = default
         parent = parent.window() if parent else None
-        name = self._generate_name(icon) if icon else self._generate_name("MessageBox")
+        name = (
+            self._generate_name(icon)
+            if icon
+            else self._generate_name("MessageBox")
+        )
 
         super().__init__(
             parent=parent,
@@ -174,10 +189,6 @@ class MessageBoxBase(FramelessWindowThin):
         message box.
         """
 
-        self.set_maximize_button_visible(False)
-        self.set_minimize_button_visible(False)
-        self.title_bar.set_title_align(Qt.AlignCenter)
-
         icon_size = 32
 
         image = QToolButton(parent=self)
@@ -187,7 +198,9 @@ class MessageBoxBase(FramelessWindowThin):
             if button_icon == self.WARNING:
                 button_icon = colorize_icon(
                     QIcon(
-                        canonical_path(f"../../resources/icons/{self.WARNING_ICON}.png")
+                        canonical_path(
+                            f"../../resources/icons/{self.WARNING_ICON}.png"
+                        )
                     ),
                     size=icon_size,
                     color=(220, 210, 0),
@@ -205,7 +218,9 @@ class MessageBoxBase(FramelessWindowThin):
             elif button_icon == self.INFO:
                 button_icon = colorize_icon(
                     QIcon(
-                        canonical_path(f"../../resources/icons/{self.INFO_ICON}.png")
+                        canonical_path(
+                            f"../../resources/icons/{self.INFO_ICON}.png"
+                        )
                     ),
                     size=icon_size,
                     color=(220, 220, 220),
@@ -232,12 +247,18 @@ class MessageBoxBase(FramelessWindowThin):
         self._label = QLabel(self._args["message"], parent=self)
         self._label.setFixedWidth(
             min(
-                self._label.fontMetrics().boundingRect(self._label.text()).width() + 20,
+                self._label.fontMetrics()
+                .boundingRect(self._label.text())
+                .width()
+                + 20,
                 400,
             )
         )
         self._label.setFixedHeight(
-            min(self._calculate_label_height(self._label.text(), self._label), 800)
+            min(
+                self._calculate_label_height(self._label.text(), self._label),
+                800,
+            )
         )
         self._label.setWordWrap(True)
         self._label.setAlignment(Qt.AlignTop)
@@ -278,7 +299,9 @@ class MessageBoxBase(FramelessWindowThin):
             )
             button.setMinimumWidth(80)
             button.setMinimumHeight(24)
-            qtutils.set_horizontal_size_policy(button, QSizePolicy.MinimumExpanding)
+            qtutils.set_horizontal_size_policy(
+                button, QSizePolicy.MinimumExpanding
+            )
             self._buttons_layout.addWidget(button)
             button.leftClicked.connect(lambda x=res[i]: self.close(x))
             self._buttons.append(button)

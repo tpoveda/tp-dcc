@@ -1,22 +1,32 @@
 from __future__ import annotations
 
 import typing
-from typing import cast, Any
-from collections.abc import Iterator, Generator
+from collections.abc import Generator, Iterator
+from typing import Any, cast
 
-from Qt.QtCore import Qt, Signal, QObject, QPoint, QModelIndex, QItemSelectionModel
-from Qt.QtWidgets import QWidget, QAbstractItemView
+from Qt.QtCore import (
+    QItemSelectionModel,
+    QModelIndex,
+    QObject,
+    QPoint,
+    Qt,
+    Signal,
+)
 from Qt.QtGui import QIcon
+from Qt.QtWidgets import QAbstractItemView, QWidget
 
 from tp.preferences.directory import DirectoryPath
 
-from ..window import Window
+from ... import contexts, dpi, icons, utils
+from ..layouts import VerticalLayout
 from ..viewmodel import roles
 from ..viewmodel.data import BaseDataSource
 from ..viewmodel.treemodel import TreeModel
-from ..viewmodel.treeview import TreeViewWidget, TreeViewWidgetSelectionChangedEvent
-from ..layouts import VerticalLayout, HorizontalLayout
-from ... import dpi, utils, icons, contexts
+from ..viewmodel.treeview import (
+    TreeViewWidget,
+    TreeViewWidgetSelectionChangedEvent,
+)
+from ..window import Window
 
 if typing.TYPE_CHECKING:
     from tp.preferences.assets import BrowserPreference
@@ -117,7 +127,9 @@ class CategoryFolder(BaseDataSource):
 
         return data
 
-    def drop_mime_data(self, items: list[str], action: Qt.DropAction) -> dict[str, Any]:
+    def drop_mime_data(
+        self, items: list[str], action: Qt.DropAction
+    ) -> dict[str, Any]:
         """Handles the drop of mime data onto the item.
 
         Args:
@@ -215,7 +227,9 @@ class CategoryFolder(BaseDataSource):
             new_item = CategoryFolder(new_item, model=self.model, parent=self)
             self.insert_child(index, new_item)
         else:
-            directory_path = DirectoryPath(data["path"], alias=data.get("alias"))
+            directory_path = DirectoryPath(
+                data["path"], alias=data.get("alias")
+            )
             new_item = FolderItem(
                 directory_path.to_dict(), model=self.model, parent=self
             )
@@ -250,7 +264,9 @@ class CategoryFolder(BaseDataSource):
             child_item = self.insert_row_data_source(index, data, item_type)
             children = item.get("children", [])
             if children:
-                child_item.insert_row_data_sources(0, len(children), items=children)
+                child_item.insert_row_data_sources(
+                    0, len(children), items=children
+                )
 
         model = cast(FolderTreeModel, self.model)
         model.preferences.save_settings()
@@ -269,7 +285,9 @@ class FolderItem(CategoryFolder):
         model: FolderTreeModel | None = None,
         parent: BaseDataSource | None = None,
     ):
-        super().__init__(directory_info=directory_info, model=model, parent=parent)
+        super().__init__(
+            directory_info=directory_info, model=model, parent=parent
+        )
 
         self._icon = icons.icon("folder")
 
@@ -412,17 +430,14 @@ class DirectoryPopup(Window):
         self._tree_view_widget.set_show_title_label(False)
         self._tree_view_widget.set_header_hidden(True)
         self._tree_view_widget.set_indentation(dpi.dpi_scale(10))
-        self._tree_view_widget.set_drag_drop_mode(QAbstractItemView.InternalMove)
+        self._tree_view_widget.set_drag_drop_mode(
+            QAbstractItemView.InternalMove
+        )
         self._tree_view_widget.tree_view.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._tree_view_widget.set_model(self._tree_model)
 
     def setup_layouts(self, main_layout: VerticalLayout):
         """Setup layouts for the directory popup."""
-
-        header_layout = HorizontalLayout()
-        header_layout.setSpacing(6)
-        header_layout.setContentsMargins(0, 2, 5, 2)
-        self._title_bar.corner_contents_layout.addLayout(header_layout)
 
         main_layout.addWidget(self._tree_view_widget)
 
@@ -445,22 +460,6 @@ class DirectoryPopup(Window):
             reattach: Whether to reattach the popup to the parent window.
         """
 
-        def _on_parent_moved(new_pos: QPoint | None, delta: QPoint) -> None:
-            """Callback function that is called when the parent window is moved.
-
-            This method will move the popup to stay anchored to the parent
-            window.
-
-            Args:
-                new_pos: The new global position of the parent window.
-                delta: The delta movement of the parent window.
-            """
-
-            if not self._attached or not self._attach_to_parent:
-                return
-
-            self._move_to_anchor(new_pos, offset=(0, delta.y()))
-
         if reattach:
             self._attached = True
 
@@ -468,13 +467,10 @@ class DirectoryPopup(Window):
 
         super().show(move=new_position)
 
-        if self._anchor_widget is not None:
-            window = Window.frameless_window(self._anchor_widget)
-            if window is not None:
-                window.title_bar.moving.connect(_on_parent_moved)
-
     def _move_to_anchor(
-        self, window_pos: QPoint | None = None, offset: tuple[int, int] = (0, 0)
+        self,
+        window_pos: QPoint | None = None,
+        offset: tuple[int, int] = (0, 0),
     ) -> QPoint | None:
         """Moves the popup to be anchored to the specified widget.
 
@@ -489,9 +485,13 @@ class DirectoryPopup(Window):
         if self._anchor_widget is None:
             return None
 
-        window_pos = window_pos or self._anchor_widget.mapToGlobal(QPoint(0, 0))
+        window_pos = window_pos or self._anchor_widget.mapToGlobal(
+            QPoint(0, 0)
+        )
         pos = QPoint(
-            self._anchor_widget.mapToGlobal(QPoint(0, dpi.dpi_scale(offset[1])))
+            self._anchor_widget.mapToGlobal(
+                QPoint(0, dpi.dpi_scale(offset[1]))
+            )
         )
         pos.setX(window_pos.x() - self.width())
         new_pos = utils.contain_widget_in_screen(self, pos)
@@ -590,7 +590,9 @@ class DirectoryPopup(Window):
                     if parent in selected_indexes:
                         break
                 else:
-                    selection_model.select(selected, QItemSelectionModel.Select)
+                    selection_model.select(
+                        selected, QItemSelectionModel.Select
+                    )
 
     def reset(self) -> None:
         """Resets the directory popup, reloading the tree model and expanding
@@ -619,7 +621,8 @@ class DirectoryPopup(Window):
         categories: list[str] = []
 
         current_selection = cast(
-            list[CategoryFolder | FolderItem], self._tree_view_widget.selected_items()
+            list[CategoryFolder | FolderItem],
+            self._tree_view_widget.selected_items(),
         )
         for data_source in current_selection:
             if type(data_source) == CategoryFolder:
