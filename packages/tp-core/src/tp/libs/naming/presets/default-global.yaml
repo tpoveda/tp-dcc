@@ -1,0 +1,35 @@
+name: global
+description: Default global naming configuration for all projects
+rules:
+  - name: asset
+    creator: tpoveda
+    description: Rule used to manage naming of assets.
+    expression: "{asset_type}_{asset_id}_{description}"
+    exampleFields:
+      asset_type: arm
+      asset_id: L
+      description: world
+  - name: asset_file
+    creator: tpoveda
+    description: Rule used to manage naming of asset files.
+    expression: "{asset_name}_{asset_file_type}"
+    exampleFields:
+      asset_name: arm
+      asset_file_type: L
+tokens:
+  - name: description
+    description: Specifies a short explanation of the named object.
+  - name: asset_id
+    description: Specifies the unique identifier for an asset.
+  - name: asset_name
+    description: Specifies the name of an asset.
+  - name: asset_type
+    description: Specifies the type of asset.
+    table:
+      prop: PRP
+      character: CHR
+  - name: asset_file_type
+    description: Specifies the file type of an asset file.
+    table:
+      rig: RIG
+      model: MDL

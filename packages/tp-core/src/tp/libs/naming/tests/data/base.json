@@ -1,0 +1,74 @@
+{
+  "name": "base",
+  "description": "Base Naming Convention",
+  "rules": [
+    {
+      "name": "object",
+      "creator": "tpoveda",
+      "description": "Standard object type convention.",
+      "expression": "{area}_{section}_{side}_{type}"
+    }
+  ],
+  "tokens": [
+    {
+      "name": "section",
+      "description": "User description of the object."
+    },
+    {
+      "name": "side",
+      "description": "Side of the object.",
+      "table": {
+        "l": "L",
+        "m": "M",
+        "r": "R",
+        "c": "C",
+        "L": "l",
+        "M": "m",
+        "R": "r",
+        "C": "c",
+        "LEFT": "left"
+      }
+    },
+    {
+      "name": "area",
+      "description": "Area the object belongs to.",
+      "table": {
+        "arm": "arm",
+        "null": "null",
+        "leg": "leg",
+        "head": "head",
+        "spine": "spine",
+        "neck": "neck",
+        "jaw": "jaw",
+        "eye": "eye",
+        "brow": "brow",
+        "toe": "toe",
+        "foot": "foot",
+        "root": "root"
+      }
+    },
+    {
+      "name": "type",
+      "description": "Type of the object.",
+      "table": {
+        "control": "anim",
+        "joint": "jnt",
+        "transform": "srt",
+        "hrc": "hrc",
+        "ikHandle": "ikhandle",
+        "eff": "ikeffector",
+        "annotation": "ann",
+        "curve": "crv",
+        "parentConstraint": "parentConstraint",
+        "scaleConstraint": "scaleConstraint",
+        "orientConstraint": "orientConstraint",
+        "pointConstraint": "pointConstraint",
+        "matrixDecompose": "decomp",
+        "matrixMult": "matMult",
+        "matrixInverse": "invMult",
+        "multiplyDivide": "mult",
+        "plusMinusAverage": "pma"
+      }
+    }
+  ]
+}

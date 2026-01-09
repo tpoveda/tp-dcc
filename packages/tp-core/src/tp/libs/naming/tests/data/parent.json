@@ -1,0 +1,46 @@
+{
+  "name": "parent",
+  "description": "Parent Naming Convention",
+  "rules": [
+    {
+      "name": "object",
+      "creator": "tpoveda",
+      "description": "Standard object type convention that overrides base.json.",
+      "expression": "{area}_{section}_{side}_{type}_{myToken}"
+    },
+    {
+      "name": "parentRule",
+      "creator": "tpoveda",
+      "description": "Test rule for testing defined by parent naming convention.",
+      "expression": "{area}_{side}_{type}_{myToken}"
+    }
+  ],
+  "tokens": [
+    {
+      "name": "area",
+      "description": "Area the object belongs to.",
+      "table": {
+        "arm": "arm",
+        "null": "null",
+        "leg": "leg",
+        "head": "head",
+        "spine": "spine",
+        "neck": "neck",
+        "jaw": "jaw",
+        "eye": "eye",
+        "brow": "brow",
+        "toe": "toe",
+        "foot": "foot",
+        "root": "root"
+      }
+    },
+    {
+      "name": "myToken",
+      "description": "Test token for testing defined by parent naming convention.",
+      "table": {
+        "parent": "parentA",
+        "parentB": "parentB"
+      }
+    }
+  ]
+}

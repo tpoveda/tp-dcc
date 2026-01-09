@@ -1,0 +1,4 @@
+name: default
+namingConventions:
+- name: default-global
+  type: global
