@@ -1,19 +1,20 @@
 from __future__ import annotations
 
-import uuid
 import typing
+import uuid
 from typing import cast
 
 import maya.cmds as cmds
-from loguru import logger
 import maya.OpenMayaUI as OpenMayaUI
-from Qt.QtCore import Qt, QSize, QObject
+from loguru import logger
+from Qt.QtCore import QObject, QSize, Qt
 from Qt.QtWidgets import QMainWindow
 
-from tp.libs.qt import dpi, utils as qtutils
+from tp.libs.qt import dpi
+from tp.libs.qt import utils as qtutils
 
 if typing.TYPE_CHECKING:
-    from tp.libs.qt.widgets.frameless import DockingContainer
+    from tp.libs.maya.qt.docking import DockingContainer
 
 
 def is_dock_locked() -> bool:
@@ -61,7 +62,7 @@ def dock_to_container(
     """
 
     # Import here to avoid cyclic imports
-    from tp.libs.qt.widgets import frameless
+    from tp.libs.maya.qt import docking as maya_docking
 
     locked = is_dock_locked()
     if locked:
@@ -79,7 +80,9 @@ def dock_to_container(
         visible=True,
     )
     ptr = OpenMayaUI.MQtUtil.getCurrentParent()
-    workspace_control = cast(QMainWindow, qtutils.wrapinstance(ptr, QMainWindow))
+    workspace_control = cast(
+        QMainWindow, qtutils.wrapinstance(ptr, QMainWindow)
+    )
     w = workspace_control.window()
     w.setFixedSize(dpi.size_by_dpi(QSize(size, size)))
     w.layout().setContentsMargins(0, 0, 0, 0)
@@ -91,7 +94,7 @@ def dock_to_container(
     )
     w.show()
     w.setWindowOpacity(1)
-    docking_container = frameless.DockingContainer(
+    docking_container = maya_docking.DockingContainer(
         workspace_control, workspace_control_name
     )
     # Attach it to the workspaceControl.
