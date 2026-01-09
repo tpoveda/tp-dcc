@@ -21,7 +21,7 @@ environment:
     - "{self}/src/tp/tools/sceneinventory/tool.py"
   TP_NODEGRAPH_PACKAGE_PATHS:
     - "{self}/src/tp/libs/nodegraph/packages"
-  TNM_NODE_GRAPH_EDITOR_COMMANDS:
+  TP_NODEGRAPH_EDITOR_COMMANDS:
     - "{self}/src/tp/libs/nodegraph/ui/commands"
 dependencies: []
 tests:
