@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import unreal
+from tp.libs.qt.widgets.window import Window
 
-from tp.libs.qt.widgets.frameless import FramelessWindow
 
-
-class UnrealWindow(FramelessWindow):
+class UnrealWindow(Window):
     """Base class for Unreal Windows."""
 
     def __init__(self, *args, **kwargs):
