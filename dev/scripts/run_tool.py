@@ -83,9 +83,19 @@ def run_tool(tool_id: str):
         tool_id: The ID of the tool to run.
     """
 
+    from Qt.QtWidgets import QApplication
+
     from tp.managers import tools
 
+    # Create QApplication if it doesn't exist
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
+
     tools.launch_tool(tool_id)
+
+    # Start the event loop
+    sys.exit(app.exec())
 
 
 def main():
