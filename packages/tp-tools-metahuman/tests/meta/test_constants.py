@@ -119,6 +119,60 @@ class TestMetaConstants:
             assert isinstance(const, str)
             assert len(const) > 0
 
+    def test_controls_layer_constants_exist(self):
+        """Test that controls layer attribute constants exist."""
+
+        constants = _import_constants_directly()
+
+        assert hasattr(constants, "CONTROLS_LAYER_SETTINGS_NODE_ATTR")
+        assert hasattr(constants, "CONTROLS_LAYER_VISIBILITY_ATTR")
+        assert isinstance(constants.CONTROLS_LAYER_SETTINGS_NODE_ATTR, str)
+        assert isinstance(constants.CONTROLS_LAYER_VISIBILITY_ATTR, str)
+
+    def test_skeleton_layer_constants_exist(self):
+        """Test that skeleton layer attribute constants exist."""
+
+        constants = _import_constants_directly()
+
+        assert hasattr(constants, "SKELETON_LAYER_ROOT_JOINT_ATTR")
+        assert hasattr(constants, "SKELETON_LAYER_BIND_ROOT_ATTR")
+        assert hasattr(constants, "SKELETON_LAYER_IS_MOTION_SKELETON_ATTR")
+        assert isinstance(constants.SKELETON_LAYER_ROOT_JOINT_ATTR, str)
+        assert isinstance(constants.SKELETON_LAYER_BIND_ROOT_ATTR, str)
+        assert isinstance(
+            constants.SKELETON_LAYER_IS_MOTION_SKELETON_ATTR, str
+        )
+
+    def test_fkik_layer_constants_exist(self):
+        """Test that FK/IK layer attribute constants exist."""
+
+        constants = _import_constants_directly()
+
+        assert hasattr(constants, "FKIK_LAYER_FK_CONTROLS_ATTR")
+        assert hasattr(constants, "FKIK_LAYER_IK_CONTROLS_ATTR")
+        assert hasattr(constants, "FKIK_LAYER_POLE_VECTORS_ATTR")
+        assert hasattr(constants, "FKIK_LAYER_BLEND_NODES_ATTR")
+        assert hasattr(constants, "FKIK_LAYER_SETTINGS_NODE_ATTR")
+
+    def test_space_switch_layer_constants_exist(self):
+        """Test that space switch layer attribute constants exist."""
+
+        constants = _import_constants_directly()
+
+        assert hasattr(constants, "SPACE_SWITCH_LAYER_CONTROLS_ATTR")
+        assert hasattr(constants, "SPACE_SWITCH_LAYER_CONSTRAINTS_ATTR")
+        assert hasattr(constants, "SPACE_SWITCH_LAYER_DRIVER_NODES_ATTR")
+
+    def test_reverse_foot_layer_constants_exist(self):
+        """Test that reverse foot layer attribute constants exist."""
+
+        constants = _import_constants_directly()
+
+        assert hasattr(constants, "REVERSE_FOOT_LAYER_FOOT_CONTROLS_ATTR")
+        assert hasattr(constants, "REVERSE_FOOT_LAYER_PIVOT_LOCATORS_ATTR")
+        assert hasattr(constants, "REVERSE_FOOT_LAYER_IK_HANDLES_ATTR")
+        assert hasattr(constants, "REVERSE_FOOT_LAYER_SETTINGS_NODE_ATTR")
+
     def test_transform_attrs_is_tuple(self):
         """Test that TRANSFORM_ATTRS is a tuple of strings."""
 

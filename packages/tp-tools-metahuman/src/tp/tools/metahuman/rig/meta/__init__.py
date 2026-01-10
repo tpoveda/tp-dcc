@@ -16,6 +16,13 @@ from .constants import (
     METAHUMAN_SPACE_SWITCH_LAYER_TYPE,
 )
 from .layer import MetaHumanLayer
+from .layers import (
+    MetaHumanControlsLayer,
+    MetaHumanFKIKLayer,
+    MetaHumanReverseFootLayer,
+    MetaHumanSkeletonLayer,
+    MetaHumanSpaceSwitchLayer,
+)
 from .rig import MetaMetaHumanRig
 
 __all__ = [
@@ -29,5 +36,10 @@ __all__ = [
     "METAHUMAN_REVERSE_FOOT_LAYER_TYPE",
     # Classes
     "MetaHumanLayer",
+    "MetaHumanControlsLayer",
+    "MetaHumanSkeletonLayer",
+    "MetaHumanFKIKLayer",
+    "MetaHumanSpaceSwitchLayer",
+    "MetaHumanReverseFootLayer",
     "MetaMetaHumanRig",
 ]

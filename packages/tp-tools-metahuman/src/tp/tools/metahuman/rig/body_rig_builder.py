@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import maya.cmds as cmds
 
@@ -29,6 +30,15 @@ from .data.skeleton_config import (
     get_skeleton_joints_with_radius,
     is_constrainable_joint,
 )
+from .meta import constants as meta_constants
+from .meta.layers import (
+    MetaHumanControlsLayer,
+    MetaHumanFKIKLayer,
+    MetaHumanReverseFootLayer,
+    MetaHumanSkeletonLayer,
+    MetaHumanSpaceSwitchLayer,
+)
+from .meta.rig import MetaMetaHumanRig
 from .utils.attribute_utils import add_string_attribute, connect_attribute
 from .utils.maya_utils import (
     create_group,
@@ -42,6 +52,9 @@ from .utils.maya_utils import (
     show_confirm_dialog,
 )
 
+if TYPE_CHECKING:
+    from tp.libs.maya.wrapper import DagNode
+
 logger = logging.getLogger(__name__)
 
 
@@ -54,6 +67,7 @@ class RigBuildResult:
     root_joint: str | None = None
     motion_skeleton: str | None = None
     controls_created: list[str] = field(default_factory=list)
+    meta_rig: MetaMetaHumanRig | None = None
 
 
 class MetaHumanBodyRigBuilder:
@@ -90,6 +104,9 @@ class MetaHumanBodyRigBuilder:
         self._skel_type: str = "_motion" if motion else ""
         self._restore_up_axis: bool = False
 
+        # Metanode for rig tracking
+        self._meta_rig: MetaMetaHumanRig | None = None
+
         # Initialize builders.
         self._control_builder = ControlBuilder(self.RIG_CTRLS_GROUP)
         self._skeleton_builder = SkeletonBuilder()
@@ -125,6 +142,9 @@ class MetaHumanBodyRigBuilder:
 
         # Load required plugins.
         ensure_plugin_loaded("lookdevKit")
+
+        # Register and create metanode system
+        self._create_meta_rig()
 
         # Create rig groups.
         self._create_rig_groups()
@@ -169,6 +189,7 @@ class MetaHumanBodyRigBuilder:
             message="MetaHuman Body Rig created successfully.",
             root_joint=self._root_joint,
             motion_skeleton="root_motion" if self._motion else None,
+            meta_rig=self._meta_rig,
         )
 
     def _detect_skeleton(self) -> bool:
@@ -202,6 +223,7 @@ class MetaHumanBodyRigBuilder:
             "rig_setup",
             "rig_ctrls",
             "DHIbody:root_loc",
+            "metahuman_body_rig_meta",
         ]
 
         has_existing = any(object_exists(node) for node in existing_nodes)
@@ -228,7 +250,10 @@ class MetaHumanBodyRigBuilder:
         return True
 
     def _delete_existing_rig(self) -> None:
-        """Delete existing rig components."""
+        """Delete existing rig components including metanode."""
+
+        # Delete existing metanode if present
+        delete_if_exists("metahuman_body_rig_meta")
 
         nodes_to_delete = [
             "root_motion",
@@ -256,21 +281,139 @@ class MetaHumanBodyRigBuilder:
                     for axis in ["X", "Y", "Z"]:
                         cmds.setAttr(f"{joint}.rotate{axis}", 0)
 
+    def _create_meta_rig(self) -> None:
+        """Create and configure the metanode for the rig.
+
+        This registers the metanode classes and creates the root rig metanode
+        which tracks all rig components, groups, and layers.
+        """
+
+        from tp.libs.maya.meta.base import MetaRegistry
+
+        # Register metanode classes
+        MetaRegistry.register_meta_class(MetaMetaHumanRig)
+        MetaRegistry.register_meta_class(MetaHumanControlsLayer)
+        MetaRegistry.register_meta_class(MetaHumanSkeletonLayer)
+        MetaRegistry.register_meta_class(MetaHumanFKIKLayer)
+        MetaRegistry.register_meta_class(MetaHumanSpaceSwitchLayer)
+        MetaRegistry.register_meta_class(MetaHumanReverseFootLayer)
+
+        # Create the rig metanode
+        self._meta_rig = MetaMetaHumanRig(name="metahuman_body_rig_meta")
+        self._meta_rig.attribute(meta_constants.NAME_ATTR).set(
+            meta_constants.DEFAULT_RIG_NAME
+        )
+        self._meta_rig.attribute(meta_constants.RIG_IS_MOTION_MODE_ATTR).set(
+            self._motion
+        )
+
+        logger.info(
+            "MetaHuman rig metanode created: %s", self._meta_rig.name()
+        )
+
     def _create_rig_groups(self) -> None:
-        """Create rig hierarchy groups."""
+        """Create rig hierarchy groups and connect to metanode."""
 
         # Rig setup group.
         if not object_exists(self.RIG_SETUP_GROUP):
-            create_group(self.RIG_SETUP_GROUP, empty=True)
+            if self._meta_rig is not None:
+                self._meta_rig.create_setup_group(self.RIG_SETUP_GROUP)
+            else:
+                create_group(self.RIG_SETUP_GROUP, empty=True)
 
         # Rig controls group.
         delete_if_exists(self.RIG_CTRLS_GROUP)
-        create_group(self.RIG_CTRLS_GROUP, empty=True)
+        if self._meta_rig is not None:
+            self._meta_rig.create_controls_group(self.RIG_CTRLS_GROUP)
+        else:
+            create_group(self.RIG_CTRLS_GROUP, empty=True)
 
     def _create_motion_skeleton(self) -> None:
-        """Create motion skeleton for animation."""
+        """Create motion skeleton for animation and connect to metanode."""
 
         self._skeleton_builder.create_motion_skeleton()
+
+        # Connect motion skeleton root to metanode and create skeleton layer
+        if self._meta_rig is not None and object_exists("root_motion"):
+            from tp.libs.maya.wrapper import node_by_name
+
+            motion_root = node_by_name("root_motion")
+            if motion_root is not None:
+                self._meta_rig.connect_motion_skeleton(motion_root)
+
+                # Create skeleton layer
+                self._create_skeleton_layer(motion_root)
+
+    def _create_skeleton_layer(self, motion_root: "DagNode") -> None:
+        """Create the skeleton layer and register all joints.
+
+        Args:
+            motion_root: The root joint of the motion skeleton.
+        """
+
+        from typing import cast
+
+        from tp.libs.maya.wrapper import node_by_name
+
+        if self._meta_rig is None:
+            return
+
+        # Create skeleton layer
+        layer = self._meta_rig.create_layer(
+            meta_constants.METAHUMAN_SKELETON_LAYER_TYPE,
+            "skeleton_layer",
+            "skeleton_layer_meta",
+        )
+
+        if layer is None:
+            logger.warning("Failed to create skeleton layer")
+            return
+
+        # Cast to MetaHumanSkeletonLayer for proper type hints
+        skeleton_layer = cast(MetaHumanSkeletonLayer, layer)
+
+        # Connect root joint
+        skeleton_layer.connect_root_joint(motion_root)
+        skeleton_layer.set_is_motion_skeleton(True)
+
+        # Register all motion skeleton joints
+        self._register_skeleton_joints(skeleton_layer, motion_root.name())
+
+        # Also connect bind skeleton root if it exists
+        if self._root_joint and object_exists(self._root_joint):
+            bind_root = node_by_name(self._root_joint)
+            if bind_root is not None:
+                skeleton_layer.connect_bind_root(bind_root)
+
+        logger.info("Skeleton layer created with joints registered")
+
+    def _register_skeleton_joints(
+        self, skeleton_layer: "MetaHumanSkeletonLayer", root_name: str
+    ) -> None:
+        """Register all joints under the root to the skeleton layer.
+
+        Args:
+            skeleton_layer: The skeleton layer to register joints with.
+            root_name: Name of the root joint.
+        """
+
+        import maya.cmds as cmds
+
+        from tp.libs.maya.wrapper import node_by_name
+
+        # Get all joints under the root
+        all_joints = (
+            cmds.listRelatives(root_name, allDescendents=True, type="joint")
+            or []
+        )
+
+        # Add root joint itself
+        all_joints.insert(0, root_name)
+
+        for joint_name in all_joints:
+            joint_node = node_by_name(joint_name)
+            if joint_node is not None:
+                skeleton_layer.add_joint(joint_node)
 
     def _build_limb_systems(self) -> None:
         """Build FK/IK systems for all limbs."""

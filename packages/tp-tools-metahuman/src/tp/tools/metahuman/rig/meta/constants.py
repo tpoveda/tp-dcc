@@ -85,6 +85,72 @@ LAYER_JOINTS_ATTR = "joints"
 LAYER_SETTINGS_NODES_ATTR = "settingNodes"
 """Array of message connections to settings nodes."""
 
+# === Controls Layer Attribute Names ===
+# Attributes specific to MetaHumanControlsLayer.
+
+CONTROLS_LAYER_SETTINGS_NODE_ATTR = "controlsSettingsNode"
+"""Message connection to the controls settings node."""
+
+CONTROLS_LAYER_VISIBILITY_ATTR = "controlsVisibility"
+"""Boolean for controls visibility state."""
+
+# === Skeleton Layer Attribute Names ===
+# Attributes specific to MetaHumanSkeletonLayer.
+
+SKELETON_LAYER_ROOT_JOINT_ATTR = "skeletonRootJoint"
+"""Message connection to the skeleton root joint."""
+
+SKELETON_LAYER_BIND_ROOT_ATTR = "bindRootJoint"
+"""Message connection to the bind skeleton root joint."""
+
+SKELETON_LAYER_IS_MOTION_SKELETON_ATTR = "isMotionSkeleton"
+"""Boolean indicating if this is a motion skeleton."""
+
+# === FK/IK Layer Attribute Names ===
+# Attributes specific to MetaHumanFKIKLayer.
+
+FKIK_LAYER_FK_CONTROLS_ATTR = "fkControls"
+"""Array of message connections to FK control nodes."""
+
+FKIK_LAYER_IK_CONTROLS_ATTR = "ikControls"
+"""Array of message connections to IK control nodes."""
+
+FKIK_LAYER_POLE_VECTORS_ATTR = "poleVectors"
+"""Array of message connections to pole vector controls."""
+
+FKIK_LAYER_BLEND_NODES_ATTR = "blendNodes"
+"""Array of message connections to FK/IK blend nodes."""
+
+FKIK_LAYER_SETTINGS_NODE_ATTR = "fkikSettingsNode"
+"""Message connection to the FK/IK settings node."""
+
+# === Space Switch Layer Attribute Names ===
+# Attributes specific to MetaHumanSpaceSwitchLayer.
+
+SPACE_SWITCH_LAYER_CONTROLS_ATTR = "spaceSwitchControls"
+"""Array of message connections to controls with space switching."""
+
+SPACE_SWITCH_LAYER_CONSTRAINTS_ATTR = "spaceSwitchConstraints"
+"""Array of message connections to space switch constraints."""
+
+SPACE_SWITCH_LAYER_DRIVER_NODES_ATTR = "spaceSwitchDriverNodes"
+"""Array of message connections to space switch driver nodes."""
+
+# === Reverse Foot Layer Attribute Names ===
+# Attributes specific to MetaHumanReverseFootLayer.
+
+REVERSE_FOOT_LAYER_FOOT_CONTROLS_ATTR = "footControls"
+"""Array of message connections to foot IK controls."""
+
+REVERSE_FOOT_LAYER_PIVOT_LOCATORS_ATTR = "pivotLocators"
+"""Array of message connections to pivot locator nodes."""
+
+REVERSE_FOOT_LAYER_IK_HANDLES_ATTR = "reverseFootIkHandles"
+"""Array of message connections to IK handle nodes."""
+
+REVERSE_FOOT_LAYER_SETTINGS_NODE_ATTR = "reverseFootSettingsNode"
+"""Message connection to the reverse foot settings node."""
+
 # === Control Node Attribute Names ===
 # Attributes added to control nodes for identification.
 
