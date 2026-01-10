@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-import os
 import logging
+import os
 from typing import Iterable, Iterator
 
 from maya import cmds
 from maya.api import OpenMaya, OpenMayaAnim
 
-from . import mathlib, plugs, animation, curves, attributetypes, factory, scene
-from ..cmds.helpers import is_safe_name
 from ...python import helpers
+from ..cmds.helpers import is_safe_name
+from . import animation, attributetypes, curves, factory, mathlib, plugs, scene
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ def mobject_by_name(node_name: str) -> OpenMaya.MObject | None:
     try:
         selection_list.add(node_name)
     except RuntimeError:
-        logger.warning(
+        logger.debug(
             f'Node "{node_name}" does not exist or multiple nodes with same name within scene'
         )
         return None
@@ -81,7 +81,9 @@ def mobject_by_name(node_name: str) -> OpenMaya.MObject | None:
     except TypeError:
         return selection_list.getDependNode(0)
     except Exception as exc:
-        logger.warning(f"Impossible to get MObject from name {node_name} : {exc}")
+        logger.warning(
+            f"Impossible to get MObject from name {node_name} : {exc}"
+        )
         return None
 
 
@@ -162,7 +164,9 @@ def mobject(
 
 
 def name(
-    mobj: OpenMaya.MObject, partial_name: bool = False, include_namespace: bool = True
+    mobj: OpenMaya.MObject,
+    partial_name: bool = False,
+    include_namespace: bool = True,
 ) -> str:
     """Returns full or partial name for a given MObject (which must be valid).
 
@@ -175,7 +179,9 @@ def name(
     if mobj.hasFn(OpenMaya.MFn.kDagNode):
         dag_node = OpenMaya.MFnDagNode(mobj)
         node_name = (
-            dag_node.partialPathName() if partial_name else dag_node.fullPathName()
+            dag_node.partialPathName()
+            if partial_name
+            else dag_node.fullPathName()
         )
     else:
         node_name = OpenMaya.MFnDependencyNode(mobj).name()
@@ -308,7 +314,8 @@ def shape(node: OpenMaya.MObject) -> OpenMaya.MObject:
 
 
 def iterate_shapes(
-    mobj: OpenMaya.MObject | OpenMaya.MDagPath, filter_types: list[str] | None = None
+    mobj: OpenMaya.MObject | OpenMaya.MDagPath,
+    filter_types: list[str] | None = None,
 ) -> Iterator[OpenMaya.MDagPath]:
     """Generator function that returns all the given shape DAG paths directly below the given DAG path.
 
@@ -317,7 +324,9 @@ def iterate_shapes(
     :return: list of iterate shape DAG paths.
     """
 
-    dag_path = OpenMaya.MDagPath(mobj) if isinstance(mobj, OpenMaya.MObject) else mobj
+    dag_path = (
+        OpenMaya.MDagPath(mobj) if isinstance(mobj, OpenMaya.MObject) else mobj
+    )
     filter_types = helpers.force_list(filter_types)
     for i in range(dag_path.numberOfShapesDirectlyBelow()):
         shape_dag_path = OpenMaya.MDagPath(dag_path)
@@ -340,7 +349,9 @@ def shapes(
     return list(iterate_shapes(mobj, filter_types=filter_types))
 
 
-def shape_at_index(dag_path: OpenMaya.MDagPath, index: int) -> OpenMaya.MDagPath | None:
+def shape_at_index(
+    dag_path: OpenMaya.MDagPath, index: int
+) -> OpenMaya.MDagPath | None:
     """Finds and returns the shape Dag Path under the given path for the given index.
 
     :param dag_path: dag path to get shape index of.
@@ -428,7 +439,9 @@ def set_outliner_color(
 def set_node_color(
     mobj: OpenMaya.MObject,
     color: OpenMaya.MColor | Iterable[float, float, float] | None = None,
-    outliner_color: OpenMaya.MColor | Iterable[float, float, float] | None = None,
+    outliner_color: OpenMaya.MColor
+    | Iterable[float, float, float]
+    | None = None,
     use_outliner_color: bool = False,
     mod: OpenMaya.MDGModifier | None = None,
 ) -> OpenMaya.MDGModifier:
@@ -507,7 +520,9 @@ def set_translation(
 
     space = space or OpenMaya.MSpace.kTransform
     transform = OpenMaya.MFnTransform(OpenMaya.MFnDagNode(mobj).getPath())
-    position = mathlib.convert_from_scene_units(position) if scene_units else position
+    position = (
+        mathlib.convert_from_scene_units(position) if scene_units else position
+    )
     transform.setTranslation(position, space)
 
 
@@ -554,7 +569,8 @@ def set_rotation(
 
 
 def matrix(
-    mobj: OpenMaya.MObject, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
+    mobj: OpenMaya.MObject,
+    ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal,
 ) -> OpenMaya.MMatrix:
     """Returns local matrix of the given MObject pointing to DAG node.
 
@@ -564,7 +580,9 @@ def matrix(
     """
 
     return OpenMaya.MFnMatrixData(
-        OpenMaya.MFnDependencyNode(mobj).findPlug("matrix", False).asMObject(ctx)
+        OpenMaya.MFnDependencyNode(mobj)
+        .findPlug("matrix", False)
+        .asMObject(ctx)
     ).matrix()
 
 
@@ -595,12 +613,15 @@ def world_matrix_plug(mobj: OpenMaya.MObject) -> OpenMaya.MPlug:
     :return: world matrix plug instance.
     """
 
-    found_world_matrix = OpenMaya.MFnDependencyNode(mobj).findPlug("worldMatrix", False)
+    found_world_matrix = OpenMaya.MFnDependencyNode(mobj).findPlug(
+        "worldMatrix", False
+    )
     return found_world_matrix.elementByLogicalIndex(0)
 
 
 def world_matrix(
-    mobj: OpenMaya.MObject, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
+    mobj: OpenMaya.MObject,
+    ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal,
 ) -> OpenMaya.MMatrix:
     """Returns world matrix of the given MObject pointing to DAG node.
 
@@ -609,11 +630,14 @@ def world_matrix(
     :return: world matrix.
     """
 
-    return OpenMaya.MFnMatrixData(world_matrix_plug(mobj).asMObject(ctx)).matrix()
+    return OpenMaya.MFnMatrixData(
+        world_matrix_plug(mobj).asMObject(ctx)
+    ).matrix()
 
 
 def world_inverse_matrix(
-    mobj: OpenMaya.MObject, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
+    mobj: OpenMaya.MObject,
+    ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal,
 ) -> OpenMaya.MMatrix:
     """Returns world inverse matrix of the given Maya object.
 
@@ -631,7 +655,8 @@ def world_inverse_matrix(
 
 
 def parent_matrix(
-    mobj: OpenMaya.MObject, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
+    mobj: OpenMaya.MObject,
+    ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal,
 ) -> OpenMaya.MMatrix:
     """Returns the parent matrix of the given Maya object.
 
@@ -655,14 +680,15 @@ def parent_inverse_matrix_plug(mobj: OpenMaya.MObject) -> OpenMaya.MPlug:
     :return: parent inverse matrix plug instance.
     """
 
-    found_parent_inverse_matrix_plug = OpenMaya.MFnDependencyNode(mobj).findPlug(
-        "parentInverseMatrix", False
-    )
+    found_parent_inverse_matrix_plug = OpenMaya.MFnDependencyNode(
+        mobj
+    ).findPlug("parentInverseMatrix", False)
     return found_parent_inverse_matrix_plug.elementByLogicalIndex(0)
 
 
 def parent_inverse_matrix(
-    mobj: OpenMaya.MObject, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
+    mobj: OpenMaya.MObject,
+    ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal,
 ) -> OpenMaya.MMatrix:
     """Returns the parent inverse matrix of the given Maya object.
 
@@ -754,7 +780,9 @@ def has_attribute(mobj: OpenMaya.MObject, attribute_name: str) -> bool:
     """
 
     try:
-        return plugs.as_mplug(".".join((name(mobj), attribute_name))) is not None
+        return (
+            plugs.as_mplug(".".join((name(mobj), attribute_name))) is not None
+        )
     except RuntimeError:
         return False
 
@@ -818,7 +846,9 @@ def add_attribute(
     channel_box = kwargs.get("channelBox")
     keyable = kwargs.get("keyable")
     short_name = short_name or long_name
-    numeric_class, data_constant = attributetypes.numeric_type_to_maya_fn_type(type)
+    numeric_class, data_constant = attributetypes.numeric_type_to_maya_fn_type(
+        type
+    )
 
     if numeric_class is not None:
         attr = numeric_class()
@@ -847,7 +877,9 @@ def add_attribute(
     elif type == attributetypes.kMFnDataString:
         attr = OpenMaya.MFnTypedAttribute()
         string_data = OpenMaya.MFnStringData().create("")
-        aobj = attr.create(long_name, short_name, OpenMaya.MFnData.kString, string_data)
+        aobj = attr.create(
+            long_name, short_name, OpenMaya.MFnData.kString, string_data
+        )
     elif type == attributetypes.kMFnUnitAttributeDistance:
         attr = OpenMaya.MFnUnitAttribute()
         aobj = attr.create(long_name, short_name, OpenMaya.MDistance())
@@ -866,27 +898,39 @@ def add_attribute(
     elif type == attributetypes.kMFnDataDoubleArray:
         data = OpenMaya.MFnDoubleArrayData().create(OpenMaya.MDoubleArray())
         attr = OpenMaya.MFnTypedAttribute()
-        aobj = attr.create(long_name, short_name, OpenMaya.MFnData.kDoubleArray, data)
+        aobj = attr.create(
+            long_name, short_name, OpenMaya.MFnData.kDoubleArray, data
+        )
     elif type == attributetypes.kMFnDataIntArray:
         data = OpenMaya.MFnIntArrayData().create(OpenMaya.MIntArray())
         attr = OpenMaya.MFnTypedAttribute()
-        aobj = attr.create(long_name, short_name, OpenMaya.MFnData.kIntArray, data)
+        aobj = attr.create(
+            long_name, short_name, OpenMaya.MFnData.kIntArray, data
+        )
     elif type == attributetypes.kMFnDataPointArray:
         data = OpenMaya.MFnPointArrayData().create(OpenMaya.MPointArray())
         attr = OpenMaya.MFnTypedAttribute()
-        aobj = attr.create(long_name, short_name, OpenMaya.MFnData.kPointArray, data)
+        aobj = attr.create(
+            long_name, short_name, OpenMaya.MFnData.kPointArray, data
+        )
     elif type == attributetypes.kMFnDataVectorArray:
         data = OpenMaya.MFnVectorArrayData().create(OpenMaya.MVectorArray())
         attr = OpenMaya.MFnTypedAttribute()
-        aobj = attr.create(long_name, short_name, OpenMaya.MFnData.kVectorArray, data)
+        aobj = attr.create(
+            long_name, short_name, OpenMaya.MFnData.kVectorArray, data
+        )
     elif type == attributetypes.kMFnDataStringArray:
         data = OpenMaya.MFnStringArrayData().create()
         attr = OpenMaya.MFnTypedAttribute()
-        aobj = attr.create(long_name, short_name, OpenMaya.MFnData.kStringArray, data)
+        aobj = attr.create(
+            long_name, short_name, OpenMaya.MFnData.kStringArray, data
+        )
     elif type == attributetypes.kMFnDataMatrixArray:
         data = OpenMaya.MFnMatrixArrayData().create(OpenMaya.MMatrixArray())
         attr = OpenMaya.MFnTypedAttribute()
-        aobj = attr.create(long_name, short_name, OpenMaya.MFnData.kMatrixArray, data)
+        aobj = attr.create(
+            long_name, short_name, OpenMaya.MFnData.kMatrixArray, data
+        )
     else:
         raise TypeError(
             "Unsupported Attribute Type: {}, name: {}".format(type, long_name)
@@ -1023,7 +1067,9 @@ def add_compound_attribute(
         modifier.addAttribute(mobj, compound_mobj)
         modifier.doIt()
         kwargs["children"] = attr_map
-        plugs.set_plug_info_from_dict(OpenMaya.MPlug(mobj, compound_mobj), **kwargs)
+        plugs.set_plug_info_from_dict(
+            OpenMaya.MPlug(mobj, compound_mobj), **kwargs
+        )
 
     return compound_attribute
 
@@ -1042,7 +1088,9 @@ def add_proxy_attribute(
     # actual maya type mfn.kAttributeDouble3 which means we don't create it via MFnCompoundAttribute.
     # therefore we manage that for via the kwargs dict.
     if kwargs["type"] == attributetypes.kMFnCompoundAttribute:
-        attr1 = add_compound_attribute(mobj, attrMap=kwargs["children"], **kwargs)
+        attr1 = add_compound_attribute(
+            mobj, attrMap=kwargs["children"], **kwargs
+        )
         attr1.isProxyAttribute = True
         attr_plug = OpenMaya.MPlug(mobj, attr1.object())
         plugs.set_compound_as_proxy(attr_plug, source_plug)
@@ -1090,7 +1138,9 @@ def iterate_attributes(
         )
         if any(i in plug_name for i in skip):
             continue
-        elif include_attributes and not any(i in plug_name for i in include_attributes):
+        elif include_attributes and not any(
+            i in plug_name for i in include_attributes
+        ):
             continue
         elif attr_plug.isElement or attr_plug.isChild:
             continue
@@ -1139,9 +1189,13 @@ def iterate_extra_attributes(
         )
         if skip and plug_name.startswith(skip):
             continue
-        elif include_attributes and not any(i in plug_name for i in include_attributes):
+        elif include_attributes and not any(
+            i in plug_name for i in include_attributes
+        ):
             continue
-        elif not filtered_types or plugs.plug_type(plug_found) in filtered_types:
+        elif (
+            not filtered_types or plugs.plug_type(plug_found) in filtered_types
+        ):
             yield plug_found
 
 
@@ -1274,7 +1328,9 @@ def serialize_node(
     if node.hasFn(OpenMaya.MFn.kDagNode):
         dep = OpenMaya.MFnDagNode(node)
         node_name = (
-            dep.fullPathName().split("|")[-1] if use_short_names else dep.fullPathName()
+            dep.fullPathName().split("|")[-1]
+            if use_short_names
+            else dep.fullPathName()
         )
         parent_dep = OpenMaya.MFnDagNode(dep.parent(0))
         parent_dep_name = (
@@ -1288,15 +1344,17 @@ def serialize_node(
                 parent_dep_name = parent_dep_name.split("|")[-1].split(":")[-1]
         else:
             node_name = node_name.replace(
-                OpenMaya.MNamespace.getNamespaceFromName(node_name).split("|")[-1]
+                OpenMaya.MNamespace.getNamespaceFromName(node_name).split("|")[
+                    -1
+                ]
                 + ":",
                 "",
             )
             if parent_dep_name:
                 parent_dep_name = parent_dep_name.replace(
-                    OpenMaya.MNamespace.getNamespaceFromName(parent_dep_name).split(
-                        "|"
-                    )[-1]
+                    OpenMaya.MNamespace.getNamespaceFromName(
+                        parent_dep_name
+                    ).split("|")[-1]
                     + ":",
                     "",
                 )
@@ -1308,7 +1366,9 @@ def serialize_node(
             node_name = node_name.split("|")[-1].split(":")[-1]
         else:
             node_name = node_name.replace(
-                OpenMaya.MNamespace.getNamespaceFromName(node_name).split("|")[-1]
+                OpenMaya.MNamespace.getNamespaceFromName(node_name).split("|")[
+                    -1
+                ]
                 + ":",
                 "",
             )
@@ -1327,11 +1387,15 @@ def serialize_node(
     else:
         if extra_attributes_only:
             iterator = iterate_extra_attributes(
-                node, skip=skip_attributes, include_attributes=include_attributes
+                node,
+                skip=skip_attributes,
+                include_attributes=include_attributes,
             )
         else:
             iterator = iterate_attributes(
-                node, skip=skip_attributes, include_attributes=include_attributes
+                node,
+                skip=skip_attributes,
+                include_attributes=include_attributes,
             )
         for plug_found in iterator:
             if not plug_found:
@@ -1401,13 +1465,17 @@ def serialize_selected_nodes(skip_attributes=None, include_connections=None):
         return
 
     yield serialize_nodes(
-        nodes, skip_attributes=skip_attributes, include_connections=include_connections
+        nodes,
+        skip_attributes=skip_attributes,
+        include_connections=include_connections,
     )
 
 
 # noinspection PyShadowingNames
 def deserialize_node(
-    data, parent: OpenMaya.MObject | None = None, include_attributes: bool = True
+    data,
+    parent: OpenMaya.MObject | None = None,
+    include_attributes: bool = True,
 ) -> tuple[OpenMaya.MObject | None, list[OpenMaya.MPlug]]:
     """Deserializes given data and creates a new node based on that data.
 
@@ -1457,7 +1525,9 @@ def deserialize_node(
         return None, []
 
     requirements = data.get("requirements", "")
-    if requirements and not cmds.pluginInfo(requirements, loaded=True, query=True):
+    if requirements and not cmds.pluginInfo(
+        requirements, loaded=True, query=True
+    ):
         try:
             cmds.loadPlugin(requirements)
         except RuntimeError:
@@ -1486,8 +1556,12 @@ def deserialize_node(
                 data["outTangents"],
             )
             for i in range(len(data["frames"])):
-                mfn.setAngle(i, OpenMaya.MAngle(data["inTangentAngles"][i]), True)
-                mfn.setAngle(i, OpenMaya.MAngle(data["outTangentAngles"][i]), False)
+                mfn.setAngle(
+                    i, OpenMaya.MAngle(data["inTangentAngles"][i]), True
+                )
+                mfn.setAngle(
+                    i, OpenMaya.MAngle(data["outTangentAngles"][i]), False
+                )
                 mfn.setWeight(i, data["inTangentWeights"][i], True)
                 mfn.setWeight(i, data["outTangentWeights"][i], False)
                 mfn.setInTangentType(i, data["inTangents"][i])
@@ -1516,7 +1590,9 @@ def deserialize_node(
                 plugs.set_plug_info_from_dict(found_plug, **attr_data)
             except RuntimeError:
                 full_name = ".".join([node_name, name])
-                logger.error(f"Failed to set plug data: {full_name}", exc_info=True)
+                logger.error(
+                    f"Failed to set plug data: {full_name}", exc_info=True
+                )
         else:
             if attr_data.get("isChild", False):
                 continue
@@ -1525,12 +1601,18 @@ def deserialize_node(
             try:
                 if children:
                     attr = add_compound_attribute(
-                        new_node, short_name, short_name, attr_map=children, **attr_data
+                        new_node,
+                        short_name,
+                        short_name,
+                        attr_map=children,
+                        **attr_data,
                     )
                 elif attr_data.get("isElement", False):
                     continue
                 else:
-                    attr = add_attribute(new_node, short_name, short_name, **attr_data)
+                    attr = add_attribute(
+                        new_node, short_name, short_name, **attr_data
+                    )
             except AttributeAlreadyExistsError:
                 continue
             created_attributes.append(OpenMaya.MPlug(new_node, attr.object()))
@@ -1547,7 +1629,9 @@ def deserialize_nodes(
     :return: newly created nodes.
     """
 
-    created_nodes: list[tuple[OpenMaya.MObject | None, list[OpenMaya.MPlug]]] = []
+    created_nodes: list[
+        tuple[OpenMaya.MObject | None, list[OpenMaya.MPlug]]
+    ] = []
     for node_data in nodes_data:
         created_node = deserialize_node(node_data)
         if created_node:
