@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tp-tools-metahuman"
+dynamic = ["version", "readme"]
+description = "A new TP DCC package."
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Tomi Poveda", email = "tpovedatd@gmail.com" }
+]
+dependencies = []
+
+[optional-dependencies]
+docs = [
+    "sphinx",
+    "sphinx-autodoc-typehints",
+    "myst-parser",
+    "furo",
+]
+dev = [
+  "pytest",
+  "pytest-cov",
+  "ruff",
+  "mypy",
+]
+
+[tool.setuptools]
+packages = { find = { where = ["src"], exclude = ["tests", "docs"] } }
+
+[tool.setuptools.package-data]
+"tp.metahuman" = ["*.json", "*.yml", "*.yaml", "*.txt", "*.md", "*.ui", "*.qss", "*.scss", "*.png", "*.svg"]
+
+[tool.setuptools.dynamic]
+version = { attr = "tp.tools.metahuman.__version__" }
+readme = { file = ["README.md"], content-type = "text/markdown" }
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--strict-markers --tb=short"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 79
+
+[tool.ruff.lint]
+# These codes enable specific rule families in Ruff:
+select = [
+    "E",  # pycodestyle errors (e.g., indentation, spacing, blank lines).
+    "F",  # pyflakes errors (e.g., undefined or unused variables).
+    "W",  # pycodestyle warnings (e.g., style issues that aren't strict errors).
+    "D",  # pydocstyle (enforces docstrings, including Google/NumPy/reST style).
+    "I",  # isort (import sorting and organization).
+]
+
+# These codes are explicitly ignored:
+ignore = [
+    "F401",  # Ignore unused imports (useful during development).
+    "D202",  # No blank lines allowed after function docstring.
+    "D413",  # Missing blank line after the last section.
+    "D205",  # Missing blank line after the section header.
+    "D104",  # Missing docstring in public packages.
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"                   # Use Google-style docstring convention.
+property-decorators = ["@property"]     # Enforce docstrings on properties.
+
+[tool.ruff.format]
+quote-style = "double"       # Enforce double quotes for strings.
+indent-style = "space"       # Use spaces for indentation (per PEP8).
+
+[tool.mypy]
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[tool.tp-template]
+name = "tp-pyproject"
+version = "0.1.0"
