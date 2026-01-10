@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import contextlib
 import copy
 import logging
-import contextlib
 from collections import deque
-from typing import Type, Iterator, Any
+from typing import Any, Iterator, Type
 
 from maya.api import OpenMaya
 
@@ -13,9 +13,36 @@ from . import attributetypes, undo
 logger = logging.getLogger(__name__)
 
 
-def api_type(obj: OpenMaya.MObject | OpenMaya.MPlug) -> int:
+@contextlib.contextmanager
+def dg_context_guard(ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal):
+    """Context manager for MDGContextGuard.
+
+    This provides a clean way to temporarily switch the evaluation context
+    when reading plug values, avoiding deprecation warnings in Maya 2026+.
+
+    Args:
+        ctx: The MDGContext to use. Defaults to kNormal.
+
+    Yields:
+        None - Context is active within the block.
+
+    Example:
+        >>> with dg_context_guard(my_context):
+        ...     value = plug.asDouble()
     """
-    Returns the attribute type from the given plug.
+
+    if ctx == OpenMaya.MDGContext.kNormal:
+        yield
+    else:
+        guard = OpenMaya.MDGContextGuard(ctx)
+        try:
+            yield
+        finally:
+            del guard
+
+
+def api_type(obj: OpenMaya.MObject | OpenMaya.MPlug) -> int:
+    """Returns the attribute type from the given plug.
 
     :param obj: object or plug to get attribute type of.
     :return: attribute type.
@@ -30,8 +57,7 @@ def api_type(obj: OpenMaya.MObject | OpenMaya.MPlug) -> int:
 
 
 def as_mplug(attr_name: str) -> OpenMaya.MPlug:
-    """
-    Returns the MPlug instance of the given name.
+    """Returns the MPlug instance of the given name.
 
     :param attr_name: name of the Maya node to convert to MPlug
     :return: plug with given name.
@@ -54,8 +80,7 @@ def as_mplug(attr_name: str) -> OpenMaya.MPlug:
 
 
 def plug_type(plug: OpenMaya.MPlug) -> int | None:
-    """
-    Returns the type of the give plug.
+    """Returns the type of the give plug.
 
     :param plug: plug to get type of.
     :return: plug type.
@@ -70,10 +95,14 @@ def plug_type(plug: OpenMaya.MPlug) -> int | None:
         return attributetypes.maya_numeric_type_to_internal_type(data_type)
     elif obj.hasFn(OpenMaya.MFn.kUnitAttribute):
         u_attr = OpenMaya.MFnUnitAttribute(obj)
-        return attributetypes.maya_unit_type_to_internal_type(u_attr.unitType())
+        return attributetypes.maya_unit_type_to_internal_type(
+            u_attr.unitType()
+        )
     elif obj.hasFn(OpenMaya.MFn.kTypedAttribute):
         t_attr = OpenMaya.MFnTypedAttribute(obj)
-        return attributetypes.maya_mfn_data_type_to_internal_type(t_attr.attrType())
+        return attributetypes.maya_mfn_data_type_to_internal_type(
+            t_attr.attrType()
+        )
     elif obj.hasFn(OpenMaya.MFn.kEnumAttribute):
         return attributetypes.kMFnkEnumAttribute
     elif obj.hasFn(OpenMaya.MFn.kMessageAttribute):
@@ -86,9 +115,10 @@ def plug_type(plug: OpenMaya.MPlug) -> int | None:
     return None
 
 
-def python_type_from_value(data_type: int, value: Any) -> type | None | tuple | list:
-    """
-    Returns the Python standard type for the given data type and value.
+def python_type_from_value(
+    data_type: int, value: Any
+) -> type | None | tuple | list:
+    """Returns the Python standard type for the given data type and value.
 
     :param data_type: data type to get Python type from.
     :param value: value to get Python type from.
@@ -153,10 +183,10 @@ def python_type_from_value(data_type: int, value: Any) -> type | None | tuple | 
 
 
 def python_type_from_plug_value(
-    plug: OpenMaya.MPlug, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
+    plug: OpenMaya.MPlug,
+    ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal,
 ) -> type | None | tuple | list:
-    """
-    Returns the Python standard type for the given plug value.
+    """Returns the Python standard type for the given plug value.
 
     :param plug: Plug to get python type from its value.
     :param ctx: optional context.
@@ -221,8 +251,7 @@ def python_type_from_plug_value(
 
 
 def plug_fn(mobj: OpenMaya.MObject) -> Type[OpenMaya.MFnAttribute]:
-    """
-    Returns the function set for the given plug Maya object
+    """Returns the function set for the given plug Maya object
 
     :param mobj: plug Maya object instance to get function set of.
     :return: function of the given plug Maya object.
@@ -251,8 +280,7 @@ def plug_fn(mobj: OpenMaya.MObject) -> Type[OpenMaya.MFnAttribute]:
 
 
 def plug_default(plug: OpenMaya.MPlug) -> Any:
-    """
-    Returns the default value for the given plug.
+    """Returns the default value for the given plug.
 
     :param plug: plug we want to retrieve default value of.
     :return: plug default value.
@@ -286,10 +314,10 @@ def plug_default(plug: OpenMaya.MPlug) -> Any:
 
 
 def numeric_value(
-    plug: OpenMaya.MPlug, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
+    plug: OpenMaya.MPlug,
+    ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal,
 ) -> tuple[int | None, bool | int | float | None]:
-    """
-    Returns the numeric value of the given plug.
+    """Returns the numeric value of the given plug.
 
     :param plug: plug to get numeric value of.
     :param ctx: context to use.
@@ -299,77 +327,79 @@ def numeric_value(
     obj = plug.attribute()
     n_attr = OpenMaya.MFnNumericAttribute(obj)
     data_type = n_attr.numericType()
-    if data_type == OpenMaya.MFnNumericData.kBoolean:
-        return attributetypes.kMFnNumericBoolean, plug.asBool(ctx)
-    elif data_type == OpenMaya.MFnNumericData.kByte:
-        return attributetypes.kMFnNumericByte, plug.asBool(ctx)
-    elif data_type == OpenMaya.MFnNumericData.kShort:
-        return attributetypes.kMFnNumericShort, plug.asShort(ctx)
-    elif data_type == OpenMaya.MFnNumericData.kInt:
-        return attributetypes.kMFnNumericInt, plug.asInt(ctx)
-    elif data_type == OpenMaya.MFnNumericData.kLong:
-        return attributetypes.kMFnNumericLong, plug.asInt(ctx)
-    elif data_type == OpenMaya.MFnNumericData.kDouble:
-        return attributetypes.kMFnNumericDouble, plug.asDouble(ctx)
-    elif data_type == OpenMaya.MFnNumericData.kFloat:
-        return attributetypes.kMFnNumericFloat, plug.asFloat(ctx)
-    elif data_type == OpenMaya.MFnNumericData.kAddr:
-        return attributetypes.kMFnNumericAddr, plug.asInt(ctx)
-    elif data_type == OpenMaya.MFnNumericData.kChar:
-        return attributetypes.kMFnNumericChar, plug.asChar(ctx)
-    elif data_type == OpenMaya.MFnNumericData.k2Double:
-        return attributetypes.kMFnNumeric2Double, OpenMaya.MFnNumericData(
-            plug.asMObject(ctx)
-        ).getData()
-    elif data_type == OpenMaya.MFnNumericData.k2Float:
-        return attributetypes.kMFnNumeric2Float, OpenMaya.MFnNumericData(
-            plug.asMObject(ctx)
-        ).getData()
-    elif data_type == OpenMaya.MFnNumericData.k2Int:
-        return attributetypes.kMFnNumeric2Int, OpenMaya.MFnNumericData(
-            plug.asMObject(ctx)
-        ).getData()
-    elif data_type == OpenMaya.MFnNumericData.k2Long:
-        return attributetypes.kMFnNumeric2Long, OpenMaya.MFnNumericData(
-            plug.asMObject(ctx)
-        ).getData()
-    elif data_type == OpenMaya.MFnNumericData.k2Short:
-        return attributetypes.kMFnNumeric2Short, OpenMaya.MFnNumericData(
-            plug.asMObject(ctx)
-        ).getData()
-    elif data_type == OpenMaya.MFnNumericData.k3Double:
-        return attributetypes.kMFnNumeric3Double, OpenMaya.MFnNumericData(
-            plug.asMObject(ctx)
-        ).getData()
-    elif data_type == OpenMaya.MFnNumericData.k3Float:
-        return attributetypes.kMFnNumeric3Float, OpenMaya.MFnNumericData(
-            plug.asMObject(ctx)
-        ).getData()
-    elif data_type == OpenMaya.MFnNumericData.k3Int:
-        return attributetypes.kMFnNumeric3Int, OpenMaya.MFnNumericData(
-            plug.asMObject(ctx)
-        ).getData()
-    elif data_type == OpenMaya.MFnNumericData.k3Long:
-        return attributetypes.kMFnNumeric3Long, OpenMaya.MFnNumericData(
-            plug.asMObject(ctx)
-        ).getData()
-    elif data_type == OpenMaya.MFnNumericData.k3Short:
-        return attributetypes.kMFnNumeric3Short, OpenMaya.MFnNumericData(
-            plug.asMObject(ctx)
-        ).getData()
-    elif data_type == OpenMaya.MFnNumericData.k4Double:
-        return attributetypes.kMFnNumeric4Double, OpenMaya.MFnNumericData(
-            plug.asMObject(ctx)
-        ).getData()
+
+    with dg_context_guard(ctx):
+        if data_type == OpenMaya.MFnNumericData.kBoolean:
+            return attributetypes.kMFnNumericBoolean, plug.asBool()
+        elif data_type == OpenMaya.MFnNumericData.kByte:
+            return attributetypes.kMFnNumericByte, plug.asBool()
+        elif data_type == OpenMaya.MFnNumericData.kShort:
+            return attributetypes.kMFnNumericShort, plug.asShort()
+        elif data_type == OpenMaya.MFnNumericData.kInt:
+            return attributetypes.kMFnNumericInt, plug.asInt()
+        elif data_type == OpenMaya.MFnNumericData.kLong:
+            return attributetypes.kMFnNumericLong, plug.asInt()
+        elif data_type == OpenMaya.MFnNumericData.kDouble:
+            return attributetypes.kMFnNumericDouble, plug.asDouble()
+        elif data_type == OpenMaya.MFnNumericData.kFloat:
+            return attributetypes.kMFnNumericFloat, plug.asFloat()
+        elif data_type == OpenMaya.MFnNumericData.kAddr:
+            return attributetypes.kMFnNumericAddr, plug.asInt()
+        elif data_type == OpenMaya.MFnNumericData.kChar:
+            return attributetypes.kMFnNumericChar, plug.asChar()
+        elif data_type == OpenMaya.MFnNumericData.k2Double:
+            return attributetypes.kMFnNumeric2Double, OpenMaya.MFnNumericData(
+                plug.asMObject()
+            ).getData()
+        elif data_type == OpenMaya.MFnNumericData.k2Float:
+            return attributetypes.kMFnNumeric2Float, OpenMaya.MFnNumericData(
+                plug.asMObject()
+            ).getData()
+        elif data_type == OpenMaya.MFnNumericData.k2Int:
+            return attributetypes.kMFnNumeric2Int, OpenMaya.MFnNumericData(
+                plug.asMObject()
+            ).getData()
+        elif data_type == OpenMaya.MFnNumericData.k2Long:
+            return attributetypes.kMFnNumeric2Long, OpenMaya.MFnNumericData(
+                plug.asMObject()
+            ).getData()
+        elif data_type == OpenMaya.MFnNumericData.k2Short:
+            return attributetypes.kMFnNumeric2Short, OpenMaya.MFnNumericData(
+                plug.asMObject()
+            ).getData()
+        elif data_type == OpenMaya.MFnNumericData.k3Double:
+            return attributetypes.kMFnNumeric3Double, OpenMaya.MFnNumericData(
+                plug.asMObject()
+            ).getData()
+        elif data_type == OpenMaya.MFnNumericData.k3Float:
+            return attributetypes.kMFnNumeric3Float, OpenMaya.MFnNumericData(
+                plug.asMObject()
+            ).getData()
+        elif data_type == OpenMaya.MFnNumericData.k3Int:
+            return attributetypes.kMFnNumeric3Int, OpenMaya.MFnNumericData(
+                plug.asMObject()
+            ).getData()
+        elif data_type == OpenMaya.MFnNumericData.k3Long:
+            return attributetypes.kMFnNumeric3Long, OpenMaya.MFnNumericData(
+                plug.asMObject()
+            ).getData()
+        elif data_type == OpenMaya.MFnNumericData.k3Short:
+            return attributetypes.kMFnNumeric3Short, OpenMaya.MFnNumericData(
+                plug.asMObject()
+            ).getData()
+        elif data_type == OpenMaya.MFnNumericData.k4Double:
+            return attributetypes.kMFnNumeric4Double, OpenMaya.MFnNumericData(
+                plug.asMObject()
+            ).getData()
 
     return None, None
 
 
 def typed_value(
-    plug: OpenMaya.MPlug, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
+    plug: OpenMaya.MPlug,
+    ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal,
 ) -> tuple[int | None, Any]:
-    """
-    Returns Maya type from the given plug.
+    """Returns Maya type from the given plug.
 
     :param OpenMaya.MPlug plug: plug instance to get type of.
     :param OpenMaya.MDGContext ctx: context to use.
@@ -379,54 +409,62 @@ def typed_value(
 
     typed_attr = OpenMaya.MFnTypedAttribute(plug.attribute())
     data_type = typed_attr.attrType()
+
     if data_type == OpenMaya.MFnData.kInvalid:
         return None, None
-    elif data_type == OpenMaya.MFnData.kString:
-        return attributetypes.kMFnDataString, plug.asString(ctx)
-    elif data_type == OpenMaya.MFnData.kNumeric:
-        return numeric_value(plug, ctx=ctx)
-    elif data_type == OpenMaya.MFnData.kMatrix:
-        return attributetypes.kMFnDataMatrix, OpenMaya.MFnMatrixData(
-            plug.asMObject(ctx)
-        ).matrix()
-    # elif data_type == OpenMaya.MFnData.kFloatArray:
-    #     return attributetypes.kMFnDataFloatArray, OpenMaya.MFnFloatArrayData(plug.asMObject()).array()
-    elif data_type == OpenMaya.MFnData.kDoubleArray:
-        return attributetypes.kMFnDataDoubleArray, OpenMaya.MFnDoubleArrayData(
-            plug.asMObject(ctx)
-        ).array()
-    elif data_type == OpenMaya.MFnData.kIntArray:
-        return attributetypes.kMFnDataIntArray, OpenMaya.MFnIntArrayData(
-            plug.asMObject(ctx)
-        ).array()
-    elif data_type == OpenMaya.MFnData.kPointArray:
-        return attributetypes.kMFnDataPointArray, OpenMaya.MFnPointArrayData(
-            plug.asMObject(ctx)
-        ).array()
-    elif data_type == OpenMaya.MFnData.kVectorArray:
-        return attributetypes.kMFnDataVectorArray, OpenMaya.MFnVectorArrayData(
-            plug.asMObject(ctx)
-        ).array()
-    elif data_type == OpenMaya.MFnData.kStringArray:
-        try:
-            return attributetypes.kMFnDataStringArray, OpenMaya.MFnStringArrayData(
-                plug.asMObject(ctx)
+
+    with dg_context_guard(ctx):
+        if data_type == OpenMaya.MFnData.kString:
+            return attributetypes.kMFnDataString, plug.asString()
+        elif data_type == OpenMaya.MFnData.kNumeric:
+            return numeric_value(plug, ctx=ctx)
+        elif data_type == OpenMaya.MFnData.kMatrix:
+            return attributetypes.kMFnDataMatrix, OpenMaya.MFnMatrixData(
+                plug.asMObject()
+            ).matrix()
+        # elif data_type == OpenMaya.MFnData.kFloatArray:
+        #     return attributetypes.kMFnDataFloatArray, OpenMaya.MFnFloatArrayData(plug.asMObject()).array()
+        elif data_type == OpenMaya.MFnData.kDoubleArray:
+            return (
+                attributetypes.kMFnDataDoubleArray,
+                OpenMaya.MFnDoubleArrayData(plug.asMObject()).array(),
+            )
+        elif data_type == OpenMaya.MFnData.kIntArray:
+            return attributetypes.kMFnDataIntArray, OpenMaya.MFnIntArrayData(
+                plug.asMObject()
             ).array()
-        except RuntimeError:
-            return None, None
-    elif data_type == OpenMaya.MFnData.kMatrixArray:
-        return attributetypes.kMFnDataMatrixArray, OpenMaya.MFnMatrixArrayData(
-            plug.asMObject(ctx)
-        ).array()
+        elif data_type == OpenMaya.MFnData.kPointArray:
+            return (
+                attributetypes.kMFnDataPointArray,
+                OpenMaya.MFnPointArrayData(plug.asMObject()).array(),
+            )
+        elif data_type == OpenMaya.MFnData.kVectorArray:
+            return (
+                attributetypes.kMFnDataVectorArray,
+                OpenMaya.MFnVectorArrayData(plug.asMObject()).array(),
+            )
+        elif data_type == OpenMaya.MFnData.kStringArray:
+            try:
+                return (
+                    attributetypes.kMFnDataStringArray,
+                    OpenMaya.MFnStringArrayData(plug.asMObject()).array(),
+                )
+            except RuntimeError:
+                return None, None
+        elif data_type == OpenMaya.MFnData.kMatrixArray:
+            return (
+                attributetypes.kMFnDataMatrixArray,
+                OpenMaya.MFnMatrixArrayData(plug.asMObject()).array(),
+            )
 
     return None, None
 
 
 def plug_value_and_type(
-    plug: OpenMaya.MPlug, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
+    plug: OpenMaya.MPlug,
+    ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal,
 ) -> tuple[int | None, Any]:
-    """
-    Returns the value and the type of the given plug.
+    """Returns the value and the type of the given plug.
 
     :param plug: plug to get value and type of.
     :param ctx: context to use.
@@ -451,14 +489,19 @@ def plug_value_and_type(
     elif obj.hasFn(OpenMaya.MFn.kUnitAttribute):
         unit_attr = OpenMaya.MFnUnitAttribute(obj)
         unit_type = unit_attr.unitType()
-        if unit_type == OpenMaya.MFnUnitAttribute.kDistance:
-            return attributetypes.kMFnUnitAttributeDistance, plug.asMDistance(ctx)
-        elif unit_type == OpenMaya.MFnUnitAttribute.kAngle:
-            return attributetypes.kMFnUnitAttributeAngle, plug.asMAngle(ctx)
-        elif unit_type == OpenMaya.MFnUnitAttribute.kTime:
-            return attributetypes.kMFnUnitAttributeTime, plug.asMTime(ctx)
+        with dg_context_guard(ctx):
+            if unit_type == OpenMaya.MFnUnitAttribute.kDistance:
+                return (
+                    attributetypes.kMFnUnitAttributeDistance,
+                    plug.asMDistance(),
+                )
+            elif unit_type == OpenMaya.MFnUnitAttribute.kAngle:
+                return attributetypes.kMFnUnitAttributeAngle, plug.asMAngle()
+            elif unit_type == OpenMaya.MFnUnitAttribute.kTime:
+                return attributetypes.kMFnUnitAttributeTime, plug.asMTime()
     elif obj.hasFn(OpenMaya.MFn.kEnumAttribute):
-        return attributetypes.kMFnkEnumAttribute, plug.asInt(ctx)
+        with dg_context_guard(ctx):
+            return attributetypes.kMFnkEnumAttribute, plug.asInt()
     elif obj.hasFn(OpenMaya.MFn.kTypedAttribute):
         return typed_value(plug, ctx=ctx)
     elif obj.hasFn(OpenMaya.MFn.kMessageAttribute):
@@ -467,14 +510,17 @@ def plug_value_and_type(
             return attributetypes.kMFnMessageAttribute, source.node()
         return attributetypes.kMFnMessageAttribute, None
     elif obj.hasFn(OpenMaya.MFn.kMatrixAttribute):
-        return attributetypes.kMFnDataMatrix, OpenMaya.MFnMatrixData(
-            plug.asMObject(ctx)
-        ).matrix()
+        with dg_context_guard(ctx):
+            return attributetypes.kMFnDataMatrix, OpenMaya.MFnMatrixData(
+                plug.asMObject()
+            ).matrix()
 
     if plug.isCompound:
         count = plug.numChildren()
         res = [None] * count, [None] * count
-        data = [plug_value_and_type(plug.child(i), ctx=ctx) for i in range(count)]
+        data = [
+            plug_value_and_type(plug.child(i), ctx=ctx) for i in range(count)
+        ]
         for i in range(len(data)):
             res[0][i] = data[i][0]
             res[1][i] = data[i][1]
@@ -484,10 +530,10 @@ def plug_value_and_type(
 
 
 def plug_value(
-    plug: OpenMaya.MPlug, ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal
+    plug: OpenMaya.MPlug,
+    ctx: OpenMaya.MDGContext = OpenMaya.MDGContext.kNormal,
 ) -> Any:
-    """
-    Returns value of the given plug.
+    """Returns value of the given plug.
 
     :param plug: plug to get value of.
     :param ctx: context to use.
@@ -503,8 +549,7 @@ def set_plug_value(
     mod: OpenMaya.MDGModifier | None = None,
     apply: bool = True,
 ) -> OpenMaya.MDGModifier:
-    """
-    Sets the given lugs value to the given passed value.
+    """Sets the given lugs value to the given passed value.
 
     :param plug: plug to set value of.
     :param value: value to set.
@@ -597,7 +642,9 @@ def set_plug_value(
         # connect the message attribute
         connect_plugs(plug, value, mod=mod, apply=False)
     else:
-        raise ValueError(f'Currently data type "{obj.apiTypeStr}" is not supported')
+        raise ValueError(
+            f'Currently data type "{obj.apiTypeStr}" is not supported'
+        )
 
     if apply and mod:
         mod.doIt()
@@ -607,8 +654,7 @@ def set_plug_value(
 
 # noinspection PyShadowingBuiltins,PyShadowingNames
 def set_plug_info_from_dict(plug: OpenMaya.MPlug, **kwargs):
-    """
-    Sets the plug attributes from the given keyword arguments.
+    """Sets the plug attributes from the given keyword arguments.
 
     :param plug: plug to change.
     :raises RuntimeError: if an exception is raised while setting plug info.
@@ -646,7 +692,9 @@ def set_plug_info_from_dict(plug: OpenMaya.MPlug, **kwargs):
                     default_value = child_info.get("default")
                     if value is not None and i in range(len(value)):
                         child_info["value"] = value[i]
-                    if default_value is not None and i in range(len(default_value)):
+                    if default_value is not None and i in range(
+                        len(default_value)
+                    ):
                         child_info["default"] = default_value[i]
                     set_plug_info_from_dict(plug.child(i), **child_info)
         else:
@@ -727,9 +775,10 @@ def set_plug_info_from_dict(plug: OpenMaya.MPlug, **kwargs):
         plug.isLocked = locked
 
 
-def set_attribute_fn_default(attribute: OpenMaya.MObject, default: Any) -> bool:
-    """
-    Sets the default value for the given attribute.
+def set_attribute_fn_default(
+    attribute: OpenMaya.MObject, default: Any
+) -> bool:
+    """Sets the default value for the given attribute.
 
     :param attribute: attribute the Maya object to set default value of.
     :param default: default attribute value.
@@ -802,8 +851,7 @@ def set_attribute_fn_default(attribute: OpenMaya.MObject, default: Any) -> bool:
 
 
 def set_plug_default(plug: OpenMaya.MPlug, default: Any):
-    """
-    Sets the default value for the given plug.
+    """Sets the default value for the given plug.
 
     :param plug: plug we want to set default value of.
     :param default: default plug value.
@@ -812,9 +860,10 @@ def set_plug_default(plug: OpenMaya.MPlug, default: Any):
     return set_attribute_fn_default(plug.attribute(), default)
 
 
-def set_compound_as_proxy(compound_plug: OpenMaya.MPlug, source_plug: OpenMaya.MPlug):
-    """
-    Sets given compound as a proxy to the source plug by turning all child plugs to proxy, since Maya does not
+def set_compound_as_proxy(
+    compound_plug: OpenMaya.MPlug, source_plug: OpenMaya.MPlug
+):
+    """Sets given compound as a proxy to the source plug by turning all child plugs to proxy, since Maya does not
     support doing this at the compound level. After that we do the connection to the matching children.
 
     :param OpenMaya.MPlug compound_plug: compound plug to set as proxy.
@@ -829,8 +878,7 @@ def set_compound_as_proxy(compound_plug: OpenMaya.MPlug, source_plug: OpenMaya.M
 
 
 def has_plug_min(plug: OpenMaya.MPlug) -> bool:
-    """
-    Returns whether given plug has a min value set.
+    """Returns whether given plug has a min value set.
 
     :param plug: plug to check plug min.
     :return: True if the given plug has a min value set; False otherwise.
@@ -850,8 +898,7 @@ def has_plug_min(plug: OpenMaya.MPlug) -> bool:
 
 
 def has_plug_max(plug: OpenMaya.MPlug) -> bool:
-    """
-    Returns whether given plug has a max value set.
+    """Returns whether given plug has a max value set.
 
     :param plug: plug to check plug max.
     :return: True if the given plug has a max value set; False otherwise.
@@ -871,8 +918,7 @@ def has_plug_max(plug: OpenMaya.MPlug) -> bool:
 
 
 def has_plug_soft_min(plug: OpenMaya.MPlug) -> bool:
-    """
-    Returns whether given plug has a soft min value set.
+    """Returns whether given plug has a soft min value set.
 
     :param plug: plug to check plug soft min.
     :return: True if the given plug has a soft min value set; False otherwise.
@@ -892,8 +938,7 @@ def has_plug_soft_min(plug: OpenMaya.MPlug) -> bool:
 
 
 def has_plug_soft_max(plug: OpenMaya.MPlug) -> bool:
-    """
-    Returns whether given plug has a soft max value set.
+    """Returns whether given plug has a soft max value set.
 
     :param plug: plug to check plug soft max.
     :return: True if the given plug has a soft max value set; False otherwise.
@@ -913,8 +958,7 @@ def has_plug_soft_max(plug: OpenMaya.MPlug) -> bool:
 
 
 def plug_min(plug: OpenMaya.MPlug) -> int | None:
-    """
-    Returns the given plug min value.
+    """Returns the given plug min value.
 
     :param plug: plug to get min value of.
     :return: min value of the given plug.
@@ -938,8 +982,7 @@ def plug_min(plug: OpenMaya.MPlug) -> int | None:
 
 
 def plug_max(plug: OpenMaya.MPlug) -> int | None:
-    """
-    Returns the given plug max value.
+    """Returns the given plug max value.
 
     :param plug: plug to get max value of.
     :return: max value of the given plug.
@@ -963,8 +1006,7 @@ def plug_max(plug: OpenMaya.MPlug) -> int | None:
 
 
 def soft_min(plug: OpenMaya.MPlug) -> int | None:
-    """
-    Returns the given plug soft min value.
+    """Returns the given plug soft min value.
 
     :param plug: plug to get soft min value of.
     :return: soft min value of the given plug.
@@ -988,8 +1030,7 @@ def soft_min(plug: OpenMaya.MPlug) -> int | None:
 
 
 def set_attr_soft_min(attribute: OpenMaya.MObject, value: int) -> bool:
-    """
-    Sets the given attribute soft min value.
+    """Sets the given attribute soft min value.
 
     :param attribute: Maya object representing the attribute we want to set soft min value of.
     :param value: plug sot min value.
@@ -1009,8 +1050,7 @@ def set_attr_soft_min(attribute: OpenMaya.MObject, value: int) -> bool:
 
 
 def set_soft_min(plug: OpenMaya.MPlug, value: int) -> bool:
-    """
-    Sets the given plug soft min value.
+    """Sets the given plug soft min value.
 
     :param plug: plug to set soft min value of.
     :param value: plug sot min value.
@@ -1021,8 +1061,7 @@ def set_soft_min(plug: OpenMaya.MPlug, value: int) -> bool:
 
 
 def soft_max(plug: OpenMaya.MPlug) -> int | None:
-    """
-    Returns the given plug soft max value.
+    """Returns the given plug soft max value.
 
     :param plug: plug to get soft max value of.
     :return: soft max value of the given plug.
@@ -1043,8 +1082,7 @@ def soft_max(plug: OpenMaya.MPlug) -> int | None:
 
 
 def set_attr_soft_max(attribute: OpenMaya.MObject, value: int) -> bool:
-    """
-    Sets the given attribute soft max value.
+    """Sets the given attribute soft max value.
 
     :param attribute: Maya object representing the attribute we want to set soft max value of.
     :param value: plug sot max value.
@@ -1064,8 +1102,7 @@ def set_attr_soft_max(attribute: OpenMaya.MObject, value: int) -> bool:
 
 
 def set_soft_max(plug: OpenMaya.MPlug, value: int) -> bool:
-    """
-    Sets the given plug soft max value.
+    """Sets the given plug soft max value.
 
     :param plug: plug to set soft max value of.
     :param value: plug sot max value.
@@ -1076,8 +1113,7 @@ def set_soft_max(plug: OpenMaya.MPlug, value: int) -> bool:
 
 
 def set_attr_min(attribute: OpenMaya.MObject, value: int) -> bool:
-    """
-    Sets the given attribute min value.
+    """Sets the given attribute min value.
 
     :param attribute: Maya object representing the attribute we want to set min value of.
     :param value: plug min value.
@@ -1096,8 +1132,7 @@ def set_attr_min(attribute: OpenMaya.MObject, value: int) -> bool:
 
 
 def set_min(plug: OpenMaya.MPlug, value: int) -> bool:
-    """
-    Sets the given plug min value.
+    """Sets the given plug min value.
 
     :param plug: plug to set min value of.
     :param value: plug min value.
@@ -1108,8 +1143,7 @@ def set_min(plug: OpenMaya.MPlug, value: int) -> bool:
 
 
 def set_attr_max(attribute: OpenMaya.MObject, value: int) -> bool:
-    """
-    Sets the given attribute max value.
+    """Sets the given attribute max value.
 
     :param attribute: Maya object representing the attribute we want to set max value of.
     :param value: plug max value.
@@ -1128,8 +1162,7 @@ def set_attr_max(attribute: OpenMaya.MObject, value: int) -> bool:
 
 
 def set_max(plug: OpenMaya.MPlug, value: int) -> bool:
-    """
-    Sets the given plug max value.
+    """Sets the given plug max value.
 
     :param plug: plug to set max value of.
     :param value: plug max value.
@@ -1141,8 +1174,7 @@ def set_max(plug: OpenMaya.MPlug, value: int) -> bool:
 
 @contextlib.contextmanager
 def set_locked_context(plug: OpenMaya.MPlug):
-    """
-    Context manager to set the plug lock state to False then reset back to its original lock state.
+    """Context manager to set the plug lock state to False then reset back to its original lock state.
 
     :param plug: lock to work with.
     """
@@ -1155,8 +1187,7 @@ def set_locked_context(plug: OpenMaya.MPlug):
 
 
 def set_lock_state(plug: OpenMaya.MPlug, state: bool) -> bool:
-    """
-    Sets the given plug lock state.
+    """Sets the given plug lock state.
 
     :param plug: plug to set lock state of.
     :param state: lock state.
@@ -1178,8 +1209,7 @@ def connect_plugs(
     apply: bool = True,
     allow_undo: bool = False,
 ) -> OpenMaya.MDGModifier:
-    """
-    Connects given plugs together.
+    """Connects given plugs together.
 
     :param source: plug to connect.
     :param target: target plag to connect into.
@@ -1191,7 +1221,9 @@ def connect_plugs(
     :raises TypeError: if one of the given plugs is not valid.
     """
 
-    if not isinstance(source, OpenMaya.MPlug) or not isinstance(target, OpenMaya.MPlug):
+    if not isinstance(source, OpenMaya.MPlug) or not isinstance(
+        target, OpenMaya.MPlug
+    ):
         raise TypeError("connect_plugs() expects 2 plugs!")
     if source.isNull or target.isNull:
         raise TypeError("connect_plugs() expects 2 valid plugs!")
@@ -1237,8 +1269,7 @@ def connect_vector_plugs(
     mod: OpenMaya.MDGModifier | None = None,
     apply: bool = True,
 ) -> OpenMaya.MDGModifier | None:
-    """
-    Connects given compound plugs together.
+    """Connects given compound plugs together.
 
     :param source_compound: source plug.
     :param destination_compound: target plug.
@@ -1252,7 +1283,11 @@ def connect_vector_plugs(
 
     if all(connection_values):
         connect_plugs(
-            source_compound, destination_compound, force=force, mod=mod, apply=apply
+            source_compound,
+            destination_compound,
+            force=force,
+            mod=mod,
+            apply=apply,
         )
         return None
 
@@ -1273,7 +1308,9 @@ def connect_vector_plugs(
             if child_destination.isDestination:
                 disconnect_plug(child_destination.source(), child_destination)
             continue
-        connect_plugs(child_source, child_destination, mod=modifier, force=force)
+        connect_plugs(
+            child_source, child_destination, mod=modifier, force=force
+        )
 
     if apply:
         modifier.doIt()
@@ -1287,8 +1324,7 @@ def disconnect_plug(
     destination: bool = True,
     modifier: OpenMaya.MDGModifier | None = None,
 ) -> tuple[bool, OpenMaya.MDGModifier]:
-    """
-    Disconnects the plug connections, if "source" is True and the plug is a destination then disconnect the source
+    """Disconnects the plug connections, if "source" is True and the plug is a destination then disconnect the source
     from this plug. If destination is True and plug is a source the disconnect this plug from the destination.
     Plugs are also locked (to avoid Maya raises an error).
 
@@ -1323,8 +1359,7 @@ def disconnect_plugs(
     destination: OpenMaya.MPlug,
     modifier: OpenMaya.MDGModifier | None = None,
 ):
-    """
-    Disconnects two plugs using a DG modifier.
+    """Disconnects two plugs using a DG modifier.
 
     :param OpenMaya.MPlug source: source plug to disconnect.
     :param OpenMaya.MPlug destination: destination plug to disconnect.
@@ -1360,8 +1395,7 @@ def break_connections(
     recursive: bool = False,
     modifier: OpenMaya.MDGModifier | None = None,
 ):
-    """
-    Breaks the connections to the given plug.
+    """Breaks the connections to the given plug.
 
     :param OpenMaya.MPlug plug: plug to break connections of.
     :param bool source: if True, disconnect from the connected source plug if it has one.
@@ -1404,8 +1438,7 @@ def break_connections(
 def iterate_children(
     plug: OpenMaya.MPlug, recursive: bool = False, **kwargs
 ) -> Iterator[OpenMaya.MPlug]:
-    """
-    Recursive function that returns a generator that yields the children plugs from the given plug.
+    """Recursive function that returns a generator that yields the children plugs from the given plug.
 
     :param OpenMaya.MPlug plug: plug to iterate children plugs from.
     :param bool recursive: whether to return children recursively.
@@ -1446,7 +1479,9 @@ def iterate_children(
                 continue
             if keyable and not child.isKeyable:
                 continue
-            if channel_box and (not child.isChannelBox and not child.isKeyable):
+            if channel_box and (
+                not child.isChannelBox and not child.isKeyable
+            ):
                 continue
             yield child
             for leaf in iterate_children(child, recursive=recursive, **kwargs):
@@ -1462,17 +1497,22 @@ def iterate_children(
                 continue
             if keyable and not child.isKeyable:
                 continue
-            if channel_box and (not child.isChannelBox and not child.isKeyable):
+            if channel_box and (
+                not child.isChannelBox and not child.isKeyable
+            ):
                 continue
             yield child
             if recursive:
-                for leaf in iterate_children(child, recursive=recursive, **kwargs):
+                for leaf in iterate_children(
+                    child, recursive=recursive, **kwargs
+                ):
                     yield leaf
 
 
-def iterate_elements(plug: OpenMaya.MPlug, **kwargs) -> Iterator[OpenMaya.MPlug]:
-    """
-    Returns a generator that yields all elements from the given plug.
+def iterate_elements(
+    plug: OpenMaya.MPlug, **kwargs
+) -> Iterator[OpenMaya.MPlug]:
+    """Returns a generator that yields all elements from the given plug.
 
     :param OpenMaya.MPlug plug: plug to iterate elements from.
     :key bool writable: whether to retrieve writable plugs.
@@ -1490,7 +1530,9 @@ def iterate_elements(plug: OpenMaya.MPlug, **kwargs) -> Iterator[OpenMaya.MPlug]
     indices = plug.getExistingArrayAttributeIndices()
     for physical_index, logical_index in enumerate(indices):
         element = plug.elementByPhysicalIndex(physical_index)
-        if writable and not (element.isFreeToChange() == OpenMaya.MPlug.kFreeToChange):
+        if writable and not (
+            element.isFreeToChange() == OpenMaya.MPlug.kFreeToChange
+        ):
             continue
         if non_default and element.isDefaultValue:
             continue
@@ -1503,8 +1545,7 @@ def walk(
     channel_box: bool = False,
     keyable: bool = False,
 ) -> Iterator[OpenMaya.MPlug]:
-    """
-    Returns a generator that yields descendants from the given plug.
+    """Returns a generator that yields descendants from the given plug.
 
     :param OpenMaya.MPlug plug: plug to iterate descendants plugs from.
     :param bool writable: whether to retrieve writable plugs.
@@ -1541,8 +1582,7 @@ def walk(
 
 
 def next_available_element(plug: str | OpenMaya.MPlug) -> int | None:
-    """
-    Finds the next available plug element a value can be set to.
+    """Finds the next available plug element a value can be set to.
     If there are no gaps then the last element will be returned.
 
     :param plug: plug to get next available element for.
@@ -1562,9 +1602,10 @@ def next_available_element(plug: str | OpenMaya.MPlug) -> int | None:
     return indices[-1] + 1 if num_indices > 0 else 0
 
 
-def next_available_element_plug(array_plug: OpenMaya.MPlug) -> OpenMaya.MPlug | None:
-    """
-    Returns the next available element plug from the plug array.
+def next_available_element_plug(
+    array_plug: OpenMaya.MPlug,
+) -> OpenMaya.MPlug | None:
+    """Returns the next available element plug from the plug array.
     Loops through all current elements looking for an out connection, if one does not exist then this element plug is
     returned. If the plug array is a compound one then the children of immediate children of the compound are searched
     and the element parent plug will be returned if there is a connection.
@@ -1602,8 +1643,7 @@ def next_available_connection(
     plug: str | OpenMaya.MPlug,
     child_attribute: OpenMaya.MObject = OpenMaya.MObject.kNullObj,
 ) -> int | None:
-    """
-    Finds the next available plug element a connection can be made to.
+    """Finds the next available plug element a connection can be made to.
     If there are no gaps then the last element will be returned.
 
     :param plug: plug to get next available connection of.
@@ -1632,9 +1672,10 @@ def next_available_connection(
     return indices[-1] + 1 if num_indices > 0 else 0
 
 
-def next_available_dest_element_plug(array_plug: OpenMaya.MPlug, force: bool = False):
-    """
-    Returns the next available input plug from the plug array.
+def next_available_dest_element_plug(
+    array_plug: OpenMaya.MPlug, force: bool = False
+):
+    """Returns the next available input plug from the plug array.
 
     :param array_plug: plug array to search.
     :param force: whether to force the connection even if the plug is not connected.
@@ -1669,9 +1710,10 @@ def next_available_dest_element_plug(array_plug: OpenMaya.MPlug, force: bool = F
     return None
 
 
-def has_child_plug_by_name(parent_plug: OpenMaya.MPlug, child_name: str) -> bool:
-    """
-    Returns whether the given parent plug has a child plug with given name.
+def has_child_plug_by_name(
+    parent_plug: OpenMaya.MPlug, child_name: str
+) -> bool:
+    """Returns whether the given parent plug has a child plug with given name.
 
     :param parent_plug: plug to check child plug by name.
     :param child_name: name of the child plug.
@@ -1695,8 +1737,7 @@ def remove_element_plug(
     mod: OpenMaya.MDGModifier | None = None,
     apply: bool = False,
 ) -> OpenMaya.MDGModifier:
-    """
-    Removes an element plug.
+    """Removes an element plug.
 
     :param plug: plug array object.
     :param element_number: element number to delete.
@@ -1709,7 +1750,9 @@ def remove_element_plug(
     with set_locked_context(plug):
         mod = mod or OpenMaya.MDGModifier()
         if element_number in plug.getExistingArrayAttributeIndices():
-            mod.removeMultiInstance(plug.elementByLogicalIndex(element_number), True)
+            mod.removeMultiInstance(
+                plug.elementByLogicalIndex(element_number), True
+            )
         if apply:
             try:
                 mod.doIt()
@@ -1725,8 +1768,7 @@ def remove_element_plug(
 
 
 def enum_names(plug: OpenMaya.MPlug) -> list[str]:
-    """
-    Returns the plug enumeration field names.
+    """Returns the plug enumeration field names.
 
     :param plug: Plug to query enum field names of.
     :return: list of plug enumeration field names.
@@ -1748,8 +1790,7 @@ def enum_names(plug: OpenMaya.MPlug) -> list[str]:
 
 
 def enum_indices(plug: OpenMaya.MPlug) -> range:
-    """
-    Returns the plug enumeration indices as list.
+    """Returns the plug enumeration indices as list.
 
     :param plug: plug we want to query enum indices of.
     :return: list of plug enumeration indices.
@@ -1762,8 +1803,7 @@ def enum_indices(plug: OpenMaya.MPlug) -> range:
 
 
 def serialize_plug(plug: OpenMaya.MPlug) -> dict:
-    """
-    Function that converts given OpenMaya.MPlug into a serialized dictionary.
+    """Function that converts given OpenMaya.MPlug into a serialized dictionary.
 
     :param plug: plug to serialize.
     :return: serialized plug as a dictionary.
@@ -1785,7 +1825,8 @@ def serialize_plug(plug: OpenMaya.MPlug) -> dict:
             return {}
         elif plug.isCompound:
             data["children"] = [
-                serialize_plug(plug.child(i)) for i in range(plug.numChildren())
+                serialize_plug(plug.child(i))
+                for i in range(plug.numChildren())
             ]
     elif attr_type != attributetypes.kMFnMessageAttribute:
         if plug.isCompound:
@@ -1797,7 +1838,8 @@ def serialize_plug(plug: OpenMaya.MPlug) -> dict:
                 ]
             else:
                 data["children"] = [
-                    serialize_plug(plug.child(i)) for i in range(plug.numChildren())
+                    serialize_plug(plug.child(i))
+                    for i in range(plug.numChildren())
                 ]
         elif plug.isArray:
             pass
@@ -1834,7 +1876,9 @@ def serialize_plug(plug: OpenMaya.MPlug) -> dict:
                 useLongNames=True,
                 includeInstancedIndices=True,
             ),
-            "default": attributetypes.maya_type_to_python_type(plug_default(plug)),
+            "default": attributetypes.maya_type_to_python_type(
+                plug_default(plug)
+            ),
             "type": attr_type,
             "value": python_type_from_plug_value(plug),
         }
@@ -1847,8 +1891,7 @@ def serialize_plug(plug: OpenMaya.MPlug) -> dict:
 
 
 def serialize_connection(plug: OpenMaya.MPlug) -> dict:
-    """
-    Function that converts the destination OpenMaya.MPlug and serializes the connection as a dictionary.
+    """Function that converts the destination OpenMaya.MPlug and serializes the connection as a dictionary.
 
     :param OpenMaya.MPlug plug: plug that is the destination of a connection.
     :return: serialized connection.

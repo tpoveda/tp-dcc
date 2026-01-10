@@ -310,7 +310,7 @@ class DGNode:
         if key.startswith("_"):
             super().__setattr__(key, value)
             return
-        if self.hasAttribute(key) is not None:
+        if self.hasAttribute(key):
             if isinstance(value, Plug):
                 self.connect(key, value)
                 return

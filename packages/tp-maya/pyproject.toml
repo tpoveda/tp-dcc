@@ -41,6 +41,10 @@ readme = { file = ["README.md"], content-type = "text/markdown" }
 minversion = "6.0"
 addopts = "--strict-markers --tb=short"
 testpaths = ["tests"]
+markers = [
+    "unit: marks tests as pure unit tests (no Maya required)",
+    "integration: marks tests as requiring Maya (run with mayapy)",
+]
 
 [tool.ruff]
 line-length = 79

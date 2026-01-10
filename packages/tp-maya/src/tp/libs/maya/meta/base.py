@@ -1,25 +1,30 @@
 from __future__ import annotations
 
-import os
 import inspect
-from typing import Any
+import os
+import uuid
+from collections.abc import Iterable, Iterator
 from types import ModuleType
-from collections.abc import Iterator, Iterable
+from typing import Any
 
 from loguru import logger
-from maya.api import OpenMaya
 
+from maya.api import OpenMaya
 from tp.libs.python import modules
 from tp.libs.python.decorators import Singleton
 
 from ..om import attributetypes
-from ..wrapper import DGNode, DagNode, Plug
-
-META_CLASS_ATTR_NAME = "tpMetaClass"
-META_VERSION_ATTR_NAME = "tpMetaVersion"
-META_PARENT_ATTR_NAME = "tpMetaParent"
-META_CHILDREN_ATTR_NAME = "tpMetaChildren"
-META_TAG_ATTR_NAME = "tpMetaTag"
+from ..wrapper import DagNode, DGNode, Plug
+from .constants import (
+    META_CHILDREN_ATTR_NAME,
+    META_CLASS_ATTR_NAME,
+    META_GUID_ATTR_NAME,
+    META_PARENT_ATTR_NAME,
+    META_TAG_ATTR_NAME,
+    META_VERSION_ATTR_NAME,
+    RESERVED_ATTR_NAMES,
+    TYPE_TO_MAYA_ATTR,
+)
 
 
 class MetaRegistry(metaclass=Singleton):
@@ -116,6 +121,46 @@ class MetaRegistry(metaclass=Singleton):
         return cls._CACHE.get(type_name)
 
     @classmethod
+    def types(cls) -> dict[str, type[MetaBase]]:
+        """Return a copy of all registered types.
+
+        Returns:
+            A dictionary mapping registry names to their corresponding
+                MetaBase subclasses.
+        """
+
+        return cls._CACHE.copy()
+
+    @classmethod
+    def clear_cache(cls):
+        """Clear all registered metaclasses from the cache.
+
+        This method removes all entries from the internal cache, effectively
+        unregistering all previously registered metaclasses.
+        """
+
+        cls._CACHE.clear()
+
+    @classmethod
+    def unregister_meta_class(cls, class_obj: type[MetaBase]) -> bool:
+        """Unregister a Meta class from the internal cache.
+
+        Args:
+            class_obj: The class object to be unregistered.
+
+        Returns:
+            True if the class was successfully unregistered; False if it
+                was not found in the cache.
+        """
+
+        registry_name = cls.registry_name_for_class(class_obj)
+        if registry_name in cls._CACHE:
+            del cls._CACHE[registry_name]
+            logger.debug(f"Unregistered MetaClass -> {registry_name}")
+            return True
+        return False
+
+    @classmethod
     def register_meta_class(cls, class_obj: type[MetaBase]):
         """Register a Meta class to the internal cache of the system.
 
@@ -135,7 +180,9 @@ class MetaRegistry(metaclass=Singleton):
             registry_name = cls.registry_name_for_class(class_obj)
             if registry_name in cls._CACHE:
                 return
-            logger.debug(f"Registering MetaClass -> {registry_name} | {class_obj}")
+            logger.debug(
+                f"Registering MetaClass -> {registry_name} | {class_obj}"
+            )
             cls._CACHE[registry_name] = class_obj
 
     @classmethod
@@ -194,7 +241,9 @@ class MetaRegistry(metaclass=Singleton):
         if not inspect.ismodule(module):
             return
 
-        for member in modules.iterate_module_members(module, predicate=inspect.isclass):
+        for member in modules.iterate_module_members(
+            module, predicate=inspect.isclass
+        ):
             cls.register_meta_class(member[1])
 
     @classmethod
@@ -246,7 +295,9 @@ class MetaRegistry(metaclass=Singleton):
 
         environment_paths = os.getenv(env_name)
         if environment_paths is None:
-            raise ValueError(f'No environment variable with name "{env_name}" exists!')
+            raise ValueError(
+                f'No environment variable with name "{env_name}" exists!'
+            )
 
         environment_paths = environment_paths.split(os.pathsep)
 
@@ -308,7 +359,9 @@ class MetaFactory(type):
 
         """
 
-        node: DGNode | DagNode | MetaBase | OpenMaya.MObject | None = kwargs.get("node")
+        node: DGNode | DagNode | MetaBase | OpenMaya.MObject | None = (
+            kwargs.get("node")
+        )
         if args:
             node = args[0]
 
@@ -327,8 +380,21 @@ class MetaFactory(type):
         if class_type == registry_name:
             return type.__call__(cls, *args, **kwargs)
 
+        # Check MetaRegistry first
         # noinspection PyUnresolvedReferences
         registered_type = MetaRegistry().get_type(class_type)
+
+        # If not found, check PropertyRegistry
+        if registered_type is None:
+            try:
+                from .properties import PropertyRegistry
+
+                registered_type = PropertyRegistry.get_type(class_type)
+                if registered_type is None:
+                    registered_type = PropertyRegistry.get_hidden(class_type)
+            except ImportError:
+                pass
+
         if registered_type is None:
             return type.__call__(cls, *args, **kwargs)
 
@@ -349,12 +415,17 @@ class MetaBase(DGNode, metaclass=MetaFactory):
 
     Attributes:
         ID: Unique identifier for the metanode. `None` if not set.
+        VERSION: Version string for the metanode class. Defaults to "1.0.0".
         DEFAULT_NAME: Default name used when creating a metanode instance.
             `None` indicates no default name is defined.
+        _do_register: Whether this class should be registered in the public
+            registry. Set to False for internal/private classes.
     """
 
     ID: str | None = None
+    VERSION: str = "1.0.0"
     DEFAULT_NAME: str | None = None
+    _do_register: bool = True
 
     def __init__(
         self,
@@ -395,7 +466,10 @@ class MetaBase(DGNode, metaclass=MetaFactory):
                 name
                 or self.DEFAULT_NAME
                 or "_".join(
-                    [MetaRegistry.registry_name_for_class(self.__class__), "meta"]
+                    [
+                        MetaRegistry.registry_name_for_class(self.__class__),
+                        "meta",
+                    ]
                 ),
                 node_type="network",
                 namespace=namespace,
@@ -472,7 +546,8 @@ class MetaBase(DGNode, metaclass=MetaFactory):
             node: Input node object from which to derive the class name.
 
         Returns:
-            The class name derived from the node's attribute or plug.
+            The class name derived from the node's attribute or plug. Returns
+                an empty string if the attribute cannot be found.
         """
 
         if isinstance(node, MetaBase):
@@ -480,8 +555,8 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         dep = OpenMaya.MFnDependencyNode(node)
         try:
             return dep.findPlug(META_CLASS_ATTR_NAME, False).asString()
-        except RuntimeError as exc:
-            return str(exc)
+        except RuntimeError:
+            return ""
 
     def delete(
         self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True
@@ -507,6 +582,61 @@ class MetaBase(DGNode, metaclass=MetaFactory):
             element.disconnectAll(mod=mod)
 
         return super().delete(mod=mod, apply=apply)
+
+    def delete_all(
+        self, mod: OpenMaya.MDGModifier | None = None, apply: bool = True
+    ) -> bool:
+        """Delete this node and all downstream meta nodes.
+
+        This method recursively deletes all child meta nodes before
+        deleting this node. Useful for cleaning up an entire meta
+        network branch.
+
+        Args:
+            mod: An optional modifier for batched operations.
+            apply: Whether to apply the modifier immediately.
+
+        Returns:
+            True if all nodes were successfully deleted; False otherwise.
+        """
+
+        # Collect all children first (to avoid modifying during iteration).
+        children = list(self.iterate_meta_children(depth_limit=1))
+
+        # Recursively delete children first.
+        for child in children:
+            if hasattr(child, "delete_all"):
+                child.delete_all()
+            else:
+                child.delete()
+
+        # Delete this node.
+        return self.delete(mod=mod, apply=apply)
+
+    def select(self, add: bool = False, replace: bool = True):
+        """Select this node in Maya.
+
+        Args:
+            add: If True, add to the current selection.
+            replace: If True (default), replace the current selection.
+
+        Example:
+            >>> meta.select()  # Select only this node
+            >>> meta.select(add=True)  # Add to selection
+        """
+
+        import maya.cmds as cmds
+
+        if not self.exists():
+            return
+
+        node_name = self.name()
+        if replace and not add:
+            cmds.select(node_name, replace=True)
+        elif add:
+            cmds.select(node_name, add=True)
+        else:
+            cmds.select(node_name)
 
     def setup(self, *args: Any, **kwargs: Any):
         """Represent a configuration setup for the metanode initialization.
@@ -558,7 +688,7 @@ class MetaBase(DGNode, metaclass=MetaFactory):
             },
             {
                 "name": META_VERSION_ATTR_NAME,
-                "value": "1.0.0",
+                "value": self.__class__.VERSION,
                 "type": attributetypes.kMFnDataString,
                 "locked": True,
                 "storable": True,
@@ -588,6 +718,15 @@ class MetaBase(DGNode, metaclass=MetaFactory):
                 "writable": True,
                 "connectable": False,
             },
+            {
+                "name": META_GUID_ATTR_NAME,
+                "value": str(uuid.uuid4()),
+                "type": attributetypes.kMFnDataString,
+                "locked": True,
+                "storable": True,
+                "writable": True,
+                "connectable": False,
+            },
         ]
 
     def metaclass_type(self) -> str:
@@ -601,6 +740,58 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         """
 
         return self.attribute(META_CLASS_ATTR_NAME).value()
+
+    def version(self) -> str:
+        """Return the version string stored on the metanode.
+
+        Returns:
+            The version string stored in the metanode's version attribute.
+        """
+
+        return self.attribute(META_VERSION_ATTR_NAME).value()
+
+    def tag(self) -> str:
+        """Return the tag value stored on the metanode.
+
+        Returns:
+            The tag string stored in the metanode's tag attribute.
+        """
+
+        return self.attribute(META_TAG_ATTR_NAME).value()
+
+    def set_tag(self, tag: str, mod: OpenMaya.MDGModifier | None = None):
+        """Set the tag value on the metanode.
+
+        Args:
+            tag: The tag string to set.
+            mod: An optional modifier to apply the change.
+        """
+
+        tag_plug = self.attribute(META_TAG_ATTR_NAME)
+        tag_plug.set(tag, mod=mod)
+
+    def __eq__(self, other: object) -> bool:
+        """Check equality between two MetaBase instances based on their MObject.
+
+        Args:
+            other: The other object to compare with.
+
+        Returns:
+            True if both objects reference the same Maya node; False otherwise.
+        """
+
+        if not isinstance(other, MetaBase):
+            return False
+        return self.object() == other.object()
+
+    def __hash__(self) -> int:
+        """Return a hash based on the MObject handle for use in sets and dicts.
+
+        Returns:
+            Hash value for the meta node.
+        """
+
+        return OpenMaya.MObjectHandle(self.object()).hashCode()
 
     def is_root(self) -> bool:
         """Determine if the current object is the root by iterating over its
@@ -616,9 +807,9 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         """
 
         for _ in self.iterate_meta_parents():
-            return True
+            return False
 
-        return False
+        return True
 
     def connect_to(self, attribute_name: str, node: DGNode) -> Plug:
         """Connect an attribute on the current object to the "message" plug
@@ -645,7 +836,9 @@ class MetaBase(DGNode, metaclass=MetaFactory):
             destination_plug = self.attribute(attribute_name)
         else:
             new_attr = self.addAttribute(
-                attribute_name, value=None, type=attributetypes.kMFnMessageAttribute
+                attribute_name,
+                value=None,
+                type=attributetypes.kMFnMessageAttribute,
             )
             if new_attr is not None:
                 destination_plug = new_attr
@@ -678,6 +871,450 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         source_plug.connect(destination_plug)
 
         return destination_plug
+
+    def connect_node(
+        self,
+        node: DGNode,
+        attribute_name: str,
+        mod: OpenMaya.MDGModifier | None = None,
+    ) -> Plug:
+        """Connect a scene node to this meta node via a named attribute.
+
+        This is a convenience alias for connect_to() with clearer semantics.
+        The connection is made from the scene node's message attribute to
+        a message attribute on this meta node.
+
+        Args:
+            node: The scene node to connect.
+            attribute_name: Name of the attribute to create/use on this meta node.
+            mod: Optional modifier for batched operations.
+
+        Returns:
+            The destination plug on this meta node.
+
+        Example:
+            >>> meta.connect_node(joint, "rootJoint")
+            >>> meta.connect_node(mesh, "bodyMesh")
+        """
+
+        return self.connect_to(attribute_name, node)
+
+    def disconnect_node(
+        self,
+        node: DGNode,
+        attribute_name: str | None = None,
+        mod: OpenMaya.MDGModifier | None = None,
+    ):
+        """Disconnect a scene node from this meta node.
+
+        If attribute_name is provided, only disconnects from that specific
+        attribute. If None, disconnects from all attributes where this node
+        is connected.
+
+        Args:
+            node: The scene node to disconnect.
+            attribute_name: Specific attribute to disconnect from.
+                If None, disconnects from all attributes.
+            mod: Optional modifier for batched operations.
+        """
+
+        modifier = mod or OpenMaya.MDGModifier()
+        node_mobj = node.object()
+
+        if attribute_name is not None:
+            # Disconnect from specific attribute
+            if self.hasAttribute(attribute_name):
+                plug = self.attribute(attribute_name)
+                source = plug.source()
+                if source is not None and source.node().object() == node_mobj:
+                    # Disconnect: source -> destination
+                    modifier.disconnect(source.plug(), plug.plug())
+                    modifier.doIt()
+        else:
+            # Disconnect from all attributes
+            for plug in self.iterateExtraAttributes(
+                skip=tuple(RESERVED_ATTR_NAMES)
+            ):
+                if (
+                    plug.plug()
+                    .attribute()
+                    .hasFn(OpenMaya.MFn.kMessageAttribute)
+                ):
+                    source = plug.source()
+                    if (
+                        source is not None
+                        and source.node().object() == node_mobj
+                    ):
+                        modifier.disconnect(source.plug(), plug.plug())
+                        modifier.doIt()
+
+    def get_connected_nodes(
+        self,
+        attribute_name: str | None = None,
+        include_meta: bool = False,
+    ) -> list[DGNode]:
+        """Get scene nodes connected to this meta node.
+
+        Args:
+            attribute_name: If provided, returns only nodes connected to
+                that specific attribute. If None, returns all connected nodes.
+            include_meta: If True, includes other meta nodes in the result.
+                If False (default), only returns non-meta scene nodes.
+
+        Returns:
+            List of connected DGNode instances.
+
+        Example:
+            >>> joints = meta.get_connected_nodes("joints")
+            >>> all_connected = meta.get_connected_nodes()
+        """
+
+        connected: list[DGNode] = []
+
+        if attribute_name is not None:
+            # Get nodes from specific attribute
+            if self.hasAttribute(attribute_name):
+                plug = self.attribute(attribute_name)
+                if plug.plug().isArray:
+                    for element in plug:
+                        source = element.source()
+                        if source is not None:
+                            node = source.node()
+                            if include_meta or not is_meta_node(node):
+                                connected.append(node)
+                else:
+                    source = plug.source()
+                    if source is not None:
+                        node = source.node()
+                        if include_meta or not is_meta_node(node):
+                            connected.append(node)
+        else:
+            # Get nodes from all message attributes (excluding reserved)
+            for plug in self.iterateExtraAttributes(
+                skip=tuple(RESERVED_ATTR_NAMES)
+            ):
+                if (
+                    plug.plug()
+                    .attribute()
+                    .hasFn(OpenMaya.MFn.kMessageAttribute)
+                ):
+                    if plug.plug().isArray:
+                        for element in plug:
+                            source = element.source()
+                            if source is not None:
+                                node = source.node()
+                                if include_meta or not is_meta_node(node):
+                                    connected.append(node)
+                    else:
+                        source = plug.source()
+                        if source is not None:
+                            node = source.node()
+                            if include_meta or not is_meta_node(node):
+                                connected.append(node)
+
+        return connected
+
+    @property
+    def data(self) -> dict[str, Any]:
+        """Return all user-defined attributes as a dictionary.
+
+        This property collects all attributes on the node that are not part
+        of the reserved metadata attributes and returns them as a dictionary.
+
+        Returns:
+            A dictionary mapping attribute names to their values.
+        """
+
+        data_dict: dict[str, Any] = {}
+        # Convert frozenset to tuple for startswith compatibility
+        skip_attrs = tuple(RESERVED_ATTR_NAMES)
+        for plug in self.iterateExtraAttributes(skip=skip_attrs):
+            try:
+                attr_name = plug.name().split(".")[-1]
+                data_dict[attr_name] = plug.value()
+            except (RuntimeError, AttributeError):
+                continue
+        return data_dict
+
+    @data.setter
+    def data(self, values: dict[str, Any]):
+        """Set multiple attributes from a dictionary.
+
+        This setter allows bulk-setting of attributes by passing a dictionary.
+        Attributes that don't exist will be created with an appropriate type.
+
+        Args:
+            values: A dictionary mapping attribute names to values.
+        """
+
+        for attr_name, value in values.items():
+            self.set(attr_name, value)
+
+    def get(
+        self,
+        attr_name: str,
+        default: Any = None,
+        auto_create: bool = False,
+        attr_type: int | None = None,
+    ) -> Any:
+        """Get an attribute value by name.
+
+        This method retrieves the value of an attribute. If the attribute
+        doesn't exist and `auto_create` is True, it will be created with
+        the given default value.
+
+        Args:
+            attr_name: The name of the attribute to get.
+            default: The default value to return if the attribute doesn't
+                exist and auto_create is False.
+            auto_create: If True and the attribute doesn't exist, create it
+                with the default value.
+            attr_type: The Maya attribute type to use when auto-creating.
+                If None, the type is inferred from the default value.
+
+        Returns:
+            The attribute value, or the default if the attribute doesn't exist.
+        """
+
+        if not self.hasAttribute(attr_name):
+            if auto_create and default is not None:
+                self.set(attr_name, default, attr_type=attr_type)
+                return default
+            return default
+
+        try:
+            plug = self.attribute(attr_name)
+            value = plug.value()
+            return value if value is not None else default
+        except (RuntimeError, AttributeError):
+            return default
+
+    def set(
+        self,
+        attr_name: str,
+        value: Any,
+        attr_type: int | None = None,
+        mod: OpenMaya.MDGModifier | None = None,
+    ):
+        """Set an attribute value by name, creating it if necessary.
+
+        This method sets the value of an attribute. If the attribute doesn't
+        exist, it will be created with the appropriate type.
+
+        Args:
+            attr_name: The name of the attribute to set.
+            value: The value to set.
+            attr_type: The Maya attribute type to use when creating.
+                If None, the type is inferred from the value type.
+            mod: An optional modifier to apply the change.
+
+        Raises:
+            ValueError: If the attribute cannot be created or set.
+        """
+
+        if attr_name in RESERVED_ATTR_NAMES:
+            raise ValueError(
+                f"Cannot set reserved attribute '{attr_name}'. "
+                f"Use the dedicated method instead."
+            )
+
+        if not self.hasAttribute(attr_name):
+            # Determine attribute type from value if not specified
+            if attr_type is None:
+                attr_type = TYPE_TO_MAYA_ATTR.get(
+                    type(value), attributetypes.kMFnDataString
+                )
+
+            # Create the attribute
+            self.addAttribute(
+                attr_name,
+                value=value,
+                type=attr_type,
+            )
+        else:
+            # Set existing attribute
+            plug = self.attribute(attr_name)
+            plug.set(value, mod=mod)
+
+    def data_equals(self, other_data: dict[str, Any]) -> bool:
+        """Compare this node's data with a dictionary.
+
+        Checks if all key-value pairs in `other_data` match the corresponding
+        attributes on this node. Keys in `other_data` that don't exist on
+        the node are considered non-matching.
+
+        Args:
+            other_data: Dictionary of attribute names and expected values.
+
+        Returns:
+            True if all provided values match, False otherwise.
+
+        Example:
+            >>> if meta.data_equals({"rigType": "FK", "side": "L"}):
+            ...     print("Data matches!")
+        """
+
+        for attr_name, expected_value in other_data.items():
+            if not self.hasAttribute(attr_name):
+                return False
+            actual_value = self.get(attr_name)
+            if actual_value != expected_value:
+                return False
+        return True
+
+    def bake_to_object(
+        self,
+        obj: DGNode,
+        prefix: str = "meta_",
+        include_class_info: bool = True,
+    ):
+        """Serialize meta node data as attributes on a scene object.
+
+        Creates attributes on the target object containing this meta node's
+        data. This allows storing metadata directly on scene objects for
+        export or transfer.
+
+        Args:
+            obj: The scene object to bake data to.
+            prefix: Prefix for attribute names to avoid collisions.
+            include_class_info: If True, includes the meta class type and
+                version as attributes.
+
+        Example:
+            >>> meta.bake_to_object(joint, prefix="rigMeta_")
+        """
+
+        from ..om import nodes as om_nodes
+
+        # Bake class info if requested
+        if include_class_info:
+            class_attr_name = f"{prefix}class"
+            version_attr_name = f"{prefix}version"
+
+            if not obj.hasAttribute(class_attr_name):
+                obj.addAttribute(
+                    class_attr_name,
+                    value=self.metaclass_type(),
+                    type=attributetypes.kMFnDataString,
+                )
+            else:
+                obj.attribute(class_attr_name).set(self.metaclass_type())
+
+            if not obj.hasAttribute(version_attr_name):
+                obj.addAttribute(
+                    version_attr_name,
+                    value=self.version(),
+                    type=attributetypes.kMFnDataString,
+                )
+            else:
+                obj.attribute(version_attr_name).set(self.version())
+
+        # Bake user data
+        for attr_name, value in self.data.items():
+            baked_attr_name = f"{prefix}{attr_name}"
+
+            # Determine attribute type
+            attr_type = TYPE_TO_MAYA_ATTR.get(
+                type(value), attributetypes.kMFnDataString
+            )
+
+            # Convert non-string values to string for safe storage
+            if attr_type == attributetypes.kMFnDataString and not isinstance(
+                value, str
+            ):
+                value = str(value)
+
+            if not obj.hasAttribute(baked_attr_name):
+                try:
+                    obj.addAttribute(
+                        baked_attr_name,
+                        value=value,
+                        type=attr_type,
+                    )
+                except Exception:
+                    # Fall back to string
+                    obj.addAttribute(
+                        baked_attr_name,
+                        value=str(value),
+                        type=attributetypes.kMFnDataString,
+                    )
+            else:
+                obj.attribute(baked_attr_name).set(value)
+
+    def bake_to_connected(self, prefix: str = "meta_"):
+        """Bake data to all connected scene objects.
+
+        Calls bake_to_object for each scene node connected to this meta node.
+
+        Args:
+            prefix: Prefix for attribute names to avoid collisions.
+
+        Example:
+            >>> meta.bake_to_connected()
+        """
+
+        for node in self.get_connected_nodes():
+            self.bake_to_object(node, prefix=prefix)
+
+    @classmethod
+    def load_from_object(
+        cls,
+        obj: DGNode,
+        prefix: str = "meta_",
+        create_if_missing: bool = True,
+    ) -> MetaBase | None:
+        """Reconstruct a meta node from baked attributes on a scene object.
+
+        Reads baked attributes from the object and creates a new meta node
+        with the same data. If class info was baked, uses the correct class.
+
+        Args:
+            obj: The scene object to load data from.
+            prefix: Prefix that was used when baking.
+            create_if_missing: If True, creates a new meta node. If False,
+                returns None if no baked data is found.
+
+        Returns:
+            A new MetaBase instance (or subclass) with the loaded data,
+            or None if no baked data was found and create_if_missing is False.
+
+        Example:
+            >>> meta = MetaBase.load_from_object(joint, prefix="rigMeta_")
+        """
+
+        class_attr_name = f"{prefix}class"
+        version_attr_name = f"{prefix}version"
+
+        # Check if baked data exists
+        if not obj.hasAttribute(class_attr_name):
+            if not create_if_missing:
+                return None
+            # Create with base class if no class info
+            meta_class = cls
+        else:
+            # Get the class type
+            class_type = obj.attribute(class_attr_name).value()
+            meta_class = MetaRegistry.get_type(class_type)
+            if meta_class is None:
+                meta_class = cls
+
+        # Create the meta node
+        meta = meta_class()
+
+        # Load user data - iterate object attributes looking for prefix
+        skip_attrs = {class_attr_name, version_attr_name}
+        for plug in obj.iterateExtraAttributes():
+            attr_name = plug.name().split(".")[-1]
+            if attr_name.startswith(prefix) and attr_name not in skip_attrs:
+                # Remove prefix to get original attribute name
+                original_name = attr_name[len(prefix) :]
+                try:
+                    value = plug.value()
+                    meta.set(original_name, value)
+                except Exception:
+                    continue
+
+        return meta
 
     def meta_root(self) -> MetaBase | None:
         """Determine the root metadata object in a hierarchical structure.
@@ -753,7 +1390,9 @@ class MetaBase(DGNode, metaclass=MetaFactory):
             return
         for child_element in parent_plug:
             for dest in child_element.destinations():
-                parent_meta = MetaBase(dest.node().object(), init_defaults=False)
+                parent_meta = MetaBase(
+                    dest.node().object(), init_defaults=False
+                )
                 if not check_type:
                     yield parent_meta
                 else:
@@ -766,7 +1405,9 @@ class MetaBase(DGNode, metaclass=MetaFactory):
                     ):
                         yield parent_meta
                 if recursive:
-                    for i in parent_meta.iterate_meta_parents(recursive=recursive):
+                    for i in parent_meta.iterate_meta_parents(
+                        recursive=recursive, check_type=check_type
+                    ):
                         yield i
 
     def meta_parents(
@@ -796,7 +1437,9 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         """
 
         return list(
-            self.iterate_meta_parents(recursive=recursive, check_type=check_type)
+            self.iterate_meta_parents(
+                recursive=recursive, check_type=check_type
+            )
         )
 
     def iterate_meta_children(
@@ -842,7 +1485,10 @@ class MetaBase(DGNode, metaclass=MetaFactory):
             if child is None:
                 continue
             child = child.node()
-            if not child.hasAttribute(META_CHILDREN_ATTR_NAME) or child in _visited:
+            if (
+                not child.hasAttribute(META_CHILDREN_ATTR_NAME)
+                or child in _visited
+            ):
                 continue
             _visited.add(child)
             child_meta = MetaBase(child.object(), init_defaults=False)
@@ -853,11 +1499,14 @@ class MetaBase(DGNode, metaclass=MetaFactory):
                     yield child_meta
                 elif (
                     isinstance(check_type, str)
-                    and check_type == child_meta.attribute(META_CLASS_ATTR_NAME).value()
+                    and check_type
+                    == child_meta.attribute(META_CLASS_ATTR_NAME).value()
                 ):
                     yield child_meta
             for sub_child in child_meta.iterate_meta_children(
-                depth_limit=depth_limit - 1, check_type=check_type, _visited=_visited
+                depth_limit=depth_limit - 1,
+                check_type=check_type,
+                _visited=_visited,
             ):
                 yield sub_child
 
@@ -881,8 +1530,90 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         """
 
         return list(
-            self.iterate_meta_children(depth_limit=depth_limit, check_type=check_type)
+            self.iterate_meta_children(
+                depth_limit=depth_limit, check_type=check_type
+            )
         )
+
+    def get_upstream(
+        self, check_type: type[MetaBase] | str
+    ) -> MetaBase | None:
+        """Find the first meta node of the given type upstream (toward parents).
+
+        This method traverses up the meta node hierarchy (toward the root)
+        looking for a node that matches the specified type.
+
+        Args:
+            check_type: The type to search for. Can be a MetaBase subclass
+                or a string matching the metaclass type attribute.
+
+        Returns:
+            The first matching meta node found upstream, or None if not found.
+        """
+
+        for parent in self.iterate_meta_parents(
+            recursive=True, check_type=check_type
+        ):
+            return parent
+        return None
+
+    def get_downstream(
+        self, check_type: type[MetaBase] | str
+    ) -> MetaBase | None:
+        """Find the first meta node of the given type downstream (toward children).
+
+        This method traverses down the meta node hierarchy (toward the leaves)
+        looking for a node that matches the specified type.
+
+        Args:
+            check_type: The type to search for. Can be a MetaBase subclass
+                or a string matching the metaclass type attribute.
+
+        Returns:
+            The first matching meta node found downstream, or None if not found.
+        """
+
+        for child in self.iterate_meta_children(check_type=check_type):
+            return child
+        return None
+
+    def get_all_upstream(
+        self, check_type: type[MetaBase] | str | None = None
+    ) -> list[MetaBase]:
+        """Find all meta nodes of the given type upstream (toward parents).
+
+        This method traverses up the meta node hierarchy (toward the root)
+        and returns all nodes that match the specified type.
+
+        Args:
+            check_type: The type to search for. Can be a MetaBase subclass,
+                a string matching the metaclass type attribute, or None to
+                return all upstream nodes.
+
+        Returns:
+            A list of all matching meta nodes found upstream.
+        """
+
+        return self.meta_parents(recursive=True, check_type=check_type)
+
+    def get_all_downstream(
+        self, check_type: type[MetaBase] | str | None = None
+    ) -> list[MetaBase]:
+        """Find all meta nodes of the given type downstream (toward children).
+
+        This method traverses down the meta node hierarchy (toward the leaves)
+        and returns all nodes that match the specified type.
+
+        Args:
+            check_type: The type to search for. Can be a MetaBase subclass,
+                a string matching the metaclass type attribute, or None to
+                return all downstream nodes.
+
+        Returns:
+            A list of all matching meta nodes found downstream.
+        """
+
+        return self.meta_children(check_type=check_type)
 
     def iterate_children(
         self, filter_types: set | None = None, include_meta: bool = False
@@ -912,7 +1643,9 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         filter_types = filter_types or ()
         for _, destination in self.iterateConnections(False, True):
             dest_node = destination.node()
-            if not filter_types or any(dest_node.hasFn(i) for i in filter_types):
+            if not filter_types or any(
+                dest_node.hasFn(i) for i in filter_types
+            ):
                 if not include_meta and is_meta_node(dest_node):
                     continue
                 yield dest_node
@@ -1042,7 +1775,9 @@ class MetaBase(DGNode, metaclass=MetaFactory):
         parent_plug = self.attribute(META_PARENT_ATTR_NAME)
         next_element = parent_plug.nextAvailableElementPlug()
         next_element.connect(
-            parent.attribute(META_CHILDREN_ATTR_NAME).nextAvailableDestElementPlug(),
+            parent.attribute(
+                META_CHILDREN_ATTR_NAME
+            ).nextAvailableDestElementPlug(),
             mod=mod,
         )
 
@@ -1067,13 +1802,13 @@ class MetaBase(DGNode, metaclass=MetaFactory):
 
         modifier = mod or OpenMaya.MDGModifier()
         parent_plug = self.attribute(META_PARENT_ATTR_NAME)
+        parent_mobj = parent.object() if parent is not None else None
         for element in parent_plug:
             for dest in element.destinations():
-                n = dest.node()
-                if parent is None or n == parent:
-                    element.disconnect(dest, mod=modifier, apply=False)
-        if mod is None:
-            modifier.doIt()
+                dest_node = dest.node()
+                dest_mobj = dest_node.object()
+                if parent is None or dest_mobj == parent_mobj:
+                    element.disconnect(dest, mod=modifier, apply=True)
 
     def remove_all_meta_parents(self):
         """Remove all meta parent connections and deletes related connections.
@@ -1093,6 +1828,55 @@ class MetaBase(DGNode, metaclass=MetaFactory):
                     element.delete()
                 except RuntimeError:
                     pass
+
+    def find_children_by_tag(
+        self, tag: str, depth_limit: int = 256
+    ) -> list[MetaBase]:
+        """Find and return all children with the specified tag.
+
+        Args:
+            tag: The tag string to search for.
+            depth_limit: The maximum depth to search for matching children.
+
+        Returns:
+            A list of child objects that have the specified tag.
+        """
+
+        return [
+            child
+            for child in self.iterate_meta_children(depth_limit=depth_limit)
+            if child.tag() == tag
+        ]
+
+    def to_dict(self, include_children: bool = False) -> dict[str, Any]:
+        """Serialize the metanode data to a dictionary.
+
+        This method exports the metanode's key attributes to a dictionary
+        format, useful for debugging, logging, or data export.
+
+        Args:
+            include_children: If True, recursively includes child metanodes
+                in the output.
+
+        Returns:
+            A dictionary representation of the metanode's data.
+        """
+
+        data: dict[str, Any] = {
+            "name": self.name(),
+            "class": self.metaclass_type(),
+            "version": self.version(),
+            "tag": self.tag(),
+            "is_root": self.is_root(),
+        }
+
+        if include_children:
+            data["children"] = [
+                child.to_dict(include_children=True)
+                for child in self.iterate_meta_children(depth_limit=1)
+            ]
+
+        return data
 
     def _init_meta(
         self, mod: OpenMaya.MDGModifier | OpenMaya.MDagModifier | None = None
@@ -1159,15 +1943,32 @@ def find_meta_nodes_by_class_type(class_type: type | str) -> list[MetaBase]:
         A list of metanodes matching the specified class type.
     """
 
-    class_type_name = str(class_type)
     if inspect.isclass(class_type):
-        # noinspection PyUnresolvedReferences
-        class_type_name = class_type.ID
+        class_type_name = MetaRegistry.registry_name_for_class(class_type)
+    else:
+        class_type_name = str(class_type)
 
     return [
         meta_node
         for meta_node in iterate_scene_meta_nodes()
         if meta_node.attribute(META_CLASS_ATTR_NAME).value() == class_type_name
+    ]
+
+
+def find_meta_nodes_by_tag(tag: str) -> list[MetaBase]:
+    """Find all metanodes in the scene that have the specified tag.
+
+    Args:
+        tag: The tag string to search for.
+
+    Returns:
+        A list of metanodes with the matching tag.
+    """
+
+    return [
+        meta_node
+        for meta_node in iterate_scene_meta_nodes()
+        if meta_node.tag() == tag
     ]
 
 
@@ -1198,7 +1999,24 @@ def is_meta_node(node: DGNode) -> bool:
     if not MetaRegistry._CACHE:
         MetaRegistry()
 
-    return MetaRegistry.is_in_registry(node.attribute(META_CLASS_ATTR_NAME).asString())
+    class_name = node.attribute(META_CLASS_ATTR_NAME).asString()
+
+    # Check both MetaRegistry and PropertyRegistry
+    if MetaRegistry.is_in_registry(class_name):
+        return True
+
+    # Check PropertyRegistry (imported locally to avoid circular import)
+    try:
+        from .properties import PropertyRegistry
+
+        if PropertyRegistry.is_in_registry(class_name):
+            return True
+        if PropertyRegistry.get_hidden(class_name) is not None:
+            return True
+    except ImportError:
+        pass
+
+    return False
 
 
 def is_meta_node_of_types(node: DGNode, class_types: Iterable[str]) -> bool:
@@ -1228,7 +2046,9 @@ def is_meta_node_of_types(node: DGNode, class_types: Iterable[str]) -> bool:
     return MetaRegistry.is_in_registry(type_str)
 
 
-def create_meta_node_by_type(type_name: str, *args: tuple, **kwargs) -> MetaBase | None:
+def create_meta_node_by_type(
+    type_name: str, *args: tuple, **kwargs
+) -> MetaBase | None:
     """Create an instance of a metanode based on the provided type name by
     retrieving the class type from a registry.
 
@@ -1254,8 +2074,8 @@ def create_meta_node_by_type(type_name: str, *args: tuple, **kwargs) -> MetaBase
     if result is None:
         logger.warning(
             f'No metanode class found for type "{type_name}". '
-            "Ensure the type is registered in the `MetaRegistry`."
-            f"Available types: {MetaRegistry()._CACHE}"
+            "Ensure the type is registered in the `MetaRegistry`. "
+            f"Available types: {list(MetaRegistry.types().keys())}"
         )
 
     return result
@@ -1294,3 +2114,138 @@ def connected_meta_nodes(node: DGNode) -> list[MetaBase]:
         meta_nodes.append(MetaBase(node=obj.object(), init_defaults=False))
 
     return meta_nodes
+
+
+def is_in_network(node: DGNode) -> bool:
+    """Check if a scene node is connected to any meta network.
+
+    This function checks if the given node has its message attribute
+    connected to any meta node.
+
+    Args:
+        node: The scene node to check.
+
+    Returns:
+        True if the node is connected to at least one meta node.
+
+    Example:
+        >>> if is_in_network(joint):
+        ...     print("Joint is part of a meta network")
+    """
+
+    if is_meta_node(node):
+        return True
+
+    try:
+        message_plug = node.attribute("message")
+        for destination in message_plug.destinations():
+            dest_node = destination.node()
+            if is_meta_node(dest_node):
+                return True
+    except Exception:
+        pass
+
+    return False
+
+
+def get_network_entries(
+    node: DGNode,
+    network_type: type[MetaBase] | None = None,
+) -> list[MetaBase]:
+    """Get all meta nodes connected to a scene node.
+
+    This function finds all meta nodes that the given scene node is
+    connected to. Optionally filters by meta node type.
+
+    Args:
+        node: The scene node to query.
+        network_type: If provided, only returns meta nodes of this type.
+            If None, returns all connected meta nodes.
+
+    Returns:
+        List of MetaBase instances connected to the node.
+
+    Example:
+        >>> entries = get_network_entries(joint)
+        >>> rig_entries = get_network_entries(joint, RigMeta)
+    """
+
+    entries: list[MetaBase] = []
+
+    if is_meta_node(node):
+        # Node itself is a meta node
+        meta = MetaBase(node=node.object(), init_defaults=False)
+        if network_type is None or isinstance(meta, network_type):
+            entries.append(meta)
+        return entries
+
+    try:
+        message_plug = node.attribute("message")
+        for destination in message_plug.destinations():
+            dest_node = destination.node()
+            if is_meta_node(dest_node):
+                meta = MetaBase(node=dest_node.object(), init_defaults=False)
+                if network_type is None:
+                    entries.append(meta)
+                elif isinstance(meta, network_type):
+                    entries.append(meta)
+                elif (
+                    meta.metaclass_type()
+                    == MetaRegistry.registry_name_for_class(network_type)
+                ):
+                    # Re-wrap with correct type
+                    entries.append(
+                        network_type(
+                            node=dest_node.object(), init_defaults=False
+                        )
+                    )
+    except Exception:
+        pass
+
+    return entries
+
+
+def delete_network(
+    root: MetaBase, mod: OpenMaya.MDGModifier | None = None
+) -> bool:
+    """Delete an entire meta network starting from the root node.
+
+    This function recursively deletes all meta nodes in a network,
+    starting from the given root and traversing all children.
+
+    Args:
+        root: The root meta node of the network to delete.
+        mod: Optional modifier for batched operations.
+
+    Returns:
+        True if the network was successfully deleted.
+
+    Example:
+        >>> root = find_meta_nodes_by_class_type(RigCoreMeta)[0]
+        >>> delete_network(root)
+    """
+
+    return root.delete_all(mod=mod)
+
+
+def get_all_meta_nodes_of_type(
+    meta_type: type[MetaBase],
+) -> list[MetaBase]:
+    """Get all meta nodes of a specific type in the scene.
+
+    This is a convenience wrapper around find_meta_nodes_by_class_type
+    that accepts a class type instead of a string.
+
+    Args:
+        meta_type: The meta class type to search for.
+
+    Returns:
+        List of all meta nodes of the specified type.
+
+    Example:
+        >>> all_rigs = get_all_meta_nodes_of_type(RigMeta)
+        >>> for rig in all_rigs:
+        ...     print(rig.name())
+    """
+
+    return find_meta_nodes_by_class_type(meta_type)
