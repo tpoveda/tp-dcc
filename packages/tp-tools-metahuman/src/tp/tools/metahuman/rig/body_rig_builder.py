@@ -107,6 +107,9 @@ class MetaHumanBodyRigBuilder:
         # Metanode for rig tracking
         self._meta_rig: MetaMetaHumanRig | None = None
 
+        # Layer references
+        self._controls_layer: MetaHumanControlsLayer | None = None
+
         # Initialize builders.
         self._control_builder = ControlBuilder(self.RIG_CTRLS_GROUP)
         self._skeleton_builder = SkeletonBuilder()
@@ -155,6 +158,9 @@ class MetaHumanBodyRigBuilder:
 
         # Build FK/IK systems for limbs
         self._build_limb_systems()
+
+        # Create controls layer
+        self._create_controls_layer()
 
         # Create skeleton controls
         self._create_skeleton_controls()
@@ -415,6 +421,49 @@ class MetaHumanBodyRigBuilder:
             if joint_node is not None:
                 skeleton_layer.add_joint(joint_node)
 
+    def _create_controls_layer(self) -> None:
+        """Create the controls layer for tracking all rig controls."""
+
+        from typing import cast
+
+        if self._meta_rig is None:
+            return
+
+        # Create controls layer
+        layer = self._meta_rig.create_layer(
+            meta_constants.METAHUMAN_CONTROLS_LAYER_TYPE,
+            "controls_layer",
+            "controls_layer_meta",
+        )
+
+        if layer is None:
+            logger.warning("Failed to create controls layer")
+            return
+
+        # Cast to MetaHumanControlsLayer for proper type hints
+        self._controls_layer = cast(MetaHumanControlsLayer, layer)
+
+        logger.info("Controls layer created: %s", self._controls_layer.name())
+
+    def _register_control(self, control_name: str) -> None:
+        """Register a control with the controls layer.
+
+        Args:
+            control_name: Name of the control node to register.
+        """
+
+        from tp.libs.maya.wrapper import node_by_name
+
+        if self._controls_layer is None:
+            return
+
+        if not object_exists(control_name):
+            return
+
+        control_node = node_by_name(control_name)
+        if control_node is not None:
+            self._controls_layer.add_control(control_node)
+
     def _build_limb_systems(self) -> None:
         """Build FK/IK systems for all limbs."""
 
@@ -479,6 +528,9 @@ class MetaHumanBodyRigBuilder:
                 connect_attribute(
                     f"{result.control}.rotate", f"{motion_joint}.rotate"
                 )
+
+            # Register control with controls layer
+            self._register_control(result.control)
 
         # Parent controls their hierarchy.
         self._parent_skeleton_controls()
@@ -614,12 +666,15 @@ class MetaHumanBodyRigBuilder:
 
         # Global control.
         self._control_builder.create_global_control()
+        self._register_control("global_ctrl")
 
         # Body offset control.
         self._control_builder.create_body_offset_control()
+        self._register_control("body_offset_ctrl")
 
         # Body control.
         self._control_builder.create_body_control()
+        self._register_control("body_ctrl")
 
         # Parent hierarchy.
         cmds.parent("body_offset_offset", "global_ctrl")
@@ -710,6 +765,9 @@ class MetaHumanBodyRigBuilder:
             name=f"{result.control}_parentCon",
         )
 
+        # Register control with controls layer
+        self._register_control(result.control)
+
     def _create_ik_limb_controls_for_side(self, side: Side) -> None:
         """Create IK controls for a side."""
         s = side.value
@@ -734,6 +792,10 @@ class MetaHumanBodyRigBuilder:
         foot_result = self._control_builder.create_ik_limb_control(
             name="foot", side=side, match_to=foot_match
         )
+
+        # Register IK controls
+        self._register_control(hand_result.control)
+        self._register_control(foot_result.control)
 
         # Parent IK controls to root.
         cmds.parentConstraint(
@@ -824,6 +886,10 @@ class MetaHumanBodyRigBuilder:
         cmds.parentConstraint(
             "root_ctrl", f"leg_pole_vector_{s}_offset", maintainOffset=True
         )
+
+        # Register pole vector controls
+        self._register_control(arm_result.control)
+        self._register_control(leg_result.control)
 
     def _create_fkik_switches_for_side(self, side: Side) -> None:
         """Create FK/IK switches for a side.
