@@ -1,0 +1,24 @@
+name: "tp-game-ruin"
+version: "0.1.0"
+author: "Tomi Poveda"
+authorEmail: "tpovedatd@gmail.com"
+description: "Configuration files, tools and libraries specific for RUIN game project."
+displayName: "TP Game RUIN"
+commands:
+  - '{self}/scripts/tp_game_ruin.py'
+documentation:
+  masterDoc: "README.md"
+  sourceCodeFolder: "{self}/src"
+  sourceFolder: "{self}/docs"
+environment:
+  PYTHONPATH:
+  - "{self}"
+  - "{self}/src"
+  TP_DCC_BASE_PATHS:
+    - "{self}"
+    - "{self}/src"
+  TP_NAMING_PRESET_PATHS:
+    - "{self}/presets"
+dependencies: []
+tests:
+  - "{self}/tests"

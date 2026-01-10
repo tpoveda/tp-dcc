@@ -1,0 +1,157 @@
+name: ruin-weapons
+description: Weapon asset naming configuration for RUIN Game project
+rules:
+  - name: weapon
+    creator: tpoveda
+    description: Main weapon asset naming.
+    expression: "WPN_{weapon_class}_{weapon_name}_{variant}"
+    exampleFields:
+      weapon_class: Sword
+      weapon_name: Excalibur
+      variant: A
+
+  - name: weapon_file
+    creator: tpoveda
+    description: Weapon file naming.
+    expression: "WPN_{weapon_class}_{weapon_name}_{weapon_file_type}"
+    exampleFields:
+      weapon_class: Sword
+      weapon_name: Excalibur
+      weapon_file_type: MDL
+
+  - name: weapon_mesh
+    creator: tpoveda
+    description: Weapon mesh naming.
+    expression: "SM_WPN_{weapon_class}_{weapon_name}_{variant}"
+    exampleFields:
+      weapon_class: Sword
+      weapon_name: Excalibur
+      variant: A
+
+  - name: weapon_mesh_lod
+    creator: tpoveda
+    description: Weapon mesh with LOD.
+    expression: "SM_WPN_{weapon_class}_{weapon_name}_{variant}_LOD{lod_level}"
+    exampleFields:
+      weapon_class: Sword
+      weapon_name: Excalibur
+      variant: A
+      lod_level: "0"
+
+  - name: weapon_part
+    creator: tpoveda
+    description: Weapon component/part naming.
+    expression: "WPN_{weapon_name}_{weapon_part_type}_{variant}"
+    exampleFields:
+      weapon_name: Excalibur
+      weapon_part_type: Blade
+      variant: A
+
+  - name: weapon_attachment
+    creator: tpoveda
+    description: Weapon attachment/mod naming.
+    expression: "WPN_ATT_{attachment_type}_{attachment_name}_{variant}"
+    exampleFields:
+      attachment_type: Scope
+      attachment_name: Holographic
+      variant: A
+
+  - name: weapon_vfx
+    creator: tpoveda
+    description: Weapon VFX naming.
+    expression: "VFX_WPN_{weapon_name}_{vfx_type}"
+    exampleFields:
+      weapon_name: Excalibur
+      vfx_type: Trail
+
+  - name: weapon_socket
+    creator: tpoveda
+    description: Weapon socket naming.
+    expression: "SOCKET_{socket_purpose}_{weapon_class}"
+    exampleFields:
+      socket_purpose: Grip
+      weapon_class: Sword
+
+tokens:
+  - name: weapon_class
+    description: Class/category of the weapon.
+    table:
+      sword: Sword
+      axe: Axe
+      mace: Mace
+      spear: Spear
+      dagger: Dagger
+      bow: Bow
+      crossbow: Crossbow
+      staff: Staff
+      wand: Wand
+      shield: Shield
+      pistol: Pistol
+      rifle: Rifle
+      shotgun: Shotgun
+      smg: SMG
+      launcher: Launcher
+      grenade: Grenade
+      throwable: Throwable
+
+  - name: weapon_name
+    description: Name of the weapon (PascalCase).
+
+  - name: weapon_file_type
+    description: Type of weapon file.
+    table:
+      model: MDL
+      rig: RIG
+      animation: ANM
+      texture: TEX
+      physics: PHY
+
+  - name: weapon_part_type
+    description: Type of weapon part.
+    table:
+      blade: Blade
+      handle: Handle
+      guard: Guard
+      pommel: Pommel
+      sheath: Sheath
+      barrel: Barrel
+      stock: Stock
+      magazine: Magazine
+      trigger: Trigger
+      grip: Grip
+      sight: Sight
+      string: String
+      limb: Limb
+      head: Head
+      shaft: Shaft
+
+  - name: attachment_type
+    description: Type of weapon attachment.
+    table:
+      scope: Scope
+      silencer: Silencer
+      grip: Grip
+      magazine: Magazine
+      laser: Laser
+      flashlight: Flashlight
+      bayonet: Bayonet
+      stock: Stock
+      muzzle: Muzzle
+      charm: Charm
+      gem: Gem
+      rune: Rune
+      enchant: Enchant
+
+  - name: attachment_name
+    description: Name of the attachment (PascalCase).
+
+  - name: socket_purpose
+    description: Purpose of the weapon socket.
+    table:
+      grip: Grip
+      muzzle: Muzzle
+      effect: Effect
+      attachment: Attachment
+      eject: Eject
+      impact: Impact
+

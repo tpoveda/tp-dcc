@@ -1,0 +1,169 @@
+name: ruin-cinematics
+description: Cinematics naming configuration for RUIN Game project
+rules:
+  - name: sequence
+    creator: tpoveda
+    description: Main cinematic sequence naming.
+    expression: "{sequence_type}_{sequence_id}_{sequence_name}"
+    exampleFields:
+      sequence_type: CIN
+      sequence_id: "010045"
+      sequence_name: BattleIntro
+
+  - name: sequence_shot
+    creator: tpoveda
+    description: Sequence shot naming.
+    expression: "{sequence_type}_{sequence_id}_{shot_number}"
+    exampleFields:
+      sequence_type: CIN
+      sequence_id: "010045"
+      shot_number: "0100"
+
+  - name: binding
+    creator: tpoveda
+    description: Convention for the binding names within Sequencer.
+    expression: "{sequence_prefix}_{sequence_name}_{binding_name}"
+    exampleFields:
+      sequence_prefix: CIN010045
+      sequence_name: BattleIntro
+      binding_name: Hero
+
+  - name: camera
+    creator: tpoveda
+    description: Camera naming convention.
+    expression: "CAM_{sequence_id}_{shot_number}_{camera_type}"
+    exampleFields:
+      sequence_id: "010045"
+      shot_number: "0100"
+      camera_type: Main
+
+  - name: camera_rig
+    creator: tpoveda
+    description: Camera rig naming.
+    expression: "CAMRIG_{rig_type}_{sequence_id}_{shot_number}"
+    exampleFields:
+      rig_type: Crane
+      sequence_id: "010045"
+      shot_number: "0100"
+
+  - name: cinematic_actor
+    creator: tpoveda
+    description: Cinematic actor/character naming.
+    expression: "ACTOR_{character_name}_{sequence_id}"
+    exampleFields:
+      character_name: Hero
+      sequence_id: "010045"
+
+  - name: cinematic_prop
+    creator: tpoveda
+    description: Cinematic prop naming.
+    expression: "CPROP_{prop_name}_{sequence_id}_{instance}"
+    exampleFields:
+      prop_name: Sword
+      sequence_id: "010045"
+      instance: "01"
+
+  - name: cinematic_audio
+    creator: tpoveda
+    description: Cinematic audio cue naming.
+    expression: "AUD_{audio_type}_{sequence_id}_{audio_name}"
+    exampleFields:
+      audio_type: VO
+      sequence_id: "010045"
+      audio_name: HeroDialogue
+
+  - name: facial_performance
+    creator: tpoveda
+    description: Facial performance capture naming.
+    expression: "FACE_{character_name}_{sequence_id}_{take}"
+    exampleFields:
+      character_name: Hero
+      sequence_id: "010045"
+      take: "01"
+
+  - name: body_performance
+    creator: tpoveda
+    description: Body performance capture naming.
+    expression: "BODY_{character_name}_{sequence_id}_{take}"
+    exampleFields:
+      character_name: Hero
+      sequence_id: "010045"
+      take: "01"
+
+tokens:
+  - name: sequence_type
+    description: Type of cinematic sequence.
+    table:
+      cinematic: CIN
+      ingame: IG
+      cutscene: CS
+      intro: INTRO
+      outro: OUTRO
+      trailer: TRL
+      marketing: MKT
+
+  - name: sequence_id
+    description: Unique sequence identifier (six digits).
+
+  - name: sequence_name
+    description: Descriptive name of the sequence (PascalCase).
+
+  - name: sequence_prefix
+    description: Combined sequence type and ID prefix.
+
+  - name: shot_number
+    description: Shot number within sequence (four digits).
+
+  - name: binding_name
+    description: Name of the sequencer binding.
+
+  - name: camera_type
+    description: Type of camera.
+    table:
+      main: Main
+      wide: Wide
+      close: Close
+      pov: POV
+      action: Action
+      establishing: Establishing
+      tracking: Tracking
+      static: Static
+      handheld: Handheld
+
+  - name: rig_type
+    description: Type of camera rig.
+    table:
+      crane: Crane
+      dolly: Dolly
+      steadicam: Steadicam
+      drone: Drone
+      rail: Rail
+      tripod: Tripod
+      handheld: Handheld
+      car: Car
+
+  - name: audio_type
+    description: Type of audio cue.
+    table:
+      voice_over: VO
+      dialogue: DLG
+      sfx: SFX
+      ambience: AMB
+      music: MUS
+      foley: FOL
+      stinger: STG
+
+  - name: audio_name
+    description: Name of the audio cue.
+
+  - name: take
+    description: Take number (zero-padded two digits).
+
+  - name: instance
+    description: Instance number (zero-padded two digits).
+
+  - name: character_name
+    description: Name of the character in the cinematic.
+
+  - name: prop_name
+    description: Name of the cinematic prop.

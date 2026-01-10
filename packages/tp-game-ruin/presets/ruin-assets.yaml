@@ -1,0 +1,120 @@
+name: ruin-assets
+description: Generic asset naming configuration for RUIN Game project
+rules:
+  - name: prop
+    creator: tpoveda
+    description: Prop asset naming convention.
+    expression: "PRP_{prop_category}_{prop_name}_{variant}"
+    exampleFields:
+      prop_category: Furniture
+      prop_name: Chair
+      variant: A
+
+  - name: prop_lod
+    creator: tpoveda
+    description: Prop with LOD level naming.
+    expression: "PRP_{prop_category}_{prop_name}_{variant}_LOD{lod_level}"
+    exampleFields:
+      prop_category: Furniture
+      prop_name: Chair
+      variant: A
+      lod_level: "0"
+
+  - name: prop_collision
+    creator: tpoveda
+    description: Prop collision mesh naming.
+    expression: "UCX_PRP_{prop_category}_{prop_name}_{variant}_{collision_index}"
+    exampleFields:
+      prop_category: Furniture
+      prop_name: Chair
+      variant: A
+      collision_index: "01"
+
+  - name: destructible
+    creator: tpoveda
+    description: Destructible asset naming.
+    expression: "PRP_{prop_name}_{destruct_state}_{chunk_index}"
+    exampleFields:
+      prop_name: Barrel
+      destruct_state: Destroyed
+      chunk_index: "01"
+
+  - name: modular_piece
+    creator: tpoveda
+    description: Modular asset piece naming.
+    expression: "MOD_{set_name}_{piece_type}_{variant}"
+    exampleFields:
+      set_name: Castle
+      piece_type: Wall
+      variant: A
+
+  - name: decal
+    creator: tpoveda
+    description: Decal asset naming.
+    expression: "DCL_{decal_category}_{decal_name}_{variant}"
+    exampleFields:
+      decal_category: Blood
+      decal_name: Splatter
+      variant: A
+
+tokens:
+  - name: prop_category
+    description: Category of the prop asset.
+    table:
+      furniture: Furniture
+      container: Container
+      debris: Debris
+      foliage: Foliage
+      rock: Rock
+      interactive: Interactive
+      decoration: Decoration
+      light_fixture: LightFixture
+      structural: Structural
+
+  - name: prop_name
+    description: Name of the prop asset (PascalCase).
+
+  - name: destruct_state
+    description: State of the destructible asset.
+    table:
+      pristine: Pristine
+      damaged: Damaged
+      destroyed: Destroyed
+
+  - name: chunk_index
+    description: Index of the destruction chunk (zero-padded two digits).
+
+  - name: collision_index
+    description: Index of the collision mesh (zero-padded two digits).
+
+  - name: set_name
+    description: Name of the modular set.
+
+  - name: piece_type
+    description: Type of modular piece.
+    table:
+      wall: Wall
+      floor: Floor
+      ceiling: Ceiling
+      corner: Corner
+      door: Door
+      window: Window
+      pillar: Pillar
+      beam: Beam
+      stair: Stair
+      railing: Railing
+      trim: Trim
+      roof: Roof
+
+  - name: decal_category
+    description: Category of decal.
+    table:
+      blood: Blood
+      dirt: Dirt
+      damage: Damage
+      graffiti: Graffiti
+      wear: Wear
+      stain: Stain
+      crack: Crack
+      moss: Moss
+

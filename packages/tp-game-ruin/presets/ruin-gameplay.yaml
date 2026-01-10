@@ -1,0 +1,242 @@
+name: ruin-gameplay
+description: Gameplay asset naming configuration for RUIN Game project
+rules:
+  - name: level
+    creator: tpoveda
+    description: Level/map naming convention.
+    expression: "LVL_{level_type}_{level_name}"
+    exampleFields:
+      level_type: World
+      level_name: ForestCastle
+
+  - name: level_sublevel
+    creator: tpoveda
+    description: Sublevel naming convention.
+    expression: "LVL_{level_name}_{sublevel_type}_{sublevel_index}"
+    exampleFields:
+      level_name: ForestCastle
+      sublevel_type: Lighting
+      sublevel_index: "01"
+
+  - name: gameplay_actor
+    creator: tpoveda
+    description: Gameplay actor naming.
+    expression: "BP_{actor_type}_{actor_name}"
+    exampleFields:
+      actor_type: Enemy
+      actor_name: Grunt
+
+  - name: trigger
+    creator: tpoveda
+    description: Trigger volume naming.
+    expression: "TRG_{trigger_type}_{trigger_purpose}_{index}"
+    exampleFields:
+      trigger_type: Box
+      trigger_purpose: Combat
+      index: "01"
+
+  - name: spawn_point
+    creator: tpoveda
+    description: Spawn point naming.
+    expression: "SPAWN_{spawn_type}_{spawn_name}_{index}"
+    exampleFields:
+      spawn_type: Enemy
+      spawn_name: Wave1
+      index: "01"
+
+  - name: waypoint
+    creator: tpoveda
+    description: Waypoint/path point naming.
+    expression: "WP_{path_name}_{waypoint_index}"
+    exampleFields:
+      path_name: PatrolRoute
+      waypoint_index: "001"
+
+  - name: interactable
+    creator: tpoveda
+    description: Interactable object naming.
+    expression: "INT_{interaction_type}_{interactable_name}_{index}"
+    exampleFields:
+      interaction_type: Pickup
+      interactable_name: HealthPotion
+      index: "01"
+
+  - name: collectible
+    creator: tpoveda
+    description: Collectible item naming.
+    expression: "COL_{collectible_type}_{collectible_name}_{index}"
+    exampleFields:
+      collectible_type: Lore
+      collectible_name: AncientScroll
+      index: "01"
+
+  - name: checkpoint
+    creator: tpoveda
+    description: Checkpoint naming.
+    expression: "CP_{level_name}_{checkpoint_index}"
+    exampleFields:
+      level_name: ForestCastle
+      checkpoint_index: "01"
+
+  - name: objective
+    creator: tpoveda
+    description: Objective marker naming.
+    expression: "OBJ_{quest_name}_{objective_index}"
+    exampleFields:
+      quest_name: MainQuest
+      objective_index: "01"
+
+  - name: ai_controller
+    creator: tpoveda
+    description: AI controller naming.
+    expression: "AIC_{ai_type}_{controller_name}"
+    exampleFields:
+      ai_type: Enemy
+      controller_name: Grunt
+
+  - name: behavior_tree
+    creator: tpoveda
+    description: Behavior tree naming.
+    expression: "BT_{ai_type}_{behavior_name}"
+    exampleFields:
+      ai_type: Enemy
+      behavior_name: Combat
+
+tokens:
+  - name: level_type
+    description: Type of level.
+    table:
+      world: World
+      dungeon: Dungeon
+      arena: Arena
+      hub: Hub
+      tutorial: Tutorial
+      boss: Boss
+      pvp: PVP
+      test: Test
+
+  - name: level_name
+    description: Name of the level (PascalCase).
+
+  - name: sublevel_type
+    description: Type of sublevel.
+    table:
+      lighting: Lighting
+      geometry: Geometry
+      audio: Audio
+      gameplay: Gameplay
+      streaming: Streaming
+      navmesh: NavMesh
+      foliage: Foliage
+      vfx: VFX
+
+  - name: sublevel_index
+    description: Index of the sublevel (zero-padded two digits).
+
+  - name: actor_type
+    description: Type of gameplay actor.
+    table:
+      enemy: Enemy
+      ally: Ally
+      neutral: Neutral
+      boss: Boss
+      hazard: Hazard
+      vehicle: Vehicle
+      mount: Mount
+
+  - name: actor_name
+    description: Name of the actor (PascalCase).
+
+  - name: trigger_type
+    description: Shape type of trigger.
+    table:
+      box: Box
+      sphere: Sphere
+      capsule: Capsule
+      custom: Custom
+
+  - name: trigger_purpose
+    description: Purpose of the trigger.
+    table:
+      combat: Combat
+      cutscene: Cutscene
+      dialogue: Dialogue
+      music: Music
+      checkpoint: Checkpoint
+      loading: Loading
+      event: Event
+      death: Death
+
+  - name: spawn_type
+    description: Type of spawn point.
+    table:
+      player: Player
+      enemy: Enemy
+      ally: Ally
+      item: Item
+      vehicle: Vehicle
+      boss: Boss
+      wave: Wave
+
+  - name: spawn_name
+    description: Name of the spawn configuration.
+
+  - name: path_name
+    description: Name of the path/route.
+
+  - name: waypoint_index
+    description: Index of the waypoint (zero-padded three digits).
+
+  - name: interaction_type
+    description: Type of interaction.
+    table:
+      pickup: Pickup
+      use: Use
+      talk: Talk
+      open: Open
+      activate: Activate
+      destroy: Destroy
+      examine: Examine
+      purchase: Purchase
+
+  - name: interactable_name
+    description: Name of the interactable object.
+
+  - name: collectible_type
+    description: Type of collectible.
+    table:
+      lore: Lore
+      treasure: Treasure
+      achievement: Achievement
+      upgrade: Upgrade
+      currency: Currency
+      material: Material
+      key: Key
+      artifact: Artifact
+
+  - name: collectible_name
+    description: Name of the collectible.
+
+  - name: checkpoint_index
+    description: Index of the checkpoint (zero-padded two digits).
+
+  - name: quest_name
+    description: Name of the quest.
+
+  - name: objective_index
+    description: Index of the objective (zero-padded two digits).
+
+  - name: ai_type
+    description: Type of AI.
+    table:
+      enemy: Enemy
+      ally: Ally
+      neutral: Neutral
+      companion: Companion
+      boss: Boss
+
+  - name: controller_name
+    description: Name of the AI controller.
+
+  - name: behavior_name
+    description: Name of the behavior.

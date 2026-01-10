@@ -30,3 +30,7 @@ tp-tools-rigging:
     version: '0.1.0'
 tp-modrig:
     version: '0.1.0'
+tp-tools-metahuman:
+    version: '0.1.0'
+tp-game-ruin:
+    version: '0.1.0'

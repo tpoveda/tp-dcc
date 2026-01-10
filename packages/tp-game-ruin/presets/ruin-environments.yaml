@@ -1,0 +1,276 @@
+name: ruin-environments
+description: Environment asset naming configuration for RUIN Game project
+rules:
+  - name: environment_asset
+    creator: tpoveda
+    description: Standard environment asset naming.
+    expression: "ENV_{biome}_{asset_category}_{asset_name}_{variant}"
+    exampleFields:
+      biome: Forest
+      asset_category: Rock
+      asset_name: Boulder
+      variant: A
+
+  - name: environment_mesh
+    creator: tpoveda
+    description: Environment static mesh naming.
+    expression: "SM_ENV_{biome}_{asset_name}_{variant}"
+    exampleFields:
+      biome: Forest
+      asset_name: Tree
+      variant: A
+
+  - name: environment_lod
+    creator: tpoveda
+    description: Environment mesh with LOD.
+    expression: "SM_ENV_{biome}_{asset_name}_{variant}_LOD{lod_level}"
+    exampleFields:
+      biome: Forest
+      asset_name: Tree
+      variant: A
+      lod_level: "0"
+
+  - name: foliage
+    creator: tpoveda
+    description: Foliage asset naming.
+    expression: "FOL_{foliage_type}_{foliage_name}_{variant}"
+    exampleFields:
+      foliage_type: Tree
+      foliage_name: Oak
+      variant: A
+
+  - name: foliage_cluster
+    creator: tpoveda
+    description: Foliage cluster naming.
+    expression: "FOLC_{biome}_{cluster_type}_{variant}"
+    exampleFields:
+      biome: Forest
+      cluster_type: Grass
+      variant: A
+
+  - name: terrain
+    creator: tpoveda
+    description: Terrain asset naming.
+    expression: "TER_{level_name}_{terrain_layer}"
+    exampleFields:
+      level_name: ForestCastle
+      terrain_layer: Base
+
+  - name: terrain_layer
+    creator: tpoveda
+    description: Terrain layer material naming.
+    expression: "ML_TER_{biome}_{surface_type}"
+    exampleFields:
+      biome: Forest
+      surface_type: Grass
+
+  - name: skybox
+    creator: tpoveda
+    description: Skybox asset naming.
+    expression: "SKY_{time_of_day}_{weather}_{variant}"
+    exampleFields:
+      time_of_day: Day
+      weather: Clear
+      variant: A
+
+  - name: water
+    creator: tpoveda
+    description: Water asset naming.
+    expression: "WATER_{water_type}_{water_name}"
+    exampleFields:
+      water_type: River
+      water_name: Main
+
+  - name: light_probe
+    creator: tpoveda
+    description: Light probe naming.
+    expression: "LP_{level_name}_{probe_region}_{index}"
+    exampleFields:
+      level_name: ForestCastle
+      probe_region: Courtyard
+      index: "01"
+
+  - name: reflection_probe
+    creator: tpoveda
+    description: Reflection probe naming.
+    expression: "RP_{level_name}_{probe_region}_{index}"
+    exampleFields:
+      level_name: ForestCastle
+      probe_region: Hall
+      index: "01"
+
+  - name: volumetric_fog
+    creator: tpoveda
+    description: Volumetric fog volume naming.
+    expression: "FOG_{level_name}_{fog_purpose}_{index}"
+    exampleFields:
+      level_name: ForestCastle
+      fog_purpose: Atmosphere
+      index: "01"
+
+  - name: post_process
+    creator: tpoveda
+    description: Post process volume naming.
+    expression: "PP_{level_name}_{pp_purpose}"
+    exampleFields:
+      level_name: ForestCastle
+      pp_purpose: Main
+
+  - name: landscape_spline
+    creator: tpoveda
+    description: Landscape spline naming.
+    expression: "SPLINE_{spline_type}_{spline_name}_{index}"
+    exampleFields:
+      spline_type: Road
+      spline_name: Main
+      index: "01"
+
+tokens:
+  - name: biome
+    description: Environment biome type.
+    table:
+      forest: Forest
+      desert: Desert
+      snow: Snow
+      mountain: Mountain
+      swamp: Swamp
+      volcanic: Volcanic
+      coastal: Coastal
+      cave: Cave
+      dungeon: Dungeon
+      urban: Urban
+      ruins: Ruins
+      castle: Castle
+      village: Village
+
+  - name: asset_category
+    description: Category of environment asset.
+    table:
+      rock: Rock
+      tree: Tree
+      plant: Plant
+      structure: Structure
+      ground: Ground
+      cliff: Cliff
+      water: Water
+      debris: Debris
+
+  - name: foliage_type
+    description: Type of foliage.
+    table:
+      tree: Tree
+      bush: Bush
+      grass: Grass
+      flower: Flower
+      fern: Fern
+      vine: Vine
+      moss: Moss
+      mushroom: Mushroom
+      reed: Reed
+      coral: Coral
+
+  - name: foliage_name
+    description: Name of the foliage asset.
+
+  - name: cluster_type
+    description: Type of foliage cluster.
+    table:
+      grass: Grass
+      flowers: Flowers
+      rocks: Rocks
+      debris: Debris
+      mixed: Mixed
+
+  - name: terrain_layer
+    description: Terrain layer type.
+    table:
+      base: Base
+      detail: Detail
+      blend: Blend
+      mask: Mask
+
+  - name: surface_type
+    description: Surface material type.
+    table:
+      grass: Grass
+      dirt: Dirt
+      mud: Mud
+      sand: Sand
+      stone: Stone
+      gravel: Gravel
+      snow: Snow
+      ice: Ice
+      wood: Wood
+      metal: Metal
+      water: Water
+
+  - name: time_of_day
+    description: Time of day for lighting.
+    table:
+      dawn: Dawn
+      morning: Morning
+      day: Day
+      afternoon: Afternoon
+      dusk: Dusk
+      evening: Evening
+      night: Night
+      midnight: Midnight
+
+  - name: weather
+    description: Weather condition.
+    table:
+      clear: Clear
+      cloudy: Cloudy
+      overcast: Overcast
+      rainy: Rainy
+      stormy: Stormy
+      foggy: Foggy
+      snowy: Snowy
+
+  - name: water_type
+    description: Type of water body.
+    table:
+      ocean: Ocean
+      lake: Lake
+      river: River
+      stream: Stream
+      pond: Pond
+      waterfall: Waterfall
+      puddle: Puddle
+
+  - name: water_name
+    description: Name of the water body.
+
+  - name: probe_region
+    description: Region name for probes.
+
+  - name: fog_purpose
+    description: Purpose of fog volume.
+    table:
+      atmosphere: Atmosphere
+      local: Local
+      cave: Cave
+      indoor: Indoor
+      magic: Magic
+
+  - name: pp_purpose
+    description: Purpose of post process volume.
+    table:
+      main: Main
+      underwater: Underwater
+      indoor: Indoor
+      damage: Damage
+      death: Death
+      night_vision: NightVision
+      magic: Magic
+
+  - name: spline_type
+    description: Type of landscape spline.
+    table:
+      road: Road
+      path: Path
+      river: River
+      wall: Wall
+      fence: Fence
+      track: Track
+

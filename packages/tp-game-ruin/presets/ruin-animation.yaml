@@ -1,0 +1,285 @@
+name: ruin-animation
+description: Animation asset naming configuration for RUIN Game project
+rules:
+  - name: animation
+    creator: tpoveda
+    description: Standard animation naming.
+    expression: "A_{character_type}_{action}_{direction}"
+    exampleFields:
+      character_type: Hero
+      action: Run
+      direction: Fwd
+
+  - name: animation_full
+    creator: tpoveda
+    description: Full animation naming with variant.
+    expression: "A_{character_type}_{action}_{direction}_{variant}"
+    exampleFields:
+      character_type: Hero
+      action: Attack
+      direction: Fwd
+      variant: A
+
+  - name: locomotion
+    creator: tpoveda
+    description: Locomotion animation naming.
+    expression: "A_{character_type}_{locomotion_type}_{locomotion_speed}_{direction}"
+    exampleFields:
+      character_type: Hero
+      locomotion_type: Move
+      locomotion_speed: Run
+      direction: Fwd
+
+  - name: combat_animation
+    creator: tpoveda
+    description: Combat animation naming.
+    expression: "A_{character_type}_{combat_action}_{weapon_type}_{combo_index}"
+    exampleFields:
+      character_type: Hero
+      combat_action: Attack
+      weapon_type: Sword
+      combo_index: "01"
+
+  - name: additive_animation
+    creator: tpoveda
+    description: Additive animation layer naming.
+    expression: "A_{character_type}_{base_action}_ADD_{additive_type}"
+    exampleFields:
+      character_type: Hero
+      base_action: Idle
+      additive_type: LookUp
+
+  - name: montage
+    creator: tpoveda
+    description: Animation montage naming.
+    expression: "AM_{character_type}_{montage_purpose}"
+    exampleFields:
+      character_type: Hero
+      montage_purpose: AttackCombo
+
+  - name: blend_space
+    creator: tpoveda
+    description: Blend space naming.
+    expression: "BS_{character_type}_{blend_purpose}"
+    exampleFields:
+      character_type: Hero
+      blend_purpose: Locomotion
+
+  - name: blend_space_1d
+    creator: tpoveda
+    description: 1D blend space naming.
+    expression: "BS1D_{character_type}_{blend_purpose}"
+    exampleFields:
+      character_type: Hero
+      blend_purpose: LeanAngle
+
+  - name: aim_offset
+    creator: tpoveda
+    description: Aim offset naming.
+    expression: "AO_{character_type}_{aim_purpose}"
+    exampleFields:
+      character_type: Hero
+      aim_purpose: UpperBody
+
+  - name: animation_blueprint
+    creator: tpoveda
+    description: Animation blueprint naming.
+    expression: "ABP_{character_type}"
+    exampleFields:
+      character_type: Hero
+
+  - name: state_machine
+    creator: tpoveda
+    description: State machine naming.
+    expression: "SM_{character_type}_{state_purpose}"
+    exampleFields:
+      character_type: Hero
+      state_purpose: Locomotion
+
+  - name: pose_asset
+    creator: tpoveda
+    description: Pose asset naming.
+    expression: "POSE_{character_type}_{pose_name}"
+    exampleFields:
+      character_type: Hero
+      pose_name: TPose
+
+  - name: facial_animation
+    creator: tpoveda
+    description: Facial animation naming.
+    expression: "A_FACE_{character_type}_{expression}_{intensity}"
+    exampleFields:
+      character_type: Hero
+      expression: Smile
+      intensity: Full
+
+  - name: sync_marker
+    creator: tpoveda
+    description: Sync marker naming.
+    expression: "SYNC_{marker_purpose}_{marker_index}"
+    exampleFields:
+      marker_purpose: FootStep
+      marker_index: L
+
+tokens:
+  - name: character_type
+    description: Type/name of the character.
+
+  - name: action
+    description: Action being performed.
+    table:
+      idle: Idle
+      walk: Walk
+      run: Run
+      sprint: Sprint
+      jump: Jump
+      land: Land
+      fall: Fall
+      crouch: Crouch
+      crawl: Crawl
+      climb: Climb
+      swim: Swim
+      dodge: Dodge
+      roll: Roll
+      slide: Slide
+
+  - name: direction
+    description: Direction of movement.
+    table:
+      forward: Fwd
+      backward: Bwd
+      left: L
+      right: R
+      up: Up
+      down: Down
+      forward_left: FwdL
+      forward_right: FwdR
+      backward_left: BwdL
+      backward_right: BwdR
+
+  - name: locomotion_type
+    description: Type of locomotion.
+    table:
+      move: Move
+      strafe: Strafe
+      turn: Turn
+      start: Start
+      stop: Stop
+      pivot: Pivot
+
+  - name: locomotion_speed
+    description: Speed of locomotion.
+    table:
+      walk: Walk
+      jog: Jog
+      run: Run
+      sprint: Sprint
+
+  - name: combat_action
+    description: Combat action type.
+    table:
+      attack: Attack
+      block: Block
+      parry: Parry
+      dodge: Dodge
+      hit_react: HitReact
+      death: Death
+      stun: Stun
+      knockback: Knockback
+      execute: Execute
+      finisher: Finisher
+
+  - name: weapon_type
+    description: Type of weapon for combat animations.
+    table:
+      unarmed: Unarmed
+      sword: Sword
+      axe: Axe
+      mace: Mace
+      spear: Spear
+      dagger: Dagger
+      bow: Bow
+      staff: Staff
+      shield: Shield
+      dual: Dual
+      two_handed: TwoHand
+
+  - name: combo_index
+    description: Index in the combo chain (zero-padded two digits).
+
+  - name: additive_type
+    description: Type of additive animation.
+    table:
+      look_up: LookUp
+      look_down: LookDown
+      look_left: LookLeft
+      look_right: LookRight
+      lean_left: LeanLeft
+      lean_right: LeanRight
+      aim: Aim
+      breathe: Breathe
+      fatigue: Fatigue
+      injured: Injured
+
+  - name: base_action
+    description: Base action for additive animations.
+
+  - name: montage_purpose
+    description: Purpose of the animation montage.
+
+  - name: blend_purpose
+    description: Purpose of the blend space.
+
+  - name: aim_purpose
+    description: Purpose of the aim offset.
+
+  - name: state_purpose
+    description: Purpose of the state machine.
+    table:
+      locomotion: Locomotion
+      combat: Combat
+      interaction: Interaction
+      death: Death
+      stunned: Stunned
+      special: Special
+
+  - name: pose_name
+    description: Name of the pose.
+    table:
+      tpose: TPose
+      apose: APose
+      bind: Bind
+      reference: Reference
+      idle: Idle
+
+  - name: expression
+    description: Facial expression type.
+    table:
+      smile: Smile
+      frown: Frown
+      anger: Anger
+      fear: Fear
+      surprise: Surprise
+      disgust: Disgust
+      sad: Sad
+      happy: Happy
+      neutral: Neutral
+      pain: Pain
+
+  - name: intensity
+    description: Intensity of expression.
+    table:
+      subtle: Subtle
+      medium: Medium
+      full: Full
+      extreme: Extreme
+
+  - name: marker_purpose
+    description: Purpose of the sync marker.
+    table:
+      foot_step: FootStep
+      hand_plant: HandPlant
+      impact: Impact
+      window: Window
+      notify: Notify
+

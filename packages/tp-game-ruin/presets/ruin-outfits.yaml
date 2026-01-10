@@ -1,0 +1,201 @@
+name: ruin-outfits
+description: Outfit and clothing asset naming configuration for RUIN Game project
+rules:
+  - name: outfit
+    creator: tpoveda
+    description: Full outfit/costume naming.
+    expression: "OFT_{outfit_category}_{outfit_name}_{variant}"
+    exampleFields:
+      outfit_category: Armor
+      outfit_name: Knight
+      variant: A
+
+  - name: outfit_piece
+    creator: tpoveda
+    description: Individual outfit piece naming.
+    expression: "OFT_{outfit_slot}_{outfit_name}_{variant}"
+    exampleFields:
+      outfit_slot: Chest
+      outfit_name: Knight
+      variant: A
+
+  - name: outfit_mesh
+    creator: tpoveda
+    description: Outfit skeletal mesh naming.
+    expression: "SK_OFT_{outfit_slot}_{outfit_name}_{variant}"
+    exampleFields:
+      outfit_slot: Chest
+      outfit_name: Knight
+      variant: A
+
+  - name: outfit_mesh_lod
+    creator: tpoveda
+    description: Outfit mesh with LOD.
+    expression: "SK_OFT_{outfit_slot}_{outfit_name}_{variant}_LOD{lod_level}"
+    exampleFields:
+      outfit_slot: Chest
+      outfit_name: Knight
+      variant: A
+      lod_level: "0"
+
+  - name: armor_set
+    creator: tpoveda
+    description: Armor set naming.
+    expression: "ARM_{armor_tier}_{armor_set_name}_{armor_slot}"
+    exampleFields:
+      armor_tier: T3
+      armor_set_name: Dragon
+      armor_slot: Chest
+
+  - name: accessory
+    creator: tpoveda
+    description: Accessory item naming.
+    expression: "ACC_{accessory_type}_{accessory_name}_{variant}"
+    exampleFields:
+      accessory_type: Ring
+      accessory_name: Power
+      variant: A
+
+  - name: hair
+    creator: tpoveda
+    description: Hair asset naming.
+    expression: "HAIR_{hair_style}_{variant}"
+    exampleFields:
+      hair_style: Long
+      variant: A
+
+  - name: facial_hair
+    creator: tpoveda
+    description: Facial hair asset naming.
+    expression: "BEARD_{beard_style}_{variant}"
+    exampleFields:
+      beard_style: Full
+      variant: A
+
+  - name: cloth_sim
+    creator: tpoveda
+    description: Cloth simulation asset naming.
+    expression: "CLOTH_{outfit_name}_{cloth_region}"
+    exampleFields:
+      outfit_name: Knight
+      cloth_region: Cape
+
+tokens:
+  - name: outfit_category
+    description: Category of the outfit.
+    table:
+      armor: Armor
+      clothing: Clothing
+      casual: Casual
+      formal: Formal
+      combat: Combat
+      stealth: Stealth
+      magical: Magical
+      tribal: Tribal
+      royal: Royal
+      peasant: Peasant
+
+  - name: outfit_name
+    description: Name of the outfit (PascalCase).
+
+  - name: outfit_slot
+    description: Body slot for the outfit piece.
+    table:
+      head: Head
+      face: Face
+      neck: Neck
+      shoulder: Shoulder
+      chest: Chest
+      back: Back
+      arm: Arm
+      forearm: Forearm
+      hand: Hand
+      waist: Waist
+      leg: Leg
+      shin: Shin
+      foot: Foot
+      full_body: FullBody
+
+  - name: armor_tier
+    description: Tier/level of the armor.
+    table:
+      tier1: T1
+      tier2: T2
+      tier3: T3
+      tier4: T4
+      tier5: T5
+      legendary: LEG
+      mythic: MYT
+
+  - name: armor_set_name
+    description: Name of the armor set (PascalCase).
+
+  - name: armor_slot
+    description: Armor equipment slot.
+    table:
+      helmet: Helmet
+      chest: Chest
+      shoulders: Shoulders
+      gloves: Gloves
+      belt: Belt
+      legs: Legs
+      boots: Boots
+      cape: Cape
+
+  - name: accessory_type
+    description: Type of accessory.
+    table:
+      ring: Ring
+      necklace: Necklace
+      earring: Earring
+      bracelet: Bracelet
+      crown: Crown
+      mask: Mask
+      glasses: Glasses
+      badge: Badge
+      belt: Belt
+      backpack: Backpack
+      cape: Cape
+      wings: Wings
+
+  - name: accessory_name
+    description: Name of the accessory (PascalCase).
+
+  - name: hair_style
+    description: Style of hair.
+    table:
+      short: Short
+      medium: Medium
+      long: Long
+      ponytail: Ponytail
+      braided: Braided
+      mohawk: Mohawk
+      bald: Bald
+      buzz: Buzz
+      curly: Curly
+      straight: Straight
+      wavy: Wavy
+
+  - name: beard_style
+    description: Style of facial hair.
+    table:
+      clean: Clean
+      stubble: Stubble
+      goatee: Goatee
+      full: Full
+      mustache: Mustache
+      mutton: Mutton
+      braided: Braided
+
+  - name: cloth_region
+    description: Region of cloth simulation.
+    table:
+      cape: Cape
+      skirt: Skirt
+      sleeve: Sleeve
+      tabard: Tabard
+      sash: Sash
+      banner: Banner
+      hood: Hood
+      scarf: Scarf
+

@@ -1,0 +1,257 @@
+name: ruin-rigging
+description: Rigging asset naming configuration for RUIN Game project
+rules:
+  - name: joint
+    creator: tpoveda
+    description: Joint/bone naming convention.
+    expression: "{joint_type}_{region}_{side}_{index}"
+    exampleFields:
+      joint_type: JNT
+      region: Arm
+      side: L
+      index: "01"
+
+  - name: control
+    creator: tpoveda
+    description: Rig control naming convention.
+    expression: "{control_type}_{region}_{side}_{index}"
+    exampleFields:
+      control_type: CTRL
+      region: Arm
+      side: L
+      index: "01"
+
+  - name: control_shape
+    creator: tpoveda
+    description: Control shape naming.
+    expression: "{region}_{side}_{control_shape_type}"
+    exampleFields:
+      region: Arm
+      side: L
+      control_shape_type: Circle
+
+  - name: ik_handle
+    creator: tpoveda
+    description: IK handle naming.
+    expression: "IKH_{chain_name}_{side}"
+    exampleFields:
+      chain_name: Arm
+      side: L
+
+  - name: ik_spline
+    creator: tpoveda
+    description: IK spline handle naming.
+    expression: "IKS_{chain_name}_{side}"
+    exampleFields:
+      chain_name: Spine
+      side: C
+
+  - name: constraint
+    creator: tpoveda
+    description: Constraint naming.
+    expression: "{constraint_type}_{target_name}_{side}"
+    exampleFields:
+      constraint_type: CONST_PARENT
+      target_name: Hand
+      side: L
+
+  - name: blend_shape
+    creator: tpoveda
+    description: Blend shape naming.
+    expression: "BS_{target_mesh}_{shape_name}"
+    exampleFields:
+      target_mesh: Face
+      shape_name: Smile
+
+  - name: deformer
+    creator: tpoveda
+    description: Deformer naming.
+    expression: "{deformer_type}_{target_region}_{side}"
+    exampleFields:
+      deformer_type: DEF_CLUSTER
+      target_region: Shoulder
+      side: L
+
+  - name: locator
+    creator: tpoveda
+    description: Locator naming.
+    expression: "LOC_{purpose}_{region}_{side}"
+    exampleFields:
+      purpose: Pivot
+      region: Arm
+      side: L
+
+  - name: group
+    creator: tpoveda
+    description: Group/null naming.
+    expression: "GRP_{group_purpose}_{region}_{side}"
+    exampleFields:
+      group_purpose: Offset
+      region: Arm
+      side: L
+
+  - name: space_switch
+    creator: tpoveda
+    description: Space switch target naming.
+    expression: "SPACE_{space_name}_{region}_{side}"
+    exampleFields:
+      space_name: World
+      region: Hand
+      side: L
+
+  - name: twist_joint
+    creator: tpoveda
+    description: Twist joint naming.
+    expression: "JNT_TWIST_{region}_{side}_{index}"
+    exampleFields:
+      region: UpperArm
+      side: L
+      index: "01"
+
+  - name: helper_joint
+    creator: tpoveda
+    description: Helper/corrective joint naming.
+    expression: "JNT_HELPER_{region}_{purpose}_{side}"
+    exampleFields:
+      region: Shoulder
+      purpose: Forward
+      side: L
+
+  - name: skin_cluster
+    creator: tpoveda
+    description: Skin cluster naming.
+    expression: "SKN_{mesh_name}"
+    exampleFields:
+      mesh_name: Body
+
+  - name: rig_module
+    creator: tpoveda
+    description: Rig module naming.
+    expression: "MOD_{module_type}_{region}_{side}"
+    exampleFields:
+      module_type: FK
+      region: Arm
+      side: L
+
+tokens:
+  - name: joint_type
+    description: Type of joint.
+    table:
+      joint: JNT
+      bind: BIND
+      helper: HELPER
+      twist: TWIST
+      end: END
+
+  - name: control_type
+    description: Type of rig control.
+    table:
+      control: CTRL
+      fk: FK
+      ik: IK
+      settings: SET
+      global: GLOBAL
+      root: ROOT
+      cog: COG
+      gimbal: GIMBAL
+
+  - name: control_shape_type
+    description: Shape type for controls.
+    table:
+      circle: Circle
+      square: Square
+      cube: Cube
+      sphere: Sphere
+      arrow: Arrow
+      diamond: Diamond
+      cross: Cross
+      pin: Pin
+
+  - name: constraint_type
+    description: Type of constraint.
+    table:
+      parent: CONST_PARENT
+      point: CONST_POINT
+      orient: CONST_ORIENT
+      scale: CONST_SCALE
+      aim: CONST_AIM
+      pole: CONST_POLE
+
+  - name: deformer_type
+    description: Type of deformer.
+    table:
+      cluster: DEF_CLUSTER
+      lattice: DEF_LATTICE
+      wrap: DEF_WRAP
+      wire: DEF_WIRE
+      shrink: DEF_SHRINK
+      delta: DEF_DELTA
+      tension: DEF_TENSION
+
+  - name: chain_name
+    description: Name of the IK chain.
+
+  - name: target_mesh
+    description: Target mesh for blend shapes.
+
+  - name: shape_name
+    description: Name of the blend shape.
+
+  - name: target_region
+    description: Target region for deformers.
+
+  - name: purpose
+    description: Purpose of the rig element.
+    table:
+      pivot: Pivot
+      offset: Offset
+      driven: Driven
+      driver: Driver
+      space: Space
+      buffer: Buffer
+      zero: Zero
+
+  - name: group_purpose
+    description: Purpose of the group.
+    table:
+      offset: Offset
+      driven: Driven
+      zero: Zero
+      buffer: Buffer
+      controls: Controls
+      joints: Joints
+      deformers: Deformers
+      geometry: Geometry
+      rig: Rig
+      skeleton: Skeleton
+
+  - name: space_name
+    description: Name of the space/coordinate system.
+    table:
+      world: World
+      local: Local
+      parent: Parent
+      root: Root
+      cog: COG
+      head: Head
+      hand: Hand
+      foot: Foot
+      custom: Custom
+
+  - name: mesh_name
+    description: Name of the mesh.
+
+  - name: module_type
+    description: Type of rig module.
+    table:
+      fk: FK
+      ik: IK
+      fkik: FKIK
+      spline: SPLINE
+      ribbon: RIBBON
+      face: FACE
+      finger: FINGER
+      tail: TAIL
+      chain: CHAIN
+      limb: LIMB
+

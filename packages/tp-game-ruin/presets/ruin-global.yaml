@@ -1,0 +1,162 @@
+name: ruin-global
+description: Default global naming configuration for RUIN Game project
+rules:
+  - name: asset
+    creator: tpoveda
+    description: Standard asset naming rule for all game assets.
+    expression: "{asset_type}_{asset_name}_{variant}"
+    exampleFields:
+      asset_type: CHR
+      asset_name: Warrior
+      variant: A
+
+  - name: asset_with_version
+    creator: tpoveda
+    description: Asset naming with version number.
+    expression: "{asset_type}_{asset_name}_{variant}_v{version}"
+    exampleFields:
+      asset_type: PRP
+      asset_name: Sword
+      variant: A
+      version: "001"
+
+  - name: file
+    creator: tpoveda
+    description: Standard file naming convention.
+    expression: "{asset_type}_{asset_name}_{file_type}"
+    exampleFields:
+      asset_type: CHR
+      asset_name: Warrior
+      file_type: RIG
+
+  - name: file_with_version
+    creator: tpoveda
+    description: File naming with version.
+    expression: "{asset_type}_{asset_name}_{file_type}_v{version}"
+    exampleFields:
+      asset_type: CHR
+      asset_name: Warrior
+      file_type: MDL
+      version: "001"
+
+  - name: texture
+    creator: tpoveda
+    description: Texture file naming convention.
+    expression: "{asset_name}_{material_name}_{texture_type}"
+    exampleFields:
+      asset_name: Warrior
+      material_name: Body
+      texture_type: D
+
+  - name: material
+    creator: tpoveda
+    description: Material naming convention.
+    expression: "M_{asset_name}_{material_slot}"
+    exampleFields:
+      asset_name: Warrior
+      material_slot: Body
+
+tokens:
+  - name: asset_type
+    description: Specifies the type of asset.
+    table:
+      character: CHR
+      prop: PRP
+      weapon: WPN
+      vehicle: VEH
+      environment: ENV
+      outfit: OFT
+      accessory: ACC
+      vfx: VFX
+      audio: AUD
+      ui: UI
+
+  - name: asset_name
+    description: Specifies the name of the asset (PascalCase).
+
+  - name: variant
+    description: Specifies the variant letter or identifier of the asset.
+
+  - name: version
+    description: Specifies the version number (three digits, zero-padded).
+
+  - name: file_type
+    description: Specifies the type of file.
+    table:
+      model: MDL
+      rig: RIG
+      animation: ANM
+      texture: TEX
+      material: MAT
+      skeleton: SKL
+      physics: PHY
+      lod: LOD
+
+  - name: texture_type
+    description: Specifies the texture map type.
+    table:
+      diffuse: D
+      albedo: A
+      normal: N
+      roughness: R
+      metallic: M
+      ao: AO
+      emissive: E
+      opacity: O
+      height: H
+      subsurface: SSS
+      mask: MSK
+
+  - name: material_name
+    description: Specifies the material or material slot name.
+
+  - name: material_slot
+    description: Specifies the material slot identifier.
+
+  - name: lod_level
+    description: Specifies the level of detail number.
+    table:
+      lod0: "0"
+      lod1: "1"
+      lod2: "2"
+      lod3: "3"
+      lod4: "4"
+
+  - name: side
+    description: Specifies the side or symmetry of the element.
+    table:
+      left: L
+      right: R
+      center: C
+      middle: M
+
+  - name: region
+    description: Specifies the body or asset region.
+    table:
+      head: Head
+      neck: Neck
+      spine: Spine
+      chest: Chest
+      shoulder: Shoulder
+      arm: Arm
+      elbow: Elbow
+      forearm: Forearm
+      wrist: Wrist
+      hand: Hand
+      finger: Finger
+      thumb: Thumb
+      pelvis: Pelvis
+      hip: Hip
+      leg: Leg
+      knee: Knee
+      calf: Calf
+      ankle: Ankle
+      foot: Foot
+      toe: Toe
+
+  - name: index
+    description: Specifies a numerical index (zero-padded).
+
+  - name: description
+    description: Specifies a short description of the element.
+

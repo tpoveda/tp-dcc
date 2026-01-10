@@ -1,0 +1,200 @@
+name: ruin-characters
+description: Character asset naming configuration for RUIN Game project
+rules:
+  - name: character
+    creator: tpoveda
+    description: Main character asset naming.
+    expression: "CHR_{character_name}_{variant}"
+    exampleFields:
+      character_name: Warrior
+      variant: A
+
+  - name: character_file
+    creator: tpoveda
+    description: Character file naming convention.
+    expression: "CHR_{character_name}_{character_file_type}"
+    exampleFields:
+      character_name: Warrior
+      character_file_type: RIG
+
+  - name: character_mesh
+    creator: tpoveda
+    description: Character skeletal mesh naming.
+    expression: "SK_{character_name}_{mesh_part}"
+    exampleFields:
+      character_name: Warrior
+      mesh_part: Body
+
+  - name: character_mesh_lod
+    creator: tpoveda
+    description: Character mesh with LOD.
+    expression: "SK_{character_name}_{mesh_part}_LOD{lod_level}"
+    exampleFields:
+      character_name: Warrior
+      mesh_part: Body
+      lod_level: "0"
+
+  - name: character_skeleton
+    creator: tpoveda
+    description: Character skeleton naming.
+    expression: "SKEL_{character_name}"
+    exampleFields:
+      character_name: Warrior
+
+  - name: character_physics
+    creator: tpoveda
+    description: Character physics asset naming.
+    expression: "PHYS_{character_name}_{physics_type}"
+    exampleFields:
+      character_name: Warrior
+      physics_type: Ragdoll
+
+  - name: character_morph
+    creator: tpoveda
+    description: Character morph target naming.
+    expression: "MT_{character_name}_{morph_category}_{morph_name}"
+    exampleFields:
+      character_name: Warrior
+      morph_category: Face
+      morph_name: Smile
+
+  - name: facial_bone
+    creator: tpoveda
+    description: Facial bone naming convention.
+    expression: "{facial_region}_{facial_part}_{side}"
+    exampleFields:
+      facial_region: Eye
+      facial_part: Lid
+      side: L
+
+  - name: body_bone
+    creator: tpoveda
+    description: Body bone naming convention.
+    expression: "{region}_{side}_{index}"
+    exampleFields:
+      region: Arm
+      side: L
+      index: "01"
+
+  - name: npc
+    creator: tpoveda
+    description: NPC character naming.
+    expression: "NPC_{npc_type}_{npc_name}_{variant}"
+    exampleFields:
+      npc_type: Enemy
+      npc_name: Grunt
+      variant: A
+
+  - name: creature
+    creator: tpoveda
+    description: Creature/monster naming.
+    expression: "CRT_{creature_type}_{creature_name}_{variant}"
+    exampleFields:
+      creature_type: Beast
+      creature_name: Wolf
+      variant: A
+
+tokens:
+  - name: character_name
+    description: Name of the character (PascalCase).
+
+  - name: character_file_type
+    description: Type of character file.
+    table:
+      rig: RIG
+      model: MDL
+      skeleton: SKL
+      animation: ANM
+      physics: PHY
+      face_rig: FRG
+
+  - name: mesh_part
+    description: Part of the character mesh.
+    table:
+      body: Body
+      head: Head
+      hands: Hands
+      feet: Feet
+      hair: Hair
+      face: Face
+      eyes: Eyes
+      teeth: Teeth
+      tongue: Tongue
+      full: Full
+
+  - name: physics_type
+    description: Type of physics asset.
+    table:
+      ragdoll: Ragdoll
+      cloth: Cloth
+      hair: Hair
+      collision: Collision
+
+  - name: morph_category
+    description: Category of morph target.
+    table:
+      face: Face
+      body: Body
+      corrective: Corrective
+      expression: Expression
+      phoneme: Phoneme
+
+  - name: morph_name
+    description: Name of the specific morph target.
+
+  - name: facial_region
+    description: Facial region for bone naming.
+    table:
+      eye: Eye
+      brow: Brow
+      nose: Nose
+      cheek: Cheek
+      lip: Lip
+      jaw: Jaw
+      ear: Ear
+      forehead: Forehead
+      chin: Chin
+      neck: Neck
+
+  - name: facial_part
+    description: Specific facial part.
+    table:
+      lid: Lid
+      corner: Corner
+      inner: Inner
+      outer: Outer
+      upper: Upper
+      lower: Lower
+      tip: Tip
+      bridge: Bridge
+      nostril: Nostril
+
+  - name: npc_type
+    description: Type of NPC.
+    table:
+      enemy: Enemy
+      ally: Ally
+      neutral: Neutral
+      boss: Boss
+      miniboss: MiniBoss
+      vendor: Vendor
+      quest: Quest
+
+  - name: npc_name
+    description: Name of the NPC (PascalCase).
+
+  - name: creature_type
+    description: Type of creature.
+    table:
+      beast: Beast
+      undead: Undead
+      demon: Demon
+      elemental: Elemental
+      mechanical: Mechanical
+      spirit: Spirit
+      dragon: Dragon
+      insect: Insect
+
+  - name: creature_name
+    description: Name of the creature (PascalCase).
+

@@ -1,0 +1,283 @@
+name: ruin-vfx
+description: VFX asset naming configuration for RUIN Game project
+rules:
+  - name: vfx
+    creator: tpoveda
+    description: Standard VFX asset naming.
+    expression: "VFX_{vfx_category}_{vfx_name}_{variant}"
+    exampleFields:
+      vfx_category: Fire
+      vfx_name: Explosion
+      variant: A
+
+  - name: particle_system
+    creator: tpoveda
+    description: Particle system naming.
+    expression: "PS_{vfx_category}_{vfx_name}_{variant}"
+    exampleFields:
+      vfx_category: Magic
+      vfx_name: Sparks
+      variant: A
+
+  - name: niagara_system
+    creator: tpoveda
+    description: Niagara system naming.
+    expression: "NS_{vfx_category}_{vfx_name}_{variant}"
+    exampleFields:
+      vfx_category: Fire
+      vfx_name: Torch
+      variant: A
+
+  - name: niagara_emitter
+    creator: tpoveda
+    description: Niagara emitter naming.
+    expression: "NE_{emitter_purpose}_{emitter_type}"
+    exampleFields:
+      emitter_purpose: Flames
+      emitter_type: Sprite
+
+  - name: vfx_texture
+    creator: tpoveda
+    description: VFX texture naming.
+    expression: "T_VFX_{texture_purpose}_{texture_name}_{variant}"
+    exampleFields:
+      texture_purpose: Flipbook
+      texture_name: Fire
+      variant: A
+
+  - name: vfx_material
+    creator: tpoveda
+    description: VFX material naming.
+    expression: "M_VFX_{material_purpose}_{material_name}"
+    exampleFields:
+      material_purpose: Additive
+      material_name: Fire
+
+  - name: vfx_mesh
+    creator: tpoveda
+    description: VFX mesh naming.
+    expression: "SM_VFX_{mesh_purpose}_{mesh_name}"
+    exampleFields:
+      mesh_purpose: Debris
+      mesh_name: Stone
+
+  - name: impact_vfx
+    creator: tpoveda
+    description: Impact VFX naming.
+    expression: "VFX_IMP_{surface_type}_{impact_type}_{variant}"
+    exampleFields:
+      surface_type: Stone
+      impact_type: Bullet
+      variant: A
+
+  - name: ambient_vfx
+    creator: tpoveda
+    description: Ambient/environmental VFX naming.
+    expression: "VFX_AMB_{biome}_{ambient_type}"
+    exampleFields:
+      biome: Forest
+      ambient_type: Fireflies
+
+  - name: ability_vfx
+    creator: tpoveda
+    description: Character ability VFX naming.
+    expression: "VFX_ABL_{character_type}_{ability_name}_{vfx_stage}"
+    exampleFields:
+      character_type: Hero
+      ability_name: Fireball
+      vfx_stage: Cast
+
+  - name: weapon_vfx
+    creator: tpoveda
+    description: Weapon VFX naming.
+    expression: "VFX_WPN_{weapon_type}_{vfx_type}"
+    exampleFields:
+      weapon_type: Sword
+      vfx_type: Trail
+
+  - name: status_vfx
+    creator: tpoveda
+    description: Status effect VFX naming.
+    expression: "VFX_STATUS_{status_type}_{status_stage}"
+    exampleFields:
+      status_type: Poison
+      status_stage: Active
+
+  - name: destruction_vfx
+    creator: tpoveda
+    description: Destruction VFX naming.
+    expression: "VFX_DEST_{object_type}_{destruction_stage}"
+    exampleFields:
+      object_type: Wood
+      destruction_stage: Explode
+
+tokens:
+  - name: vfx_category
+    description: Category of VFX.
+    table:
+      fire: Fire
+      water: Water
+      ice: Ice
+      lightning: Lightning
+      earth: Earth
+      wind: Wind
+      magic: Magic
+      blood: Blood
+      smoke: Smoke
+      dust: Dust
+      debris: Debris
+      explosion: Explosion
+      heal: Heal
+      buff: Buff
+      debuff: Debuff
+      portal: Portal
+      shield: Shield
+      aura: Aura
+
+  - name: vfx_name
+    description: Name of the VFX effect.
+
+  - name: emitter_purpose
+    description: Purpose of the emitter.
+
+  - name: emitter_type
+    description: Type of particle emitter.
+    table:
+      sprite: Sprite
+      mesh: Mesh
+      ribbon: Ribbon
+      beam: Beam
+      gpu: GPU
+      light: Light
+      decal: Decal
+
+  - name: texture_purpose
+    description: Purpose of VFX texture.
+    table:
+      flipbook: Flipbook
+      noise: Noise
+      gradient: Gradient
+      mask: Mask
+      distortion: Distortion
+      normal: Normal
+      alpha: Alpha
+
+  - name: texture_name
+    description: Name of the VFX texture.
+
+  - name: material_purpose
+    description: Purpose of VFX material.
+    table:
+      additive: Additive
+      translucent: Translucent
+      masked: Masked
+      distortion: Distortion
+      refraction: Refraction
+      lit: Lit
+      unlit: Unlit
+
+  - name: material_name
+    description: Name of the VFX material.
+
+  - name: mesh_purpose
+    description: Purpose of VFX mesh.
+    table:
+      debris: Debris
+      shard: Shard
+      spark: Spark
+      chunk: Chunk
+      projectile: Projectile
+      trail: Trail
+
+  - name: impact_type
+    description: Type of impact.
+    table:
+      bullet: Bullet
+      slash: Slash
+      blunt: Blunt
+      explosion: Explosion
+      magic: Magic
+      arrow: Arrow
+      footstep: Footstep
+
+  - name: ambient_type
+    description: Type of ambient effect.
+    table:
+      fireflies: Fireflies
+      dust_motes: DustMotes
+      leaves: Leaves
+      rain: Rain
+      snow: Snow
+      fog: Fog
+      pollen: Pollen
+      embers: Embers
+      sparks: Sparks
+      bubbles: Bubbles
+
+  - name: ability_name
+    description: Name of the ability.
+
+  - name: vfx_stage
+    description: Stage of VFX playback.
+    table:
+      anticipation: Anticipation
+      cast: Cast
+      projectile: Projectile
+      impact: Impact
+      linger: Linger
+      loop: Loop
+      end: End
+
+  - name: vfx_type
+    description: Type of weapon VFX.
+    table:
+      trail: Trail
+      impact: Impact
+      muzzle: Muzzle
+      eject: Eject
+      reload: Reload
+      enchant: Enchant
+      glow: Glow
+
+  - name: status_type
+    description: Type of status effect.
+    table:
+      poison: Poison
+      burn: Burn
+      freeze: Freeze
+      shock: Shock
+      bleed: Bleed
+      stun: Stun
+      heal: Heal
+      buff: Buff
+      shield: Shield
+      rage: Rage
+
+  - name: status_stage
+    description: Stage of status effect.
+    table:
+      start: Start
+      active: Active
+      pulse: Pulse
+      end: End
+
+  - name: object_type
+    description: Type of destructible object.
+    table:
+      wood: Wood
+      stone: Stone
+      metal: Metal
+      glass: Glass
+      flesh: Flesh
+      ice: Ice
+      crystal: Crystal
+
+  - name: destruction_stage
+    description: Stage of destruction.
+    table:
+      crack: Crack
+      break: Break
+      explode: Explode
+      collapse: Collapse
+      shatter: Shatter
+

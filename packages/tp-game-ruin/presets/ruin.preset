@@ -1,0 +1,26 @@
+name: RUIN
+namingConventions:
+- name: default-global
+  type: global
+- name: ruin-global
+  type: global
+- name: ruin-assets
+  type: assets
+- name: ruin-characters
+  type: characters
+- name: ruin-weapons
+  type: weapons
+- name: ruin-outfits
+  type: outfits
+- name: ruin-cinematics
+  type: cinematics
+- name: ruin-gameplay
+  type: gameplay
+- name: ruin-rigging
+  type: rigging
+- name: ruin-animation
+  type: animation
+- name: ruin-environments
+  type: environments
+- name: ruin-vfx
+  type: vfx
