@@ -109,6 +109,7 @@ class MetaHumanBodyRigBuilder:
 
         # Layer references
         self._controls_layer: MetaHumanControlsLayer | None = None
+        self._fkik_layer: MetaHumanFKIKLayer | None = None
 
         # Initialize builders.
         self._control_builder = ControlBuilder(self.RIG_CTRLS_GROUP)
@@ -167,6 +168,9 @@ class MetaHumanBodyRigBuilder:
 
         # Create additional controls
         self._create_additional_controls()
+
+        # Create FK/IK layer
+        self._create_fkik_layer()
 
         # Create FK/IK limb controls
         self._create_fkik_limb_controls()
@@ -463,6 +467,87 @@ class MetaHumanBodyRigBuilder:
         control_node = node_by_name(control_name)
         if control_node is not None:
             self._controls_layer.add_control(control_node)
+
+    def _create_fkik_layer(self) -> None:
+        """Create the FK/IK layer for tracking FK/IK controls and systems."""
+
+        from typing import cast
+
+        if self._meta_rig is None:
+            return
+
+        # Create FK/IK layer
+        layer = self._meta_rig.create_layer(
+            meta_constants.METAHUMAN_FKIK_LAYER_TYPE,
+            "fkik_layer",
+            "fkik_layer_meta",
+        )
+
+        if layer is None:
+            logger.warning("Failed to create FK/IK layer")
+            return
+
+        # Cast to MetaHumanFKIKLayer for proper type hints
+        self._fkik_layer = cast(MetaHumanFKIKLayer, layer)
+
+        logger.info("FK/IK layer created: %s", self._fkik_layer.name())
+
+    def _register_fk_control(self, control_name: str) -> None:
+        """Register an FK control with the FK/IK layer.
+
+        Args:
+            control_name: Name of the FK control node to register.
+        """
+
+        from tp.libs.maya.wrapper import node_by_name
+
+        if self._fkik_layer is None:
+            return
+
+        if not object_exists(control_name):
+            return
+
+        control_node = node_by_name(control_name)
+        if control_node is not None:
+            self._fkik_layer.add_fk_control(control_node)
+
+    def _register_ik_control(self, control_name: str) -> None:
+        """Register an IK control with the FK/IK layer.
+
+        Args:
+            control_name: Name of the IK control node to register.
+        """
+
+        from tp.libs.maya.wrapper import node_by_name
+
+        if self._fkik_layer is None:
+            return
+
+        if not object_exists(control_name):
+            return
+
+        control_node = node_by_name(control_name)
+        if control_node is not None:
+            self._fkik_layer.add_ik_control(control_node)
+
+    def _register_pole_vector(self, control_name: str) -> None:
+        """Register a pole vector control with the FK/IK layer.
+
+        Args:
+            control_name: Name of the pole vector control node to register.
+        """
+
+        from tp.libs.maya.wrapper import node_by_name
+
+        if self._fkik_layer is None:
+            return
+
+        if not object_exists(control_name):
+            return
+
+        control_node = node_by_name(control_name)
+        if control_node is not None:
+            self._fkik_layer.add_pole_vector(control_node)
 
     def _build_limb_systems(self) -> None:
         """Build FK/IK systems for all limbs."""
@@ -768,6 +853,9 @@ class MetaHumanBodyRigBuilder:
         # Register control with controls layer
         self._register_control(result.control)
 
+        # Register FK control with FK/IK layer
+        self._register_fk_control(result.control)
+
     def _create_ik_limb_controls_for_side(self, side: Side) -> None:
         """Create IK controls for a side."""
         s = side.value
@@ -796,6 +884,10 @@ class MetaHumanBodyRigBuilder:
         # Register IK controls
         self._register_control(hand_result.control)
         self._register_control(foot_result.control)
+
+        # Register IK controls with FK/IK layer
+        self._register_ik_control(hand_result.control)
+        self._register_ik_control(foot_result.control)
 
         # Parent IK controls to root.
         cmds.parentConstraint(
@@ -890,6 +982,10 @@ class MetaHumanBodyRigBuilder:
         # Register pole vector controls
         self._register_control(arm_result.control)
         self._register_control(leg_result.control)
+
+        # Register pole vectors with FK/IK layer
+        self._register_pole_vector(arm_result.control)
+        self._register_pole_vector(leg_result.control)
 
     def _create_fkik_switches_for_side(self, side: Side) -> None:
         """Create FK/IK switches for a side.
