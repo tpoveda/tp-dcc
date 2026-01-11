@@ -110,6 +110,7 @@ class MetaHumanBodyRigBuilder:
         # Layer references
         self._controls_layer: MetaHumanControlsLayer | None = None
         self._fkik_layer: MetaHumanFKIKLayer | None = None
+        self._reverse_foot_layer: MetaHumanReverseFootLayer | None = None
 
         # Initialize builders.
         self._control_builder = ControlBuilder(self.RIG_CTRLS_GROUP)
@@ -174,6 +175,9 @@ class MetaHumanBodyRigBuilder:
 
         # Create FK/IK limb controls
         self._create_fkik_limb_controls()
+
+        # Create reverse foot layer
+        self._create_reverse_foot_layer()
 
         # Create reverse foot setup
         self._create_reverse_foot_systems()
@@ -548,6 +552,89 @@ class MetaHumanBodyRigBuilder:
         control_node = node_by_name(control_name)
         if control_node is not None:
             self._fkik_layer.add_pole_vector(control_node)
+
+    def _create_reverse_foot_layer(self) -> None:
+        """Create the reverse foot layer for tracking reverse foot systems."""
+
+        from typing import cast
+
+        if self._meta_rig is None:
+            return
+
+        # Create reverse foot layer
+        layer = self._meta_rig.create_layer(
+            meta_constants.METAHUMAN_REVERSE_FOOT_LAYER_TYPE,
+            "reverse_foot_layer",
+            "reverse_foot_layer_meta",
+        )
+
+        if layer is None:
+            logger.warning("Failed to create reverse foot layer")
+            return
+
+        # Cast to MetaHumanReverseFootLayer for proper type hints
+        self._reverse_foot_layer = cast(MetaHumanReverseFootLayer, layer)
+
+        logger.info(
+            "Reverse foot layer created: %s", self._reverse_foot_layer.name()
+        )
+
+    def _register_foot_control(self, control_name: str) -> None:
+        """Register a foot control with the reverse foot layer.
+
+        Args:
+            control_name: Name of the foot control node to register.
+        """
+
+        from tp.libs.maya.wrapper import node_by_name
+
+        if self._reverse_foot_layer is None:
+            return
+
+        if not object_exists(control_name):
+            return
+
+        control_node = node_by_name(control_name)
+        if control_node is not None:
+            self._reverse_foot_layer.add_foot_control(control_node)
+
+    def _register_pivot_locator(self, locator_name: str) -> None:
+        """Register a pivot locator with the reverse foot layer.
+
+        Args:
+            locator_name: Name of the pivot locator node to register.
+        """
+
+        from tp.libs.maya.wrapper import node_by_name
+
+        if self._reverse_foot_layer is None:
+            return
+
+        if not object_exists(locator_name):
+            return
+
+        locator_node = node_by_name(locator_name)
+        if locator_node is not None:
+            self._reverse_foot_layer.add_pivot_locator(locator_node)
+
+    def _register_ik_handle(self, handle_name: str) -> None:
+        """Register an IK handle with the reverse foot layer.
+
+        Args:
+            handle_name: Name of the IK handle node to register.
+        """
+
+        from tp.libs.maya.wrapper import node_by_name
+
+        if self._reverse_foot_layer is None:
+            return
+
+        if not object_exists(handle_name):
+            return
+
+        handle_node = node_by_name(handle_name)
+        if handle_node is not None:
+            self._reverse_foot_layer.add_ik_handle(handle_node)
 
     def _build_limb_systems(self) -> None:
         """Build FK/IK systems for all limbs."""
@@ -1013,6 +1100,8 @@ class MetaHumanBodyRigBuilder:
         """Create reverse foot setups for both sides."""
 
         for side in [Side.LEFT, Side.RIGHT]:
+            s = side.value
+
             # Build reverse foot.
             self._reverse_foot_builder.build_reverse_foot(
                 side, self._skel_type
@@ -1026,13 +1115,47 @@ class MetaHumanBodyRigBuilder:
                 side, self._skel_type
             )
 
+            # Register reverse foot components with the layer
+            self._register_reverse_foot_components(side)
+
             # Connect toe twist visibility to FK/IK switch.
-            s = side.value
             if object_exists(f"leg_pole_vector_{s}_ctrl"):
                 connect_attribute(
                     f"foot_fkik_{s}_switch.limb_fkik_switch",
                     f"toe_twist_{s}_ik_offset.visibility",
                 )
+
+    def _register_reverse_foot_components(self, side: Side) -> None:
+        """Register reverse foot components with the reverse foot layer.
+
+        Args:
+            side: Side to register components for.
+        """
+
+        s = side.value
+
+        # Register foot IK control
+        self._register_foot_control(f"foot_{s}_ik_ctrl")
+
+        # Register pivot locators (these are created by ReverseFootBuilder)
+        pivot_locators = [
+            f"heel_pivot_{s}_loc",
+            f"toe_pivot_{s}_loc",
+            f"ball_pivot_{s}_loc",
+            f"foot_outer_{s}_loc",
+            f"foot_inner_{s}_loc",
+        ]
+        for locator in pivot_locators:
+            self._register_pivot_locator(locator)
+
+        # Register IK handles
+        ik_handles = [
+            f"foot_{s}_ikHandle",
+            f"ball_{s}_ikHandle",
+            f"toe_{s}_ikHandle",
+        ]
+        for handle in ik_handles:
+            self._register_ik_handle(handle)
 
     def _create_finger_controls(self) -> None:
         """Create finger controls for both hands."""
