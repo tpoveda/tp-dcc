@@ -111,6 +111,7 @@ class MetaHumanBodyRigBuilder:
         self._controls_layer: MetaHumanControlsLayer | None = None
         self._fkik_layer: MetaHumanFKIKLayer | None = None
         self._reverse_foot_layer: MetaHumanReverseFootLayer | None = None
+        self._space_switch_layer: MetaHumanSpaceSwitchLayer | None = None
 
         # Initialize builders.
         self._control_builder = ControlBuilder(self.RIG_CTRLS_GROUP)
@@ -185,6 +186,9 @@ class MetaHumanBodyRigBuilder:
         # Create finger controls (motion mode only).
         if self._motion:
             self._create_finger_controls()
+
+        # Create space switch layer
+        self._create_space_switch_layer()
 
         # Create space switches.
         self._create_space_switches()
@@ -635,6 +639,70 @@ class MetaHumanBodyRigBuilder:
         handle_node = node_by_name(handle_name)
         if handle_node is not None:
             self._reverse_foot_layer.add_ik_handle(handle_node)
+
+    def _create_space_switch_layer(self) -> None:
+        """Create the space switch layer for tracking space switching systems."""
+
+        from typing import cast
+
+        if self._meta_rig is None:
+            return
+
+        # Create space switch layer
+        layer = self._meta_rig.create_layer(
+            meta_constants.METAHUMAN_SPACE_SWITCH_LAYER_TYPE,
+            "space_switch_layer",
+            "space_switch_layer_meta",
+        )
+
+        if layer is None:
+            logger.warning("Failed to create space switch layer")
+            return
+
+        # Cast to MetaHumanSpaceSwitchLayer for proper type hints
+        self._space_switch_layer = cast(MetaHumanSpaceSwitchLayer, layer)
+
+        logger.info(
+            "Space switch layer created: %s", self._space_switch_layer.name()
+        )
+
+    def _register_space_switch_control(self, control_name: str) -> None:
+        """Register a control with space switching with the layer.
+
+        Args:
+            control_name: Name of the control node to register.
+        """
+
+        from tp.libs.maya.wrapper import node_by_name
+
+        if self._space_switch_layer is None:
+            return
+
+        if not object_exists(control_name):
+            return
+
+        control_node = node_by_name(control_name)
+        if control_node is not None:
+            self._space_switch_layer.add_space_switch_control(control_node)
+
+    def _register_space_switch_constraint(self, constraint_name: str) -> None:
+        """Register a space switch constraint with the layer.
+
+        Args:
+            constraint_name: Name of the constraint node to register.
+        """
+
+        from tp.libs.maya.wrapper import node_by_name
+
+        if self._space_switch_layer is None:
+            return
+
+        if not object_exists(constraint_name):
+            return
+
+        constraint_node = node_by_name(constraint_name)
+        if constraint_node is not None:
+            self._space_switch_layer.add_constraint(constraint_node)
 
     def _build_limb_systems(self) -> None:
         """Build FK/IK systems for all limbs."""
@@ -1167,16 +1235,48 @@ class MetaHumanBodyRigBuilder:
         """Create space switch systems."""
 
         for side in [Side.LEFT, Side.RIGHT]:
+            s = side.value
+
             # Hand space switch.
             self._space_switch_builder.create_hand_space_switch(side)
 
             # Pole vector space switches.
             self._space_switch_builder.create_pole_vector_space_switch(
-                side, "arm", f"hand_{side.value}_ik_ctrl"
+                side, "arm", f"hand_{s}_ik_ctrl"
             )
             self._space_switch_builder.create_pole_vector_space_switch(
-                side, "leg", f"foot_{side.value}_ik_ctrl"
+                side, "leg", f"foot_{s}_ik_ctrl"
             )
+
+            # Register space switch components with the layer
+            self._register_space_switch_components(side)
+
+    def _register_space_switch_components(self, side: Side) -> None:
+        """Register space switch components with the space switch layer.
+
+        Args:
+            side: Side to register components for.
+        """
+
+        s = side.value
+
+        # Register controls that have space switching
+        space_switch_controls = [
+            f"hand_{s}_ik_ctrl",
+            f"arm_pole_vector_{s}_ctrl",
+            f"leg_pole_vector_{s}_ctrl",
+        ]
+        for ctrl in space_switch_controls:
+            self._register_space_switch_control(ctrl)
+
+        # Register space switch constraints
+        space_switch_constraints = [
+            f"hand_{s}_ik_space_con",
+            f"arm_pole_vector_{s}_space_con",
+            f"leg_pole_vector_{s}_space_con",
+        ]
+        for con in space_switch_constraints:
+            self._register_space_switch_constraint(con)
 
     def _finalize_rig(self, up_axis: str = "y") -> None:
         """Finalize rig setup - visibility, etc."""
