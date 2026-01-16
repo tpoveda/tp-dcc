@@ -1,0 +1,118 @@
+{
+  "outerHexShape": {
+    "overrideColor": 0,
+    "overrideEnabled": false,
+    "overrideColorRGB": [0.0, 0.0, 0.0],
+    "overrideRGBColors": false,
+    "useOutlinerColor": false,
+    "outlinerColor": [0.0, 0.0, 0.0],
+    "knots": [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+    "cvs": [
+      [0.0, 0.0, 1.0],
+      [0.866, 0.0, 0.5],
+      [0.866, 0.0, -0.5],
+      [0.0, 0.0, -1.0],
+      [-0.866, 0.0, -0.5],
+      [-0.866, 0.0, 0.5],
+      [0.0, 0.0, 1.0]
+    ],
+    "degree": 1,
+    "form": 0
+  },
+  "innerHexShape": {
+    "overrideColor": 0,
+    "overrideEnabled": false,
+    "overrideColorRGB": [0.0, 0.0, 0.0],
+    "overrideRGBColors": false,
+    "useOutlinerColor": false,
+    "outlinerColor": [0.0, 0.0, 0.0],
+    "knots": [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+    "cvs": [
+      [0.0, 0.0, 0.7],
+      [0.606, 0.0, 0.35],
+      [0.606, 0.0, -0.35],
+      [0.0, 0.0, -0.7],
+      [-0.606, 0.0, -0.35],
+      [-0.606, 0.0, 0.35],
+      [0.0, 0.0, 0.7]
+    ],
+    "degree": 1,
+    "form": 0
+  },
+  "cubeTopShape": {
+    "overrideColor": 0,
+    "overrideEnabled": false,
+    "overrideColorRGB": [0.0, 0.0, 0.0],
+    "overrideRGBColors": false,
+    "useOutlinerColor": false,
+    "outlinerColor": [0.0, 0.0, 0.0],
+    "knots": [0.0, 1.0, 2.0, 3.0, 4.0],
+    "cvs": [
+      [0.0, 0.0, -0.15],
+      [0.3, 0.0, 0.0],
+      [0.0, 0.0, 0.15],
+      [-0.3, 0.0, 0.0],
+      [0.0, 0.0, -0.15]
+    ],
+    "degree": 1,
+    "form": 0
+  },
+  "cubeLeftShape": {
+    "overrideColor": 0,
+    "overrideEnabled": false,
+    "overrideColorRGB": [0.0, 0.0, 0.0],
+    "overrideRGBColors": false,
+    "useOutlinerColor": false,
+    "outlinerColor": [0.0, 0.0, 0.0],
+    "knots": [0.0, 1.0, 2.0, 3.0, 4.0],
+    "cvs": [
+      [-0.3, 0.0, 0.0],
+      [0.0, 0.0, 0.15],
+      [0.0, 0.0, 0.45],
+      [-0.3, 0.0, 0.3],
+      [-0.3, 0.0, 0.0]
+    ],
+    "degree": 1,
+    "form": 0
+  },
+  "cubeRightShape": {
+    "overrideColor": 0,
+    "overrideEnabled": false,
+    "overrideColorRGB": [0.0, 0.0, 0.0],
+    "overrideRGBColors": false,
+    "useOutlinerColor": false,
+    "outlinerColor": [0.0, 0.0, 0.0],
+    "knots": [0.0, 1.0, 2.0, 3.0, 4.0],
+    "cvs": [
+      [0.3, 0.0, 0.0],
+      [0.0, 0.0, 0.15],
+      [0.0, 0.0, 0.45],
+      [0.3, 0.0, 0.3],
+      [0.3, 0.0, 0.0]
+    ],
+    "degree": 1,
+    "form": 0
+  },
+  "arrowUpShape": {
+    "overrideColor": 0,
+    "overrideEnabled": false,
+    "overrideColorRGB": [0.0, 0.0, 0.0],
+    "overrideRGBColors": false,
+    "useOutlinerColor": false,
+    "outlinerColor": [0.0, 0.0, 0.0],
+    "knots": [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+    "cvs": [
+      [0.0, 0.0, -0.55],
+      [0.15, 0.0, -0.35],
+      [0.06, 0.0, -0.35],
+      [0.06, 0.0, -0.15],
+      [-0.06, 0.0, -0.15],
+      [-0.06, 0.0, -0.35],
+      [-0.15, 0.0, -0.35],
+      [0.0, 0.0, -0.55]
+    ],
+    "degree": 1,
+    "form": 0
+  }
+}
+

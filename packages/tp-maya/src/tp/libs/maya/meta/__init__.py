@@ -32,22 +32,7 @@ Property System Example:
     >>> prop = add_property(my_joint, RigProperty, rigType="FK")
 """
 
-from .base import (
-    MetaBase,
-    MetaFactory,
-    MetaRegistry,
-    connected_meta_nodes,
-    create_meta_node_by_type,
-    delete_network,
-    find_meta_nodes_by_class_type,
-    find_meta_nodes_by_tag,
-    get_all_meta_nodes_of_type,
-    get_network_entries,
-    is_in_network,
-    is_meta_node,
-    is_meta_node_of_types,
-    iterate_scene_meta_nodes,
-)
+from .base import MetaBase
 from .constants import (
     MAYA_ATTR_TO_TYPE,
     META_CHILDREN_ATTR_NAME,
@@ -59,11 +44,13 @@ from .constants import (
     RESERVED_ATTR_NAMES,
     TYPE_TO_MAYA_ATTR,
 )
+from .dag_base import MetaDagBase
 from .dependent import (
     DependentMeta,
     create_dependency_chain,
     get_or_create_parent,
 )
+from .factory import MetaFactory
 from .properties import (
     MetaProperty,
     PropertyFactory,
@@ -76,6 +63,20 @@ from .properties import (
     iterate_scene_properties,
     remove_property,
     run_properties,
+)
+from .registry import MetaRegistry
+from .utils import (
+    connected_meta_nodes,
+    create_meta_node_by_type,
+    delete_network,
+    find_meta_nodes_by_class_type,
+    find_meta_nodes_by_tag,
+    get_all_meta_nodes_of_type,
+    get_network_entries,
+    is_in_network,
+    is_meta_node,
+    is_meta_node_of_types,
+    iterate_scene_meta_nodes,
 )
 
 __all__ = [
@@ -93,6 +94,7 @@ __all__ = [
     "MetaRegistry",
     "MetaFactory",
     "MetaBase",
+    "MetaDagBase",
     # Dependent Classes
     "DependentMeta",
     # Property Classes
